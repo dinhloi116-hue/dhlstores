@@ -22,7 +22,7 @@ export interface ProductType {
   slug: string;
   description: string;
   price: string;
-  type: 'physical' | 'digital';
+  type: 'digital';
   categoryId: number;
   image: string;
   fileUrl?: string;
@@ -38,7 +38,6 @@ export interface CategoryType {
   name: string;
   slug: string;
   description: string;
-  type: 'physical' | 'digital' | 'all';
 }
 
 export interface CartItemType {
@@ -68,128 +67,185 @@ export interface OrderType {
   totalAmount: string;
   status: OrderStatusType;
   paymentStatus: 'pending' | 'paid';
-  shippingName?: string;
-  shippingPhone?: string;
-  shippingAddress?: string;
-  shippingNote?: string;
-  hasPhysicalItems: boolean;
   createdAt: Date;
   items?: OrderItemType[];
 }
 
 const logoUrl = "/manus-storage/logodhlstores_c8e433ed.png";
 
+// Cây 10 danh mục chính chuyên sâu về tài nguyên thiết kế, in ấn và bóng đá
 const memoryCategories: CategoryType[] = [
-  { id: 1, name: "Áo Bóng Đá", slug: "ao-bong-da", description: "Áo đấu chính hãng, chất liệu cao cấp thoáng khí, in ấn sắc nét.", type: "physical" },
-  { id: 2, name: "File In Hình Ảnh", slug: "file-in-hinh-anh", description: "Artwork, poster bóng đá độ phân giải cao 4K sẵn sàng in ấn.", type: "digital" },
-  { id: 3, name: "File Font Số & Chữ", slug: "file-font-so", description: "Font số áo đấu độc quyền, chuẩn typography thể thao chuyên nghiệp.", type: "digital" },
+  { id: 1, name: "Font Chữ & Font Thể Thao", slug: "font-chu-the-thao", description: "Font CLB, font áo bóng đá, font số, font retro, font Việt hóa..." },
+  { id: 2, name: "Tên Số Áo Bóng Đá", slug: "ten-so-ao-bong-da", description: "Bộ name set theo CLB, đội tuyển, mùa giải, cầu thủ chuẩn in ấn." },
+  { id: 3, name: "Vector & SVG", slug: "vector-svg", description: "Logo, biểu tượng, icon, họa tiết, hình vector dùng Corel/Illustrator." },
+  { id: 4, name: "File In Áo / DTF / PET", slug: "file-in-ao-dtf", description: "Mẫu in ngực, lưng, tay áo, artwork đã xử lý sẵn để in PET/DTF." },
+  { id: 5, name: "Patch & Badge", slug: "patch-badge", description: "Patch giải đấu, logo tài trợ, huy hiệu, badge áo bóng đá, patch giả thêu." },
+  { id: 6, name: "Template Thiết Kế", slug: "template-thiet-ke", description: "Template áo đấu, mockup, banner, poster, social media, bảng giá..." },
+  { id: 7, name: "Mockup Sản Phẩm", slug: "mockup-san-pham", description: "Mockup áo bóng đá, áo thun, hoodie, túi, cốc, phụ kiện trưng bày." },
+  { id: 8, name: "Clipart & PNG Không Nền", slug: "clipart-png", description: "Nhân vật, hình trang trí, sticker, đồ họa 2D, PNG chất lượng cao." },
+  { id: 9, name: "Pattern & Background", slug: "pattern-background", description: "Họa tiết áo, texture, pattern thể thao, background thiết kế." },
+  { id: 10, name: "Combo / Design Bundle", slug: "combo-design-bundle", description: "Bộ font + vector + patch + mockup hoặc các gói tài nguyên theo chủ đề." },
 ];
 
 const memoryProducts: ProductType[] = [
   {
     id: 1,
-    name: "Áo Đấu CLB Hoàng Gia Đỏ 2026/27",
-    slug: "ao-dau-clb-hoang-gia-do-2026",
-    description: "Mẫu áo đấu sân nhà mới nhất của CLB Hoàng Gia Đỏ mùa giải 2026/27. Chất liệu thun mè cao cấp thấm hút mồ hôi cực tốt, logo thêu nổi tinh tế.",
-    price: "450000",
-    type: "physical",
+    name: "Bộ Font Số Áo Đấu Premier League 2026/27 (OTF/TTF)",
+    slug: "bo-font-so-ao-dau-premier-league-2026",
+    description: "Trọn bộ font chữ và số áo đấu chuẩn Ngoại Hạng Anh mùa giải mới nhất. Đã Việt hóa đầy đủ dấu, tương thích hoàn hảo Illustrator & CorelDraw.",
+    price: "250000",
+    type: "digital",
     categoryId: 1,
-    image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=800&q=80",
-    stock: 120,
-    specs: "Chất liệu: Polyester 100% thun lạnh cao cấp. Size: S, M, L, XL, XXL. Màu sắc: Đỏ hoàng gia / Trắng. Công nghệ thấm hút Dry-Fit.",
+    image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80",
+    fileUrl: logoUrl,
+    fileSize: "14.2 MB (.OTF, .TTF, .WOFF2)",
+    stock: 9999,
+    specs: "Định dạng: OTF, TTF. Tương thích: Mọi phần mềm đồ họa.",
     featured: true,
     createdAt: new Date(),
   },
   {
     id: 2,
-    name: "Áo Đấu Đội Tuyển Quốc Gia Xanh Hoàng Lịch",
-    slug: "ao-dau-dtqg-xanh-hoang-lich-2026",
-    description: "Thiết kế đầy kiêu hãnh với sắc xanh ngọc lục bảo kết hợp hoạ tiết trống đồng cách điệu, biểu trưng cho tinh thần chiến đấu đỉnh cao.",
-    price: "480000",
-    type: "physical",
-    categoryId: 1,
-    image: "https://images.unsplash.com/photo-1518063319789-7217e6706704?auto=format&fit=crop&w=800&q=80",
-    stock: 85,
-    specs: "Chất liệu: Recycled Polyester cao cấp thân thiện môi trường. Size: M, L, XL. Màu sắc: Xanh ngọc / Vàng đồng.",
+    name: "Name Set Huyền Thoại CLB Hoàng Gia (Vector Corel/AI)",
+    slug: "name-set-huyen-thoai-clb-hoang-gia",
+    description: "Bộ file vector tên và số áo đấu trọn bộ các ngôi sao lịch sử CLB Hoàng Gia Tây Ban Nha. Sẵn sàng in ấn trực tiếp không cần chỉnh sửa.",
+    price: "180000",
+    type: "digital",
+    categoryId: 2,
+    image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=800&q=80",
+    fileUrl: logoUrl,
+    fileSize: "45 MB (.CDR, .AI, .EPS)",
+    stock: 9999,
+    specs: "Định dạng: CorelDraw X7+, Illustrator CC. Độ phân giải vector chuẩn.",
     featured: true,
     createdAt: new Date(),
   },
   {
     id: 3,
-    name: "Áo Đấu Sân Khách Đen Hổ Phách 2026",
-    slug: "ao-dau-san-khach-den-ho-phach-2026",
-    description: "Sự pha trộn huyền bí giữa tông đen nhám obsidian và các đường nét phản quang màu hổ phách cực kỳ cá tính và hiện đại.",
-    price: "450000",
-    type: "physical",
-    categoryId: 1,
-    image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
-    stock: 60,
-    specs: "Chất liệu: Vải lưới chuyên dụng đá bóng. Size: S, M, L, XL. Màu sắc: Đen nhám / Hổ phách.",
-    featured: false,
+    name: "Kho Họa Tiết Vector Thể Thao & Đồ Họa Abstract",
+    slug: "kho-hoa-tiet-vector-the-thao-abstract",
+    description: "Hơn 200+ mẫu họa tiết geometric, đường nét tốc độ speed lines và các shape đồ họa chuyên dụng thiết kế áo đấu thể thao.",
+    price: "320000",
+    type: "digital",
+    categoryId: 3,
+    image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80",
+    fileUrl: logoUrl,
+    fileSize: "210 MB (.ZIP - AI, CDR, SVG)",
+    stock: 9999,
+    specs: "Định dạng: SVG, AI, CDR. Đầy đủ bản quyền thương mại.",
+    featured: true,
     createdAt: new Date(),
   },
   {
     id: 4,
-    name: "Bộ Sưu Tập Poster Bóng Đá 4K - Vector & High-Res",
-    slug: "bo-suu-tap-poster-bong-da-4k",
-    description: "Trọn bộ 50+ file thiết kế vector và ảnh 4K cực nét các huyền thoại bóng đá thế giới. Dành riêng cho thiết kế banner, poster, ốp lưng hoặc in ấn trang trí.",
-    price: "150000",
+    name: "File In Áo DTF / PET Sẵn In - Mẫu Ngực & Lưng 4K",
+    slug: "file-in-ao-dtf-pet-mau-nguc-lung-4k",
+    description: "Tuyển tập các mẫu artwork tách nền độ phân giải cực cao 300 DPI chuyên dùng in PET chuyển nhiệt, in DTF áo thun và áo đấu.",
+    price: "200000",
     type: "digital",
-    categoryId: 2,
-    image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80",
+    categoryId: 4,
+    image: "https://images.unsplash.com/photo-1518063319789-7217e6706704?auto=format&fit=crop&w=800&q=80",
     fileUrl: logoUrl,
-    fileSize: "185 MB (ZIP - AI, PSD, PNG 4K)",
+    fileSize: "350 MB (.PNG 300DPI Transparent)",
     stock: 9999,
-    specs: "Định dạng: AI, PSD, PNG 4K (3840x2160 pixels). Cấp quyền thương mại trọn đời.",
+    specs: "Định dạng: PNG không nền kích thước lớn, sẵn sàng đưa vào máy in.",
     featured: true,
     createdAt: new Date(),
   },
   {
     id: 5,
-    name: "Artwork Đồ Họa Cầu Thủ Huyền Thoại - PSD Layered",
-    slug: "artwork-do-hoa-cau-thu-huyen-thoai-psd",
-    description: "File Photoshop tách lớp chi tiết từng layer hiệu ứng ánh sáng, khói lửa và texture đỉnh cao để làm quà tặng hoặc tranh canvas.",
-    price: "200000",
+    name: "Bộ Patch & Huy Hiệu Giải Đấu Châu Âu 2026",
+    slug: "bo-patch-huy-hieu-giai-dấu-châu-âu-2026",
+    description: "Trọn bộ vector huy hiệu các giải đấu vô địch quốc gia hàng đầu châu Âu và cúp C1 chuẩn tỷ lệ thực tế để in ấn.",
+    price: "150000",
     type: "digital",
-    categoryId: 2,
-    image: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80",
+    categoryId: 5,
+    image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
     fileUrl: logoUrl,
-    fileSize: "320 MB (.PSD Full Layers)",
+    fileSize: "68 MB (.CDR, .AI, .PDF)",
     stock: 9999,
-    specs: "Định dạng: .PSD (Adobe Photoshop CC). Độ phân giải 300 DPI sẵn sàng in khổ lớn.",
+    specs: "Định dạng: Vector AI/CDR chuẩn màu CMYK cho in ấn.",
     featured: false,
     createdAt: new Date(),
   },
   {
     id: 6,
-    name: "Font Số Áo Đấu Thể Thao Pro 2026 - OTF/TTF",
-    slug: "font-so-ao-dau-the-thao-pro-2026",
-    description: "Bộ font chữ và số áo bóng đá độc quyền được thiết kế chuẩn typography thể thao quốc tế. Tương thích hoàn hảo với Illustrator, Corel, Photoshop.",
-    price: "250000",
+    name: "Template Mẫu Thiết Kế Áo Đấu Sublimation Pro",
+    slug: "template-mau-thiet-ke-ao-dau-sublimation-pro",
+    description: "Bộ template áo đấu full body (thân trước, thân sau, tay áo, cổ áo) chuẩn tỷ lệ cho nhà xưởng in chuyển nhiệt.",
+    price: "390000",
     type: "digital",
-    categoryId: 3,
-    image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80",
+    categoryId: 6,
+    image: "https://images.unsplash.com/photo-1551958219-acbc608c6377?auto=format&fit=crop&w=800&q=80",
     fileUrl: logoUrl,
-    fileSize: "12 MB (.OTF, .TTF, .WOFF2)",
+    fileSize: "520 MB (.CDR, .AI)",
     stock: 9999,
-    specs: "Định dạng: OTF, TTF, WOFF2. Hỗ trợ đầy đủ ký tự tiếng Việt và dấu số.",
+    specs: "Định dạng: CorelDraw & Illustrator tỉ lệ 1:1 chuyên nghiệp.",
     featured: true,
     createdAt: new Date(),
   },
   {
     id: 7,
-    name: "Font Tên & Số Áo Vintage Classic - OTF/TTF",
-    slug: "font-ten-va-so-ao-vintage-classic",
-    description: "Phong cách retro hoài cổ gợi nhớ các huyền thoại thập niên 80-90. Cực kỳ phù hợp cho các mẫu áo đấu phong cách cổ điển.",
-    price: "180000",
+    name: "Mockup 3D Áo Bóng Đá & Áo Thun PSD Smart Object",
+    slug: "mockup-3d-ao-bong-da-ao-thun-psd",
+    description: "File Photoshop mockup áo đấu siêu thực với tính năng Smart Object thay đổi thiết kế và màu sắc chỉ với 1 click.",
+    price: "220000",
     type: "digital",
-    categoryId: 3,
-    image: "https://images.unsplash.com/photo-1551958219-acbc608c6377?auto=format&fit=crop&w=800&q=80",
+    categoryId: 7,
+    image: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80",
     fileUrl: logoUrl,
-    fileSize: "8.5 MB (.OTF, .TTF)",
+    fileSize: "480 MB (.PSD High-Res Layers)",
     stock: 9999,
-    specs: "Định dạng: OTF, TTF. Phù hợp cho thiết kế áo đấu retro, poster câu lạc bộ.",
+    specs: "Định dạng: Adobe Photoshop .PSD tách lớp chuyên sâu.",
     featured: false,
+    createdAt: new Date(),
+  },
+  {
+    id: 8,
+    name: "Kho Clipart Cầu Thủ Bóng Đá & Huy Hiệu Vector 2D",
+    slug: "kho-clipart-cau-thu-bong-da-huy-hieu-2d",
+    description: "Hàng trăm hình minh họa cầu thủ dạng vector hoạt hình, silhouette và chibi phục vụ thiết kế banner sự kiện bóng đá.",
+    price: "170000",
+    type: "digital",
+    categoryId: 8,
+    image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80",
+    fileUrl: logoUrl,
+    fileSize: "140 MB (.EPS, .SVG, .PNG)",
+    stock: 9999,
+    specs: "Định dạng: EPS, SVG, PNG trong suốt.",
+    featured: false,
+    createdAt: new Date(),
+  },
+  {
+    id: 9,
+    name: "Texture Vải Thể Thao & Họa Tiết Carbon / Mè Seamless",
+    slug: "texture-vai-the-thao-hoa-tiet-carbon-seamless",
+    description: "Bộ texture vải thun mè, vải caro thể thao và hoa tiết carbon pattern liền mạch (seamless) cực kỳ chân thực khi áp lên áo.",
+    price: "190000",
+    type: "digital",
+    categoryId: 9,
+    image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80",
+    fileUrl: logoUrl,
+    fileSize: "290 MB (.PAT, .JPG High-Res Seamless)",
+    stock: 9999,
+    specs: "Định dạng: PAT (Photoshop Pattern) và JPG 4K Seamless lặp vô hạn.",
+    featured: false,
+    createdAt: new Date(),
+  },
+  {
+    id: 10,
+    name: "Mega Bundle Ultimate 2026 - Trọn Bộ Mọi Tài Nguyên Áo Đấu",
+    slug: "mega-bundle-ultimate-2026-tron-bo-tai-nguyen",
+    description: "Gói siêu tiết kiệm bao gồm toàn bộ font chữ, vector, name set, patch, mockup và template của DHL Stores. Dành riêng cho xưởng in lớn.",
+    price: "990000",
+    type: "digital",
+    categoryId: 10,
+    image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=800&q=80",
+    fileUrl: logoUrl,
+    fileSize: "3.5 GB (All-in-One Cloud Download)",
+    stock: 9999,
+    specs: "Toàn bộ thư viện DHL Stores v2026 trọn đời bản quyền thương mại.",
+    featured: true,
     createdAt: new Date(),
   }
 ];
@@ -245,7 +301,6 @@ export async function getCategories() {
 }
 
 export async function getProducts(filter?: {
-  type?: string;
   categoryId?: number;
   search?: string;
   featured?: boolean;
@@ -253,9 +308,6 @@ export async function getProducts(filter?: {
   maxPrice?: number;
 }) {
   let list = [...memoryProducts];
-  if (filter?.type && filter.type !== 'all') {
-    list = list.filter(p => p.type === filter.type);
-  }
   if (filter?.categoryId) {
     list = list.filter(p => p.categoryId === filter.categoryId);
   }
@@ -333,12 +385,7 @@ export async function clearCart(userId: number) {
 }
 
 export async function createOrder(userId: number, data: {
-  shippingName?: string;
-  shippingPhone?: string;
-  shippingAddress?: string;
-  shippingNote?: string;
   totalAmount: number;
-  hasPhysicalItems: boolean;
   items: Array<{ productId: number; quantity: number; price: number; attributes?: string }>;
 }) {
   const orderId = nextOrderId++;
@@ -346,13 +393,8 @@ export async function createOrder(userId: number, data: {
     id: orderId,
     userId,
     totalAmount: data.totalAmount.toString(),
-    status: "preparing",
+    status: "completed",
     paymentStatus: "paid",
-    shippingName: data.shippingName,
-    shippingPhone: data.shippingPhone,
-    shippingAddress: data.shippingAddress,
-    shippingNote: data.shippingNote,
-    hasPhysicalItems: data.hasPhysicalItems,
     createdAt: new Date(),
   };
 

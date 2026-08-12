@@ -18,3 +18,7 @@
 - [x] Tối ưu hóa giao diện storefront thành dạng siêu gọn, mua hàng cực nhanh (1-click buy, hiển thị trực quan, nút CTA nổi bật)
 - [x] Cập nhật toàn bộ các trang (Trang chủ, Danh sách, Giỏ hàng, Thanh toán, Tài khoản, Admin) hỗ trợ song ngữ hoàn hảo
 - [x] Kiểm thử chuyển đổi ngôn ngữ và chạy lại Vitest
+- [x] Cập nhật 10 danh mục chính chuyên sâu về tài nguyên số (`server/db.ts`)
+- [x] Chuyển đổi toàn bộ sản phẩm mẫu sang dạng file kỹ thuật số (Font chữ thể thao, Tên số áo, Vector, File in áo DTF, Patch & Badge, Template thiết kế, Mockup, Clipart, Pattern, Combo Bundle)
+- [x] Tinh chỉnh giỏ hàng và thanh toán trực tiếp không cần hỏi địa chỉ giao hàng vật lý
+- [x] Kiểm thử toàn bộ luồng mua và tải file số tự động ngay sau thanh toán

@@ -26,7 +26,6 @@ export const appRouter = router({
 
     products: publicProcedure
       .input(z.object({
-        type: z.string().optional(),
         categoryId: z.number().optional(),
         search: z.string().optional(),
         featured: z.boolean().optional(),
@@ -42,7 +41,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const product = await db.getProductBySlug(input.slug);
         if (!product) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy sản phẩm" });
+          throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy tài nguyên" });
         }
         return product;
       }),
@@ -78,12 +77,7 @@ export const appRouter = router({
 
     checkout: protectedProcedure
       .input(z.object({
-        shippingName: z.string().optional(),
-        shippingPhone: z.string().optional(),
-        shippingAddress: z.string().optional(),
-        shippingNote: z.string().optional(),
         totalAmount: z.number(),
-        hasPhysicalItems: z.boolean(),
         items: z.array(z.object({
           productId: z.number(),
           quantity: z.number(),
@@ -92,14 +86,6 @@ export const appRouter = router({
         })),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (input.hasPhysicalItems) {
-          if (!input.shippingName || !input.shippingPhone || !input.shippingAddress) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Vui lòng cung cấp đầy đủ thông tin họ tên, số điện thoại và địa chỉ giao hàng cho sản phẩm vật lý.",
-            });
-          }
-        }
         return await db.createOrder(ctx.user.id, input);
       }),
 
@@ -115,7 +101,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== 'admin') {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật trạng thái đơn hàng" });
+          throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật" });
         }
         return await db.updateOrderStatus(input.orderId, input.status);
       }),

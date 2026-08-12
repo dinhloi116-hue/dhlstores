@@ -5,7 +5,7 @@ import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Download, Sparkles, ArrowRight, Zap } from "lucide-react";
+import { Download, Sparkles, ArrowRight, Zap, FileText, Layers, FolderGit2 } from "lucide-react";
 
 export default function Home() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
@@ -35,16 +35,16 @@ export default function Home() {
 
   return (
     <StoreLayout>
-      {/* Banner / Hero Section (Sáng, nổi bật với banner tainguyenhd style) */}
+      {/* Banner / Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 shadow-xl border border-slate-200 p-8 sm:p-12 text-center text-white">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:16px_16px]" />
           <div className="relative z-10 max-w-2xl mx-auto space-y-4">
             <span className="bg-amber-500 text-slate-950 font-extrabold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-              DHL STORES OFFICIAL
+              DHL STORES DIGITAL HUB
             </span>
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
-              {lang === 'vi' ? 'KHO TÀI NGUYÊN ÁO ĐẤU & FILE SỐ' : 'PREMIUM JERSEY & DIGITAL ASSETS HUB'}
+              {lang === 'vi' ? 'KHO TÀI NGUYÊN THIẾT KẾ & ĐỒ HỌA SỐ' : 'DIGITAL DESIGN & SPORTS ASSET HUB'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-200">
               {t.heroDesc}
@@ -59,43 +59,37 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Category Icons Bar (Giống các icon danh mục trên ảnh tham khảo) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8">
-          <Link href="/products?type=physical" className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-amber-500 transition-all text-center group">
-            <Package className="w-8 h-8 mx-auto text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
-            <h4 className="text-xs font-bold text-slate-800">{t.physicalTitle}</h4>
-            <p className="text-[10px] text-slate-500 mt-0.5">Áo đấu chính hãng</p>
-          </Link>
-
-          <Link href="/products?categoryId=2" className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-amber-500 transition-all text-center group">
-            <Download className="w-8 h-8 mx-auto text-purple-600 mb-2 group-hover:scale-110 transition-transform" />
-            <h4 className="text-xs font-bold text-slate-800">{t.imageTitle}</h4>
-            <p className="text-[10px] text-slate-500 mt-0.5">Poster & Artwork 4K</p>
-          </Link>
-
-          <Link href="/products?categoryId=3" className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-amber-500 transition-all text-center group">
-            <Sparkles className="w-8 h-8 mx-auto text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
-            <h4 className="text-xs font-bold text-slate-800">{t.fontTitle}</h4>
-            <p className="text-[10px] text-slate-500 mt-0.5">Font số & chữ OTF</p>
-          </Link>
-
-          <Link href="/products" className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-amber-500 transition-all text-center group">
-            <Zap className="w-8 h-8 mx-auto text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
-            <h4 className="text-xs font-bold text-slate-800">{t.allProducts}</h4>
-            <p className="text-[10px] text-slate-500 mt-0.5">Tất cả tài nguyên</p>
-          </Link>
+        {/* Quick Category Icons Bar (10 danh mục chuyên sâu) */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
+          {[
+            { id: 1, name: lang === 'vi' ? 'Font Chữ Thể Thao' : 'Sports Fonts', catId: 1 },
+            { id: 2, name: lang === 'vi' ? 'Tên Số Áo Đấu' : 'Name Sets', catId: 2 },
+            { id: 3, name: lang === 'vi' ? 'Vector & SVG' : 'Vector & SVG', catId: 3 },
+            { id: 4, name: lang === 'vi' ? 'File In Áo DTF' : 'DTF Print Files', catId: 4 },
+            { id: 5, name: lang === 'vi' ? 'Patch & Badge' : 'Patch & Badge', catId: 5 },
+            { id: 6, name: lang === 'vi' ? 'Template Thiết Kế' : 'Design Templates', catId: 6 },
+            { id: 7, name: lang === 'vi' ? 'Mockup Sản Phẩm' : 'Product Mockups', catId: 7 },
+            { id: 8, name: lang === 'vi' ? 'Clipart & PNG' : 'Clipart & PNG', catId: 8 },
+            { id: 9, name: lang === 'vi' ? 'Pattern & BG' : 'Pattern & BG', catId: 9 },
+            { id: 10, name: lang === 'vi' ? 'Combo Bundle' : 'Design Bundles', catId: 10 },
+          ].map(c => (
+            <Link key={c.catId} href={`/products?categoryId=${c.catId}`} className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs hover:border-amber-500 transition-all text-center group">
+              <FolderGit2 className="w-5 h-5 mx-auto text-amber-600 mb-1.5 group-hover:scale-110 transition-transform" />
+              <h4 className="text-[11px] font-bold text-slate-800 line-clamp-1">{c.name}</h4>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Product Catalog Grid (Lưới sản phẩm mới nhất, siêu gọn và dễ mua) */}
-      <section className="py-12 bg-white border-t border-slate-200 mt-8">
+      {/* Product Catalog Grid */}
+      <section className="py-10 bg-white border-t border-slate-200 mt-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
             <div>
               <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                {lang === 'vi' ? 'Tài nguyên mới nhất / Sản phẩm nổi bật' : 'Latest Resources & Featured Products'}
+                {lang === 'vi' ? 'Tài Nguyên Số Mới Nhất & Nổi Bật' : 'Latest & Featured Digital Assets'}
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">Cập nhật liên tục 24/7 cho khách hàng</p>
+              <p className="text-xs text-slate-500 mt-0.5">Cập nhật liên tục 24/7 với quyền tải xuống ngay sau thanh toán</p>
             </div>
             <Link href="/products">
               <Button variant="outline" size="sm" className="text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-100">
@@ -114,9 +108,9 @@ export default function Home() {
                       alt={p.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-2 left-2 flex gap-1">
-                      <Badge className={p.type === 'physical' ? 'bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5' : 'bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5'}>
-                        {p.type === 'physical' ? 'Vật lý' : 'File số'}
+                    <div className="absolute top-2 left-2">
+                      <Badge className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5">
+                        Digital Asset
                       </Badge>
                     </div>
                   </div>

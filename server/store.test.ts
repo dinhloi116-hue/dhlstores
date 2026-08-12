@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
-function createMockContext(role: "user" | "admin" = "user"): TrpcContext {
+function createMockContext(): TrpcContext {
   const user = {
     id: 1,
     openId: "test-user-123",
     email: "test@dhlstores.vn",
     name: "Test User DHL",
     loginMethod: "manus",
-    role,
+    role: "user" as const,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
@@ -27,32 +27,51 @@ function createMockContext(role: "user" | "admin" = "user"): TrpcContext {
   };
 }
 
-describe("DHL Stores API Routers", () => {
-  it("fetches categories successfully", async () => {
+describe("DHL Stores Digital Hub API & Checkout Flow", () => {
+  it("fetches 10 digital categories successfully", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);
 
     const categories = await caller.store.categories();
     expect(categories).toBeDefined();
-    expect(categories.length).toBeGreaterThan(0);
-    expect(categories[0]?.name).toBeDefined();
+    expect(categories.length).toBe(10);
+    expect(categories[0]?.name).toContain("Font Chữ");
   });
 
-  it("fetches products list and filters by type", async () => {
+  it("handles cart and checkout successfully without physical shipping", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);
 
-    const products = await caller.store.products({ type: "physical" });
-    expect(products).toBeDefined();
-    expect(products.every(p => p.type === "physical")).toBe(true);
-  });
+    // Add to cart
+    const addRes = await caller.store.addToCart({
+      productId: 1,
+      quantity: 1,
+    });
+    expect(addRes.success).toBe(true);
 
-  it("fetches single product by slug", async () => {
-    const ctx = createMockContext();
-    const caller = appRouter.createCaller(ctx);
+    // Get cart
+    const cart = await caller.store.cart();
+    expect(cart.length).toBe(1);
+    expect(cart[0]?.productId).toBe(1);
 
-    const product = await caller.store.productBySlug({ slug: "ao-dau-clb-hoang-gia-do-2026" });
-    expect(product).toBeDefined();
-    expect(product?.name).toContain("Hoàng Gia Đỏ");
+    // Checkout
+    const checkoutRes = await caller.store.checkout({
+      totalAmount: 250000,
+      items: [
+        {
+          productId: 1,
+          quantity: 1,
+          price: 250000,
+        }
+      ]
+    });
+    expect(checkoutRes.success).toBe(true);
+    expect(checkoutRes.orderId).toBeDefined();
+
+    // Verify orders & digital download link unlocked
+    const orders = await caller.store.orders();
+    expect(orders.length).toBeGreaterThan(0);
+    expect(orders[0]?.paymentStatus).toBe("paid");
+    expect(orders[0]?.items?.[0]?.product?.fileUrl).toBeDefined();
   });
 });
