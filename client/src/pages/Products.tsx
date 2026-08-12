@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from "react";
 import StoreLayout from "@/components/StoreLayout";
 import { trpc } from "@/lib/trpc";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
+import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Download, Search, Filter, SlidersHorizontal } from "lucide-react";
+import { Package, Search, Filter } from "lucide-react";
 
 export default function Products() {
-  const [location] = useLocation();
+  const [lang, setLang] = useState<Language>(getClientLanguage());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = getClientLanguage();
+      if (current !== lang) setLang(current);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [lang]);
+
+  const t = translations[lang];
+
   const searchParams = new URLSearchParams(window.location.search);
   const initialType = searchParams.get("type") || "all";
   const initialCategory = searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined;
@@ -29,7 +41,6 @@ export default function Products() {
   const categories = categoriesQuery.data || [];
   let products = productsQuery.data || [];
 
-  // Sorting
   if (sortBy === "price-asc") {
     products = [...products].sort((a, b) => Number(a.price) - Number(b.price));
   } else if (sortBy === "price-desc") {
@@ -39,83 +50,87 @@ export default function Products() {
   }
 
   const formatCurrency = (val: string | number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(val));
+    const num = Number(val);
+    if (lang === 'en') {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num / 25000);
+    }
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
   };
 
   return (
     <StoreLayout>
       <div className="bg-slate-900/40 border-b border-slate-800 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-black text-white">Khám Phá Cửa Hàng DHL Stores</h1>
+          <h1 className="text-3xl sm:text-4xl font-black text-white">
+            {lang === 'vi' ? 'Khám Phá Cửa Hàng DHL Stores' : 'Explore DHL Stores'}
+          </h1>
           <p className="text-slate-400 text-sm max-w-xl mx-auto">
-            Tìm kiếm áo đấu bóng đá thiết kế đẳng cấp và các sản phẩm file số / font chữ chuyên nghiệp cho dự án của bạn.
+            {lang === 'vi' 
+              ? 'Tìm kiếm áo đấu bóng đá thiết kế đẳng cấp và các sản phẩm số / font chữ chuyên nghiệp cho dự án của bạn.'
+              : 'Discover premium designed football jerseys and professional digital files & fonts for your projects.'}
           </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Filters & Search Toolbar */}
+        {/* Toolbar */}
         <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-6 rounded-2xl mb-10 space-y-4 shadow-xl">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            {/* Search Input */}
             <div className="md:col-span-5 relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                placeholder="Tìm kiếm áo đấu, file in 4K, font số..."
+                placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-slate-950 border-slate-700 text-slate-100 placeholder:text-slate-500 rounded-xl"
               />
             </div>
 
-            {/* Type Filter Tabs */}
             <div className="md:col-span-4 flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
               <button
                 onClick={() => setSelectedType("all")}
                 className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${selectedType === 'all' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
               >
-                Tất cả
+                {lang === 'vi' ? 'Tất cả' : 'All'}
               </button>
               <button
                 onClick={() => setSelectedType("physical")}
                 className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${selectedType === 'physical' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
               >
-                Vật lý (Áo đấu)
+                {t.physical}
               </button>
               <button
                 onClick={() => setSelectedType("digital")}
                 className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${selectedType === 'digital' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
               >
-                Sản phẩm số
+                {t.digital}
               </button>
             </div>
 
-            {/* Sorting */}
             <div className="md:col-span-3">
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="bg-slate-950 border-slate-700 text-slate-200 rounded-xl">
-                  <SelectValue placeholder="Sắp xếp theo" />
+                  <SelectValue placeholder={t.sortBy} />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                  <SelectItem value="default">Mặc định</SelectItem>
-                  <SelectItem value="price-asc">Giá: Thấp đến Cao</SelectItem>
-                  <SelectItem value="price-desc">Giá: Cao đến Thấp</SelectItem>
-                  <SelectItem value="name">Tên sản phẩm (A-Z)</SelectItem>
+                  <SelectItem value="default">{t.defaultSort}</SelectItem>
+                  <SelectItem value="price-asc">{t.priceAsc}</SelectItem>
+                  <SelectItem value="price-desc">{t.priceDesc}</SelectItem>
+                  <SelectItem value="name">{t.nameSort}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Categories Filter pills */}
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80">
             <span className="text-xs text-slate-400 font-semibold mr-2 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-amber-400" /> Danh mục:
+              <Filter className="w-3.5 h-3.5 text-amber-400" /> {t.allCategories}:
             </span>
             <button
               onClick={() => setSelectedCategory(undefined)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedCategory === undefined ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'}`}
             >
-              Tất cả danh mục
+              {t.allCategories}
             </button>
             {categories.map(c => (
               <button
@@ -133,13 +148,17 @@ export default function Products() {
         {products.length === 0 ? (
           <div className="text-center py-24 bg-slate-900/40 rounded-3xl border border-slate-800">
             <Package className="w-16 h-16 mx-auto mb-4 text-slate-600" />
-            <h3 className="text-lg font-bold text-white">Không tìm thấy sản phẩm phù hợp</h3>
-            <p className="text-xs text-slate-400 mt-1">Vui lòng thử lại với từ khóa hoặc bộ lọc khác.</p>
+            <h3 className="text-lg font-bold text-white">
+              {lang === 'vi' ? 'Không tìm thấy sản phẩm phù hợp' : 'No products found'}
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              {lang === 'vi' ? 'Vui lòng thử lại với từ khóa hoặc bộ lọc khác.' : 'Please try another search term or filter.'}
+            </p>
             <Button
               onClick={() => { setSelectedType("all"); setSelectedCategory(undefined); setSearchQuery(""); }}
               className="mt-6 bg-slate-800 hover:bg-slate-700 text-slate-200"
             >
-              Xóa bộ lọc
+              {lang === 'vi' ? 'Xóa bộ lọc' : 'Clear filters'}
             </Button>
           </div>
         ) : (
@@ -155,7 +174,7 @@ export default function Products() {
                     />
                     <div className="absolute top-3 left-3 flex gap-2">
                       <Badge className={p.type === 'physical' ? 'bg-blue-600 text-white font-semibold' : 'bg-purple-600 text-white font-semibold'}>
-                        {p.type === 'physical' ? 'Sản phẩm vật lý' : 'Sản phẩm số'}
+                        {p.type === 'physical' ? (lang === 'vi' ? 'Vật lý' : 'Physical') : (lang === 'vi' ? 'Sản phẩm số' : 'Digital')}
                       </Badge>
                     </div>
                   </div>
@@ -173,7 +192,7 @@ export default function Products() {
                         {formatCurrency(p.price)}
                       </span>
                       <span className="text-xs font-semibold text-slate-300 bg-slate-800 px-3 py-1.5 rounded-lg group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
-                        Xem chi tiết
+                        {t.details}
                       </span>
                     </div>
                   </div>
