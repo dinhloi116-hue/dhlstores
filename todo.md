@@ -13,8 +13,8 @@
 - [x] Xây dựng Trang Tài khoản cá nhân & Lịch sử đơn hàng (tải xuống file kỹ thuật số ngay lập tức sau khi đơn hàng thanh toán thành công)
 - [x] Xây dựng Trang Quản trị Admin (quản lý đơn hàng, cập nhật trạng thái đơn: Chờ thanh toán, Đang chuẩn bị, Đang giao, Đã giao, Đã hủy)
 - [x] Viết kiểm thử Vitest cho các luồng nghiệp vụ chính và chạy xác thực (Passed)
-- [ ] Xây dựng bộ từ điển song ngữ Việt - Anh (`client/src/lib/i18n.ts`)
-- [ ] Tích hợp logic tự động phát hiện ngôn ngữ theo vị trí (mặc định tiếng Việt tại VN, tiếng Anh cho quốc tế) kèm nút chuyển đổi ngôn ngữ linh hoạt trên Header
-- [ ] Tối ưu hóa giao diện storefront thành dạng siêu gọn, mua hàng cực nhanh (1-click buy, hiển thị trực quan, nút CTA nổi bật)
-- [ ] Cập nhật toàn bộ các trang (Trang chủ, Danh sách, Giỏ hàng, Thanh toán, Tài khoản, Admin) hỗ trợ song ngữ hoàn hảo
-- [ ] Kiểm thử chuyển đổi ngôn ngữ và chạy lại Vitest
+- [x] Xây dựng bộ từ điển song ngữ Việt - Anh (`client/src/lib/i18n.ts`)
+- [x] Tích hợp logic tự động phát hiện ngôn ngữ theo vị trí (mặc định tiếng Việt tại VN, tiếng Anh cho quốc tế) kèm nút chuyển đổi ngôn ngữ linh hoạt trên Header
+- [x] Tối ưu hóa giao diện storefront thành dạng siêu gọn, mua hàng cực nhanh (1-click buy, hiển thị trực quan, nút CTA nổi bật)
+- [x] Cập nhật toàn bộ các trang (Trang chủ, Danh sách, Giỏ hàng, Thanh toán, Tài khoản, Admin) hỗ trợ song ngữ hoàn hảo
+- [x] Kiểm thử chuyển đổi ngôn ngữ và chạy lại Vitest

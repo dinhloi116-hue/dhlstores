@@ -158,15 +158,15 @@ export const translations = {
 };
 
 export function getClientLanguage(): Language {
-  // Check localStorage first
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return 'vi';
+  }
   const saved = localStorage.getItem('dhl_lang');
   if (saved === 'vi' || saved === 'en') return saved;
 
-  // Auto detect by user timezone or browser locale
   const lang = navigator.language || (navigator as any).userLanguage;
   if (lang && lang.toLowerCase().startsWith('vi')) {
     return 'vi';
   }
-  // Default international visitors to English
   return 'en';
 }
