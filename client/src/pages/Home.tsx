@@ -22,7 +22,9 @@ export default function Home() {
   const t = translations[lang];
 
   const productsQuery = trpc.store.products.useQuery({});
+  const categoriesQuery = trpc.store.categories.useQuery();
   const allProducts = productsQuery.data || [];
+  const categories = categoriesQuery.data || [];
 
   const formatCurrency = (val: string | number) => {
     const num = Number(val);
@@ -65,23 +67,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Category Icons Bar (10 danh mục chuyên sâu) */}
+        {/* Quick Category Icons Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
-          {[
-            { id: 1, name: lang === 'vi' ? 'Font Chữ Thể Thao' : 'Sports Fonts', catId: 1 },
-            { id: 2, name: lang === 'vi' ? 'Tên Số Áo Đấu' : 'Name Sets', catId: 2 },
-            { id: 3, name: lang === 'vi' ? 'Vector & SVG' : 'Vector & SVG', catId: 3 },
-            { id: 4, name: lang === 'vi' ? 'File In Áo DTF' : 'DTF Print Files', catId: 4 },
-            { id: 5, name: lang === 'vi' ? 'Patch & Badge' : 'Patch & Badge', catId: 5 },
-            { id: 6, name: lang === 'vi' ? 'Template Thiết Kế' : 'Design Templates', catId: 6 },
-            { id: 7, name: lang === 'vi' ? 'Mockup Sản Phẩm' : 'Product Mockups', catId: 7 },
-            { id: 8, name: lang === 'vi' ? 'Clipart & PNG' : 'Clipart & PNG', catId: 8 },
-            { id: 9, name: lang === 'vi' ? 'Pattern & BG' : 'Pattern & BG', catId: 9 },
-            { id: 10, name: lang === 'vi' ? 'Combo Bundle' : 'Design Bundles', catId: 10 },
-          ].map(c => (
-            <Link key={c.catId} href={`/products?categoryId=${c.catId}`} className="border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-500 hover:shadow-md text-center group">
+          {categoriesQuery.isLoading ? Array.from({ length: 10 }).map((_, index) => <div key={index} className="h-16 animate-pulse border border-slate-200 bg-slate-100" />) : categories.map(category => (
+            <Link key={category.id} href={`/products?categoryId=${category.id}`} className="relative border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-500 hover:shadow-md text-center group">
               <FolderGit2 className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform group-hover:scale-110" />
-              <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{c.name}</h4>
+              <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{category.name}</h4>
+              {category.type === "physical" && <span className="absolute right-1.5 top-1.5 rounded bg-emerald-100 px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-emerald-700">Hàng vật lý</span>}
             </Link>
           ))}
         </div>

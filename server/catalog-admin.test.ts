@@ -22,6 +22,17 @@ function createContext(role: "admin" | "user"): TrpcContext {
 }
 
 describe("catalogAdmin", () => {
+  it("shows the three empty physical product categories to an administrator", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+    const categories = await caller.catalogAdmin.categories();
+
+    expect(categories.map(category => category.slug)).toEqual(expect.arrayContaining([
+      "quan-ao-bong-da",
+      "patch-tay",
+      "nameset-chong-nhiem",
+    ]));
+  });
+
   it("lets an administrator create and hide a category and product", async () => {
     const caller = appRouter.createCaller(createContext("admin"));
     const suffix = Date.now().toString(36);

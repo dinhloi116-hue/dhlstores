@@ -1,6 +1,6 @@
 # Hướng dẫn quản trị DHL Stores
 
-Sau khi đăng nhập bằng tài khoản quản trị, mở **Tài khoản → Admin Dashboard** hoặc truy cập `/admin`. Khu vực quản trị gồm các tab **Sản phẩm**, **Danh mục**, **Thư viện tệp**, **Đơn hàng** và **Tài khoản**.
+Sau khi đăng nhập bằng tài khoản quản trị, mở **Tài khoản → Admin Dashboard** hoặc truy cập trực tiếp [trang quản trị](https://cuahangtoit-9a4r8wsz.manus.space/admin). Khu vực quản trị gồm các tab **Sản phẩm**, **Danh mục**, **Thư viện tệp**, **Đơn hàng** và **Tài khoản**.
 
 ## 1. Tạo hoặc chỉnh sửa danh mục
 
@@ -8,7 +8,7 @@ Trong tab **Danh mục**, nhập tên, slug và mô tả ngắn rồi chọn **T
 
 ## 2. Thêm sản phẩm mới
 
-Mở tab **Sản phẩm** và điền tên, slug, danh mục, giá, mô tả và thông số/định dạng. Chọn **Nổi bật** nếu muốn xuất hiện trong khu vực giới thiệu. Chọn **Hiển thị công khai** khi sản phẩm sẵn sàng bán; bỏ chọn để lưu nháp hoặc tạm ẩn.
+Mở tab **Sản phẩm** và điền tên, slug, danh mục, giá, mô tả và thông số/định dạng. Ba danh mục trống mới là **Quần Áo Bóng Đá**, **Patch Tay** và **Nameset Chống Nhiễm** đã sẵn sàng để chọn. Chọn **Nổi bật** nếu muốn xuất hiện trong khu vực giới thiệu. Chọn **Hiển thị công khai** khi sản phẩm sẵn sàng bán; bỏ chọn để lưu nháp hoặc tạm ẩn.
 
 ## 3. Thêm ảnh và tệp tải xuống
 

@@ -14,3 +14,10 @@
 - [x] Bổ sung nhập URL dự phòng và thông báo lỗi rõ ràng cho ảnh/tệp sản phẩm khi dịch vụ lưu trữ tạm thời không phản hồi.
 - [x] Lưu phiên bản xuất bản và hướng dẫn sử dụng khu vực quản trị cửa hàng.
 - [x] Hiển thị và xác nhận thao tác sửa trực tiếp liên kết tải xuống trong màn hình sửa sản phẩm.
+- [x] Đã hoãn theo yêu cầu: rà soát luồng đơn hàng và mô hình dữ liệu chi tiết cho sản phẩm vật lý.
+- [x] Thêm các danh mục hàng vật lý: quần áo bóng đá, patch tay và nameset chống nhiễm.
+- [x] Đã hoãn theo yêu cầu: quản trị tồn kho, kích cỡ, biến thể và trạng thái bán hàng vật lý.
+- [x] Đã hoãn theo yêu cầu: thông tin nhận hàng và quy trình xử lý đơn vật lý sau thanh toán.
+- [x] Đã hoãn theo yêu cầu: kiểm thử giỏ hàng, thanh toán và quản lý đơn vật lý chi tiết.
+- [x] Tạo ba danh mục lớn trống: Quần áo bóng đá, Patch tay và Nameset chống nhiễm.
+- [x] Xác nhận đường dẫn /admin cho chủ cửa hàng tự thêm sản phẩm vào các danh mục mới và xuất bản thay đổi.

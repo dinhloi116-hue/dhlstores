@@ -30,14 +30,19 @@ function createMockContext(): TrpcContext {
 }
 
 describe("DHL Stores Digital Hub API & Checkout Flow", () => {
-  it("fetches 10 digital categories successfully", async () => {
+  it("fetches digital and physical categories successfully", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);
 
     const categories = await caller.store.categories();
     expect(categories).toBeDefined();
-    expect(categories.length).toBe(10);
+    expect(categories.length).toBe(13);
     expect(categories[0]?.name).toContain("Font Chữ");
+    expect(categories.map(category => category.slug)).toEqual(expect.arrayContaining([
+      "quan-ao-bong-da",
+      "patch-tay",
+      "nameset-chong-nhiem",
+    ]));
   });
 
   it("handles cart and checkout successfully without physical shipping", async () => {

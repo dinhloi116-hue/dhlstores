@@ -28,7 +28,7 @@ export interface ProductType {
   slug: string;
   description: string;
   price: string;
-  type: 'digital';
+  type: 'digital' | 'physical';
   categoryId: number;
   image: string;
   fileUrl?: string;
@@ -45,6 +45,7 @@ export interface CategoryType {
   name: string;
   slug: string;
   description: string;
+  type: 'digital' | 'physical' | 'all';
   isActive?: boolean;
 }
 
@@ -99,16 +100,19 @@ export interface ExtendedUserType {
 const logoUrl = "/manus-storage/logodhlstores_c8e433ed.png";
 
 const memoryCategories: CategoryType[] = [
-  { id: 1, name: "Font Chữ & Font Thể Thao", slug: "font-chu-the-thao", description: "Font CLB, font áo bóng đá, font số, font retro, font Việt hóa..." },
-  { id: 2, name: "Tên Số Áo Bóng Đá", slug: "ten-so-ao-bong-da", description: "Bộ name set theo CLB, đội tuyển, mùa giải, cầu thủ chuẩn in ấn." },
-  { id: 3, name: "Vector & SVG", slug: "vector-svg", description: "Logo, biểu tượng, icon, họa tiết, hình vector dùng Corel/Illustrator." },
-  { id: 4, name: "File In Áo / DTF / PET", slug: "file-in-ao-dtf", description: "Mẫu in ngực, lưng, tay áo, artwork đã xử lý sẵn để in PET/DTF." },
-  { id: 5, name: "Patch & Badge", slug: "patch-badge", description: "Patch giải đấu, logo tài trợ, huy hiệu, badge áo bóng đá, patch giả thêu." },
-  { id: 6, name: "Template Thiết Kế", slug: "template-thiet-ke", description: "Template áo đấu, mockup, banner, poster, social media, bảng giá..." },
-  { id: 7, name: "Mockup Sản Phẩm", slug: "mockup-san-pham", description: "Mockup áo bóng đá, áo thun, hoodie, túi, cốc, phụ kiện trưng bày." },
-  { id: 8, name: "Clipart & PNG Không Nền", slug: "clipart-png", description: "Nhân vật, hình trang trí, sticker, đồ họa 2D, PNG chất lượng cao." },
-  { id: 9, name: "Pattern & Background", slug: "pattern-background", description: "Họa tiết áo, texture, pattern thể thao, background thiết kế." },
-  { id: 10, name: "Combo / Design Bundle", slug: "combo-design-bundle", description: "Bộ font + vector + patch + mockup hoặc các gói tài nguyên theo chủ đề." },
+  { id: 1, name: "Font Chữ & Font Thể Thao", slug: "font-chu-the-thao", description: "Font CLB, font áo bóng đá, font số, font retro, font Việt hóa...", type: "digital" },
+  { id: 2, name: "Tên Số Áo Bóng Đá", slug: "ten-so-ao-bong-da", description: "Bộ name set theo CLB, đội tuyển, mùa giải, cầu thủ chuẩn in ấn.", type: "digital" },
+  { id: 3, name: "Vector & SVG", slug: "vector-svg", description: "Logo, biểu tượng, icon, họa tiết, hình vector dùng Corel/Illustrator.", type: "digital" },
+  { id: 4, name: "File In Áo / DTF / PET", slug: "file-in-ao-dtf", description: "Mẫu in ngực, lưng, tay áo, artwork đã xử lý sẵn để in PET/DTF.", type: "digital" },
+  { id: 5, name: "Patch & Badge", slug: "patch-badge", description: "Patch giải đấu, logo tài trợ, huy hiệu, badge áo bóng đá, patch giả thêu.", type: "digital" },
+  { id: 6, name: "Template Thiết Kế", slug: "template-thiet-ke", description: "Template áo đấu, mockup, banner, poster, social media, bảng giá...", type: "digital" },
+  { id: 7, name: "Mockup Sản Phẩm", slug: "mockup-san-pham", description: "Mockup áo bóng đá, áo thun, hoodie, túi, cốc, phụ kiện trưng bày.", type: "digital" },
+  { id: 8, name: "Clipart & PNG Không Nền", slug: "clipart-png", description: "Nhân vật, hình trang trí, sticker, đồ họa 2D, PNG chất lượng cao.", type: "digital" },
+  { id: 9, name: "Pattern & Background", slug: "pattern-background", description: "Họa tiết áo, texture, pattern thể thao, background thiết kế.", type: "digital" },
+  { id: 10, name: "Combo / Design Bundle", slug: "combo-design-bundle", description: "Bộ font + vector + patch + mockup hoặc các gói tài nguyên theo chủ đề.", type: "digital" },
+  { id: 11, name: "Quần Áo Bóng Đá", slug: "quan-ao-bong-da", description: "Áo bóng đá, quần thi đấu và trang phục thể thao đặt theo mẫu.", type: "physical" },
+  { id: 12, name: "Patch Tay", slug: "patch-tay", description: "Patch tay áo, badge giải đấu và phụ kiện ép nhiệt cho áo bóng đá.", type: "physical" },
+  { id: 13, name: "Nameset Chống Nhiễm", slug: "nameset-chong-nhiem", description: "Nameset, số áo và chữ in chống nhiễm dành cho trang phục thể thao.", type: "physical" },
 ];
 
 const memoryProducts: ProductType[] = [
@@ -313,27 +317,26 @@ let nextOrderItemId = 1;
 let nextMediaAssetId = 1;
 
 async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
-  const existingCategory = await connection.select({ id: categories.id }).from(categories).limit(1);
-  if (existingCategory.length > 0) return;
-
   await connection.insert(categories).values(memoryCategories.map(category => ({
     name: category.name,
     slug: category.slug,
     description: category.description,
-    type: "digital" as const,
+    type: category.type,
     isActive: true,
   }))).onDuplicateKeyUpdate({ set: { name: sql`VALUES(name)` } });
 
   const persistedCategories = await connection.select().from(categories);
   const idBySlug = new Map(persistedCategories.map(category => [category.slug, category.id]));
   const categorySlugByLegacyId = new Map(memoryCategories.map(category => [category.id, category.slug]));
+  const existingProduct = await connection.select({ id: products.id }).from(products).limit(1);
+  if (existingProduct.length > 0) return;
 
   await connection.insert(products).values(memoryProducts.map(product => ({
     name: product.name,
     slug: product.slug,
     description: product.description,
     price: product.price,
-    type: "digital" as const,
+    type: product.type,
     categoryId: idBySlug.get(categorySlugByLegacyId.get(product.categoryId) ?? "") ?? 1,
     image: product.image,
     fileUrl: product.fileUrl ?? null,
@@ -351,6 +354,7 @@ function toCategoryType(category: typeof categories.$inferSelect): CategoryType 
     name: category.name,
     slug: category.slug,
     description: category.description ?? "",
+    type: category.type,
     isActive: category.isActive,
   };
 }
@@ -362,7 +366,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     slug: product.slug,
     description: product.description ?? "",
     price: String(product.price),
-    type: "digital",
+    type: product.type,
     categoryId: product.categoryId,
     image: product.image,
     fileUrl: product.fileUrl ?? undefined,
@@ -515,6 +519,7 @@ export async function createCategory(input: CatalogCategoryInput) {
     name: input.name,
     slug: input.slug,
     description: input.description ?? "",
+    type: "digital",
     isActive: input.isActive,
   };
   memoryCategories.push(category);
