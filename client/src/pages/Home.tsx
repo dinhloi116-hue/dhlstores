@@ -38,42 +38,15 @@ export default function Home() {
 
   return (
     <StoreLayout>
-      {/* Banner / Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="relative overflow-hidden rounded-[1.4rem] border border-slate-700/70 bg-[#0b1220] px-6 py-10 text-white shadow-2xl sm:px-12 sm:py-14">
-          <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.18)_1px,transparent_1px)] [background-size:24px_24px]" />
-          <div className="absolute -right-20 top-1/2 h-80 w-80 -translate-y-1/2 rotate-12 border-[24px] border-violet-500/40" />
-          <div className="absolute -bottom-40 left-[12%] h-72 w-72 rotate-45 border border-amber-300/30" />
-          <div className="relative z-10 max-w-3xl space-y-5 sm:mx-auto sm:text-center">
-            <span className="inline-flex rounded-md border border-amber-300/40 bg-amber-400 px-3 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-slate-950">
-              DHL STORES · DIGITAL RESOURCE VAULT
-            </span>
-            <h1 className="font-display text-5xl font-black uppercase leading-[0.82] tracking-tight sm:text-7xl">
-              {lang === 'vi' ? <>TÀI NGUYÊN <span className="text-amber-400">THIẾT KẾ</span> THỂ THAO</> : <>SPORTS DESIGN <span className="text-amber-400">RESOURCE</span> VAULT</>}
-            </h1>
-            <p className="max-w-2xl text-xs leading-relaxed text-slate-300 sm:mx-auto sm:text-sm">
-              {lang === 'vi'
-                ? 'Font thể thao, name set, vector, file in DTF, patch, mockup và template sẵn sàng cho thiết kế – in ấn.'
-                : 'Sports fonts, name sets, vectors, DTF print files, patches, mockups and templates ready for design and printing.'}
-            </p>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-300 sm:justify-center">
-              <span>01. Chọn tài nguyên</span><span className="text-amber-400">/</span><span>02. Thanh toán QR</span><span className="text-amber-400">/</span><span>03. Nhận quyền tải</span>
-            </div>
-            <div className="flex justify-start pt-2 sm:justify-center">
-              <Link href="/products">
-                <Button className="bg-amber-400 px-6 py-5 font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-300">
-                  {t.exploreShop}
-                </Button>
-              </Link>
-            </div>
-          </div>
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mb-4 flex items-end justify-between gap-4 border-b border-slate-200 pb-3">
+          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{lang === 'vi' ? 'Tài nguyên thiết kế thể thao' : 'Sports design resources'}</h1></div>
+          <Link href="/products"><Button variant="outline" size="sm" className="shrink-0 border-slate-300 bg-white text-xs font-bold text-slate-800 hover:border-amber-400 hover:bg-amber-50">{t.exploreShop}<ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
         </div>
-
-        {/* Quick Category Icons Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {categoriesQuery.isLoading ? Array.from({ length: 10 }).map((_, index) => <div key={index} className="h-16 animate-pulse border border-slate-200 bg-slate-100" />) : categories.map(category => (
-            <Link key={category.id} href={`/products?categoryId=${category.id}`} className="relative border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-500 hover:shadow-md text-center group">
-              <FolderGit2 className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform group-hover:scale-110" />
+            <Link key={category.id} href={`/products?categoryId=${category.id}`} className="dhl-hover-card relative border border-slate-200 bg-white p-3 text-center shadow-sm hover:bg-amber-50 group">
+              <FolderGit2 className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform duration-200 group-hover:scale-125 group-hover:-rotate-6" />
               <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{category.name}</h4>
               {category.type === "physical" && <span className="absolute right-1.5 top-1.5 rounded bg-emerald-100 px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-emerald-700">Hàng vật lý</span>}
             </Link>
@@ -106,7 +79,7 @@ export default function Home() {
               </div>
             )) : digitalProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
-                  <div className="overflow-hidden border border-slate-200 bg-white transition-all duration-200 group-hover:-translate-y-1 group-hover:border-amber-500 group-hover:shadow-xl flex flex-col h-full">
+                  <div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                     <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">
@@ -143,7 +116,7 @@ export default function Home() {
       <section className="border-t border-emerald-100 bg-emerald-50/40 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between border-b border-emerald-100 pb-4"><div><h2 className="font-display text-3xl font-black uppercase tracking-wide text-slate-900">{lang === "vi" ? "Hàng Thể Thao Mới & Nổi Bật" : "New & Featured Sports Gear"}</h2><p className="mt-0.5 text-xs text-slate-500">{lang === "vi" ? "Áo bóng đá, patch tay và nameset sẵn sàng đặt hàng." : "Football apparel, sleeve patches and namesets ready to order."}</p></div><Link href="/products"><Button variant="outline" size="sm" className="border-emerald-200 bg-white text-xs font-bold text-emerald-800 hover:bg-emerald-100">{t.viewAll} <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link></div>
-          {physicalProducts.length > 0 ? <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">{physicalProducts.filter(product => product.featured).concat(physicalProducts.filter(product => !product.featured)).slice(0, 8).map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group"><div className="flex h-full flex-col overflow-hidden border border-emerald-200 bg-white shadow-sm transition-all duration-200 group-hover:-translate-y-1 group-hover:border-emerald-500 group-hover:shadow-xl"><div className="relative aspect-[4/3] overflow-hidden bg-slate-100"><AssetVisual categoryId={product.categoryId} title={product.name} imageUrl={product.image} className="transition-transform duration-300 group-hover:scale-105" /><Badge className="absolute left-2 top-2 bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">Hàng vật lý</Badge></div><div className="flex flex-1 flex-col justify-between space-y-3 p-4"><div><h3 className="line-clamp-2 text-xs font-bold leading-relaxed text-slate-800 transition-colors group-hover:text-emerald-700">{product.name}</h3><p className="mt-1 text-[11px] text-slate-500">Còn {product.stock} sản phẩm</p></div><div className="flex items-center justify-between border-t border-emerald-50 pt-2"><span className="text-sm font-black text-emerald-700">{formatCurrency(product.price)}</span><span className="rounded bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 transition-colors group-hover:bg-emerald-600 group-hover:text-white">Đặt hàng</span></div></div></div></Link>)}</div> : <div className="rounded-2xl border border-dashed border-emerald-300 bg-white/70 px-6 py-10 text-center"><p className="font-display text-2xl font-black uppercase text-emerald-900">Danh mục hàng thể thao đã sẵn sàng</p><p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-600">Sản phẩm quần áo bóng đá, patch tay và nameset chống nhiễm sẽ xuất hiện tại đây ngay khi quản trị viên đăng hàng.</p></div>}
+          {physicalProducts.length > 0 ? <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">{physicalProducts.filter(product => product.featured).concat(physicalProducts.filter(product => !product.featured)).slice(0, 8).map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group"><div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-emerald-200 bg-white shadow-sm"><div className="relative aspect-[4/3] overflow-hidden bg-slate-100"><AssetVisual categoryId={product.categoryId} title={product.name} imageUrl={product.image} className="transition-transform duration-300 group-hover:scale-105" /><Badge className="absolute left-2 top-2 bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">Hàng vật lý</Badge></div><div className="flex flex-1 flex-col justify-between space-y-3 p-4"><div><h3 className="line-clamp-2 text-xs font-bold leading-relaxed text-slate-800 transition-colors group-hover:text-emerald-700">{product.name}</h3><p className="mt-1 text-[11px] text-slate-500">Còn {product.stock} sản phẩm</p></div><div className="flex items-center justify-between border-t border-emerald-50 pt-2"><span className="text-sm font-black text-emerald-700">{formatCurrency(product.price)}</span><span className="rounded bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 transition-colors group-hover:bg-emerald-600 group-hover:text-white">Đặt hàng</span></div></div></div></Link>)}</div> : <div className="rounded-2xl border border-dashed border-emerald-300 bg-white/70 px-6 py-10 text-center"><p className="font-display text-2xl font-black uppercase text-emerald-900">Danh mục hàng thể thao đã sẵn sàng</p><p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-600">Sản phẩm quần áo bóng đá, patch tay và nameset chống nhiễm sẽ xuất hiện tại đây ngay khi quản trị viên đăng hàng.</p></div>}
         </div>
       </section>
     </StoreLayout>
