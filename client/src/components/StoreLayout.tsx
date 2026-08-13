@@ -252,7 +252,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                     <p className="text-xs font-bold truncate text-slate-800">{user.email || user.name}</p>
                   </div>
                   <Link href="/account" className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-amber-600">
-                    <Package className="w-4 h-4 text-blue-600" /> {t.account}
+                    <Package className="w-4 h-4 text-blue-600" /> {lang === 'vi' ? 'Tài khoản & Email' : 'Account & Email'}
                   </Link>
                   {user.role === 'admin' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-amber-600">

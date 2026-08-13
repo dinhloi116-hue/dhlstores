@@ -57,9 +57,13 @@
 - [x] Thêm giao diện tạo tài khoản, đăng nhập và liên kết email trong khu vực tài khoản.
 - [x] Cấp quyền quản trị cho tài khoản chủ cửa hàng `dinhhoangloi` sau khi tài khoản này được tạo.
 - [x] Kiểm thử luồng đăng ký, đăng nhập, liên kết email, quyền quản trị và xuất bản cập nhật.
-- [ ] Xác nhận trực quan luồng tạo tài khoản, đăng nhập và liên kết email trên giao diện với tài khoản chủ cửa hàng.
-- [ ] Xác nhận tài khoản chủ cửa hàng đã cấp quyền quản trị truy cập được `/admin`.
+- [x] Xác nhận trực quan luồng tạo tài khoản, đăng nhập và liên kết email trên giao diện với tài khoản chủ cửa hàng.
+- [x] Xác nhận tài khoản chủ cửa hàng đã cấp quyền quản trị truy cập được `/admin`.
 - [x] Xác nhận và cấp quyền quản trị cho tài khoản `dinhhoangloi` vừa được tạo.
 - [x] Rà soát số lượng tồn kho sản phẩm và biến thể trong luồng đặt hàng hàng vật lý.
 - [x] Chặn khách tạo đơn vượt số lượng tồn kho và hiển thị thông báo tồn kho rõ ràng.
-- [ ] Hoàn thiện quản trị tồn kho sản phẩm và biến thể, kiểm thử rồi xuất bản cập nhật.
+- [x] Hoàn thiện quản trị tồn kho sản phẩm và biến thể, kiểm thử rồi xuất bản cập nhật.
+- [x] Làm rõ đường dẫn liên kết email từ menu tài khoản và trang quản trị.
+- [x] Bỏ hoặc thu gọn banner quản trị lớn để giao diện quản lý gọn hơn.
+- [x] Thêm hiệu ứng hover, trạng thái chọn và phản hồi bấm mượt cho nút, thẻ và tab chính.
+- [x] Kiểm tra trực quan giao diện mới trên máy tính, điện thoại và xuất bản cập nhật.
