@@ -26,7 +26,7 @@ Nếu kho tệp tạm thời chậm hoặc không phản hồi, dán trực ti�
 
 Khi giỏ có hàng vật lý, checkout yêu cầu tên, số điện thoại, địa chỉ và phương thức nhận hàng. Mức phí hiện có là **nhận tại cửa hàng 0 đ**, **giao tiêu chuẩn 30.000 đ** hoặc **giao nhanh 50.000 đ**. Phí giao được cộng vào QR thanh toán. Sau khi SePay xác nhận, đơn vật lý chuyển sang **Đang xử lý** và tồn kho sản phẩm hoặc biến thể sẽ giảm theo số lượng đã mua. Tại tab **Đơn hàng**, cập nhật tiếp sang **Đang giao hàng** rồi **Hoàn tất** theo thực tế.
 
-> **Chế độ kiểm thử hiện tại:** QR tự hủy sau **2.000 ms (2 giây)**. Đơn đã hết hạn không thể được xác nhận bởi giao dịch đến muộn. Trước khi mở bán thật, hãy yêu cầu đổi `PAYMENT_QR_TEST_TTL_MS` sang thời hạn phù hợp, chẳng hạn 15 hoặc 30 phút.
+> **Cấu hình hiện tại:** QR tự hủy sau **10 phút**. Đơn đã hết hạn không thể được xác nhận bởi giao dịch đến muộn. Trước khi mở bán thật, có thể đổi `PAYMENT_QR_TEST_TTL_MS` sang thời hạn khác phù hợp với quy trình vận hành.
 
 ## 6. Theo dõi đơn hàng và tài khoản
 

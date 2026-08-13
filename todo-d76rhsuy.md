@@ -38,3 +38,5 @@
 - [x] Xác minh tổng tiền trên cửa hàng và lưu phiên bản xuất bản giá kiểm thử.
 - [x] Kiểm thử checkout để xác nhận hệ thống tính tổng 2.000 đ từ giá sản phẩm, không tin giá do trình duyệt gửi lên.
 - [x] Lưu checkpoint xuất bản sau khi xác nhận luồng thanh toán giá kiểm thử.
+- [x] Cập nhật thời hạn QR tự hủy từ 2 giây sang 10 phút và đồng bộ thông báo checkout.
+- [x] Kiểm tra, xuất bản và bàn giao thời hạn QR 10 phút để thử thanh toán.

@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, CheckCircle2, Copy, Download, QrCode, ShieldCheck, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
-const PAYMENT_QR_TEST_TTL_MS = 2_000;
+const PAYMENT_QR_TEST_TTL_MS = 10 * 60 * 1_000;
 
 type PendingPayment = {
   orderId: number;
@@ -46,7 +46,7 @@ export default function Checkout() {
     onSuccess: result => {
       if (result.cancelled) {
         setPaymentExpired(true);
-        toast.warning("Mã QR đã hết hạn kiểm thử sau 2 giây. Vui lòng tạo đơn mới để thanh toán.");
+        toast.warning("Mã QR đã hết hạn sau 10 phút. Vui lòng tạo đơn mới để thanh toán.");
       }
     },
   });
@@ -120,7 +120,7 @@ export default function Checkout() {
                 <Link href="/account"><Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-black">{lang === "vi" ? "Đi tới Tài khoản" : "Go to account"}</Button></Link>
               </div>
             ) : isExpired ? (
-              <div className="space-y-5 p-8 text-center"><QrCode className="mx-auto h-16 w-16 text-rose-500" /><div><h2 className="text-xl font-black text-slate-900">Mã thanh toán đã hết hạn</h2><p className="mt-2 text-sm text-slate-500">Chế độ kiểm thử tự hủy đơn sau 2.000 ms. Hãy quay lại giỏ để tạo mã QR mới.</p></div><Button onClick={() => { setPendingPayment(null); setPaymentExpired(false); }} className="bg-amber-500 font-black text-slate-950 hover:bg-amber-400">Tạo đơn mới</Button></div>
+              <div className="space-y-5 p-8 text-center"><QrCode className="mx-auto h-16 w-16 text-rose-500" /><div><h2 className="text-xl font-black text-slate-900">Mã thanh toán đã hết hạn</h2><p className="mt-2 text-sm text-slate-500">Mã QR tự hủy sau 10 phút. Hãy quay lại giỏ để tạo mã QR mới.</p></div><Button onClick={() => { setPendingPayment(null); setPaymentExpired(false); }} className="bg-amber-500 font-black text-slate-950 hover:bg-amber-400">Tạo đơn mới</Button></div>
             ) : (
               <div className="p-6 sm:p-8 grid gap-7 sm:grid-cols-[1fr_260px] items-center">
                 <div className="space-y-5">
@@ -139,7 +139,7 @@ export default function Checkout() {
                     </button>
                     <p className="text-[11px] leading-relaxed text-slate-600 mt-2">{lang === "vi" ? "Hệ thống chỉ tự động xác nhận khi số tiền và mã đơn hàng trùng khớp." : "The order is confirmed only when both amount and order code match."}</p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />{lang === "vi" ? "Đang chờ SePay xác nhận giao dịch… Mã sẽ hết hạn sau 2 giây để kiểm thử." : "Waiting for SePay transaction confirmation… Test QR expires in 2 seconds."}</div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />{lang === "vi" ? "Đang chờ SePay xác nhận giao dịch… Mã sẽ hết hạn sau 10 phút." : "Waiting for SePay transaction confirmation… QR expires in 10 minutes."}</div>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">
                   {pendingPayment.qrUrl ? <img src={pendingPayment.qrUrl} alt="SePay VietQR payment code" className="w-full rounded-xl bg-white" /> : <div className="aspect-square grid place-items-center rounded-xl border border-dashed border-slate-300 bg-white p-6"><div><QrCode className="w-12 h-12 mx-auto text-slate-400" /><p className="text-xs text-slate-500 mt-3">{lang === "vi" ? "QR sẽ hiển thị khi cấu hình ngân hàng được hoàn tất." : "The QR will appear after bank configuration is complete."}</p></div></div>}
