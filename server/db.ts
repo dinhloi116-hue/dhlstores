@@ -1,19 +1,25 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, cartItems, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let lastDatabaseFailureAt = 0;
+const DATABASE_RETRY_DELAY_MS = 30_000;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      _db = null;
-    }
+  if (process.env.NODE_ENV === "test" || process.env.VITEST) return null;
+  if (_db) return _db;
+  if (!process.env.DATABASE_URL || Date.now() - lastDatabaseFailureAt < DATABASE_RETRY_DELAY_MS) return null;
+  try {
+    const candidate = drizzle(process.env.DATABASE_URL);
+    await candidate.execute(sql`SELECT 1`);
+    _db = candidate;
+    return _db;
+  } catch {
+    lastDatabaseFailureAt = Date.now();
+    return null;
   }
-  return _db;
 }
 
 export interface ProductType {
@@ -59,21 +65,37 @@ export interface OrderItemType {
   product?: ProductType;
 }
 
-export type OrderStatusType = 'pending' | 'preparing' | 'shipping' | 'completed' | 'cancelled';
+export type OrderStatusType = 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled';
 
 export interface OrderType {
   id: number;
   userId: number;
+  orderCode: string;
   totalAmount: string;
   status: OrderStatusType;
   paymentStatus: 'pending' | 'paid';
+  paymentMethod: string;
+  paymentReference?: string | null;
+  paymentConfirmedAt?: Date | null;
   createdAt: Date;
   items?: OrderItemType[];
 }
 
+export interface ExtendedUserType {
+  id: number;
+  openId: string;
+  name: string | null;
+  email: string | null;
+  loginMethod: string | null;
+  role: 'user' | 'admin';
+  status: 'active' | 'blocked';
+  createdAt: Date;
+  updatedAt: Date;
+  lastSignedIn: Date;
+}
+
 const logoUrl = "/manus-storage/logodhlstores_c8e433ed.png";
 
-// Cây 10 danh mục chính chuyên sâu về tài nguyên thiết kế, in ấn và bóng đá
 const memoryCategories: CategoryType[] = [
   { id: 1, name: "Font Chữ & Font Thể Thao", slug: "font-chu-the-thao", description: "Font CLB, font áo bóng đá, font số, font retro, font Việt hóa..." },
   { id: 2, name: "Tên Số Áo Bóng Đá", slug: "ten-so-ao-bong-da", description: "Bộ name set theo CLB, đội tuyển, mùa giải, cầu thủ chuẩn in ấn." },
@@ -250,50 +272,123 @@ const memoryProducts: ProductType[] = [
   }
 ];
 
+let memoryUsers: ExtendedUserType[] = [
+  {
+    id: 1,
+    openId: ENV.ownerOpenId || "owner-admin",
+    name: "Admin DHL Stores",
+    email: "admin@dhlstores.vn",
+    loginMethod: "manus",
+    role: "admin",
+    status: "active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSignedIn: new Date(),
+  },
+  {
+    id: 2,
+    openId: "sample-user-2",
+    name: "Nguyễn Văn Khách",
+    email: "khachhang@gmail.com",
+    loginMethod: "manus",
+    role: "user",
+    status: "active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSignedIn: new Date(),
+  }
+];
+
 let memoryCart: CartItemType[] = [];
 let memoryOrders: OrderType[] = [];
 let memoryOrderItems: OrderItemType[] = [];
+const memoryProcessedTransactions = new Set<string>();
 let nextCartId = 1;
 let nextOrderId = 1;
 let nextOrderItemId = 1;
 
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) return;
-  const db = await getDb();
-  if (db) {
-    try {
-      const values: InsertUser = { openId: user.openId };
-      const updateSet: Record<string, unknown> = {};
-      if (user.name) { values.name = user.name; updateSet.name = user.name; }
-      if (user.email) { values.email = user.email; updateSet.email = user.email; }
-      if (user.role) { values.role = user.role; updateSet.role = user.role; }
-      else if (user.openId === ENV.ownerOpenId) { values.role = 'admin'; updateSet.role = 'admin'; }
-      values.lastSignedIn = new Date();
-      updateSet.lastSignedIn = new Date();
-      await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
-    } catch (e) {}
+  if (!user.openId) throw new Error("User openId is required");
+  const connection = await getDb();
+  if (connection) {
+    const current = await connection.select().from(users).where(eq(users.openId, user.openId)).limit(1);
+    if (current[0]) {
+      await connection.update(users).set({
+        name: user.name ?? current[0].name,
+        email: user.email ?? current[0].email,
+        loginMethod: user.loginMethod ?? current[0].loginMethod,
+        lastSignedIn: user.lastSignedIn ?? new Date(),
+      }).where(eq(users.openId, user.openId));
+      return;
+    }
+    await connection.insert(users).values({
+      openId: user.openId,
+      name: user.name ?? null,
+      email: user.email ?? null,
+      loginMethod: user.loginMethod ?? null,
+      role: user.openId === ENV.ownerOpenId ? "admin" : "user",
+      status: "active",
+      lastSignedIn: user.lastSignedIn ?? new Date(),
+    });
+    return;
+  }
+  const existing = memoryUsers.find(u => u.openId === user.openId);
+  if (existing) {
+    if (user.name) existing.name = user.name;
+    if (user.email) existing.email = user.email;
+    existing.lastSignedIn = new Date();
+  } else {
+    memoryUsers.push({
+      id: memoryUsers.length + 1,
+      openId: user.openId,
+      name: user.name || "Khách hàng DHL",
+      email: user.email || "user@dhlstores.vn",
+      loginMethod: user.loginMethod || "manus",
+      role: user.openId === ENV.ownerOpenId ? "admin" : "user",
+      status: "active",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    });
   }
 }
 
 export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (db) {
-    try {
-      const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-      if (result.length > 0) return result[0];
-    } catch (e) {}
+  const connection = await getDb();
+  if (connection) {
+    const result = await connection.select().from(users).where(eq(users.openId, openId)).limit(1);
+    return result[0];
   }
-  return {
-    id: 1,
-    openId: openId,
-    name: openId === ENV.ownerOpenId ? "Admin DHL Stores" : "Khách hàng DHL",
-    email: "dhlstores@manus.im",
-    loginMethod: "manus",
-    role: openId === ENV.ownerOpenId ? ("admin" as const) : ("user" as const),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    lastSignedIn: new Date(),
-  };
+  const found = memoryUsers.find(u => u.openId === openId);
+  return found;
+}
+
+export async function getAllUsers() {
+  const connection = await getDb();
+  if (connection) return connection.select().from(users).orderBy(desc(users.createdAt));
+  return memoryUsers;
+}
+
+export async function updateUserStatus(userId: number, status: 'active' | 'blocked') {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(users).set({ status }).where(eq(users.id, userId));
+    return { success: true };
+  }
+  const u = memoryUsers.find(item => item.id === userId);
+  if (u) {
+    u.status = status;
+  }
+  return { success: true };
+}
+
+export async function isUserActive(userId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const result = await connection.select({ status: users.status }).from(users).where(eq(users.id, userId)).limit(1);
+    return result[0]?.status === "active";
+  }
+  return memoryUsers.find(user => user.id === userId)?.status === "active";
 }
 
 export async function getCategories() {
@@ -388,13 +483,38 @@ export async function createOrder(userId: number, data: {
   totalAmount: number;
   items: Array<{ productId: number; quantity: number; price: number; attributes?: string }>;
 }) {
+  const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const connection = await getDb();
+  if (connection) {
+    const inserted = await connection.insert(ordersTable).values({
+      userId,
+      orderCode,
+      totalAmount: data.totalAmount.toFixed(2),
+      status: "pending",
+      paymentStatus: "pending",
+      paymentMethod: "sepay_vietqr",
+      hasPhysicalItems: false,
+    });
+    const orderId = Number(inserted[0].insertId);
+    await connection.insert(orderItemsTable).values(data.items.map(item => ({
+      orderId,
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price.toFixed(2),
+      attributes: item.attributes ?? null,
+    })));
+    await connection.delete(cartItems).where(eq(cartItems.userId, userId));
+    return { success: true, orderId, orderCode, totalAmount: data.totalAmount };
+  }
   const orderId = nextOrderId++;
   const newOrder: OrderType = {
     id: orderId,
     userId,
+    orderCode,
     totalAmount: data.totalAmount.toString(),
-    status: "completed",
-    paymentStatus: "paid",
+    status: "pending",
+    paymentStatus: "pending",
+    paymentMethod: "sepay_vietqr",
     createdAt: new Date(),
   };
 
@@ -413,10 +533,30 @@ export async function createOrder(userId: number, data: {
 
   await clearCart(userId);
 
-  return { success: true, orderId };
+  return { success: true, orderId, orderCode, totalAmount: data.totalAmount };
 }
 
 export async function getOrders(userId?: number, isAdmin?: boolean) {
+  const connection = await getDb();
+  if (connection) {
+    const orderRows = isAdmin
+      ? await connection.select().from(ordersTable).orderBy(desc(ordersTable.createdAt))
+      : await connection.select().from(ordersTable).where(eq(ordersTable.userId, userId!)).orderBy(desc(ordersTable.createdAt));
+    return Promise.all(orderRows.map(async order => {
+      const itemRows = await connection.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+      return {
+        ...order,
+        totalAmount: String(order.totalAmount),
+        status: order.status as OrderStatusType,
+        paymentStatus: order.paymentStatus as "pending" | "paid",
+        items: itemRows.map(item => ({
+          ...item,
+          price: String(item.price),
+          product: memoryProducts.find(product => product.id === item.productId),
+        })),
+      };
+    }));
+  }
   let list = [...memoryOrders];
   if (!isAdmin && userId) {
     list = list.filter(o => o.userId === userId);
@@ -433,9 +573,87 @@ export async function getOrders(userId?: number, isAdmin?: boolean) {
 }
 
 export async function updateOrderStatus(orderId: number, status: OrderStatusType) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(ordersTable).set({ status }).where(eq(ordersTable.id, orderId));
+    return { success: true };
+  }
   const order = memoryOrders.find(o => o.id === orderId);
   if (order) {
     order.status = status;
   }
+  return { success: true };
+}
+
+export async function getOrderPaymentForUser(userId: number, orderId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const result = await connection.select().from(ordersTable).where(and(
+      eq(ordersTable.id, orderId),
+      eq(ordersTable.userId, userId),
+    )).limit(1);
+    return result[0];
+  }
+  return memoryOrders.find(order => order.id === orderId && order.userId === userId);
+}
+
+export async function confirmSePayPayment(input: {
+  providerTransactionId: string;
+  transferAmount: number;
+  transferContent: string;
+  gateway: string;
+  paymentReference: string;
+}): Promise<{ success: boolean; alreadyProcessed?: boolean; reason?: string }> {
+  const normalizedContent = input.transferContent.toUpperCase();
+  const connection = await getDb();
+  if (connection) {
+    const duplicate = await connection.select().from(paymentTransactions).where(and(
+      eq(paymentTransactions.provider, "sepay"),
+      eq(paymentTransactions.providerTransactionId, input.providerTransactionId),
+    )).limit(1);
+    if (duplicate[0]) return { success: true, alreadyProcessed: true };
+
+    const pendingOrders = await connection.select().from(ordersTable).where(eq(ordersTable.paymentStatus, "pending"));
+    const matchedOrder = pendingOrders.find(order =>
+      normalizedContent.includes(order.orderCode.toUpperCase()) && Number(order.totalAmount) === Math.round(input.transferAmount),
+    );
+    if (!matchedOrder) return { success: false, reason: "No matching pending order" };
+
+    try {
+      await connection.insert(paymentTransactions).values({
+        provider: "sepay",
+        providerTransactionId: input.providerTransactionId,
+        orderId: matchedOrder.id,
+        transferAmount: input.transferAmount.toFixed(2),
+        transferContent: input.transferContent,
+        gateway: input.gateway || null,
+      });
+    } catch {
+      return { success: true, alreadyProcessed: true };
+    }
+
+    await connection.update(ordersTable).set({
+      status: "completed",
+      paymentStatus: "paid",
+      paymentReference: input.paymentReference || input.providerTransactionId,
+      paymentConfirmedAt: new Date(),
+    }).where(and(eq(ordersTable.id, matchedOrder.id), eq(ordersTable.paymentStatus, "pending")));
+    return { success: true };
+  }
+
+  const duplicateKey = `sepay:${input.providerTransactionId}`;
+  if (memoryProcessedTransactions.has(duplicateKey)) return { success: true, alreadyProcessed: true };
+  const matchedOrder = memoryOrders.find(order =>
+    order.paymentStatus === "pending" &&
+    normalizedContent.includes(order.orderCode.toUpperCase()) &&
+    Number(order.totalAmount) === Math.round(input.transferAmount),
+  );
+  if (!matchedOrder) return { success: false, reason: "No matching pending order" };
+
+  memoryProcessedTransactions.add(duplicateKey);
+  matchedOrder.status = "completed";
+  matchedOrder.paymentStatus = "paid";
+  matchedOrder.paymentReference = input.paymentReference || input.providerTransactionId;
+  matchedOrder.paymentConfirmedAt = new Date();
   return { success: true };
 }

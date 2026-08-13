@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, decimal, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, decimal, uniqueIndex } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -7,6 +7,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  status: mysqlEnum("status", ["active", "blocked"]).default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -62,9 +63,13 @@ export type InsertCartItem = typeof cartItems.$inferInsert;
 export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
+  orderCode: varchar("orderCode", { length: 64 }).notNull().unique(),
   totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
   status: mysqlEnum("status", ["pending", "processing", "shipping", "completed", "cancelled"]).default("pending").notNull(),
   paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid"]).default("pending").notNull(),
+  paymentMethod: varchar("paymentMethod", { length: 64 }).default("sepay_vietqr").notNull(),
+  paymentReference: varchar("paymentReference", { length: 128 }),
+  paymentConfirmedAt: timestamp("paymentConfirmedAt"),
   shippingName: varchar("shippingName", { length: 255 }),
   shippingPhone: varchar("shippingPhone", { length: 64 }),
   shippingAddress: text("shippingAddress"),
@@ -89,3 +94,26 @@ export const orderItems = mysqlTable("order_items", {
 
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = typeof orderItems.$inferInsert;
+
+/**
+ * Nhật ký giao dịch nhận từ webhook để đảm bảo cùng một giao dịch SePay chỉ
+ * được xử lý một lần, kể cả khi SePay thử gửi lại webhook.
+ */
+export const paymentTransactions = mysqlTable("payment_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 32 }).default("sepay").notNull(),
+  providerTransactionId: varchar("providerTransactionId", { length: 128 }).notNull(),
+  orderId: int("orderId").notNull(),
+  transferAmount: decimal("transferAmount", { precision: 12, scale: 2 }).notNull(),
+  transferContent: text("transferContent"),
+  gateway: varchar("gateway", { length: 64 }),
+  receivedAt: timestamp("receivedAt").defaultNow().notNull(),
+}, table => ({
+  providerTransactionUnique: uniqueIndex("payment_transactions_provider_transaction_unique").on(
+    table.provider,
+    table.providerTransactionId,
+  ),
+}));
+
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+export type InsertPaymentTransaction = typeof paymentTransactions.$inferInsert;

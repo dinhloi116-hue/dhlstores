@@ -65,7 +65,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       {/* Top Banner / Announcement Bar (giống ảnh mẫu màu vàng cam) */}
       <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 text-slate-950 text-xs py-2 px-4 text-center font-bold tracking-wide shadow-sm flex items-center justify-center gap-2">
         <Sparkles className="w-4 h-4 animate-bounce" />
-        <span>{t.announcement}</span>
+        <span>{lang === 'vi' ? 'Tài nguyên thiết kế số · Thanh toán QR · Tải file sau khi xác nhận giao dịch' : 'Digital design resources · QR payment · Files unlock after transaction confirmation'}</span>
         <Sparkles className="w-4 h-4 animate-bounce" />
       </div>
 
@@ -81,7 +81,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <span className="text-xl font-black tracking-wider text-slate-900 group-hover:text-amber-600 transition-colors">
                 DHL <span className="text-amber-600">STORES</span>
               </span>
-              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-semibold">{t.brandSubtitle}</p>
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-semibold">{lang === 'vi' ? 'KHO TÀI NGUYÊN SỐ' : 'DIGITAL RESOURCE HUB'}</p>
             </div>
           </Link>
 
@@ -93,11 +93,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Link href="/products" className={`transition-colors hover:text-amber-600 ${location.startsWith('/products') ? 'text-amber-600' : 'text-slate-700'}`}>
               {t.allProducts}
             </Link>
-            <Link href="/products?type=physical" className="transition-colors hover:text-amber-600 text-slate-700 flex items-center gap-1">
-              <Package className="w-4 h-4 text-blue-600" /> {t.physical}
-            </Link>
             <Link href="/products?type=digital" className="transition-colors hover:text-amber-600 text-slate-700 flex items-center gap-1">
-              <Download className="w-4 h-4 text-purple-600" /> {t.digital}
+              <Download className="w-4 h-4 text-purple-600" /> {lang === 'vi' ? 'Tài nguyên số' : 'Digital resources'}
             </Link>
           </nav>
 
@@ -263,11 +260,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
               {t.allProducts}
             </Link>
-            <Link href="/products?type=physical" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              <Package className="w-4 h-4 text-blue-600" /> {t.physical}
-            </Link>
             <Link href="/products?type=digital" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              <Download className="w-4 h-4 text-purple-600" /> {t.digital}
+              <Download className="w-4 h-4 text-purple-600" /> {lang === 'vi' ? 'Tài nguyên số' : 'Digital resources'}
             </Link>
             {isAuthenticated && (
               <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-amber-600 py-1 pt-2 border-t border-slate-100">
@@ -289,19 +283,16 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div>
             <h4 className="text-white font-bold mb-4 text-xs uppercase tracking-wider">ABOUT US</h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>• {lang === 'vi' ? 'Kho tài nguyên áo đấu & đồ họa lớn nhất' : 'Largest sports jersey & design resource hub'}</li>
-              <li>• {lang === 'vi' ? 'Tài liệu CorelDraw, Photoshop & Illustrator' : 'CorelDraw, Photoshop & Illustrator assets'}</li>
-              <li>• {lang === 'vi' ? 'Font chữ thể thao & ấn phẩm độc quyền' : 'Exclusive sports fonts & publications'}</li>
-              <li>• {lang === 'vi' ? 'Hỗ trợ tải xuống 24/7 tốc độ cao' : 'High-speed 24/7 download support'}</li>
+              <li>• {lang === 'vi' ? 'Font, vector, mockup và file in chuyên dụng' : 'Specialised fonts, vectors, mockups and print files'}</li>
+              <li>• {lang === 'vi' ? 'Tương thích CorelDraw, Photoshop & Illustrator' : 'Compatible with CorelDraw, Photoshop and Illustrator'}</li>
+              <li>• {lang === 'vi' ? 'Thanh toán QR nhanh, tự động xác nhận giao dịch' : 'Fast QR payment with automatic transaction confirmation'}</li>
+              <li>• {lang === 'vi' ? 'Tải tài nguyên sau khi đơn hàng đã thanh toán' : 'Download resources after the order is paid'}</li>
             </ul>
           </div>
           <div>
             <h4 className="text-white font-bold mb-4 text-xs uppercase tracking-wider">LIÊN HỆ</h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li><span className="text-slate-200">Email:</span> support@dhlstores.vn</li>
-              <li><span className="text-slate-200">Hotline:</span> 0976.064.628</li>
-              <li><span className="text-slate-200">Địa chỉ:</span> Việt Nam</li>
-              <li><span className="text-slate-200">Website:</span> www.dhlstores.vn</li>
+              <li>{lang === 'vi' ? 'Kênh hỗ trợ và thông tin liên hệ sẽ được chủ cửa hàng bổ sung trước khi public.' : 'Support channels and contact details will be added by the store owner before launch.'}</li>
             </ul>
           </div>
         </div>

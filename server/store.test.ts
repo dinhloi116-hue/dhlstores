@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
+import { confirmSePayPayment } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createMockContext(): TrpcContext {
@@ -10,6 +11,7 @@ function createMockContext(): TrpcContext {
     name: "Test User DHL",
     loginMethod: "manus",
     role: "user" as const,
+    status: "active" as const,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
@@ -68,9 +70,21 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(checkoutRes.success).toBe(true);
     expect(checkoutRes.orderId).toBeDefined();
 
-    // Verify orders & digital download link unlocked
-    const orders = await caller.store.orders();
-    expect(orders.length).toBeGreaterThan(0);
+    // A new order must remain locked until a matching SePay payment arrives.
+    expect(checkoutRes.orderCode).toMatch(/^DHL/);
+    let orders = await caller.store.orders();
+    expect(orders[0]?.paymentStatus).toBe("pending");
+
+    const confirmation = await confirmSePayPayment({
+      providerTransactionId: "sepay-test-001",
+      transferAmount: 250000,
+      transferContent: `SEVQR ${checkoutRes.orderCode}`,
+      gateway: "VietinBank",
+      paymentReference: "FT-TEST-001",
+    });
+    expect(confirmation.success).toBe(true);
+
+    orders = await caller.store.orders();
     expect(orders[0]?.paymentStatus).toBe("paid");
     expect(orders[0]?.items?.[0]?.product?.fileUrl).toBeDefined();
   });

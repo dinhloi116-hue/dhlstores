@@ -1,24 +1,15 @@
-# Project TODO - DHL Stores
+# Project TODO — DHL Stores
 
-- [x] Khởi tạo dự án và cấu trúc cơ bản
-- [x] Tải lên logo thương hiệu DHL Stores
-- [x] Thiết kế và tạo schema cơ sở dữ liệu (`drizzle/schema.ts` cho products, categories, cartItems, orders, orderItems)
-- [x] Tạo migration và áp dụng SQL
-- [x] Viết query helpers trong `server/db.ts` và seed dữ liệu mẫu (Áo bóng đá, file in 4K, font số độc quyền)
-- [x] Xây dựng tRPC router (`server/routers.ts`) quản lý sản phẩm, giỏ hàng, đơn hàng, tải file kỹ thuật số
-- [x] Xây dựng giao diện Trang chủ cao cấp với Hero banner logo DHL Stores, danh mục nổi bật và sản phẩm tiêu biểu
-- [x] Xây dựng Trang danh sách sản phẩm với bộ lọc thông minh (Loại: Số / Vật lý, Danh mục, Khoảng giá, Sắp xếp)
-- [x] Xây dựng Trang chi tiết sản phẩm (chọn size/màu cho áo bóng đá, tải thử / thông tin tệp cho sản phẩm số)
-- [x] Xây dựng Trang giỏ hàng và thanh toán (kiểm tra điều kiện: nếu có sản phẩm vật lý yêu cầu nhập địa chỉ giao hàng; thanh toán giả lập thành công)
-- [x] Xây dựng Trang Tài khoản cá nhân & Lịch sử đơn hàng (tải xuống file kỹ thuật số ngay lập tức sau khi đơn hàng thanh toán thành công)
-- [x] Xây dựng Trang Quản trị Admin (quản lý đơn hàng, cập nhật trạng thái đơn: Chờ thanh toán, Đang chuẩn bị, Đang giao, Đã giao, Đã hủy)
-- [x] Viết kiểm thử Vitest cho các luồng nghiệp vụ chính và chạy xác thực (Passed)
-- [x] Xây dựng bộ từ điển song ngữ Việt - Anh (`client/src/lib/i18n.ts`)
-- [x] Tích hợp logic tự động phát hiện ngôn ngữ theo vị trí (mặc định tiếng Việt tại VN, tiếng Anh cho quốc tế) kèm nút chuyển đổi ngôn ngữ linh hoạt trên Header
-- [x] Tối ưu hóa giao diện storefront thành dạng siêu gọn, mua hàng cực nhanh (1-click buy, hiển thị trực quan, nút CTA nổi bật)
-- [x] Cập nhật toàn bộ các trang (Trang chủ, Danh sách, Giỏ hàng, Thanh toán, Tài khoản, Admin) hỗ trợ song ngữ hoàn hảo
-- [x] Kiểm thử chuyển đổi ngôn ngữ và chạy lại Vitest
-- [x] Cập nhật 10 danh mục chính chuyên sâu về tài nguyên số (`server/db.ts`)
-- [x] Chuyển đổi toàn bộ sản phẩm mẫu sang dạng file kỹ thuật số (Font chữ thể thao, Tên số áo, Vector, File in áo DTF, Patch & Badge, Template thiết kế, Mockup, Clipart, Pattern, Combo Bundle)
-- [x] Tinh chỉnh giỏ hàng và thanh toán trực tiếp không cần hỏi địa chỉ giao hàng vật lý
-- [x] Kiểm thử toàn bộ luồng mua và tải file số tự động ngay sau thanh toán
+- [x] Khởi tạo website kho tài nguyên số và storefront song ngữ Việt–Anh.
+- [x] Thiết lập 10 danh mục tài nguyên số và luồng giỏ hàng cơ bản.
+- [x] Chuyển website sang catalog tài nguyên số, không còn sản phẩm vật lý.
+- [x] Xây dựng trang tài khoản, lịch sử đơn hàng và khu vực admin quản lý đơn hàng.
+- [ ] Lưu bền vững danh sách tài khoản, trạng thái active/blocked vào database thật sau khi kết nối hạ tầng ổn định.
+- [ ] Hoàn thiện tab kiểm soát tài khoản admin trên dữ liệu database thật và kiểm thử khóa/mở khóa end-to-end.
+- [ ] Thiết kế popup đăng nhập/đăng ký theo mẫu tham khảo và bắt buộc đăng nhập trước mua/tải.
+- [ ] Chặn tài khoản bị khóa khỏi các luồng giỏ hàng, thanh toán và tải file.
+- [x] Thiết kế checkout SePay/VietQR: tóm tắt đơn, điều khoản, mã đơn hàng và trạng thái chờ thanh toán.
+- [x] Thêm endpoint webhook SePay có xác thực API Key, đối chiếu mã đơn/số tiền và chống xử lý trùng giao dịch.
+- [ ] Thêm link Google Drive cho từng sản phẩm và chỉ hiển thị sau khi thanh toán được xác nhận.
+- [x] Viết Vitest cho tạo QR VietinBank và luồng QR → xác nhận → mở khóa file trong môi trường kiểm thử.
+- [ ] Rà soát giao diện responsive, kiểm thử và lưu checkpoint bàn giao.

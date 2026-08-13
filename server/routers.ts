@@ -5,6 +5,16 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
+import { buildSePayQrUrl } from "./sepay";
+
+async function requireActiveAccount(userId: number) {
+  if (!(await db.isUserActive(userId))) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ DHL Stores để được hỗ trợ.",
+    });
+  }
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -47,6 +57,7 @@ export const appRouter = router({
       }),
 
     cart: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
       return await db.getCartItems(ctx.user.id);
     }),
 
@@ -57,6 +68,7 @@ export const appRouter = router({
         attributes: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
         return await db.addToCart(ctx.user.id, input.productId, input.quantity, input.attributes);
       }),
 
@@ -65,13 +77,15 @@ export const appRouter = router({
         cartItemId: z.number(),
         quantity: z.number(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
         return await db.updateCartItem(input.cartItemId, input.quantity);
       }),
 
     removeFromCart: protectedProcedure
       .input(z.object({ cartItemId: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
         return await db.removeFromCart(input.cartItemId);
       }),
 
@@ -86,24 +100,55 @@ export const appRouter = router({
         })),
       }))
       .mutation(async ({ ctx, input }) => {
-        return await db.createOrder(ctx.user.id, input);
+        await requireActiveAccount(ctx.user.id);
+        const order = await db.createOrder(ctx.user.id, input);
+        return { ...order, qrUrl: buildSePayQrUrl(order.orderCode, order.totalAmount) };
       }),
 
     orders: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
       const isAdmin = ctx.user.role === 'admin';
       return await db.getOrders(ctx.user.id, isAdmin);
     }),
 
+    paymentStatus: protectedProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        const order = await db.getOrderPaymentForUser(ctx.user.id, input.orderId);
+        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy đơn hàng" });
+        return order;
+      }),
+
     updateOrderStatus: protectedProcedure
       .input(z.object({
         orderId: z.number(),
-        status: z.enum(["pending", "preparing", "shipping", "completed", "cancelled"]),
+        status: z.enum(["pending", "processing", "shipping", "completed", "cancelled"]),
       }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== 'admin') {
           throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật" });
         }
         return await db.updateOrderStatus(input.orderId, input.status);
+      }),
+
+    usersList: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      return await db.getAllUsers();
+    }),
+
+    updateUserStatus: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        status: z.enum(["active", "blocked"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        return await db.updateUserStatus(input.userId, input.status);
       }),
   }),
 });

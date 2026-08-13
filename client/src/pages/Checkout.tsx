@@ -1,183 +1,154 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import StoreLayout from "@/components/StoreLayout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Download, ArrowLeft, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, CheckCircle2, Copy, Download, QrCode, ShieldCheck, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
+type PendingPayment = {
+  orderId: number;
+  orderCode: string;
+  totalAmount: number;
+  qrUrl: string | null;
+};
+
 export default function Checkout() {
-  const [, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
-
   const [lang, setLang] = useState<Language>(getClientLanguage());
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const current = getClientLanguage();
-      if (current !== lang) setLang(current);
-    }, 500);
-    return () => clearInterval(interval);
-  }, [lang]);
+    const onStorage = () => setLang(getClientLanguage());
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const t = translations[lang];
-
   const cartQuery = trpc.store.cart.useQuery(undefined, { enabled: isAuthenticated });
   const cartItems = cartQuery.data || [];
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const paymentInput = useMemo(() => pendingPayment ? { orderId: pendingPayment.orderId } : undefined, [pendingPayment]);
+  const paymentQuery = trpc.store.paymentStatus.useQuery(paymentInput!, {
+    enabled: Boolean(paymentInput),
+    refetchInterval: query => query.state.data?.paymentStatus === "paid" ? false : 3500,
+  });
 
   const cartSubtotal = cartItems.reduce((sum, item) => {
-    const price = item.product ? parseFloat(item.product.price) : 0;
+    const price = item.product ? Number(item.product.price) : 0;
     return sum + price * item.quantity;
   }, 0);
 
   const checkoutMutation = trpc.store.checkout.useMutation({
-    onSuccess: () => {
-      toast.success(lang === 'vi' ? "Thanh toán thành công! Mở khóa tải tệp số ngay lập tức." : "Checkout successful! Files unlocked instantly.");
+    onSuccess: order => {
+      setPendingPayment(order);
       utils.store.cart.invalidate();
-      setLocation("/account");
+      toast.info(lang === "vi" ? "Đơn hàng đã được tạo. Hãy quét QR để thanh toán." : "Order created. Scan the QR code to pay.");
     },
-    onError: (err) => {
-      toast.error(err.message || "Thanh toán thất bại");
-      setIsSubmitting(false);
-    }
+    onError: error => toast.error(error.message || (lang === "vi" ? "Không thể tạo đơn hàng" : "Could not create order")),
   });
+
+  const formatCurrency = (value: number) => lang === "en"
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value / 25000)
+    : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
+
+  const copyMemo = async () => {
+    if (!pendingPayment) return;
+    await navigator.clipboard.writeText(`SEVQR ${pendingPayment.orderCode}`);
+    toast.success(lang === "vi" ? "Đã sao chép nội dung chuyển khoản" : "Transfer memo copied");
+  };
 
   if (!isAuthenticated) {
     return (
       <StoreLayout>
-        <div className="max-w-7xl mx-auto px-4 py-24 text-center">
-          <h2 className="text-2xl font-bold text-slate-800 mb-4">
-            {lang === 'vi' ? 'Vui lòng đăng nhập để thanh toán' : 'Please sign in to checkout'}
-          </h2>
-          <Button onClick={() => window.location.href = "/"} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
-            {t.home}
-          </Button>
+        <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-4">
+          <ShieldCheck className="w-14 h-14 mx-auto text-amber-500" />
+          <h1 className="text-2xl font-black text-slate-900">{lang === "vi" ? "Đăng nhập để thanh toán" : "Sign in to checkout"}</h1>
+          <p className="text-sm text-slate-500">{lang === "vi" ? "Bạn cần có tài khoản DHL Stores để theo dõi đơn và nhận link tải an toàn." : "A DHL Stores account is required to track the order and access secure downloads."}</p>
+          <Link href="/"><Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black">{t.home}</Button></Link>
         </div>
+      </StoreLayout>
+    );
+  }
+
+  if (pendingPayment) {
+    const isPaid = paymentQuery.data?.paymentStatus === "paid";
+    return (
+      <StoreLayout>
+        <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+          <section className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <div className="px-6 py-5 bg-slate-900 text-white">
+              <p className="text-[11px] tracking-[0.18em] font-bold uppercase text-amber-300">DHL Stores · SePay / VietQR</p>
+              <h1 className="text-xl font-black mt-1">{isPaid ? (lang === "vi" ? "Thanh toán đã xác nhận" : "Payment confirmed") : (lang === "vi" ? "Quét QR để hoàn tất thanh toán" : "Scan QR to complete payment")}</h1>
+            </div>
+
+            {isPaid ? (
+              <div className="p-8 text-center space-y-5">
+                <CheckCircle2 className="w-16 h-16 mx-auto text-emerald-500" />
+                <div>
+                  <h2 className="font-black text-xl text-slate-900">{lang === "vi" ? "File của bạn đã được mở khóa" : "Your files have been unlocked"}</h2>
+                  <p className="text-sm text-slate-500 mt-2">{lang === "vi" ? "Mở Tài khoản để tải các tài nguyên thuộc đơn hàng này." : "Open your account to download the resources from this order."}</p>
+                </div>
+                <Link href="/account"><Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-black">{lang === "vi" ? "Đi tới Tài khoản" : "Go to account"}</Button></Link>
+              </div>
+            ) : (
+              <div className="p-6 sm:p-8 grid gap-7 sm:grid-cols-[1fr_260px] items-center">
+                <div className="space-y-5">
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{lang === "vi" ? "Mã đơn hàng" : "Order code"}</p>
+                    <p className="text-xl font-black text-purple-700 mt-1">{pendingPayment.orderCode}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{lang === "vi" ? "Số tiền cần chuyển" : "Amount to transfer"}</p>
+                    <p className="text-3xl font-black text-slate-900 mt-1">{formatCurrency(pendingPayment.totalAmount)}</p>
+                  </div>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-xs font-bold text-slate-800">{lang === "vi" ? "Nội dung chuyển khoản bắt buộc" : "Required transfer memo"}</p>
+                    <button type="button" onClick={copyMemo} className="mt-2 flex items-center gap-2 font-black text-amber-700 hover:text-amber-800">
+                      <span>SEVQR {pendingPayment.orderCode}</span><Copy className="w-4 h-4" />
+                    </button>
+                    <p className="text-[11px] leading-relaxed text-slate-600 mt-2">{lang === "vi" ? "Hệ thống chỉ tự động xác nhận khi số tiền và mã đơn hàng trùng khớp." : "The order is confirmed only when both amount and order code match."}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />{lang === "vi" ? "Đang chờ SePay xác nhận giao dịch…" : "Waiting for SePay transaction confirmation…"}</div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">
+                  {pendingPayment.qrUrl ? <img src={pendingPayment.qrUrl} alt="SePay VietQR payment code" className="w-full rounded-xl bg-white" /> : <div className="aspect-square grid place-items-center rounded-xl border border-dashed border-slate-300 bg-white p-6"><div><QrCode className="w-12 h-12 mx-auto text-slate-400" /><p className="text-xs text-slate-500 mt-3">{lang === "vi" ? "QR sẽ hiển thị khi cấu hình ngân hàng được hoàn tất." : "The QR will appear after bank configuration is complete."}</p></div></div>}
+                  <p className="text-[11px] text-slate-500 mt-3">{lang === "vi" ? "Mở app ngân hàng và quét mã QR" : "Open your banking app and scan the QR"}</p>
+                </div>
+              </div>
+            )}
+          </section>
+        </main>
       </StoreLayout>
     );
   }
 
   if (cartItems.length === 0) {
-    return (
-      <StoreLayout>
-        <div className="max-w-7xl mx-auto px-4 py-24 text-center space-y-4">
-          <ShoppingBag className="w-16 h-16 mx-auto text-slate-300" />
-          <h2 className="text-xl font-bold text-slate-800">{t.emptyCart}</h2>
-          <p className="text-xs text-slate-500">{t.emptyCartDesc}</p>
-          <Link href="/products">
-            <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
-              {t.exploreShop}
-            </Button>
-          </Link>
-        </div>
-      </StoreLayout>
-    );
+    return <StoreLayout><div className="max-w-xl mx-auto px-4 py-24 text-center space-y-4"><ShoppingBag className="w-14 h-14 mx-auto text-slate-300" /><h1 className="text-xl font-black text-slate-900">{t.emptyCart}</h1><Link href="/products"><Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black">{t.exploreShop}</Button></Link></div></StoreLayout>;
   }
-
-  const formatCurrency = (val: number) => {
-    if (lang === 'en') {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val / 25000);
-    }
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-  };
-
-  const handleCheckout = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    checkoutMutation.mutate({
-      totalAmount: cartSubtotal,
-      items: cartItems.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.product ? parseFloat(item.product.price) : 0,
-        attributes: item.attributes || undefined,
-      }))
-    });
-  };
 
   return (
     <StoreLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <Link href="/products" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors mb-6">
-          <ArrowLeft className="w-4 h-4" /> {lang === 'vi' ? 'Tiếp tục mua sắm' : 'Continue Shopping'}
-        </Link>
-
-        <h1 className="text-2xl font-black text-slate-900 mb-6">{t.checkoutTitle}</h1>
-
-        <form onSubmit={handleCheckout} className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-600">
-                <Download className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-slate-900">{lang === 'vi' ? 'Đơn Hàng Tài Nguyên Số 100%' : '100% Digital Resource Order'}</h2>
-                <p className="text-xs text-slate-500">{lang === 'vi' ? 'Không cần địa chỉ giao hàng. Tải file tự động 24/7 ngay sau xác nhận.' : 'No shipping address needed. Instant 24/7 downloads.'}</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? 'Sản phẩm trong đơn hàng:' : 'Order Items:'}</h3>
-              {cartItems.map(item => {
-                const p = item.product;
-                if (!p) return null;
-                return (
-                  <div key={item.id} className="flex gap-3 items-center text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <img src={p.image} alt={p.name} className="w-12 h-12 object-cover rounded-lg border border-slate-200" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-900 truncate">{p.name}</p>
-                      <p className="text-slate-500">Qty: {item.quantity}</p>
-                    </div>
-                    <span className="font-black text-amber-600">{formatCurrency(Number(p.price) * item.quantity)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-slate-900">{t.paymentMethod}</h2>
-            <div className="p-4 rounded-xl bg-slate-50 border border-amber-500/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">{t.onlinePayment}</p>
-                  <p className="text-[11px] text-slate-500">{t.onlinePaymentDesc}</p>
-                </div>
-              </div>
-              <Badge className="bg-amber-100 text-amber-800 font-bold border border-amber-200">Free</Badge>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex justify-between items-center text-sm font-bold border-b border-slate-100 pb-3">
-              <span className="text-slate-600">{t.totalPayment}:</span>
-              <span className="text-xl font-black text-amber-600">{formatCurrency(cartSubtotal)}</span>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-4 rounded-xl shadow-md text-base"
-            >
-              {isSubmitting ? "Processing..." : t.confirmCheckout}
-            </Button>
-
-            <div className="flex items-center gap-2 text-xs text-slate-500 justify-center">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Instant Digital Delivery Guaranteed</span>
-            </div>
-          </div>
-        </form>
-      </div>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        <Link href="/products" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-amber-600 mb-6"><ArrowLeft className="w-4 h-4" />{lang === "vi" ? "Tiếp tục mua sắm" : "Continue shopping"}</Link>
+        <div className="grid gap-7 lg:grid-cols-[1fr_360px] items-start">
+          <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4"><div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 grid place-items-center"><Download className="w-5 h-5" /></div><div><h1 className="text-xl font-black text-slate-900">{lang === "vi" ? "Thanh toán tài nguyên số" : "Digital resource checkout"}</h1><p className="text-xs text-slate-500">{lang === "vi" ? "Tệp sẽ chỉ được mở khóa sau khi SePay xác nhận tiền vào." : "Files are unlocked only after SePay confirms the incoming payment."}</p></div></div>
+            <div className="space-y-3">{cartItems.map(item => item.product && <div key={item.id} className="flex gap-3 items-center"><img src={item.product.image} alt={item.product.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" /><div className="flex-1 min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{item.product.name}</p><p className="text-xs text-slate-500">× {item.quantity}</p></div><p className="text-sm font-black text-slate-900">{formatCurrency(Number(item.product.price) * item.quantity)}</p></div>)}</div>
+          </section>
+          <form onSubmit={event => { event.preventDefault(); if (!acceptedTerms) return toast.error(lang === "vi" ? "Vui lòng đồng ý điều khoản trước khi đặt hàng." : "Please accept the terms before placing your order."); checkoutMutation.mutate({ totalAmount: cartSubtotal, items: cartItems.map(item => ({ productId: item.productId, quantity: item.quantity, price: Number(item.product?.price ?? 0), attributes: item.attributes || undefined })) }); }} className="bg-white p-6 rounded-2xl border-2 border-sky-600 shadow-sm space-y-5">
+            <h2 className="text-base font-black text-purple-700 uppercase">{lang === "vi" ? "Đơn hàng của bạn" : "Your order"}</h2>
+            <div className="space-y-2 text-sm border-y border-slate-100 py-4"><div className="flex justify-between"><span className="text-slate-500">{lang === "vi" ? "Tạm tính" : "Subtotal"}</span><span className="font-bold">{formatCurrency(cartSubtotal)}</span></div><div className="flex justify-between"><span className="text-slate-500">{lang === "vi" ? "Phương thức" : "Method"}</span><span className="font-bold text-sky-700">SePay · VietQR</span></div><div className="flex justify-between text-base pt-2"><span className="font-black">{lang === "vi" ? "Tổng" : "Total"}</span><span className="font-black">{formatCurrency(cartSubtotal)}</span></div></div>
+            <div className="flex gap-3 items-start"><Checkbox id="terms" checked={acceptedTerms} onCheckedChange={checked => setAcceptedTerms(checked === true)} className="mt-0.5" /><label htmlFor="terms" className="text-xs leading-relaxed text-slate-600">{lang === "vi" ? <>Tôi đã đọc và đồng ý với <span className="font-bold text-rose-600">điều khoản và điều kiện của website</span>.</> : <>I have read and agree to the <span className="font-bold text-rose-600">website terms and conditions</span>.</>}</label></div>
+            <Button type="submit" disabled={checkoutMutation.isPending} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black rounded-md py-5">{checkoutMutation.isPending ? (lang === "vi" ? "ĐANG TẠO ĐƠN..." : "CREATING ORDER...") : (lang === "vi" ? "ĐẶT HÀNG & LẤY MÃ QR" : "PLACE ORDER & GET QR")}</Button>
+            <p className="text-[11px] leading-relaxed text-slate-500">{lang === "vi" ? "Thông tin đơn hàng được dùng để xử lý giao dịch và bảo vệ quyền tải tài nguyên của bạn." : "Order data is used to process the transaction and protect your download access."}</p>
+          </form>
+        </div>
+      </main>
     </StoreLayout>
   );
 }

@@ -47,7 +47,9 @@ export default function Home() {
               {lang === 'vi' ? 'KHO TÀI NGUYÊN THIẾT KẾ & ĐỒ HỌA SỐ' : 'DIGITAL DESIGN & SPORTS ASSET HUB'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-200">
-              {t.heroDesc}
+              {lang === 'vi'
+                ? 'Font thể thao, name set, vector, file in DTF, patch, mockup và template sẵn sàng cho thiết kế – in ấn.'
+                : 'Sports fonts, name sets, vectors, DTF print files, patches, mockups and templates ready for design and printing.'}
             </p>
             <div className="pt-2 flex justify-center gap-3">
               <Link href="/products">
@@ -89,7 +91,7 @@ export default function Home() {
               <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
                 {lang === 'vi' ? 'Tài Nguyên Số Mới Nhất & Nổi Bật' : 'Latest & Featured Digital Assets'}
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">Cập nhật liên tục 24/7 với quyền tải xuống ngay sau thanh toán</p>
+              <p className="text-xs text-slate-500 mt-0.5">{lang === 'vi' ? 'Tải xuống sau khi giao dịch QR được hệ thống xác nhận' : 'Downloads unlock after QR payment is confirmed'}</p>
             </div>
             <Link href="/products">
               <Button variant="outline" size="sm" className="text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-100">

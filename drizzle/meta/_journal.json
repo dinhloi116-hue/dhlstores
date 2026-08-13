@@ -15,6 +15,13 @@
       "when": 1786527398096,
       "tag": "0001_sour_boomer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786590969032,
+      "tag": "0002_tan_tana_nile",
+      "breakpoints": true
     }
   ]
 }
