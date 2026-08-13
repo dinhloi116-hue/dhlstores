@@ -28,6 +28,7 @@ export default function Account() {
   const orders = ordersQuery.data || [];
   const downloadsQuery = trpc.store.downloads.useQuery(undefined, { enabled: isAuthenticated });
   const downloads = downloadsQuery.data || [];
+  const downloadWindowMs = 7 * 24 * 60 * 60 * 1_000;
 
   if (!isAuthenticated) {
     return (
@@ -128,6 +129,7 @@ export default function Account() {
                     {order.items?.map(item => {
                       const p = item.product;
                       const download = downloads.find(resource => resource.orderId === order.id && resource.productId === item.productId);
+                      const downloadExpired = order.paymentStatus === 'paid' && p?.type === 'digital' && (order.paymentConfirmedAt?.getTime() ?? 0) + downloadWindowMs <= Date.now();
                       return (
                         <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-center gap-4">
@@ -150,6 +152,10 @@ export default function Account() {
                                 <Download className="w-4 h-4" /> {t.downloadFile} ({download.fileSize || '4K'})
                                 <ExternalLink className="w-3 h-3 ml-1" />
                               </a>
+                            ) : downloadExpired ? (
+                              <Badge variant="outline" className="border-rose-300 text-rose-600">
+                                {lang === 'vi' ? 'Liên kết tải đã hết hạn sau 7 ngày' : 'Download link expired after 7 days'}
+                              </Badge>
                             ) : order.paymentStatus === 'paid' ? (
                               <Badge variant="outline" className="border-slate-300 text-slate-600">
                                 {lang === 'vi' ? 'File đang được chuẩn bị' : 'File is being prepared'}

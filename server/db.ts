@@ -1100,19 +1100,31 @@ export async function getOrderPaymentForUser(userId: number, orderId: number) {
   return memoryOrders.find(order => order.id === orderId && order.userId === userId);
 }
 
-export async function getPaidDownloadsForUser(userId: number) {
+export const DOWNLOAD_ACCESS_WINDOW_MS = 7 * 24 * 60 * 60 * 1_000;
+
+export function isDownloadAccessActive(paymentConfirmedAt: Date | null | undefined, now = Date.now()) {
+  return Boolean(paymentConfirmedAt) && (paymentConfirmedAt?.getTime() ?? 0) + DOWNLOAD_ACCESS_WINDOW_MS > now;
+}
+
+export async function getPaidDownloadsForUser(userId: number, now = Date.now()) {
   const userOrders = await getOrders(userId, false);
   const links = await listDownloadLinks();
   const linkMap = new Map(links.map(link => [link.productId, link.driveUrl]));
   return userOrders
-    .filter(order => order.paymentStatus === "paid")
+    .filter(order => order.paymentStatus === "paid" && isDownloadAccessActive(order.paymentConfirmedAt, now))
     .flatMap(order => (order.items ?? []).filter(item => item.product?.type === "digital").map(item => ({
       orderId: order.id,
       productId: item.productId,
       productName: item.product?.name ?? "Digital resource",
       fileSize: item.product?.fileSize ?? null,
       driveUrl: linkMap.get(item.productId) ?? item.product?.fileUrl ?? null,
+      expiresAt: (order.paymentConfirmedAt?.getTime() ?? 0) + DOWNLOAD_ACCESS_WINDOW_MS,
     })));
+}
+
+export async function getInstantDownloadsForOrder(userId: number, orderId: number, now = Date.now()) {
+  const downloads = await getPaidDownloadsForUser(userId, now);
+  return downloads.filter(download => download.orderId === orderId);
 }
 
 export async function confirmSePayPayment(input: {

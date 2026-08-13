@@ -148,6 +148,13 @@ export const appRouter = router({
       return db.getPaidDownloadsForUser(ctx.user.id);
     }),
 
+    instantDownloads: protectedProcedure
+      .input(z.object({ orderId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return db.getInstantDownloadsForOrder(ctx.user.id, input.orderId);
+      }),
+
     updateOrderStatus: protectedProcedure
       .input(z.object({
         orderId: z.number(),

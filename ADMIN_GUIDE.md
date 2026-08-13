@@ -22,6 +22,8 @@ Nhấn **Tải ảnh** để chọn ảnh đại diện, hoặc **Tải file** �
 
 Nếu kho tệp tạm thời chậm hoặc không phản hồi, dán trực tiếp **URL ảnh đại diện** hoặc **URL tệp tải xuống** trong biểu mẫu, sau đó lưu sản phẩm. Ảnh tải từ kho website hoặc URL công khai sẽ hiển thị trên bìa sản phẩm. Khách chỉ thấy liên kết tải khi đơn hàng của họ đã được xác nhận thanh toán.
 
+Với **sản phẩm số**, ngay sau khi SePay xác nhận, màn QR tự chuyển thành nút **Tải ngay**. Nút này và danh sách tải trong tài khoản chỉ hiển thị trong **7 ngày** kể từ thời điểm thanh toán. Nếu dùng liên kết Google Drive ở chế độ công khai, liên kết đã bị khách sao chép ra ngoài website không thể bị thu hồi tự động bởi DHL Stores.
+
 ## 5. Giao hàng và theo dõi đơn
 
 Khi giỏ có hàng vật lý, checkout yêu cầu tên, số điện thoại, địa chỉ và phương thức nhận hàng. Mức phí hiện có là **nhận tại cửa hàng 0 đ**, **giao tiêu chuẩn 30.000 đ** hoặc **giao nhanh 50.000 đ**. Phí giao được cộng vào QR thanh toán. Sau khi SePay xác nhận, đơn vật lý chuyển sang **Đang xử lý** và tồn kho sản phẩm hoặc biến thể sẽ giảm theo số lượng đã mua. Tại tab **Đơn hàng**, cập nhật tiếp sang **Đang giao hàng** rồi **Hoàn tất** theo thực tế.

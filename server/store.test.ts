@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { vi } from "vitest";
 import { appRouter } from "./routers";
-import { confirmSePayPayment, createProduct, createProductVariant, getPaidDownloadsForUser, getProductVariants, saveProductDownloadLink } from "./db";
+import { confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, isDownloadAccessActive, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createMockContext(): TrpcContext {
@@ -117,6 +118,32 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
       items: [{ productId: product!.id, quantity: 1, price: 999999 }],
     });
     expect(checkout.totalAmount).toBe(2000);
+  });
+
+  it("limits in-site download access to seven days after payment", () => {
+    const now = Date.UTC(2026, 7, 13, 0, 0, 0);
+    expect(isDownloadAccessActive(new Date(now - 7 * 24 * 60 * 60 * 1_000 + 1), now)).toBe(true);
+    expect(isDownloadAccessActive(new Date(now - 7 * 24 * 60 * 60 * 1_000), now)).toBe(false);
+  });
+
+  it("does not return instant download links for a digital order after seven days", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const checkout = await caller.store.checkout({ totalAmount: 0, items: [{ productId: 3, quantity: 1, price: 0 }] });
+    await saveProductDownloadLink(3, "https://drive.google.com/file/d/limited-window/view");
+    await confirmSePayPayment({ providerTransactionId: `sepay-window-${checkout.orderId}`, transferAmount: checkout.totalAmount, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: "WINDOW-TEST" });
+
+    expect(await getInstantDownloadsForOrder(1, checkout.orderId)).toHaveLength(1);
+    expect(await caller.store.instantDownloads({ orderId: checkout.orderId })).toHaveLength(1);
+    const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
+    expect(await getInstantDownloadsForOrder(1, checkout.orderId, (order!.paymentConfirmedAt?.getTime() ?? 0) + DOWNLOAD_ACCESS_WINDOW_MS)).toHaveLength(0);
+
+    const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue((order!.paymentConfirmedAt?.getTime() ?? 0) + DOWNLOAD_ACCESS_WINDOW_MS);
+    try {
+      expect(await caller.store.instantDownloads({ orderId: checkout.orderId })).toHaveLength(0);
+    } finally {
+      dateNowSpy.mockRestore();
+    }
   });
 
   it("adds a physical variant, includes shipping, and moves the paid order to processing", async () => {

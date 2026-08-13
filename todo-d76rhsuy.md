@@ -40,3 +40,14 @@
 - [x] Lưu checkpoint xuất bản sau khi xác nhận luồng thanh toán giá kiểm thử.
 - [x] Cập nhật thời hạn QR tự hủy từ 2 giây sang 10 phút và đồng bộ thông báo checkout.
 - [x] Kiểm tra, xuất bản và bàn giao thời hạn QR 10 phút để thử thanh toán.
+- [x] Rà soát quyền tải hiện có và mốc xác nhận thanh toán cho sản phẩm số.
+- [x] Bổ sung API trả liên kết tải ngay chỉ cho đơn đã thanh toán và còn trong 7 ngày.
+- [x] Thay màn QR đã thanh toán bằng nút Tải ngay cho sản phẩm số, giữ luồng xử lý cho hàng vật lý.
+- [x] Kiểm thử chặn liên kết sau 7 ngày, kiểm tra giao diện và xuất bản bản cập nhật.
+- [x] Kiểm thử API tải ngay để xác nhận đơn sản phẩm số quá bảy ngày không trả liên kết tải.
+- [x] Kiểm tra trực quan trạng thái tải ngay và hết hạn sau thanh toán sản phẩm số.
+- [ ] Lưu checkpoint xuất bản cơ chế tải ngay bảy ngày.
+- [x] Kiểm thử tRPC store.instantDownloads để xác nhận đơn số quá bảy ngày không nhận liên kết tải.
+- [x] Xác nhận giao diện checkout thay QR bằng nút Tải ngay sau khi thanh toán đơn số.
+- [x] Xác nhận hiển thị trạng thái liên kết tải hết hạn bảy ngày trong tài khoản.
+- [x] Làm rõ thông điệp xác nhận thanh toán số để hướng dẫn khách bấm Tải ngay thay vì vào tài khoản.

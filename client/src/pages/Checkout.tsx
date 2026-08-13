@@ -42,6 +42,9 @@ export default function Checkout() {
     enabled: Boolean(paymentInput),
     refetchInterval: query => query.state.data?.paymentStatus === "paid" ? false : 3500,
   });
+  const instantDownloadsQuery = trpc.store.instantDownloads.useQuery(paymentInput!, {
+    enabled: Boolean(paymentInput) && paymentQuery.data?.paymentStatus === "paid" && !pendingPayment?.hasPhysicalItems,
+  });
   const cancelPendingOrder = trpc.store.cancelPendingOrder.useMutation({
     onSuccess: result => {
       if (result.cancelled) {
@@ -115,9 +118,9 @@ export default function Checkout() {
                 <CheckCircle2 className="w-16 h-16 mx-auto text-emerald-500" />
                 <div>
                   <h2 className="font-black text-xl text-slate-900">{pendingPayment.hasPhysicalItems ? (lang === "vi" ? "Đơn hàng đang được xử lý" : "Your order is being processed") : (lang === "vi" ? "File của bạn đã được mở khóa" : "Your files have been unlocked")}</h2>
-                  <p className="text-sm text-slate-500 mt-2">{pendingPayment.hasPhysicalItems ? (lang === "vi" ? "Cửa hàng sẽ đóng gói và cập nhật trạng thái giao hàng cho đơn của bạn." : "The store will pack your order and update delivery status.") : (lang === "vi" ? "Mở Tài khoản để tải các tài nguyên thuộc đơn hàng này." : "Open your account to download the resources from this order.")}</p>
+                  <p className="text-sm text-slate-500 mt-2">{pendingPayment.hasPhysicalItems ? (lang === "vi" ? "Cửa hàng sẽ đóng gói và cập nhật trạng thái giao hàng cho đơn của bạn." : "The store will pack your order and update delivery status.") : (lang === "vi" ? "Mã QR đã được đóng. Bấm Tải ngay bên dưới để nhận tài nguyên của bạn." : "The QR code is now closed. Use Download now below to receive your resources.")}</p>
                 </div>
-                <Link href="/account"><Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-black">{lang === "vi" ? "Đi tới Tài khoản" : "Go to account"}</Button></Link>
+                {pendingPayment.hasPhysicalItems ? <Link href="/account"><Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-black">{lang === "vi" ? "Đi tới Tài khoản" : "Go to account"}</Button></Link> : instantDownloadsQuery.isLoading ? <p className="text-sm text-slate-500">Đang chuẩn bị liên kết tải…</p> : instantDownloadsQuery.data?.length ? <div className="flex flex-col items-center gap-3">{instantDownloadsQuery.data.map(download => <a key={`${download.orderId}-${download.productId}`} href={download.driveUrl || "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-black text-white shadow-sm transition-colors hover:bg-purple-500"><Download className="h-4 w-4" />Tải ngay: {download.productName}</a>)}<p className="text-xs text-slate-500">Liên kết tải hiển thị trong website trong 7 ngày sau thanh toán.</p></div> : <div className="space-y-3"><p className="text-sm text-slate-500">Liên kết tải đã hết hạn hoặc đang được chuẩn bị.</p><Link href="/account"><Button variant="outline" className="font-bold">Đi tới Tài khoản</Button></Link></div>}
               </div>
             ) : isExpired ? (
               <div className="space-y-5 p-8 text-center"><QrCode className="mx-auto h-16 w-16 text-rose-500" /><div><h2 className="text-xl font-black text-slate-900">Mã thanh toán đã hết hạn</h2><p className="mt-2 text-sm text-slate-500">Mã QR tự hủy sau 10 phút. Hãy quay lại giỏ để tạo mã QR mới.</p></div><Button onClick={() => { setPendingPayment(null); setPaymentExpired(false); }} className="bg-amber-500 font-black text-slate-950 hover:bg-amber-400">Tạo đơn mới</Button></div>
