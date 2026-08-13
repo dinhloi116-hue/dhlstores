@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import StoreLayout from "@/components/StoreLayout";
+import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
@@ -56,12 +57,13 @@ export default function Products() {
 
   return (
     <StoreLayout>
-      <div className="bg-white border-b border-slate-200 py-10 shadow-xs">
+      <div className="border-b border-slate-800 bg-[#0b1220] py-11 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
-          <h1 className="text-3xl font-black text-slate-900">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-400">DHL Stores · Resource Library</p>
+          <h1 className="font-display text-4xl font-black uppercase text-white sm:text-5xl">
             {lang === 'vi' ? 'Kho Tài Nguyên Thiết Kế & Đồ Họa Số' : 'Digital Design & Sports Asset Library'}
           </h1>
-          <p className="text-slate-500 text-xs sm:text-sm max-w-xl mx-auto">
+          <p className="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto">
             {lang === 'vi' 
               ? 'Hơn 10+ danh mục tài liệu CorelDraw, Illustrator, Font chữ thể thao và File in DTF chuyên nghiệp.'
               : 'Over 10+ categories of CorelDraw, Illustrator, sports fonts and professional DTF print files.'}
@@ -141,13 +143,9 @@ export default function Products() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map(p => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
-                <div className="bg-white rounded-xl overflow-hidden border border-slate-200 group-hover:border-amber-500 group-hover:shadow-md transition-all duration-200 flex flex-col h-full">
+                  <div className="bg-white overflow-hidden border border-slate-200 group-hover:border-amber-500 group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-200 flex flex-col h-full">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5">
                         {lang === 'vi' ? 'Tài liệu số' : 'Digital Asset'}

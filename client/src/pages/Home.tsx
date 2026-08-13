@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import StoreLayout from "@/components/StoreLayout";
+import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Sparkles, ArrowRight, Zap, FileText, Layers, FolderGit2 } from "lucide-react";
+import { ArrowRight, FolderGit2 } from "lucide-react";
 
 export default function Home() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
@@ -31,29 +32,32 @@ export default function Home() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
   };
 
-  const logoPath = "/manus-storage/logodhlstores_c8e433ed.png";
-
   return (
     <StoreLayout>
       {/* Banner / Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 shadow-xl border border-slate-200 p-8 sm:p-12 text-center text-white">
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:16px_16px]" />
-          <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-            <span className="bg-amber-500 text-slate-950 font-extrabold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-              DHL STORES DIGITAL HUB
+        <div className="relative overflow-hidden rounded-[1.4rem] border border-slate-700/70 bg-[#0b1220] px-6 py-10 text-white shadow-2xl sm:px-12 sm:py-14">
+          <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.18)_1px,transparent_1px)] [background-size:24px_24px]" />
+          <div className="absolute -right-20 top-1/2 h-80 w-80 -translate-y-1/2 rotate-12 border-[24px] border-violet-500/40" />
+          <div className="absolute -bottom-40 left-[12%] h-72 w-72 rotate-45 border border-amber-300/30" />
+          <div className="relative z-10 max-w-3xl space-y-5 sm:mx-auto sm:text-center">
+            <span className="inline-flex rounded-md border border-amber-300/40 bg-amber-400 px-3 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-slate-950">
+              DHL STORES · DIGITAL RESOURCE VAULT
             </span>
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
-              {lang === 'vi' ? 'KHO TÀI NGUYÊN THIẾT KẾ & ĐỒ HỌA SỐ' : 'DIGITAL DESIGN & SPORTS ASSET HUB'}
+            <h1 className="font-display text-5xl font-black uppercase leading-[0.82] tracking-tight sm:text-7xl">
+              {lang === 'vi' ? <>TÀI NGUYÊN <span className="text-amber-400">THIẾT KẾ</span> THỂ THAO</> : <>SPORTS DESIGN <span className="text-amber-400">RESOURCE</span> VAULT</>}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-200">
+            <p className="max-w-2xl text-xs leading-relaxed text-slate-300 sm:mx-auto sm:text-sm">
               {lang === 'vi'
                 ? 'Font thể thao, name set, vector, file in DTF, patch, mockup và template sẵn sàng cho thiết kế – in ấn.'
                 : 'Sports fonts, name sets, vectors, DTF print files, patches, mockups and templates ready for design and printing.'}
             </p>
-            <div className="pt-2 flex justify-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-300 sm:justify-center">
+              <span>01. Chọn tài nguyên</span><span className="text-amber-400">/</span><span>02. Thanh toán QR</span><span className="text-amber-400">/</span><span>03. Nhận quyền tải</span>
+            </div>
+            <div className="flex justify-start pt-2 sm:justify-center">
               <Link href="/products">
-                <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-3 rounded-xl shadow">
+                <Button className="bg-amber-400 px-6 py-5 font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-300">
                   {t.exploreShop}
                 </Button>
               </Link>
@@ -75,9 +79,9 @@ export default function Home() {
             { id: 9, name: lang === 'vi' ? 'Pattern & BG' : 'Pattern & BG', catId: 9 },
             { id: 10, name: lang === 'vi' ? 'Combo Bundle' : 'Design Bundles', catId: 10 },
           ].map(c => (
-            <Link key={c.catId} href={`/products?categoryId=${c.catId}`} className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs hover:border-amber-500 transition-all text-center group">
-              <FolderGit2 className="w-5 h-5 mx-auto text-amber-600 mb-1.5 group-hover:scale-110 transition-transform" />
-              <h4 className="text-[11px] font-bold text-slate-800 line-clamp-1">{c.name}</h4>
+            <Link key={c.catId} href={`/products?categoryId=${c.catId}`} className="border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-500 hover:shadow-md text-center group">
+              <FolderGit2 className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform group-hover:scale-110" />
+              <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{c.name}</h4>
             </Link>
           ))}
         </div>
@@ -88,7 +92,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
             <div>
-              <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
+              <h2 className="font-display text-3xl font-black uppercase tracking-wide text-slate-900">
                 {lang === 'vi' ? 'Tài Nguyên Số Mới Nhất & Nổi Bật' : 'Latest & Featured Digital Assets'}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">{lang === 'vi' ? 'Tải xuống sau khi giao dịch QR được hệ thống xác nhận' : 'Downloads unlock after QR payment is confirmed'}</p>
@@ -103,15 +107,11 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {allProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
-                <div className="bg-white rounded-xl overflow-hidden border border-slate-200 group-hover:border-amber-500 group-hover:shadow-md transition-all duration-200 flex flex-col h-full">
+                  <div className="overflow-hidden border border-slate-200 bg-white transition-all duration-200 group-hover:-translate-y-1 group-hover:border-amber-500 group-hover:shadow-xl flex flex-col h-full">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">
-                      <Badge className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5">
+                      <Badge className="bg-violet-700 text-white text-[10px] font-bold px-2 py-0.5">
                         Digital Asset
                       </Badge>
                     </div>

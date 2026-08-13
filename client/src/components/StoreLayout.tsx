@@ -71,24 +71,24 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
       {/* Top Banner / Announcement Bar (giống ảnh mẫu màu vàng cam) */}
       <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 text-slate-950 text-xs py-2 px-4 text-center font-bold tracking-wide shadow-sm flex items-center justify-center gap-2">
-        <Sparkles className="w-4 h-4 animate-bounce" />
+        <Sparkles className="w-4 h-4" />
         <span>{lang === 'vi' ? 'Tài nguyên thiết kế số · Thanh toán QR · Tải file sau khi xác nhận giao dịch' : 'Digital design resources · QR payment · Files unlock after transaction confirmation'}</span>
         <Sparkles className="w-4 h-4 animate-bounce" />
       </div>
 
       {/* Main Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto h-16 px-3 sm:h-[4.5rem] sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-sm">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-sm sm:h-10 sm:w-10">
               <img src={logoPath} alt="DHL Stores" className="w-full h-full object-cover" />
             </div>
             <div>
-              <span className="text-xl font-black tracking-wider text-slate-900 group-hover:text-amber-600 transition-colors">
+              <span className="font-display block text-2xl font-black leading-none tracking-wider text-slate-900 transition-colors group-hover:text-amber-600 sm:text-[1.65rem]">
                 DHL <span className="text-amber-600">STORES</span>
               </span>
-              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-semibold">{lang === 'vi' ? 'KHO TÀI NGUYÊN SỐ' : 'DIGITAL RESOURCE HUB'}</p>
+              <p className="hidden text-[9px] font-semibold uppercase tracking-widest text-slate-500 sm:block">{lang === 'vi' ? 'KHO TÀI NGUYÊN SỐ' : 'DIGITAL RESOURCE HUB'}</p>
             </div>
           </Link>
 
@@ -106,7 +106,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -315,7 +315,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       <footer className="bg-slate-900 text-slate-300 pt-16 pb-12 text-sm border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
           <div>
-            <h4 className="text-white font-bold mb-4 text-xs uppercase tracking-wider">ABOUT US</h4>
+            <h4 className="font-display mb-4 text-xl font-black uppercase tracking-wider text-white">DHL STORES</h4>
             <ul className="space-y-2 text-xs text-slate-400">
               <li>• {lang === 'vi' ? 'Font, vector, mockup và file in chuyên dụng' : 'Specialised fonts, vectors, mockups and print files'}</li>
               <li>• {lang === 'vi' ? 'Tương thích CorelDraw, Photoshop & Illustrator' : 'Compatible with CorelDraw, Photoshop and Illustrator'}</li>
@@ -324,7 +324,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-bold mb-4 text-xs uppercase tracking-wider">LIÊN HỆ</h4>
+            <h4 className="font-display mb-4 text-xl font-black uppercase tracking-wider text-white">LIÊN HỆ</h4>
             <ul className="space-y-2 text-xs text-slate-400">
               <li>{lang === 'vi' ? 'Kênh hỗ trợ và thông tin liên hệ sẽ được chủ cửa hàng bổ sung trước khi public.' : 'Support channels and contact details will be added by the store owner before launch.'}</li>
             </ul>

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import StoreLayout from "@/components/StoreLayout";
+import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
 import { useRoute, Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -123,7 +124,7 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-sm">
           <div className="lg:col-span-6">
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner">
-              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+              <AssetVisual categoryId={product.categoryId} title={product.name} fileSize={product.fileSize} />
               <div className="absolute top-4 left-4">
                 <Badge className="bg-purple-600 text-white font-bold px-3 py-1 text-xs">
                   {lang === 'vi' ? 'Tài nguyên số cao cấp (Digital Asset)' : 'Premium Digital Asset'}
