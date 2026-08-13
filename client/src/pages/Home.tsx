@@ -24,6 +24,8 @@ export default function Home() {
   const productsQuery = trpc.store.products.useQuery({});
   const categoriesQuery = trpc.store.categories.useQuery();
   const allProducts = productsQuery.data || [];
+  const digitalProducts = allProducts.filter(product => product.type === "digital");
+  const physicalProducts = allProducts.filter(product => product.type === "physical");
   const categories = categoriesQuery.data || [];
 
   const formatCurrency = (val: string | number) => {
@@ -102,7 +104,7 @@ export default function Home() {
                 <div className="aspect-[4/3] animate-pulse bg-slate-200" />
                 <div className="space-y-3 p-4"><div className="h-3 w-4/5 animate-pulse bg-slate-200" /><div className="h-3 w-full animate-pulse bg-slate-100" /><div className="h-4 w-1/3 animate-pulse bg-slate-200" /></div>
               </div>
-            )) : allProducts.map((p) => (
+            )) : digitalProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                   <div className="overflow-hidden border border-slate-200 bg-white transition-all duration-200 group-hover:-translate-y-1 group-hover:border-amber-500 group-hover:shadow-xl flex flex-col h-full">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
@@ -135,6 +137,13 @@ export default function Home() {
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="border-t border-emerald-100 bg-emerald-50/40 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex items-center justify-between border-b border-emerald-100 pb-4"><div><h2 className="font-display text-3xl font-black uppercase tracking-wide text-slate-900">{lang === "vi" ? "Hàng Thể Thao Mới & Nổi Bật" : "New & Featured Sports Gear"}</h2><p className="mt-0.5 text-xs text-slate-500">{lang === "vi" ? "Áo bóng đá, patch tay và nameset sẵn sàng đặt hàng." : "Football apparel, sleeve patches and namesets ready to order."}</p></div><Link href="/products"><Button variant="outline" size="sm" className="border-emerald-200 bg-white text-xs font-bold text-emerald-800 hover:bg-emerald-100">{t.viewAll} <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link></div>
+          {physicalProducts.length > 0 ? <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">{physicalProducts.filter(product => product.featured).concat(physicalProducts.filter(product => !product.featured)).slice(0, 8).map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group"><div className="flex h-full flex-col overflow-hidden border border-emerald-200 bg-white shadow-sm transition-all duration-200 group-hover:-translate-y-1 group-hover:border-emerald-500 group-hover:shadow-xl"><div className="relative aspect-[4/3] overflow-hidden bg-slate-100"><AssetVisual categoryId={product.categoryId} title={product.name} imageUrl={product.image} className="transition-transform duration-300 group-hover:scale-105" /><Badge className="absolute left-2 top-2 bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">Hàng vật lý</Badge></div><div className="flex flex-1 flex-col justify-between space-y-3 p-4"><div><h3 className="line-clamp-2 text-xs font-bold leading-relaxed text-slate-800 transition-colors group-hover:text-emerald-700">{product.name}</h3><p className="mt-1 text-[11px] text-slate-500">Còn {product.stock} sản phẩm</p></div><div className="flex items-center justify-between border-t border-emerald-50 pt-2"><span className="text-sm font-black text-emerald-700">{formatCurrency(product.price)}</span><span className="rounded bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 transition-colors group-hover:bg-emerald-600 group-hover:text-white">Đặt hàng</span></div></div></div></Link>)}</div> : <div className="rounded-2xl border border-dashed border-emerald-300 bg-white/70 px-6 py-10 text-center"><p className="font-display text-2xl font-black uppercase text-emerald-900">Danh mục hàng thể thao đã sẵn sàng</p><p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-600">Sản phẩm quần áo bóng đá, patch tay và nameset chống nhiễm sẽ xuất hiện tại đây ngay khi quản trị viên đăng hàng.</p></div>}
         </div>
       </section>
     </StoreLayout>

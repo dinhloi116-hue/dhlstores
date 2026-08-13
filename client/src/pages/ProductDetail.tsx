@@ -33,8 +33,11 @@ export default function ProductDetail() {
 
   const productQuery = trpc.store.productBySlug.useQuery({ slug }, { enabled: !!slug });
   const product = productQuery.data;
+  const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: product?.type === "physical" });
+  const variants = variantsQuery.data || [];
 
   const [quantity, setQuantity] = useState<number>(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
 
   const addToCartMutation = trpc.store.addToCart.useMutation({
@@ -91,10 +94,12 @@ export default function ProductDetail() {
       return;
     }
 
+    if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
     setAdding(true);
     addToCartMutation.mutate({
       productId: product.id,
       quantity,
+      variantId: selectedVariantId || undefined,
     });
   };
 
@@ -104,9 +109,11 @@ export default function ProductDetail() {
       startLogin();
       return;
     }
+    if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
     addToCartMutation.mutate({
       productId: product.id,
       quantity,
+      variantId: selectedVariantId || undefined,
     }, {
       onSuccess: () => {
         setLocation("/checkout");
@@ -126,8 +133,8 @@ export default function ProductDetail() {
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner">
               <AssetVisual categoryId={product.categoryId} title={product.name} fileSize={product.fileSize} imageUrl={product.image} />
               <div className="absolute top-4 left-4">
-                <Badge className="bg-purple-600 text-white font-bold px-3 py-1 text-xs">
-                  {lang === 'vi' ? 'Tài nguyên số cao cấp (Digital Asset)' : 'Premium Digital Asset'}
+                <Badge className={`${product.type === "physical" ? "bg-emerald-600" : "bg-purple-600"} text-white font-bold px-3 py-1 text-xs`}>
+                  {product.type === "physical" ? (lang === 'vi' ? 'Hàng thể thao vật lý' : 'Physical sports item') : (lang === 'vi' ? 'Tài nguyên số cao cấp' : 'Premium Digital Asset')}
                 </Badge>
               </div>
             </div>
@@ -137,10 +144,10 @@ export default function ProductDetail() {
             <div>
               <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
                 <Sparkles className="w-4 h-4" />
-                <span>{lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License'}</span>
+                <span>{product.type === "physical" ? (lang === 'vi' ? `Còn ${product.stock} sản phẩm` : `${product.stock} items in stock`) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{product.name}</h1>
-              <p className="text-2xl font-black text-amber-600 mt-2">{formatCurrency(product.price)}</p>
+              <p className="text-2xl font-black text-amber-600 mt-2">{formatCurrency(Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0))}</p>
             </div>
 
             <p className="text-slate-600 text-xs sm:text-sm leading-relaxed border-t border-b border-slate-100 py-4">
@@ -157,8 +164,10 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {product.type === "physical" && variants.length > 0 && <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Kích thước / Màu sắc</label><div className="flex flex-wrap gap-2">{variants.map(variant => <button key={variant.id} type="button" onClick={() => setSelectedVariantId(variant.id)} disabled={variant.stock <= 0} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${selectedVariantId === variant.id ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-40`}>{[variant.size, variant.color].filter(Boolean).join(" · ") || "Phiên bản chuẩn"}<span className="ml-1 opacity-75">({variant.stock})</span></button>)}</div></div>}
+
             <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? 'Số lượng gói:' : 'Quantity:'}</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? (product.type === "physical" ? 'Số lượng:' : 'Số lượng gói:') : 'Quantity:'}</label>
               <div className="flex items-center gap-3 w-36 bg-slate-50 border border-slate-200 rounded-xl p-1">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -192,7 +201,7 @@ export default function ProductDetail() {
                 className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl shadow-md text-sm"
               >
                 <Zap className="w-4 h-4 mr-2" />
-                {lang === 'vi' ? 'Tải ngay 1-Click (Mua ngay)' : 'Instant 1-Click Buy'}
+                {product.type === "physical" ? (lang === 'vi' ? 'Mua ngay & chọn giao hàng' : 'Buy now & choose delivery') : (lang === 'vi' ? 'Tải ngay 1-Click (Mua ngay)' : 'Instant 1-Click Buy')}
               </Button>
             </div>
 

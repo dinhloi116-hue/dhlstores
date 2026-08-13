@@ -22,14 +22,17 @@ type ProductDraft = {
   fileUrl: string;
   fileSize: string;
   specs: string;
+  stock: string;
   featured: boolean;
   isActive: boolean;
 };
+type VariantDraft = { size: string; color: string; sku: string; priceAdjustment: string; stock: string; isActive: boolean };
 
 const emptyCategory: CategoryDraft = { name: "", slug: "", description: "", isActive: true };
 const emptyProduct: ProductDraft = {
-  name: "", slug: "", description: "", price: "", categoryId: 0, image: "generated:catalog-cover", fileUrl: "", fileSize: "", specs: "", featured: false, isActive: true,
+  name: "", slug: "", description: "", price: "", categoryId: 0, image: "generated:catalog-cover", fileUrl: "", fileSize: "", specs: "", stock: "0", featured: false, isActive: true,
 };
+const emptyVariant: VariantDraft = { size: "", color: "", sku: "", priceAdjustment: "0", stock: "0", isActive: true };
 
 function slugify(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/đ/g, "d").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -52,16 +55,21 @@ export default function AdminOrders() {
   const [productDraft, setProductDraft] = useState<ProductDraft>(emptyProduct);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [selectedVariantProductId, setSelectedVariantProductId] = useState<number | null>(null);
+  const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
+  const [variantDraft, setVariantDraft] = useState<VariantDraft>(emptyVariant);
   const [uploadTarget, setUploadTarget] = useState<"image" | "file" | null>(null);
 
   const isAdmin = isAuthenticated && user?.role === "admin";
   const categoriesQuery = trpc.catalogAdmin.categories.useQuery(undefined, { enabled: isAdmin });
   const productsQuery = trpc.catalogAdmin.products.useQuery(undefined, { enabled: isAdmin });
+  const variantsQuery = trpc.catalogAdmin.productVariants.useQuery({ productId: selectedVariantProductId || undefined }, { enabled: isAdmin && Boolean(selectedVariantProductId) });
   const mediaQuery = trpc.catalogAdmin.media.useQuery(undefined, { enabled: isAdmin });
   const ordersQuery = trpc.store.orders.useQuery(undefined, { enabled: isAdmin });
   const usersQuery = trpc.store.usersList.useQuery(undefined, { enabled: isAdmin });
   const categories = categoriesQuery.data || [];
   const products = productsQuery.data || [];
+  const variants = variantsQuery.data || [];
   const media = mediaQuery.data || [];
   const orders = ordersQuery.data || [];
   const users = usersQuery.data || [];
@@ -106,6 +114,26 @@ export default function AdminOrders() {
       setProductDraft({ ...emptyProduct, categoryId: categories[0]?.id || 0 });
       setEditingProductId(null);
       refreshCatalog();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const createVariant = trpc.catalogAdmin.createProductVariant.useMutation({
+    onSuccess: () => {
+      toast.success("Đã thêm biến thể");
+      setVariantDraft(emptyVariant);
+      setEditingVariantId(null);
+      utils.catalogAdmin.productVariants.invalidate();
+      utils.catalogAdmin.products.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const updateVariant = trpc.catalogAdmin.updateProductVariant.useMutation({
+    onSuccess: () => {
+      toast.success("Đã cập nhật biến thể");
+      setVariantDraft(emptyVariant);
+      setEditingVariantId(null);
+      utils.catalogAdmin.productVariants.invalidate();
+      utils.catalogAdmin.products.invalidate();
     },
     onError: error => toast.error(error.message),
   });
@@ -178,10 +206,20 @@ export default function AdminOrders() {
       ...productDraft,
       slug: productDraft.slug || slugify(productDraft.name),
       price: Number(productDraft.price),
+      stock: Number(productDraft.stock || 0),
     };
     if (!data.slug) return toast.error("Hãy nhập tên sản phẩm hợp lệ");
     if (editingProductId) updateProduct.mutate({ productId: editingProductId, data });
     else createProduct.mutate(data);
+  };
+
+  const handleVariantSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!selectedVariantProductId) return toast.error("Hãy chọn sản phẩm vật lý trước");
+    if (!variantDraft.size && !variantDraft.color) return toast.error("Hãy nhập ít nhất kích thước hoặc màu sắc");
+    const data = { ...variantDraft, productId: selectedVariantProductId, priceAdjustment: Number(variantDraft.priceAdjustment || 0), stock: Number(variantDraft.stock || 0) };
+    if (editingVariantId) updateVariant.mutate({ variantId: editingVariantId, data: { size: data.size || undefined, color: data.color || undefined, sku: data.sku || undefined, priceAdjustment: data.priceAdjustment, stock: data.stock, isActive: data.isActive } });
+    else createVariant.mutate(data);
   };
 
   if (!isAdmin) {
@@ -190,6 +228,7 @@ export default function AdminOrders() {
 
   const totalRevenue = orders.filter(order => order.paymentStatus === "paid").reduce((sum, order) => sum + Number(order.totalAmount), 0);
   const selectedCategoryName = (categoryId: number) => categories.find(category => category.id === categoryId)?.name || "Chưa phân loại";
+  const selectedProductCategory = categories.find(category => category.id === productDraft.categoryId);
 
   return (
     <StoreLayout>
@@ -207,6 +246,7 @@ export default function AdminOrders() {
         <Tabs defaultValue="products" className="space-y-6">
           <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
             <TabsTrigger value="products" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Sản phẩm</TabsTrigger>
+            <TabsTrigger value="variants" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Biến thể</TabsTrigger>
             <TabsTrigger value="categories" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Danh mục</TabsTrigger>
             <TabsTrigger value="media" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Thư viện tệp</TabsTrigger>
             <TabsTrigger value="orders" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Đơn hàng</TabsTrigger>
@@ -215,12 +255,13 @@ export default function AdminOrders() {
 
           <TabsContent value="products" className="space-y-6">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">Danh sách sản phẩm</h2><p className="mt-1 text-xs text-slate-500">Chọn sửa để chỉnh giá, ảnh, file hoặc trạng thái hiển thị.</p></div><Badge variant="outline">{products.length} mục</Badge></div><div className="divide-y divide-slate-100">{products.map(product => <div key={product.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-violet-600 text-xs font-black text-white">{product.name.slice(0, 2).toUpperCase()}</div><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{product.name}</p><p className="mt-0.5 text-xs text-slate-500">{selectedCategoryName(product.categoryId)} · {formatCurrency(product.price)}</p></div></div><div className="flex items-center justify-between gap-2 sm:justify-end"><Badge className={product.isActive === false ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}>{product.isActive === false ? "Đang ẩn" : "Đang hiển thị"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingProductId(product.id); setProductDraft({ name: product.name, slug: product.slug, description: product.description || "", price: product.price, categoryId: product.categoryId, image: product.image, fileUrl: product.fileUrl || "", fileSize: product.fileSize || "", specs: product.specs || "", featured: product.featured, isActive: product.isActive !== false }); }}><Pencil className="mr-1 h-3.5 w-3.5" />Sửa</Button></div></div>)}{products.length === 0 && <div className="p-12 text-center text-sm text-slate-500">Chưa có sản phẩm. Hãy tạo sản phẩm đầu tiên ở biểu mẫu bên phải.</div>}</div></div>
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">Danh sách sản phẩm</h2><p className="mt-1 text-xs text-slate-500">Chọn sửa để chỉnh giá, ảnh, file hoặc trạng thái hiển thị.</p></div><Badge variant="outline">{products.length} mục</Badge></div><div className="divide-y divide-slate-100">{products.map(product => <div key={product.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-violet-600 text-xs font-black text-white">{product.name.slice(0, 2).toUpperCase()}</div><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{product.name}</p><p className="mt-0.5 text-xs text-slate-500">{selectedCategoryName(product.categoryId)} · {formatCurrency(product.price)}</p></div></div><div className="flex items-center justify-between gap-2 sm:justify-end"><Badge className={product.isActive === false ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}>{product.isActive === false ? "Đang ẩn" : "Đang hiển thị"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingProductId(product.id); setProductDraft({ name: product.name, slug: product.slug, description: product.description || "", price: product.price, categoryId: product.categoryId, image: product.image, fileUrl: product.fileUrl || "", fileSize: product.fileSize || "", specs: product.specs || "", stock: String(product.stock), featured: product.featured, isActive: product.isActive !== false }); }}><Pencil className="mr-1 h-3.5 w-3.5" />Sửa</Button></div></div>)}{products.length === 0 && <div className="p-12 text-center text-sm text-slate-500">Chưa có sản phẩm. Hãy tạo sản phẩm đầu tiên ở biểu mẫu bên phải.</div>}</div></div>
               <form onSubmit={handleProductSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">{editingProductId ? "Sửa sản phẩm" : "Thêm sản phẩm"}</h2><p className="mt-1 text-xs text-slate-500">Ảnh và file được lưu trong kho của website.</p></div>{editingProductId && <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingProductId(null); setProductDraft({ ...emptyProduct, categoryId: categories[0]?.id || 0 }); }}>Tạo mới</Button>}</div>
                 <Input value={productDraft.name} onChange={event => setProductDraft(prev => ({ ...prev, name: event.target.value, slug: prev.slug || slugify(event.target.value) }))} placeholder="Tên sản phẩm" required />
                 <Input value={productDraft.slug} onChange={event => setProductDraft(prev => ({ ...prev, slug: slugify(event.target.value) }))} placeholder="slug-san-pham" required />
                 <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm" value={productDraft.categoryId} onChange={event => setProductDraft(prev => ({ ...prev, categoryId: Number(event.target.value) }))} required><option value={0}>Chọn danh mục</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select>
                 <Input type="number" min="0" value={productDraft.price} onChange={event => setProductDraft(prev => ({ ...prev, price: event.target.value }))} placeholder="Giá bán (VND)" required />
+                {selectedProductCategory?.type === "physical" && <Input type="number" min="0" value={productDraft.stock} onChange={event => setProductDraft(prev => ({ ...prev, stock: event.target.value }))} placeholder="Tồn kho tổng (nếu chưa dùng biến thể)" required />}
                 <Textarea value={productDraft.description} onChange={event => setProductDraft(prev => ({ ...prev, description: event.target.value }))} placeholder="Mô tả sản phẩm" />
                 <Textarea value={productDraft.specs} onChange={event => setProductDraft(prev => ({ ...prev, specs: event.target.value }))} placeholder="Thông số / định dạng tệp" />
                 <div className="grid grid-cols-2 gap-3"><Button type="button" variant="outline" onClick={() => selectFile("image")} disabled={uploadMedia.isPending}><Image className="mr-2 h-4 w-4" />{productDraft.image.startsWith("/manus-storage/") ? "Đổi ảnh" : "Tải ảnh"}</Button><Button type="button" variant="outline" onClick={() => selectFile("file")} disabled={uploadMedia.isPending}><CloudUpload className="mr-2 h-4 w-4" />{productDraft.fileUrl ? "Đổi file" : "Tải file"}</Button></div>
@@ -231,11 +272,36 @@ export default function AdminOrders() {
             </div>
           </TabsContent>
 
+          <TabsContent value="variants" className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 p-5">
+                <h2 className="font-display text-2xl font-black uppercase text-slate-900">Biến thể hàng vật lý</h2>
+                <p className="mt-1 text-xs text-slate-500">Chọn sản phẩm để quản lý kích thước, màu sắc, mã SKU và tồn kho từng phiên bản.</p>
+              </div>
+              <div className="space-y-4 p-5">
+                <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm" value={selectedVariantProductId || 0} onChange={event => { setSelectedVariantProductId(Number(event.target.value) || null); setEditingVariantId(null); setVariantDraft(emptyVariant); }}>
+                  <option value={0}>Chọn sản phẩm vật lý</option>
+                  {products.filter(product => product.type === "physical").map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
+                </select>
+                {!selectedVariantProductId ? <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">Hãy tạo hoặc chọn một sản phẩm thuộc danh mục hàng vật lý trước.</div> : <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">{variants.map(variant => <div key={variant.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">{[variant.size, variant.color].filter(Boolean).join(" · ") || "Biến thể chưa đặt tên"}</p><p className="mt-1 text-xs text-slate-500">SKU: {variant.sku || "—"} · Tồn: {variant.stock} · Điều chỉnh: {formatCurrency(variant.priceAdjustment)}</p></div><div className="flex items-center gap-2"><Badge className={variant.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}>{variant.isActive ? "Đang bán" : "Đang ẩn"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingVariantId(variant.id); setVariantDraft({ size: variant.size || "", color: variant.color || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive }); }}><Pencil className="h-3.5 w-3.5" /></Button></div></div>)}{variants.length === 0 && <div className="p-8 text-center text-sm text-slate-500">Chưa có biến thể. Thêm size hoặc màu đầu tiên ở biểu mẫu bên phải.</div>}</div>}
+              </div>
+            </section>
+            <form onSubmit={handleVariantSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">{editingVariantId ? "Sửa biến thể" : "Thêm biến thể"}</h2><p className="mt-1 text-xs text-slate-500">Mỗi biến thể có tồn kho riêng.</p></div>{editingVariantId && <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingVariantId(null); setVariantDraft(emptyVariant); }}>Tạo mới</Button>}</div>
+              <Input value={variantDraft.size} onChange={event => setVariantDraft(prev => ({ ...prev, size: event.target.value }))} placeholder="Kích thước, ví dụ: L" disabled={!selectedVariantProductId} />
+              <Input value={variantDraft.color} onChange={event => setVariantDraft(prev => ({ ...prev, color: event.target.value }))} placeholder="Màu sắc, ví dụ: Đỏ" disabled={!selectedVariantProductId} />
+              <Input value={variantDraft.sku} onChange={event => setVariantDraft(prev => ({ ...prev, sku: event.target.value }))} placeholder="Mã SKU (tùy chọn)" disabled={!selectedVariantProductId} />
+              <div className="grid grid-cols-2 gap-3"><Input type="number" value={variantDraft.priceAdjustment} onChange={event => setVariantDraft(prev => ({ ...prev, priceAdjustment: event.target.value }))} placeholder="Chênh giá" disabled={!selectedVariantProductId} /><Input type="number" min="0" value={variantDraft.stock} onChange={event => setVariantDraft(prev => ({ ...prev, stock: event.target.value }))} placeholder="Tồn kho" disabled={!selectedVariantProductId} /></div>
+              <label className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-700"><input type="checkbox" checked={variantDraft.isActive} onChange={event => setVariantDraft(prev => ({ ...prev, isActive: event.target.checked }))} disabled={!selectedVariantProductId} />Đang bán</label>
+              <Button type="submit" disabled={!selectedVariantProductId || createVariant.isPending || updateVariant.isPending} className="w-full bg-violet-600 font-black text-white hover:bg-violet-500"><Check className="mr-2 h-4 w-4" />{editingVariantId ? "Lưu biến thể" : "Thêm biến thể"}</Button>
+            </form>
+          </TabsContent>
+
           <TabsContent value="categories" className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]"><div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-5"><h2 className="font-display text-2xl font-black uppercase text-slate-900">Danh mục hiện có</h2></div><div className="divide-y divide-slate-100">{categories.map(category => <div key={category.id} className="flex items-center justify-between gap-4 p-4"><div><p className="text-sm font-bold text-slate-900">{category.name}</p><p className="mt-1 text-xs text-slate-500">{category.description || "Chưa có mô tả"}</p></div><div className="flex items-center gap-2"><Badge className={category.isActive === false ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}>{category.isActive === false ? "Ẩn" : "Hiện"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingCategoryId(category.id); setCategoryDraft({ name: category.name, slug: category.slug, description: category.description || "", isActive: category.isActive !== false }); }}><Pencil className="h-3.5 w-3.5" /></Button></div></div>)}</div></div><form onSubmit={handleCategorySubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="font-display text-2xl font-black uppercase text-slate-900">{editingCategoryId ? "Sửa danh mục" : "Thêm danh mục"}</h2>{editingCategoryId && <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingCategoryId(null); setCategoryDraft(emptyCategory); }}>Tạo mới</Button>}</div><Input value={categoryDraft.name} onChange={event => setCategoryDraft(prev => ({ ...prev, name: event.target.value, slug: prev.slug || slugify(event.target.value) }))} placeholder="Tên danh mục" required /><Input value={categoryDraft.slug} onChange={event => setCategoryDraft(prev => ({ ...prev, slug: slugify(event.target.value) }))} placeholder="slug-danh-muc" required /><Textarea value={categoryDraft.description} onChange={event => setCategoryDraft(prev => ({ ...prev, description: event.target.value }))} placeholder="Mô tả ngắn" /><label className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-700"><input type="checkbox" checked={categoryDraft.isActive} onChange={event => setCategoryDraft(prev => ({ ...prev, isActive: event.target.checked }))} />Hiển thị danh mục công khai</label><Button type="submit" className="w-full bg-amber-500 font-black text-slate-950 hover:bg-amber-400">{editingCategoryId ? "Lưu danh mục" : "Tạo danh mục"}</Button></form></TabsContent>
 
           <TabsContent value="media" className="space-y-5"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">Thư viện tệp</h2><p className="mt-1 text-xs text-slate-500">Ảnh, video, PDF và ZIP đã tải vào kho S3 của website. Mỗi tệp tối đa 20 MB.</p></div><Button onClick={() => selectFile("file")} className="bg-violet-600 font-bold text-white hover:bg-violet-500"><Plus className="mr-2 h-4 w-4" />Tải tệp mới</Button></div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{media.map(asset => <div key={asset.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700"><FileArchive className="h-5 w-5" /></div><Badge variant="outline" className="max-w-[11rem] truncate text-[10px]">{asset.mimeType}</Badge></div><p className="mt-4 truncate text-sm font-bold text-slate-900">{asset.fileName}</p><p className="mt-1 text-xs text-slate-500">{formatBytes(asset.sizeBytes)}</p><div className="mt-4 flex gap-2"><a href={asset.url} target="_blank" rel="noreferrer" className="inline-flex items-center text-xs font-bold text-violet-700 hover:text-violet-900"><Link2 className="mr-1 h-3.5 w-3.5" />Mở tệp</a><button type="button" onClick={() => setProductDraft(prev => ({ ...prev, fileUrl: asset.url, fileSize: formatBytes(asset.sizeBytes) }))} className="text-xs font-bold text-amber-700 hover:text-amber-900">Dùng làm file tải</button></div></div>)}{media.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">Chưa có tệp. Hãy tải ảnh hoặc tài nguyên đầu tiên.</div>}</div></TabsContent>
 
-          <TabsContent value="orders" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-5"><h2 className="font-display text-2xl font-black uppercase text-slate-900">Đơn hàng</h2></div><div className="divide-y divide-slate-100">{orders.map(order => <div key={order.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">#{order.orderCode} · {formatCurrency(order.totalAmount)}</p><p className="mt-1 text-xs text-slate-500">{new Date(order.createdAt).toLocaleString("vi-VN")} · {order.items?.length || 0} sản phẩm</p></div><select className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs" value={order.status} onChange={event => updateOrderStatus.mutate({ orderId: order.id, status: event.target.value as "pending" | "processing" | "shipping" | "completed" | "cancelled" })}><option value="pending">Chờ xử lý</option><option value="processing">Đang xử lý</option><option value="completed">Hoàn tất</option><option value="cancelled">Đã hủy</option></select></div>)}{orders.length === 0 && <div className="p-12 text-center text-sm text-slate-500">Chưa có đơn hàng.</div>}</div></TabsContent>
+          <TabsContent value="orders" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-5"><h2 className="font-display text-2xl font-black uppercase text-slate-900">Đơn hàng</h2></div><div className="divide-y divide-slate-100">{orders.map(order => <div key={order.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">#{order.orderCode} · {formatCurrency(order.totalAmount)}</p><p className="mt-1 text-xs text-slate-500">{new Date(order.createdAt).toLocaleString("vi-VN")} · {order.items?.length || 0} sản phẩm{order.hasPhysicalItems ? ` · ${order.shippingMethod || "giao hàng"}` : ""}</p></div><select className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs" value={order.status} onChange={event => updateOrderStatus.mutate({ orderId: order.id, status: event.target.value as "pending" | "processing" | "shipping" | "completed" | "cancelled" })}><option value="pending">Chờ xử lý</option><option value="processing">Đang xử lý</option><option value="shipping">Đang giao hàng</option><option value="completed">Hoàn tất</option><option value="cancelled">Đã hủy</option></select></div>)}{orders.length === 0 && <div className="p-12 text-center text-sm text-slate-500">Chưa có đơn hàng.</div>}</div></TabsContent>
 
           <TabsContent value="users" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-5"><h2 className="font-display text-2xl font-black uppercase text-slate-900">Tài khoản khách hàng</h2></div><div className="divide-y divide-slate-100">{users.map(account => <div key={account.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600"><Users className="h-4 w-4" /></div><div><p className="text-sm font-bold text-slate-900">{account.name || "Chưa đặt tên"}</p><p className="text-xs text-slate-500">{account.email || account.openId}</p></div></div><div className="flex items-center gap-2"><Badge className={account.status === "blocked" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}>{account.status === "blocked" ? "Đã khóa" : "Hoạt động"}</Badge>{account.role !== "admin" && <Button size="sm" variant="outline" onClick={() => updateUserStatus.mutate({ userId: account.id, status: account.status === "blocked" ? "active" : "blocked" })}>{account.status === "blocked" ? <Check className="mr-1 h-3.5 w-3.5" /> : <CircleOff className="mr-1 h-3.5 w-3.5" />}{account.status === "blocked" ? "Mở khóa" : "Khóa"}</Button>}</div></div>)}</div></TabsContent>
         </Tabs>

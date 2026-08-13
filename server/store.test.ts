@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { confirmSePayPayment, getPaidDownloadsForUser, saveProductDownloadLink } from "./db";
+import { confirmSePayPayment, createProduct, createProductVariant, getPaidDownloadsForUser, getProductVariants, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createMockContext(): TrpcContext {
@@ -96,5 +96,37 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(orders[0]?.items?.[0]?.product?.fileUrl).toBeDefined();
     const downloads = await getPaidDownloadsForUser(1);
     expect(downloads[0]?.driveUrl).toBe("https://drive.google.com/file/d/test-resource/view");
+  });
+
+  it("adds a physical variant, includes shipping, and moves the paid order to processing", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const suffix = Date.now().toString(36);
+    const product = await createProduct({
+      name: `Áo bóng đá ${suffix}`,
+      slug: `ao-bong-da-${suffix}`,
+      description: "Sản phẩm vật lý thử nghiệm",
+      price: "100000",
+      categoryId: 11,
+      image: "generated:physical-cover",
+      stock: 5,
+      featured: true,
+      isActive: true,
+    });
+    const variant = await createProductVariant({ productId: product!.id, size: "L", color: "Đỏ", sku: `TEST-${suffix}`, priceAdjustment: "5000", stock: 3, isActive: true });
+
+    await caller.store.addToCart({ productId: product!.id, variantId: variant!.id, quantity: 1 });
+    const checkout = await caller.store.checkout({
+      totalAmount: 0,
+      items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0 }],
+      shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "standard" },
+    });
+
+    expect(checkout.totalAmount).toBe(135000);
+    const confirmation = await confirmSePayPayment({ providerTransactionId: `sepay-physical-${suffix}`, transferAmount: 135000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `PHYSICAL-${suffix}` });
+    expect(confirmation.success).toBe(true);
+    const orders = await caller.store.orders();
+    expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "30000.00" });
+    expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
   });
 });

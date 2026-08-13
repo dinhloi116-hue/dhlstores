@@ -50,10 +50,26 @@ export const products = mysqlTable("products", {
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
 
+export const productVariants = mysqlTable("product_variants", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  size: varchar("size", { length: 64 }),
+  color: varchar("color", { length: 64 }),
+  sku: varchar("sku", { length: 128 }),
+  priceAdjustment: decimal("priceAdjustment", { precision: 12, scale: 2 }).default("0").notNull(),
+  stock: int("stock").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProductVariant = typeof productVariants.$inferSelect;
+export type InsertProductVariant = typeof productVariants.$inferInsert;
+
 export const cartItems = mysqlTable("cart_items", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   productId: int("productId").notNull(),
+  variantId: int("variantId"),
   quantity: int("quantity").default(1).notNull(),
   attributes: varchar("attributes", { length: 255 }), // VD: "Size: L, Màu: Đỏ"
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -76,6 +92,8 @@ export const orders = mysqlTable("orders", {
   shippingPhone: varchar("shippingPhone", { length: 64 }),
   shippingAddress: text("shippingAddress"),
   shippingNote: text("shippingNote"),
+  shippingMethod: varchar("shippingMethod", { length: 64 }),
+  shippingFee: decimal("shippingFee", { precision: 12, scale: 2 }).default("0").notNull(),
   hasPhysicalItems: boolean("hasPhysicalItems").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -88,6 +106,8 @@ export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),
   orderId: int("orderId").notNull(),
   productId: int("productId").notNull(),
+  variantId: int("variantId"),
+  variantLabel: varchar("variantLabel", { length: 255 }),
   quantity: int("quantity").notNull(),
   price: decimal("price", { precision: 12, scale: 2 }).notNull(),
   attributes: varchar("attributes", { length: 255 }),

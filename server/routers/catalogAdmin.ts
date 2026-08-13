@@ -21,7 +21,18 @@ const productInput = z.object({
   fileUrl: z.string().trim().max(4096).optional(),
   fileSize: z.string().trim().max(64).optional(),
   specs: z.string().trim().max(5000).optional(),
+  stock: z.coerce.number().int().min(0).max(999_999).default(0),
   featured: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+});
+
+const productVariantInput = z.object({
+  productId: z.number().int().positive(),
+  size: z.string().trim().max(64).optional(),
+  color: z.string().trim().max(64).optional(),
+  sku: z.string().trim().max(128).optional(),
+  priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).default(0),
+  stock: z.coerce.number().int().min(0).max(999_999).default(0),
   isActive: z.boolean().default(true),
 });
 
@@ -51,6 +62,19 @@ export const catalogAdminRouter = router({
       fileSize: input.data.fileSize || undefined,
       specs: input.data.specs || undefined,
     }),
+  ),
+
+  productVariants: adminProcedure.input(z.object({ productId: z.number().int().positive().optional() }).optional()).query(({ input }) =>
+    db.getAdminProductVariants(input?.productId),
+  ),
+  createProductVariant: adminProcedure.input(productVariantInput).mutation(({ input }) =>
+    db.createProductVariant({ ...input, priceAdjustment: String(input.priceAdjustment) }),
+  ),
+  updateProductVariant: adminProcedure.input(z.object({
+    variantId: z.number().int().positive(),
+    data: productVariantInput.omit({ productId: true }),
+  })).mutation(({ input }) =>
+    db.updateProductVariant(input.variantId, { ...input.data, priceAdjustment: String(input.data.priceAdjustment) }),
   ),
 
   media: adminProcedure.query(() => db.getMediaAssets()),

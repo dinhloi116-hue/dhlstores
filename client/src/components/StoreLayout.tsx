@@ -50,7 +50,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const cartItems = cartQuery.data || [];
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cartItems.reduce((sum, item) => {
-    const price = item.product ? parseFloat(item.product.price) : 0;
+    const price = item.product ? parseFloat(item.product.price) + Number(item.variant?.priceAdjustment || 0) : 0;
     return sum + price * item.quantity;
   }, 0);
 
@@ -163,8 +163,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                           <img src={p.image} alt={p.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-semibold truncate text-slate-900">{p.name}</h4>
-                            {item.attributes && <p className="text-xs text-amber-600 font-semibold">{item.attributes}</p>}
-                            <p className="text-xs text-slate-500 mt-1">{formatCurrency(parseFloat(p.price))} x {item.quantity}</p>
+                            {(item.attributes || item.variant) && <p className="text-xs text-amber-600 font-semibold">{item.attributes || [item.variant?.size, item.variant?.color].filter(Boolean).join(" · ")}</p>}
+                            <p className="text-xs text-slate-500 mt-1">{formatCurrency(parseFloat(p.price) + Number(item.variant?.priceAdjustment || 0))} x {item.quantity}</p>
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             <button

@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, cartItems, categories, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, products, users } from "../drizzle/schema";
+import { InsertUser, cartItems, categories, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productVariants, products, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -40,6 +40,18 @@ export interface ProductType {
   createdAt: Date;
 }
 
+export interface ProductVariantType {
+  id: number;
+  productId: number;
+  size?: string;
+  color?: string;
+  sku?: string;
+  priceAdjustment: string;
+  stock: number;
+  isActive: boolean;
+  createdAt: Date;
+}
+
 export interface CategoryType {
   id: number;
   name: string;
@@ -53,15 +65,19 @@ export interface CartItemType {
   id: number;
   userId: number;
   productId: number;
+  variantId?: number | null;
   quantity: number;
   attributes?: string;
   product?: ProductType;
+  variant?: ProductVariantType;
 }
 
 export interface OrderItemType {
   id: number;
   orderId: number;
   productId: number;
+  variantId?: number | null;
+  variantLabel?: string | null;
   quantity: number;
   price: string;
   attributes?: string;
@@ -80,6 +96,13 @@ export interface OrderType {
   paymentMethod: string;
   paymentReference?: string | null;
   paymentConfirmedAt?: Date | null;
+  shippingName?: string | null;
+  shippingPhone?: string | null;
+  shippingAddress?: string | null;
+  shippingNote?: string | null;
+  shippingMethod?: string | null;
+  shippingFee?: string;
+  hasPhysicalItems?: boolean;
   createdAt: Date;
   items?: OrderItemType[];
 }
@@ -95,6 +118,18 @@ export interface ExtendedUserType {
   createdAt: Date;
   updatedAt: Date;
   lastSignedIn: Date;
+}
+
+export type ShippingMethodCode = "pickup" | "standard" | "express";
+
+export const shippingOptions: Array<{ code: ShippingMethodCode; label: string; fee: number }> = [
+  { code: "pickup", label: "Nhận tại cửa hàng", fee: 0 },
+  { code: "standard", label: "Giao tiêu chuẩn", fee: 30000 },
+  { code: "express", label: "Giao nhanh", fee: 50000 },
+];
+
+export function getShippingOption(code: ShippingMethodCode) {
+  return shippingOptions.find(option => option.code === code) ?? shippingOptions[0];
 }
 
 const logoUrl = "/manus-storage/logodhlstores_c8e433ed.png";
@@ -308,6 +343,7 @@ let memoryUsers: ExtendedUserType[] = [
 let memoryCart: CartItemType[] = [];
 let memoryOrders: OrderType[] = [];
 let memoryOrderItems: OrderItemType[] = [];
+let memoryProductVariants: ProductVariantType[] = [];
 const memoryProcessedTransactions = new Set<string>();
 const memoryDownloadLinks = new Map<number, string>();
 const memoryMediaAssets: Array<{ id: number; fileName: string; storageKey: string; url: string; mimeType: string; sizeBytes: number; createdAt: Date }> = [];
@@ -315,6 +351,7 @@ let nextCartId = 1;
 let nextOrderId = 1;
 let nextOrderItemId = 1;
 let nextMediaAssetId = 1;
+let nextProductVariantId = 1;
 
 async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
   await connection.insert(categories).values(memoryCategories.map(category => ({
@@ -376,6 +413,20 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     featured: product.featured,
     isActive: product.isActive,
     createdAt: product.createdAt,
+  };
+}
+
+function toProductVariantType(variant: typeof productVariants.$inferSelect): ProductVariantType {
+  return {
+    id: variant.id,
+    productId: variant.productId,
+    size: variant.size ?? undefined,
+    color: variant.color ?? undefined,
+    sku: variant.sku ?? undefined,
+    priceAdjustment: String(variant.priceAdjustment),
+    stock: variant.stock,
+    isActive: variant.isActive,
+    createdAt: variant.createdAt,
   };
 }
 
@@ -492,6 +543,7 @@ export type CatalogProductInput = {
   fileUrl?: string;
   fileSize?: string;
   specs?: string;
+  stock: number;
   featured: boolean;
   isActive: boolean;
 };
@@ -556,17 +608,20 @@ export async function createProduct(input: CatalogProductInput) {
   const connection = await getDb();
   if (connection) {
     await ensureDefaultCatalog(connection);
+    const category = await connection.select({ type: categories.type }).from(categories).where(eq(categories.id, input.categoryId)).limit(1);
+    if (!category[0]) throw new Error("Không tìm thấy danh mục sản phẩm");
+    const productType = category[0].type === "physical" ? "physical" : "digital";
     const inserted = await connection.insert(products).values({
       name: input.name,
       slug: input.slug,
       description: input.description ?? null,
       price: input.price,
-      type: "digital",
+      type: productType,
       categoryId: input.categoryId,
       image: input.image,
       fileUrl: input.fileUrl ?? null,
       fileSize: input.fileSize ?? null,
-      stock: 9999,
+      stock: productType === "physical" ? input.stock : 9999,
       specs: input.specs ?? null,
       featured: input.featured,
       isActive: input.isActive,
@@ -574,18 +629,21 @@ export async function createProduct(input: CatalogProductInput) {
     const row = await connection.select().from(products).where(eq(products.id, Number(inserted[0].insertId))).limit(1);
     return row[0] ? toProductType(row[0]) : undefined;
   }
+  const category = memoryCategories.find(item => item.id === input.categoryId);
+  if (!category) throw new Error("Không tìm thấy danh mục sản phẩm");
+  const productType = category.type === "physical" ? "physical" : "digital";
   const product: ProductType = {
     id: Math.max(0, ...memoryProducts.map(item => item.id)) + 1,
     name: input.name,
     slug: input.slug,
     description: input.description ?? "",
     price: input.price,
-    type: "digital",
+    type: productType,
     categoryId: input.categoryId,
     image: input.image,
     fileUrl: input.fileUrl,
     fileSize: input.fileSize,
-    stock: 9999,
+    stock: productType === "physical" ? input.stock : 9999,
     specs: input.specs,
     featured: input.featured,
     isActive: input.isActive,
@@ -598,15 +656,20 @@ export async function createProduct(input: CatalogProductInput) {
 export async function updateProduct(productId: number, input: CatalogProductInput) {
   const connection = await getDb();
   if (connection) {
+    const category = await connection.select({ type: categories.type }).from(categories).where(eq(categories.id, input.categoryId)).limit(1);
+    if (!category[0]) throw new Error("Không tìm thấy danh mục sản phẩm");
+    const productType = category[0].type === "physical" ? "physical" : "digital";
     await connection.update(products).set({
       name: input.name,
       slug: input.slug,
       description: input.description ?? null,
       price: input.price,
+      type: productType,
       categoryId: input.categoryId,
       image: input.image,
       fileUrl: input.fileUrl ?? null,
       fileSize: input.fileSize ?? null,
+      stock: productType === "physical" ? input.stock : 9999,
       specs: input.specs ?? null,
       featured: input.featured,
       isActive: input.isActive,
@@ -615,7 +678,89 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
   }
   const product = memoryProducts.find(item => item.id === productId);
   if (!product) throw new Error("Product not found");
-  Object.assign(product, input);
+  const category = memoryCategories.find(item => item.id === input.categoryId);
+  if (!category) throw new Error("Không tìm thấy danh mục sản phẩm");
+  Object.assign(product, input, {
+    type: category.type === "physical" ? "physical" : "digital",
+    stock: category.type === "physical" ? input.stock : 9999,
+  });
+  return { success: true };
+}
+
+export type CatalogVariantInput = {
+  productId: number;
+  size?: string;
+  color?: string;
+  sku?: string;
+  priceAdjustment: string;
+  stock: number;
+  isActive: boolean;
+};
+
+export async function getProductVariants(productId: number, includeInactive = false) {
+  const connection = await getDb();
+  if (connection) {
+    const rows = await connection.select().from(productVariants).where(eq(productVariants.productId, productId));
+    return rows.filter(variant => includeInactive || variant.isActive).map(toProductVariantType);
+  }
+  return memoryProductVariants.filter(variant => variant.productId === productId && (includeInactive || variant.isActive));
+}
+
+export async function getAdminProductVariants(productId?: number) {
+  if (productId) return getProductVariants(productId, true);
+  const connection = await getDb();
+  if (connection) return (await connection.select().from(productVariants)).map(toProductVariantType);
+  return [...memoryProductVariants];
+}
+
+export async function createProductVariant(input: CatalogVariantInput) {
+  const product = await getProductById(input.productId);
+  if (!product || product.type !== "physical") throw new Error("Chỉ hàng vật lý mới có biến thể");
+  const connection = await getDb();
+  if (connection) {
+    const inserted = await connection.insert(productVariants).values({
+      productId: input.productId,
+      size: input.size || null,
+      color: input.color || null,
+      sku: input.sku || null,
+      priceAdjustment: input.priceAdjustment,
+      stock: input.stock,
+      isActive: input.isActive,
+    });
+    const row = await connection.select().from(productVariants).where(eq(productVariants.id, Number(inserted[0].insertId))).limit(1);
+    return row[0] ? toProductVariantType(row[0]) : undefined;
+  }
+  const variant: ProductVariantType = {
+    id: nextProductVariantId++,
+    productId: input.productId,
+    size: input.size,
+    color: input.color,
+    sku: input.sku,
+    priceAdjustment: input.priceAdjustment,
+    stock: input.stock,
+    isActive: input.isActive,
+    createdAt: new Date(),
+  };
+  memoryProductVariants.push(variant);
+  return variant;
+}
+
+export async function updateProductVariant(variantId: number, input: Omit<CatalogVariantInput, "productId">) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(productVariants).set({
+      size: input.size || null,
+      color: input.color || null,
+      sku: input.sku || null,
+      priceAdjustment: input.priceAdjustment,
+      stock: input.stock,
+      isActive: input.isActive,
+    }).where(eq(productVariants.id, variantId));
+    return { success: true };
+  }
+  const variant = memoryProductVariants.find(item => item.id === variantId);
+  if (!variant) throw new Error("Không tìm thấy biến thể");
+  Object.assign(variant, input);
   return { success: true };
 }
 
@@ -739,24 +884,49 @@ export async function getProductById(id: number) {
 }
 
 export async function getCartItems(userId: number) {
-  const items = memoryCart.filter(item => item.userId === userId);
+  const connection = await getDb();
+  const items = connection
+    ? await connection.select().from(cartItems).where(eq(cartItems.userId, userId))
+    : memoryCart.filter(item => item.userId === userId);
   return Promise.all(items.map(async item => ({
     ...item,
     product: await getProductById(item.productId),
+    variant: item.variantId ? (await getProductVariants(item.productId, true)).find(variant => variant.id === item.variantId) : undefined,
   })));
 }
 
-export async function addToCart(userId: number, productId: number, quantity: number, attributes?: string) {
+export async function addToCart(userId: number, productId: number, quantity: number, variantId?: number, attributes?: string) {
   const product = await getProductById(productId);
   if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
-  const existing = memoryCart.find(i => i.userId === userId && i.productId === productId && i.attributes === attributes);
+  let variant: ProductVariantType | undefined;
+  if (product.type === "physical") {
+    const variants = await getProductVariants(productId);
+    variant = variantId ? variants.find(item => item.id === variantId) : undefined;
+    if (variants.length > 0 && !variant) throw new Error("Hãy chọn kích thước hoặc màu sắc trước khi thêm vào giỏ");
+    if (variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+    if (!variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
+  }
+  const connection = await getDb();
+  if (connection) {
+    const current = await connection.select().from(cartItems).where(eq(cartItems.userId, userId));
+    const existing = current.find(item => item.productId === productId && (item.variantId ?? null) === (variantId ?? null) && (item.attributes ?? undefined) === attributes);
+    const nextQuantity = (existing?.quantity ?? 0) + quantity;
+    if (variant && variant.stock < nextQuantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+    if (product.type === "physical" && !variant && product.stock < nextQuantity) throw new Error("Sản phẩm không đủ tồn kho");
+    if (existing) await connection.update(cartItems).set({ quantity: nextQuantity }).where(eq(cartItems.id, existing.id));
+    else await connection.insert(cartItems).values({ userId, productId, variantId: variantId ?? null, quantity, attributes: attributes ?? null });
+    return { success: true };
+  }
+  const existing = memoryCart.find(i => i.userId === userId && i.productId === productId && (i.variantId ?? null) === (variantId ?? null) && i.attributes === attributes);
   if (existing) {
+    if (variant && variant.stock < existing.quantity + quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
     existing.quantity += quantity;
   } else {
     memoryCart.push({
       id: nextCartId++,
       userId,
       productId,
+      variantId: variantId ?? null,
       quantity,
       attributes
     });
@@ -765,6 +935,12 @@ export async function addToCart(userId: number, productId: number, quantity: num
 }
 
 export async function updateCartItem(cartItemId: number, quantity: number) {
+  const connection = await getDb();
+  if (connection) {
+    if (quantity <= 0) await connection.delete(cartItems).where(eq(cartItems.id, cartItemId));
+    else await connection.update(cartItems).set({ quantity }).where(eq(cartItems.id, cartItemId));
+    return { success: true };
+  }
   const item = memoryCart.find(i => i.id === cartItemId);
   if (item) {
     if (quantity <= 0) {
@@ -777,81 +953,74 @@ export async function updateCartItem(cartItemId: number, quantity: number) {
 }
 
 export async function removeFromCart(cartItemId: number) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.delete(cartItems).where(eq(cartItems.id, cartItemId));
+    return { success: true };
+  }
   memoryCart = memoryCart.filter(i => i.id !== cartItemId);
   return { success: true };
 }
 
 export async function clearCart(userId: number) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.delete(cartItems).where(eq(cartItems.userId, userId));
+    return { success: true };
+  }
   memoryCart = memoryCart.filter(i => i.userId !== userId);
   return { success: true };
 }
 
 export async function createOrder(userId: number, data: {
   totalAmount: number;
-  items: Array<{ productId: number; quantity: number; price: number; attributes?: string }>;
+  items: Array<{ productId: number; quantity: number; price: number; variantId?: number; attributes?: string }>;
+  shipping?: { name: string; phone: string; address: string; note?: string; method: ShippingMethodCode };
 }) {
   const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const verifiedItems = await Promise.all(data.items.map(async item => {
     const product = await getProductById(item.productId);
     if (!product || product.isActive === false) throw new Error("Một sản phẩm trong giỏ hiện không khả dụng");
+    const variants = product.type === "physical" ? await getProductVariants(product.id) : [];
+    const variant = item.variantId ? variants.find(candidate => candidate.id === item.variantId) : undefined;
+    if (product.type === "physical" && variants.length > 0 && !variant) throw new Error("Hãy chọn biến thể hợp lệ cho hàng vật lý");
+    if (variant && variant.stock < item.quantity) throw new Error("Biến thể không đủ tồn kho");
+    if (product.type === "physical" && !variant && product.stock < item.quantity) throw new Error("Sản phẩm không đủ tồn kho");
     return {
       productId: product.id,
       quantity: item.quantity,
-      price: Number(product.price),
+      price: Number(product.price) + Number(variant?.priceAdjustment ?? 0),
+      variantId: variant?.id ?? null,
+      variantLabel: variant ? [variant.size, variant.color].filter(Boolean).join(" · ") || null : null,
+      isPhysical: product.type === "physical",
       attributes: item.attributes,
     };
   }));
-  const verifiedTotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const hasPhysicalItems = verifiedItems.some(item => item.isPhysical);
+  if (hasPhysicalItems && (!data.shipping?.name || !data.shipping.phone || !data.shipping.address)) throw new Error("Vui lòng điền đủ thông tin nhận hàng");
+  const shipping = hasPhysicalItems ? getShippingOption(data.shipping?.method ?? "standard") : getShippingOption("pickup");
+  const verifiedTotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + shipping.fee;
   const connection = await getDb();
   if (connection) {
     const inserted = await connection.insert(ordersTable).values({
-      userId,
-      orderCode,
-      totalAmount: verifiedTotal.toFixed(2),
-      status: "pending",
-      paymentStatus: "pending",
-      paymentMethod: "sepay_vietqr",
-      hasPhysicalItems: false,
+      userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: "sepay_vietqr",
+      shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
+      shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems,
     });
     const orderId = Number(inserted[0].insertId);
-    await connection.insert(orderItemsTable).values(verifiedItems.map(item => ({
-      orderId,
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price.toFixed(2),
-      attributes: item.attributes ?? null,
-    })));
+    await connection.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), attributes: item.attributes ?? null })));
     await connection.delete(cartItems).where(eq(cartItems.userId, userId));
-    return { success: true, orderId, orderCode, totalAmount: verifiedTotal };
+    return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems };
   }
   const orderId = nextOrderId++;
-  const newOrder: OrderType = {
-    id: orderId,
-    userId,
-    orderCode,
-    totalAmount: verifiedTotal.toString(),
-    status: "pending",
-    paymentStatus: "pending",
-    paymentMethod: "sepay_vietqr",
-    createdAt: new Date(),
-  };
-
-  memoryOrders.unshift(newOrder);
-
-  for (const item of verifiedItems) {
-    memoryOrderItems.push({
-      id: nextOrderItemId++,
-      orderId,
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price.toString(),
-      attributes: item.attributes,
-    });
-  }
-
+  memoryOrders.unshift({
+    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: "sepay_vietqr",
+    shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
+    shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, createdAt: new Date(),
+  });
+  for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), attributes: item.attributes });
   await clearCart(userId);
-
-  return { success: true, orderId, orderCode, totalAmount: verifiedTotal };
+  return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems };
 }
 
 export async function getOrders(userId?: number, isAdmin?: boolean) {
@@ -921,7 +1090,7 @@ export async function getPaidDownloadsForUser(userId: number) {
   const linkMap = new Map(links.map(link => [link.productId, link.driveUrl]));
   return userOrders
     .filter(order => order.paymentStatus === "paid")
-    .flatMap(order => (order.items ?? []).map(item => ({
+    .flatMap(order => (order.items ?? []).filter(item => item.product?.type === "digital").map(item => ({
       orderId: order.id,
       productId: item.productId,
       productName: item.product?.name ?? "Digital resource",
@@ -965,8 +1134,17 @@ export async function confirmSePayPayment(input: {
       return { success: true, alreadyProcessed: true };
     }
 
+    const lineItems = await connection.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, matchedOrder.id));
+    for (const item of lineItems) {
+      if (item.variantId) {
+        await connection.update(productVariants).set({ stock: sql`GREATEST(${productVariants.stock} - ${item.quantity}, 0)` }).where(eq(productVariants.id, item.variantId));
+      } else {
+        const product = await getProductById(item.productId);
+        if (product?.type === "physical") await connection.update(products).set({ stock: sql`GREATEST(${products.stock} - ${item.quantity}, 0)` }).where(eq(products.id, item.productId));
+      }
+    }
     await connection.update(ordersTable).set({
-      status: "completed",
+      status: matchedOrder.hasPhysicalItems ? "processing" : "completed",
       paymentStatus: "paid",
       paymentReference: input.paymentReference || input.providerTransactionId,
       paymentConfirmedAt: new Date(),
@@ -984,9 +1162,18 @@ export async function confirmSePayPayment(input: {
   if (!matchedOrder) return { success: false, reason: "No matching pending order" };
 
   memoryProcessedTransactions.add(duplicateKey);
-  matchedOrder.status = "completed";
+  matchedOrder.status = matchedOrder.hasPhysicalItems ? "processing" : "completed";
   matchedOrder.paymentStatus = "paid";
   matchedOrder.paymentReference = input.paymentReference || input.providerTransactionId;
   matchedOrder.paymentConfirmedAt = new Date();
+  for (const item of memoryOrderItems.filter(item => item.orderId === matchedOrder.id)) {
+    if (item.variantId) {
+      const variant = memoryProductVariants.find(candidate => candidate.id === item.variantId);
+      if (variant) variant.stock = Math.max(0, variant.stock - item.quantity);
+    } else {
+      const product = memoryProducts.find(candidate => candidate.id === item.productId);
+      if (product?.type === "physical") product.stock = Math.max(0, product.stock - item.quantity);
+    }
+  }
   return { success: true };
 }

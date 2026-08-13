@@ -21,3 +21,11 @@
 - [x] Đã hoãn theo yêu cầu: kiểm thử giỏ hàng, thanh toán và quản lý đơn vật lý chi tiết.
 - [x] Tạo ba danh mục lớn trống: Quần áo bóng đá, Patch tay và Nameset chống nhiễm.
 - [x] Xác nhận đường dẫn /admin cho chủ cửa hàng tự thêm sản phẩm vào các danh mục mới và xuất bản thay đổi.
+- [x] Rà soát chi tiết giỏ hàng, checkout và mô hình dữ liệu để hỗ trợ sản phẩm vật lý.
+- [x] Thiết kế và thêm dữ liệu biến thể sản phẩm vật lý theo kích thước, màu sắc, giá và tồn kho.
+- [x] Bổ sung giao diện quản trị để tạo, sửa và ẩn biến thể cho từng sản phẩm vật lý.
+- [x] Bổ sung bước thu thập thông tin nhận hàng, chọn phí giao hàng và tổng tiền thanh toán cho đơn vật lý.
+- [x] Hiển thị riêng sản phẩm vật lý mới nhất hoặc nổi bật trên trang chủ.
+- [x] Bổ sung kiểm thử cho biến thể, phí giao hàng, checkout vật lý và kiểm tra giao diện đáp ứng.
+- [x] Bổ sung trạng thái chờ rõ ràng cho khu vực hàng vật lý khi chưa có sản phẩm công khai.
+- [x] Lưu phiên bản xuất bản và cập nhật hướng dẫn vận hành hàng vật lý.

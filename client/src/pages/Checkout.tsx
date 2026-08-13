@@ -14,6 +14,7 @@ type PendingPayment = {
   orderCode: string;
   totalAmount: number;
   qrUrl: string | null;
+  hasPhysicalItems?: boolean;
 };
 
 export default function Checkout() {
@@ -22,6 +23,7 @@ export default function Checkout() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
+  const [shipping, setShipping] = useState({ name: "", phone: "", address: "", note: "", method: "standard" as "pickup" | "standard" | "express" });
 
   useEffect(() => {
     const onStorage = () => setLang(getClientLanguage());
@@ -39,9 +41,12 @@ export default function Checkout() {
   });
 
   const cartSubtotal = cartItems.reduce((sum, item) => {
-    const price = item.product ? Number(item.product.price) : 0;
+    const price = item.product ? Number(item.product.price) + Number(item.variant?.priceAdjustment || 0) : 0;
     return sum + price * item.quantity;
   }, 0);
+  const hasPhysicalItems = cartItems.some(item => item.product?.type === "physical");
+  const shippingFee = hasPhysicalItems ? ({ pickup: 0, standard: 30000, express: 50000 }[shipping.method]) : 0;
+  const checkoutTotal = cartSubtotal + shippingFee;
 
   const checkoutMutation = trpc.store.checkout.useMutation({
     onSuccess: order => {
@@ -90,8 +95,8 @@ export default function Checkout() {
               <div className="p-8 text-center space-y-5">
                 <CheckCircle2 className="w-16 h-16 mx-auto text-emerald-500" />
                 <div>
-                  <h2 className="font-black text-xl text-slate-900">{lang === "vi" ? "File của bạn đã được mở khóa" : "Your files have been unlocked"}</h2>
-                  <p className="text-sm text-slate-500 mt-2">{lang === "vi" ? "Mở Tài khoản để tải các tài nguyên thuộc đơn hàng này." : "Open your account to download the resources from this order."}</p>
+                  <h2 className="font-black text-xl text-slate-900">{pendingPayment.hasPhysicalItems ? (lang === "vi" ? "Đơn hàng đang được xử lý" : "Your order is being processed") : (lang === "vi" ? "File của bạn đã được mở khóa" : "Your files have been unlocked")}</h2>
+                  <p className="text-sm text-slate-500 mt-2">{pendingPayment.hasPhysicalItems ? (lang === "vi" ? "Cửa hàng sẽ đóng gói và cập nhật trạng thái giao hàng cho đơn của bạn." : "The store will pack your order and update delivery status.") : (lang === "vi" ? "Mở Tài khoản để tải các tài nguyên thuộc đơn hàng này." : "Open your account to download the resources from this order.")}</p>
                 </div>
                 <Link href="/account"><Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-black">{lang === "vi" ? "Đi tới Tài khoản" : "Go to account"}</Button></Link>
               </div>
@@ -137,12 +142,13 @@ export default function Checkout() {
         <Link href="/products" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-amber-600 mb-6"><ArrowLeft className="w-4 h-4" />{lang === "vi" ? "Tiếp tục mua sắm" : "Continue shopping"}</Link>
         <div className="grid gap-7 lg:grid-cols-[1fr_360px] items-start">
           <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-4"><div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 grid place-items-center"><Download className="w-5 h-5" /></div><div><h1 className="text-xl font-black text-slate-900">{lang === "vi" ? "Thanh toán tài nguyên số" : "Digital resource checkout"}</h1><p className="text-xs text-slate-500">{lang === "vi" ? "Tệp sẽ chỉ được mở khóa sau khi SePay xác nhận tiền vào." : "Files are unlocked only after SePay confirms the incoming payment."}</p></div></div>
-            <div className="space-y-3">{cartItems.map(item => item.product && <div key={item.id} className="flex gap-3 items-center"><img src={item.product.image} alt={item.product.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" /><div className="flex-1 min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{item.product.name}</p><p className="text-xs text-slate-500">× {item.quantity}</p></div><p className="text-sm font-black text-slate-900">{formatCurrency(Number(item.product.price) * item.quantity)}</p></div>)}</div>
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4"><div className={`w-10 h-10 rounded-xl grid place-items-center ${hasPhysicalItems ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-purple-700"}`}><Download className="w-5 h-5" /></div><div><h1 className="text-xl font-black text-slate-900">{hasPhysicalItems ? (lang === "vi" ? "Thanh toán đơn hàng & giao nhận" : "Order and delivery checkout") : (lang === "vi" ? "Thanh toán tài nguyên số" : "Digital resource checkout")}</h1><p className="text-xs text-slate-500">{hasPhysicalItems ? "Điền địa chỉ nhận hàng và chọn hình thức giao." : (lang === "vi" ? "Tệp sẽ chỉ được mở khóa sau khi SePay xác nhận tiền vào." : "Files are unlocked only after SePay confirms the incoming payment.")}</p></div></div>
+            <div className="space-y-3">{cartItems.map(item => item.product && <div key={item.id} className="flex gap-3 items-center"><img src={item.product.image} alt={item.product.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" /><div className="flex-1 min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{item.product.name}</p><p className="text-xs text-slate-500">{item.variant ? `${[item.variant.size, item.variant.color].filter(Boolean).join(" · ")} · ` : ""}× {item.quantity}</p></div><p className="text-sm font-black text-slate-900">{formatCurrency((Number(item.product.price) + Number(item.variant?.priceAdjustment || 0)) * item.quantity)}</p></div>)}</div>
           </section>
-          <form onSubmit={event => { event.preventDefault(); if (!acceptedTerms) return toast.error(lang === "vi" ? "Vui lòng đồng ý điều khoản trước khi đặt hàng." : "Please accept the terms before placing your order."); checkoutMutation.mutate({ totalAmount: cartSubtotal, items: cartItems.map(item => ({ productId: item.productId, quantity: item.quantity, price: Number(item.product?.price ?? 0), attributes: item.attributes || undefined })) }); }} className="bg-white p-6 rounded-2xl border-2 border-sky-600 shadow-sm space-y-5">
+          <form onSubmit={event => { event.preventDefault(); if (!acceptedTerms) return toast.error(lang === "vi" ? "Vui lòng đồng ý điều khoản trước khi đặt hàng." : "Please accept the terms before placing your order."); if (hasPhysicalItems && (!shipping.name || !shipping.phone || !shipping.address)) return toast.error("Vui lòng điền đủ thông tin nhận hàng."); checkoutMutation.mutate({ totalAmount: checkoutTotal, items: cartItems.map(item => ({ productId: item.productId, quantity: item.quantity, price: Number(item.product?.price ?? 0), variantId: item.variantId || undefined, attributes: item.attributes || undefined })), shipping: hasPhysicalItems ? shipping : undefined }); }} className="bg-white p-6 rounded-2xl border-2 border-sky-600 shadow-sm space-y-5">
             <h2 className="text-base font-black text-purple-700 uppercase">{lang === "vi" ? "Đơn hàng của bạn" : "Your order"}</h2>
-            <div className="space-y-2 text-sm border-y border-slate-100 py-4"><div className="flex justify-between"><span className="text-slate-500">{lang === "vi" ? "Tạm tính" : "Subtotal"}</span><span className="font-bold">{formatCurrency(cartSubtotal)}</span></div><div className="flex justify-between"><span className="text-slate-500">{lang === "vi" ? "Phương thức" : "Method"}</span><span className="font-bold text-sky-700">SePay · VietQR</span></div><div className="flex justify-between text-base pt-2"><span className="font-black">{lang === "vi" ? "Tổng" : "Total"}</span><span className="font-black">{formatCurrency(cartSubtotal)}</span></div></div>
+            {hasPhysicalItems && <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3"><p className="text-xs font-black uppercase tracking-wide text-emerald-800">Thông tin nhận hàng</p><input className="flex h-10 w-full rounded-md border border-emerald-200 bg-white px-3 text-sm" value={shipping.name} onChange={event => setShipping(value => ({ ...value, name: event.target.value }))} placeholder="Họ và tên người nhận" /><input className="flex h-10 w-full rounded-md border border-emerald-200 bg-white px-3 text-sm" value={shipping.phone} onChange={event => setShipping(value => ({ ...value, phone: event.target.value }))} placeholder="Số điện thoại" /><textarea className="flex min-h-20 w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm" value={shipping.address} onChange={event => setShipping(value => ({ ...value, address: event.target.value }))} placeholder="Địa chỉ nhận hàng" /><select className="flex h-10 w-full rounded-md border border-emerald-200 bg-white px-3 text-sm" value={shipping.method} onChange={event => setShipping(value => ({ ...value, method: event.target.value as "pickup" | "standard" | "express" }))}><option value="pickup">Nhận tại cửa hàng — 0 đ</option><option value="standard">Giao tiêu chuẩn — 30.000 đ</option><option value="express">Giao nhanh — 50.000 đ</option></select><textarea className="flex min-h-16 w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm" value={shipping.note} onChange={event => setShipping(value => ({ ...value, note: event.target.value }))} placeholder="Ghi chú giao hàng (tùy chọn)" /></div>}
+            <div className="space-y-2 text-sm border-y border-slate-100 py-4"><div className="flex justify-between"><span className="text-slate-500">{lang === "vi" ? "Tạm tính" : "Subtotal"}</span><span className="font-bold">{formatCurrency(cartSubtotal)}</span></div>{hasPhysicalItems && <div className="flex justify-between"><span className="text-slate-500">Phí giao hàng</span><span className="font-bold">{formatCurrency(shippingFee)}</span></div>}<div className="flex justify-between"><span className="text-slate-500">{lang === "vi" ? "Phương thức" : "Method"}</span><span className="font-bold text-sky-700">SePay · VietQR</span></div><div className="flex justify-between text-base pt-2"><span className="font-black">{lang === "vi" ? "Tổng" : "Total"}</span><span className="font-black">{formatCurrency(checkoutTotal)}</span></div></div>
             <div className="flex gap-3 items-start"><Checkbox id="terms" checked={acceptedTerms} onCheckedChange={checked => setAcceptedTerms(checked === true)} className="mt-0.5" /><label htmlFor="terms" className="text-xs leading-relaxed text-slate-600">{lang === "vi" ? <>Tôi đã đọc và đồng ý với <span className="font-bold text-rose-600">điều khoản và điều kiện của website</span>.</> : <>I have read and agree to the <span className="font-bold text-rose-600">website terms and conditions</span>.</>}</label></div>
             <Button type="submit" disabled={checkoutMutation.isPending} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black rounded-md py-5">{checkoutMutation.isPending ? (lang === "vi" ? "ĐANG TẠO ĐƠN..." : "CREATING ORDER...") : (lang === "vi" ? "ĐẶT HÀNG & LẤY MÃ QR" : "PLACE ORDER & GET QR")}</Button>
             <p className="text-[11px] leading-relaxed text-slate-500">{lang === "vi" ? "Thông tin đơn hàng được dùng để xử lý giao dịch và bảo vệ quyền tải tài nguyên của bạn." : "Order data is used to process the transaction and protect your download access."}</p>

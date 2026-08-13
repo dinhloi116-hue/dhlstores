@@ -59,6 +59,10 @@ export const appRouter = router({
         return product;
       }),
 
+    productVariants: publicProcedure
+      .input(z.object({ productId: z.number().int().positive() }))
+      .query(async ({ input }) => db.getProductVariants(input.productId)),
+
     cart: protectedProcedure.query(async ({ ctx }) => {
       await requireActiveAccount(ctx.user.id);
       return await db.getCartItems(ctx.user.id);
@@ -68,11 +72,12 @@ export const appRouter = router({
       .input(z.object({
         productId: z.number(),
         quantity: z.number().min(1).default(1),
+        variantId: z.number().int().positive().optional(),
         attributes: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
-        return await db.addToCart(ctx.user.id, input.productId, input.quantity, input.attributes);
+        return await db.addToCart(ctx.user.id, input.productId, input.quantity, input.variantId, input.attributes);
       }),
 
     updateCart: protectedProcedure
@@ -99,8 +104,16 @@ export const appRouter = router({
           productId: z.number(),
           quantity: z.number(),
           price: z.number(),
+          variantId: z.number().int().positive().optional(),
           attributes: z.string().optional(),
         })),
+        shipping: z.object({
+          name: z.string().trim().min(2).max(255),
+          phone: z.string().trim().min(8).max(64),
+          address: z.string().trim().min(5).max(2000),
+          note: z.string().trim().max(2000).optional(),
+          method: z.enum(["pickup", "standard", "express"]),
+        }).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
