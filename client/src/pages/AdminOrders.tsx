@@ -7,8 +7,9 @@ import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, Package, Users, DollarSign, UserCheck, UserX } from "lucide-react";
+import { ShieldCheck, Package, Users, DollarSign, UserCheck, UserX, Link2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminOrders() {
@@ -16,6 +17,7 @@ export default function AdminOrders() {
   const utils = trpc.useUtils();
 
   const [lang, setLang] = useState<Language>(getClientLanguage());
+  const [linkDrafts, setLinkDrafts] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -32,6 +34,8 @@ export default function AdminOrders() {
 
   const usersQuery = trpc.store.usersList.useQuery(undefined, { enabled: isAuthenticated && user?.role === 'admin' });
   const usersList = usersQuery.data || [];
+  const productLinksQuery = trpc.store.productDownloadLinks.useQuery(undefined, { enabled: isAuthenticated && user?.role === 'admin' });
+  const productLinks = productLinksQuery.data || [];
 
   const updateStatusMutation = trpc.store.updateOrderStatus.useMutation({
     onSuccess: () => {
@@ -51,6 +55,14 @@ export default function AdminOrders() {
     onError: (err) => {
       toast.error(err.message || "Không thể cập nhật trạng thái tài khoản");
     }
+  });
+
+  const saveProductLinkMutation = trpc.store.saveProductDownloadLink.useMutation({
+    onSuccess: () => {
+      toast.success(lang === 'vi' ? 'Đã lưu link Google Drive. Khách đã thanh toán mới thấy link này.' : 'Google Drive link saved. Only paid customers can access it.');
+      utils.store.productDownloadLinks.invalidate();
+    },
+    onError: (err) => toast.error(err.message || (lang === 'vi' ? 'Không thể lưu link Google Drive' : 'Could not save Google Drive link')),
   });
 
   if (!isAuthenticated || user?.role !== 'admin') {
@@ -145,6 +157,9 @@ export default function AdminOrders() {
             </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 font-bold text-xs px-6 py-2.5 rounded-lg">
               {lang === 'vi' ? 'Kiểm Soát Tài Khoản' : 'User Accounts Control'}
+            </TabsTrigger>
+            <TabsTrigger value="downloads" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 font-bold text-xs px-6 py-2.5 rounded-lg">
+              {lang === 'vi' ? 'Link Google Drive' : 'Google Drive Links'}
             </TabsTrigger>
           </TabsList>
 
@@ -273,6 +288,28 @@ export default function AdminOrders() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="downloads" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><Link2 className="w-5 h-5 text-purple-600" />{lang === 'vi' ? 'Link Tải Google Drive' : 'Google Drive Download Links'}</h2>
+              <p className="text-xs text-slate-500 mt-1">{lang === 'vi' ? 'Chỉ link Google Drive hợp lệ mới được lưu. Hệ thống chỉ hiển thị link này cho khách có đơn đã thanh toán.' : 'Only valid Google Drive links are saved. The link is shown only for paid orders.'}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100">
+              {productLinks.map(resource => {
+                const currentValue = linkDrafts[resource.productId] ?? resource.currentUrl ?? '';
+                return (
+                  <div key={resource.productId} className="p-5 grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)_auto] md:items-center">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{resource.productName}</p>
+                      <p className={`text-[11px] mt-1 font-semibold ${resource.currentUrl ? 'text-emerald-600' : 'text-amber-600'}`}>{resource.currentUrl ? (lang === 'vi' ? 'Đã có link tải' : 'Download link configured') : (lang === 'vi' ? 'Chưa gắn link tải' : 'No download link yet')}</p>
+                    </div>
+                    <Input value={currentValue} onChange={event => setLinkDrafts(prev => ({ ...prev, [resource.productId]: event.target.value }))} placeholder="https://drive.google.com/file/d/.../view" className="border-slate-200 bg-slate-50 text-sm" />
+                    <Button type="button" disabled={!currentValue || saveProductLinkMutation.isPending} onClick={() => saveProductLinkMutation.mutate({ productId: resource.productId, driveUrl: currentValue })} className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs gap-2"><Save className="w-4 h-4" />{lang === 'vi' ? 'Lưu link' : 'Save link'}</Button>
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>

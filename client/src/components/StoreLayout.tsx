@@ -7,6 +7,7 @@ import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   const [lang, setLang] = useState<Language>(getClientLanguage());
 
@@ -59,6 +62,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   };
 
   const logoPath = "/manus-storage/logodhlstores_c8e433ed.png";
+  const beginAccountFlow = () => {
+    setAuthDialogOpen(false);
+    startLogin();
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
@@ -137,7 +144,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   {!isAuthenticated ? (
                     <div className="text-center py-12 text-slate-500">
                       <p className="mb-4 text-sm">{lang === 'vi' ? 'Vui lòng đăng nhập để xem giỏ hàng.' : 'Please sign in to view your cart.'}</p>
-                      <Button onClick={() => startLogin()} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
+                      <Button onClick={() => setAuthDialogOpen(true)} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
                         {t.login}
                       </Button>
                     </div>
@@ -234,7 +241,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               </div>
             ) : (
               <Button
-                onClick={() => startLogin()}
+                onClick={() => setAuthDialogOpen(true)}
                 className="bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-sm px-4 text-xs sm:text-sm"
               >
                 {t.login}
@@ -271,6 +278,33 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </div>
         )}
       </header>
+
+      <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
+        <DialogContent className="max-w-md bg-white border-slate-200 p-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-900 to-purple-950 px-7 py-6 text-white">
+            <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-amber-300">DHL Stores Account</p>
+            <DialogHeader className="mt-2">
+              <DialogTitle className="text-xl font-black text-white">{authMode === 'signin' ? (lang === 'vi' ? 'Đăng nhập DHL Stores' : 'Sign in to DHL Stores') : (lang === 'vi' ? 'Tạo tài khoản DHL Stores' : 'Create your DHL Stores account')}</DialogTitle>
+              <DialogDescription className="text-sm text-slate-200">{lang === 'vi' ? 'Tài khoản giúp bảo vệ đơn hàng và chỉ mở quyền tải file sau thanh toán.' : 'Your account protects orders and unlocks downloads only after payment.'}</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-7 space-y-5">
+            <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 gap-1">
+              <button type="button" onClick={() => setAuthMode('signin')} className={`rounded-lg px-3 py-2.5 text-xs font-black transition-colors ${authMode === 'signin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{lang === 'vi' ? 'ĐĂNG NHẬP' : 'SIGN IN'}</button>
+              <button type="button" onClick={() => setAuthMode('signup')} className={`rounded-lg px-3 py-2.5 text-xs font-black transition-colors ${authMode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{lang === 'vi' ? 'TẠO TÀI KHOẢN' : 'CREATE ACCOUNT'}</button>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 leading-relaxed">
+              {authMode === 'signin'
+                ? (lang === 'vi' ? 'Tiếp tục bằng Google hoặc email bạn đã dùng khi tạo tài khoản. Quên mật khẩu sẽ được xử lý an toàn tại cổng đăng nhập.' : 'Continue with Google or the email used to create your account. Password recovery is handled securely in the sign-in portal.')
+                : (lang === 'vi' ? 'Chọn tiếp tục để tạo tài khoản bằng Google hoặc email. Sau đó, mọi đơn hàng và quyền tải file sẽ gắn với tài khoản này.' : 'Continue to create an account with Google or email. Your orders and download access will be linked to this account.')}
+            </div>
+            <Button onClick={beginAccountFlow} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black py-5">
+              {authMode === 'signin' ? (lang === 'vi' ? 'TIẾP TỤC ĐĂNG NHẬP' : 'CONTINUE TO SIGN IN') : (lang === 'vi' ? 'TIẾP TỤC TẠO TÀI KHOẢN' : 'CONTINUE TO CREATE ACCOUNT')}
+            </Button>
+            <p className="text-center text-[11px] leading-relaxed text-slate-500">{lang === 'vi' ? 'DHL Stores không lưu mật khẩu trực tiếp trên website. Bạn luôn cần đăng nhập trước khi thanh toán hoặc tải tài nguyên.' : 'DHL Stores does not store passwords directly. Sign-in is required before checkout or downloading resources.'}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Content */}
       <main className="flex-1">

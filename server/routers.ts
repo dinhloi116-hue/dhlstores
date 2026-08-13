@@ -120,6 +120,11 @@ export const appRouter = router({
         return order;
       }),
 
+    downloads: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getPaidDownloadsForUser(ctx.user.id);
+    }),
+
     updateOrderStatus: protectedProcedure
       .input(z.object({
         orderId: z.number(),
@@ -149,6 +154,28 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
         return await db.updateUserStatus(input.userId, input.status);
+      }),
+
+    productDownloadLinks: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      return db.getAdminProductDownloadLinks();
+    }),
+
+    saveProductDownloadLink: protectedProcedure
+      .input(z.object({
+        productId: z.number().int().positive(),
+        driveUrl: z.string().url().refine(value => {
+          const host = new URL(value).hostname;
+          return host === "drive.google.com" || host === "docs.google.com";
+        }, "Link phải thuộc Google Drive"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        return db.saveProductDownloadLink(input.productId, input.driveUrl);
       }),
   }),
 });

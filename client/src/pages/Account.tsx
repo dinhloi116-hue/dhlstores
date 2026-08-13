@@ -26,6 +26,8 @@ export default function Account() {
 
   const ordersQuery = trpc.store.orders.useQuery(undefined, { enabled: isAuthenticated });
   const orders = ordersQuery.data || [];
+  const downloadsQuery = trpc.store.downloads.useQuery(undefined, { enabled: isAuthenticated });
+  const downloads = downloadsQuery.data || [];
 
   if (!isAuthenticated) {
     return (
@@ -117,7 +119,7 @@ export default function Account() {
                       <span className="text-slate-500">Date: {new Date(order.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-200">Paid</Badge>
+                      <Badge className={order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}>{order.paymentStatus === 'paid' ? (lang === 'vi' ? 'Đã thanh toán' : 'Paid') : (lang === 'vi' ? 'Chờ thanh toán' : 'Awaiting payment')}</Badge>
                       {getStatusBadge(order.status)}
                     </div>
                   </div>
@@ -125,6 +127,7 @@ export default function Account() {
                   <div className="p-6 divide-y divide-slate-100">
                     {order.items?.map(item => {
                       const p = item.product;
+                      const download = downloads.find(resource => resource.orderId === order.id && resource.productId === item.productId);
                       return (
                         <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-center gap-4">
@@ -137,25 +140,23 @@ export default function Account() {
                           </div>
 
                           <div>
-                            {order.paymentStatus === 'paid' ? (
+                            {order.paymentStatus === 'paid' && download?.driveUrl ? (
                               <a
-                                href={p?.fileUrl || "#"}
+                                href={download.driveUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={(e) => {
-                                  if (!p?.fileUrl) {
-                                    e.preventDefault();
-                                    toast.info("Digital file ready soon.");
-                                  }
-                                }}
                                 className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all"
                               >
-                                <Download className="w-4 h-4" /> {t.downloadFile} ({p?.fileSize || '4K'})
+                                <Download className="w-4 h-4" /> {t.downloadFile} ({download.fileSize || '4K'})
                                 <ExternalLink className="w-3 h-3 ml-1" />
                               </a>
+                            ) : order.paymentStatus === 'paid' ? (
+                              <Badge variant="outline" className="border-slate-300 text-slate-600">
+                                {lang === 'vi' ? 'File đang được chuẩn bị' : 'File is being prepared'}
+                              </Badge>
                             ) : (
                               <Badge variant="outline" className="border-rose-300 text-rose-600">
-                                Pending payment for download
+                                {lang === 'vi' ? 'Chờ thanh toán để tải file' : 'Payment required to download'}
                               </Badge>
                             )}
                           </div>

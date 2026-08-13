@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { confirmSePayPayment } from "./db";
+import { confirmSePayPayment, getPaidDownloadsForUser, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createMockContext(): TrpcContext {
@@ -74,6 +74,8 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(checkoutRes.orderCode).toMatch(/^DHL/);
     let orders = await caller.store.orders();
     expect(orders[0]?.paymentStatus).toBe("pending");
+    await saveProductDownloadLink(1, "https://drive.google.com/file/d/test-resource/view");
+    expect(await getPaidDownloadsForUser(1)).toHaveLength(0);
 
     const confirmation = await confirmSePayPayment({
       providerTransactionId: "sepay-test-001",
@@ -87,5 +89,7 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     orders = await caller.store.orders();
     expect(orders[0]?.paymentStatus).toBe("paid");
     expect(orders[0]?.items?.[0]?.product?.fileUrl).toBeDefined();
+    const downloads = await getPaidDownloadsForUser(1);
+    expect(downloads[0]?.driveUrl).toBe("https://drive.google.com/file/d/test-resource/view");
   });
 });

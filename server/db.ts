@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, cartItems, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, users } from "../drizzle/schema";
+import { InsertUser, cartItems, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -303,6 +303,7 @@ let memoryCart: CartItemType[] = [];
 let memoryOrders: OrderType[] = [];
 let memoryOrderItems: OrderItemType[] = [];
 const memoryProcessedTransactions = new Set<string>();
+const memoryDownloadLinks = new Map<number, string>();
 let nextCartId = 1;
 let nextOrderId = 1;
 let nextOrderItemId = 1;
@@ -393,6 +394,38 @@ export async function isUserActive(userId: number) {
 
 export async function getCategories() {
   return memoryCategories;
+}
+
+async function listDownloadLinks() {
+  const connection = await getDb();
+  if (connection) return connection.select().from(productDownloadLinks);
+  return Array.from(memoryDownloadLinks, ([productId, driveUrl]) => ({ productId, driveUrl }));
+}
+
+export async function getAdminProductDownloadLinks() {
+  const links = await listDownloadLinks();
+  const linkMap = new Map(links.map(link => [link.productId, link.driveUrl]));
+  return memoryProducts.map(product => ({
+    productId: product.id,
+    productName: product.name,
+    currentUrl: linkMap.get(product.id) ?? null,
+  }));
+}
+
+export async function saveProductDownloadLink(productId: number, driveUrl: string) {
+  if (!memoryProducts.some(product => product.id === productId)) throw new Error("Product not found");
+  const connection = await getDb();
+  if (connection) {
+    const current = await connection.select().from(productDownloadLinks).where(eq(productDownloadLinks.productId, productId)).limit(1);
+    if (current[0]) {
+      await connection.update(productDownloadLinks).set({ driveUrl }).where(eq(productDownloadLinks.productId, productId));
+    } else {
+      await connection.insert(productDownloadLinks).values({ productId, driveUrl });
+    }
+    return { success: true };
+  }
+  memoryDownloadLinks.set(productId, driveUrl);
+  return { success: true };
 }
 
 export async function getProducts(filter?: {
@@ -595,6 +628,21 @@ export async function getOrderPaymentForUser(userId: number, orderId: number) {
     return result[0];
   }
   return memoryOrders.find(order => order.id === orderId && order.userId === userId);
+}
+
+export async function getPaidDownloadsForUser(userId: number) {
+  const userOrders = await getOrders(userId, false);
+  const links = await listDownloadLinks();
+  const linkMap = new Map(links.map(link => [link.productId, link.driveUrl]));
+  return userOrders
+    .filter(order => order.paymentStatus === "paid")
+    .flatMap(order => (order.items ?? []).map(item => ({
+      orderId: order.id,
+      productId: item.productId,
+      productName: item.product?.name ?? "Digital resource",
+      fileSize: item.product?.fileSize ?? null,
+      driveUrl: linkMap.get(item.productId) ?? null,
+    })));
 }
 
 export async function confirmSePayPayment(input: {

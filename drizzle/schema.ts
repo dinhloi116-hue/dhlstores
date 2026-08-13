@@ -117,3 +117,13 @@ export const paymentTransactions = mysqlTable("payment_transactions", {
 
 export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
 export type InsertPaymentTransaction = typeof paymentTransactions.$inferInsert;
+
+/** Link tải do admin cấu hình cho từng tài nguyên; chỉ server quyết định khi nào được trả về khách. */
+export const productDownloadLinks = mysqlTable("product_download_links", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull().unique(),
+  driveUrl: text("driveUrl").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProductDownloadLink = typeof productDownloadLinks.$inferSelect;
