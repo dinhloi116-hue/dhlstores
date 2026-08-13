@@ -29,3 +29,7 @@
 - [x] Bổ sung kiểm thử cho biến thể, phí giao hàng, checkout vật lý và kiểm tra giao diện đáp ứng.
 - [x] Bổ sung trạng thái chờ rõ ràng cho khu vực hàng vật lý khi chưa có sản phẩm công khai.
 - [x] Lưu phiên bản xuất bản và cập nhật hướng dẫn vận hành hàng vật lý.
+- [x] Rà soát luồng tạo đơn và xác nhận thanh toán để bổ sung thời hạn QR an toàn.
+- [x] Tự hủy đơn QR chờ thanh toán sau 2.000 ms trong chế độ kiểm thử và hiển thị thông báo hết hạn.
+- [x] Chặn xác nhận thanh toán cho đơn đã hết hạn và bổ sung kiểm thử.
+- [x] Lưu phiên bản xuất bản chế độ kiểm thử, kèm hướng dẫn đổi lại thời hạn thực tế.

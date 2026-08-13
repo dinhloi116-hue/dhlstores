@@ -129,4 +129,18 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "30000.00" });
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
   });
+
+  it("cancels an expired QR order and rejects a later matching payment", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const checkout = await caller.store.checkout({ totalAmount: 0, items: [{ productId: 2, quantity: 1, price: 0 }] });
+
+    const cancelled = await caller.store.cancelPendingOrder({ orderId: checkout.orderId });
+    expect(cancelled).toEqual({ success: true, cancelled: true });
+    const orders = await caller.store.orders();
+    expect(orders[0]).toMatchObject({ id: checkout.orderId, status: "cancelled", paymentStatus: "pending" });
+
+    const latePayment = await confirmSePayPayment({ providerTransactionId: `sepay-expired-${checkout.orderId}`, transferAmount: checkout.totalAmount, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: "EXPIRED-TEST" });
+    expect(latePayment).toEqual({ success: false, reason: "No matching pending order" });
+  });
 });

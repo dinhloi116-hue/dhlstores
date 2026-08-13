@@ -1072,6 +1072,22 @@ export async function updateOrderStatus(orderId: number, status: OrderStatusType
   return { success: true };
 }
 
+export async function cancelPendingOrderForUser(userId: number, orderId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const updated = await connection.update(ordersTable).set({ status: "cancelled" }).where(and(
+      eq(ordersTable.id, orderId),
+      eq(ordersTable.userId, userId),
+      eq(ordersTable.status, "pending"),
+      eq(ordersTable.paymentStatus, "pending"),
+    ));
+    return { success: true, cancelled: Number(updated[0]?.affectedRows ?? 0) > 0 };
+  }
+  const order = memoryOrders.find(item => item.id === orderId && item.userId === userId && item.status === "pending" && item.paymentStatus === "pending");
+  if (order) order.status = "cancelled";
+  return { success: true, cancelled: Boolean(order) };
+}
+
 export async function getOrderPaymentForUser(userId: number, orderId: number) {
   const connection = await getDb();
   if (connection) {
@@ -1115,7 +1131,7 @@ export async function confirmSePayPayment(input: {
     )).limit(1);
     if (duplicate[0]) return { success: true, alreadyProcessed: true };
 
-    const pendingOrders = await connection.select().from(ordersTable).where(eq(ordersTable.paymentStatus, "pending"));
+    const pendingOrders = await connection.select().from(ordersTable).where(and(eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.status, "pending")));
     const matchedOrder = pendingOrders.find(order =>
       normalizedContent.includes(order.orderCode.toUpperCase()) && Number(order.totalAmount) === Math.round(input.transferAmount),
     );
@@ -1156,6 +1172,7 @@ export async function confirmSePayPayment(input: {
   if (memoryProcessedTransactions.has(duplicateKey)) return { success: true, alreadyProcessed: true };
   const matchedOrder = memoryOrders.find(order =>
     order.paymentStatus === "pending" &&
+    order.status === "pending" &&
     normalizedContent.includes(order.orderCode.toUpperCase()) &&
     Number(order.totalAmount) === Math.round(input.transferAmount),
   );

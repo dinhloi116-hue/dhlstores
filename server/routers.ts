@@ -97,6 +97,13 @@ export const appRouter = router({
         return await db.removeFromCart(input.cartItemId);
       }),
 
+    cancelPendingOrder: protectedProcedure
+      .input(z.object({ orderId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return db.cancelPendingOrderForUser(ctx.user.id, input.orderId);
+      }),
+
     checkout: protectedProcedure
       .input(z.object({
         totalAmount: z.number(),

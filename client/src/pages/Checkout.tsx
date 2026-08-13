@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, CheckCircle2, Copy, Download, QrCode, ShieldCheck, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
+const PAYMENT_QR_TEST_TTL_MS = 2_000;
+
 type PendingPayment = {
   orderId: number;
   orderCode: string;
@@ -23,6 +25,7 @@ export default function Checkout() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
+  const [paymentExpired, setPaymentExpired] = useState(false);
   const [shipping, setShipping] = useState({ name: "", phone: "", address: "", note: "", method: "standard" as "pickup" | "standard" | "express" });
 
   useEffect(() => {
@@ -39,6 +42,20 @@ export default function Checkout() {
     enabled: Boolean(paymentInput),
     refetchInterval: query => query.state.data?.paymentStatus === "paid" ? false : 3500,
   });
+  const cancelPendingOrder = trpc.store.cancelPendingOrder.useMutation({
+    onSuccess: result => {
+      if (result.cancelled) {
+        setPaymentExpired(true);
+        toast.warning("Mã QR đã hết hạn kiểm thử sau 2 giây. Vui lòng tạo đơn mới để thanh toán.");
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!pendingPayment || paymentQuery.data?.paymentStatus === "paid" || paymentExpired) return;
+    const timer = window.setTimeout(() => cancelPendingOrder.mutate({ orderId: pendingPayment.orderId }), PAYMENT_QR_TEST_TTL_MS);
+    return () => window.clearTimeout(timer);
+  }, [pendingPayment?.orderId, paymentQuery.data?.paymentStatus, paymentExpired]);
 
   const cartSubtotal = cartItems.reduce((sum, item) => {
     const price = item.product ? Number(item.product.price) + Number(item.variant?.priceAdjustment || 0) : 0;
@@ -51,6 +68,7 @@ export default function Checkout() {
   const checkoutMutation = trpc.store.checkout.useMutation({
     onSuccess: order => {
       setPendingPayment(order);
+      setPaymentExpired(false);
       utils.store.cart.invalidate();
       toast.info(lang === "vi" ? "Đơn hàng đã được tạo. Hãy quét QR để thanh toán." : "Order created. Scan the QR code to pay.");
     },
@@ -82,13 +100,14 @@ export default function Checkout() {
 
   if (pendingPayment) {
     const isPaid = paymentQuery.data?.paymentStatus === "paid";
+    const isExpired = paymentExpired || paymentQuery.data?.status === "cancelled";
     return (
       <StoreLayout>
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
           <section className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <div className="px-6 py-5 bg-slate-900 text-white">
               <p className="text-[11px] tracking-[0.18em] font-bold uppercase text-amber-300">DHL Stores · SePay / VietQR</p>
-              <h1 className="text-xl font-black mt-1">{isPaid ? (lang === "vi" ? "Thanh toán đã xác nhận" : "Payment confirmed") : (lang === "vi" ? "Quét QR để hoàn tất thanh toán" : "Scan QR to complete payment")}</h1>
+              <h1 className="text-xl font-black mt-1">{isPaid ? (lang === "vi" ? "Thanh toán đã xác nhận" : "Payment confirmed") : isExpired ? (lang === "vi" ? "Mã QR đã hết hạn" : "QR code expired") : (lang === "vi" ? "Quét QR để hoàn tất thanh toán" : "Scan QR to complete payment")}</h1>
             </div>
 
             {isPaid ? (
@@ -100,6 +119,8 @@ export default function Checkout() {
                 </div>
                 <Link href="/account"><Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-black">{lang === "vi" ? "Đi tới Tài khoản" : "Go to account"}</Button></Link>
               </div>
+            ) : isExpired ? (
+              <div className="space-y-5 p-8 text-center"><QrCode className="mx-auto h-16 w-16 text-rose-500" /><div><h2 className="text-xl font-black text-slate-900">Mã thanh toán đã hết hạn</h2><p className="mt-2 text-sm text-slate-500">Chế độ kiểm thử tự hủy đơn sau 2.000 ms. Hãy quay lại giỏ để tạo mã QR mới.</p></div><Button onClick={() => { setPendingPayment(null); setPaymentExpired(false); }} className="bg-amber-500 font-black text-slate-950 hover:bg-amber-400">Tạo đơn mới</Button></div>
             ) : (
               <div className="p-6 sm:p-8 grid gap-7 sm:grid-cols-[1fr_260px] items-center">
                 <div className="space-y-5">
@@ -118,7 +139,7 @@ export default function Checkout() {
                     </button>
                     <p className="text-[11px] leading-relaxed text-slate-600 mt-2">{lang === "vi" ? "Hệ thống chỉ tự động xác nhận khi số tiền và mã đơn hàng trùng khớp." : "The order is confirmed only when both amount and order code match."}</p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />{lang === "vi" ? "Đang chờ SePay xác nhận giao dịch…" : "Waiting for SePay transaction confirmation…"}</div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />{lang === "vi" ? "Đang chờ SePay xác nhận giao dịch… Mã sẽ hết hạn sau 2 giây để kiểm thử." : "Waiting for SePay transaction confirmation… Test QR expires in 2 seconds."}</div>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">
                   {pendingPayment.qrUrl ? <img src={pendingPayment.qrUrl} alt="SePay VietQR payment code" className="w-full rounded-xl bg-white" /> : <div className="aspect-square grid place-items-center rounded-xl border border-dashed border-slate-300 bg-white p-6"><div><QrCode className="w-12 h-12 mx-auto text-slate-400" /><p className="text-xs text-slate-500 mt-3">{lang === "vi" ? "QR sẽ hiển thị khi cấu hình ngân hàng được hoàn tất." : "The QR will appear after bank configuration is complete."}</p></div></div>}
