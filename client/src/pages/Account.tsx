@@ -83,7 +83,7 @@ export default function Account() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-900">{user?.name || "Customer"}</h1>
-              <p className="text-xs text-slate-500 mt-1">{user?.email || "dhlstore@manus.im"}</p>
+              <p className={`mt-1 text-xs ${user?.email ? "text-slate-500" : "font-semibold text-amber-700"}`}>{user?.email || (lang === "vi" ? "Chưa liên kết email — thêm ở phần bên dưới" : "No email linked — add one below")}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">
                   {user?.role === 'admin' ? 'Admin' : 'VIP Member'}
@@ -105,13 +105,13 @@ export default function Account() {
             <div className="flex items-start gap-3">
               <div className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-purple-600 text-white"><Mail className="h-5 w-5" /></div>
               <div>
-                <h2 className="font-black text-slate-900">{lang === "vi" ? "Email liên kết" : "Linked email"}</h2>
+                <h2 className="font-black text-slate-900">{user?.email ? (lang === "vi" ? "Email liên kết" : "Linked email") : (lang === "vi" ? "Bạn chưa liên kết email" : "No email linked yet")}</h2>
                 <p className="mt-1 text-xs leading-relaxed text-slate-600">{user?.email ? (user.emailVerified ? (lang === "vi" ? `Email đã xác minh: ${user.email}` : `Verified email: ${user.email}`) : (lang === "vi" ? `Email đã liên kết: ${user.email}. Chưa xác minh.` : `Linked email: ${user.email}. Not verified.`)) : (lang === "vi" ? "Thêm email để liên kết với tài khoản của bạn. Email phải chưa được dùng ở tài khoản DHL Stores khác." : "Add an email to link it with your account. It must not belong to another DHL Stores account.")}</p>
               </div>
             </div>
             <form onSubmit={event => { event.preventDefault(); linkEmailMutation.mutate({ email: emailToLink || user?.email || "" }); }} className="flex w-full gap-2 sm:w-auto">
               <input value={emailToLink} onChange={event => setEmailToLink(event.target.value)} type="email" required placeholder={user?.email || "email@example.com"} className="h-10 min-w-0 flex-1 rounded-lg border border-purple-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100 sm:w-64" />
-              <Button type="submit" disabled={linkEmailMutation.isPending} className="h-10 bg-purple-600 px-4 text-xs font-black text-white hover:bg-purple-700">{linkEmailMutation.isPending ? "…" : (lang === "vi" ? "Liên kết" : "Link")}</Button>
+              <Button type="submit" disabled={linkEmailMutation.isPending} className="h-10 bg-purple-600 px-4 text-xs font-black text-white hover:bg-purple-700">{linkEmailMutation.isPending ? "…" : (user?.email ? (lang === "vi" ? "Cập nhật" : "Update") : (lang === "vi" ? "Liên kết email" : "Link email"))}</Button>
             </form>
           </div>
         </section>

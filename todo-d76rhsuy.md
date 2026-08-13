@@ -74,6 +74,8 @@
 - [ ] Rà soát các trang mua hàng, giỏ, thanh toán, tài khoản và quản trị để xác định hạng mục cần hoàn thiện.
 - [x] Sửa trang chi tiết sản phẩm để hiển thị lỗi hoặc trạng thái không tìm thấy thay vì quay vòng chờ tải.
 - [ ] Hoàn thiện các vấn đề ưu tiên được xác định trong quá trình rà soát.
+- [x] Làm rõ trạng thái chưa liên kết email và nút liên kết email trên trang Tài khoản.
+- [x] Tạo lối liên hệ Zalo trực tiếp từ chân trang để khách dễ nhận hỗ trợ.
 - [ ] Kiểm thử tổng thể và xuất bản phiên bản sẵn sàng vận hành.
 - [x] Bỏ banner lớn ở trang chủ và thay bằng đầu trang gọn hơn.
 - [x] Tăng cường hiệu ứng hover rõ ràng cho nút, danh mục và thẻ sản phẩm.
