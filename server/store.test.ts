@@ -98,6 +98,27 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(downloads[0]?.driveUrl).toBe("https://drive.google.com/file/d/test-resource/view");
   });
 
+  it("calculates checkout from the server-side 2,000 VND product price", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const suffix = Date.now().toString(36);
+    const product = await createProduct({
+      name: `Sản phẩm giá kiểm thử ${suffix}`,
+      slug: `gia-kiem-thu-${suffix}`,
+      description: "Kiểm thử giá do máy chủ xác thực",
+      price: "2000",
+      categoryId: 1,
+      image: "generated:price-test",
+      isActive: true,
+    });
+
+    const checkout = await caller.store.checkout({
+      totalAmount: 999999,
+      items: [{ productId: product!.id, quantity: 1, price: 999999 }],
+    });
+    expect(checkout.totalAmount).toBe(2000);
+  });
+
   it("adds a physical variant, includes shipping, and moves the paid order to processing", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);

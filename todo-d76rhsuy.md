@@ -33,3 +33,8 @@
 - [x] Tự hủy đơn QR chờ thanh toán sau 2.000 ms trong chế độ kiểm thử và hiển thị thông báo hết hạn.
 - [x] Chặn xác nhận thanh toán cho đơn đã hết hạn và bổ sung kiểm thử.
 - [x] Lưu phiên bản xuất bản chế độ kiểm thử, kèm hướng dẫn đổi lại thời hạn thực tế.
+- [x] Rà soát sản phẩm và biến thể đang có giá trước khi chuyển sang cấu hình kiểm thử.
+- [x] Chuyển giá sản phẩm và biến thể hiện có về 2.000 đ.
+- [x] Xác minh tổng tiền trên cửa hàng và lưu phiên bản xuất bản giá kiểm thử.
+- [x] Kiểm thử checkout để xác nhận hệ thống tính tổng 2.000 đ từ giá sản phẩm, không tin giá do trình duyệt gửi lên.
+- [x] Lưu checkpoint xuất bản sau khi xác nhận luồng thanh toán giá kiểm thử.
