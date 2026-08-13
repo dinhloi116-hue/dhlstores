@@ -171,11 +171,40 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     });
 
     expect(checkout.totalAmount).toBe(135000);
+    expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
     const confirmation = await confirmSePayPayment({ providerTransactionId: `sepay-physical-${suffix}`, transferAmount: 135000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `PHYSICAL-${suffix}` });
     expect(confirmation.success).toBe(true);
     const orders = await caller.store.orders();
     expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "30000.00" });
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
+  });
+
+  it("reserves physical stock while a QR order is pending and restores it when the QR expires", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const suffix = `reserve-${Date.now().toString(36)}`;
+    const product = await createProduct({
+      name: `Patch tồn kho ${suffix}`,
+      slug: `patch-ton-kho-${suffix}`,
+      description: "Kiểm thử giữ tồn kho QR",
+      price: "10000",
+      categoryId: 12,
+      image: "generated:stock-reservation",
+      stock: 1,
+      featured: false,
+      isActive: true,
+    });
+    const variant = await createProductVariant({ productId: product!.id, size: "Chuẩn", color: "Vàng", sku: `STOCK-${suffix}`, priceAdjustment: "0", stock: 1, isActive: true });
+    const checkout = await caller.store.checkout({
+      totalAmount: 0,
+      items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0 }],
+      shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "pickup" },
+    });
+
+    expect((await getProductVariants(product!.id))[0]?.stock).toBe(0);
+    await expect(caller.store.addToCart({ productId: product!.id, variantId: variant!.id, quantity: 1 })).rejects.toThrow("Biến thể đã chọn không đủ tồn kho");
+    await expect(caller.store.cancelPendingOrder({ orderId: checkout.orderId })).resolves.toEqual({ success: true, cancelled: true });
+    expect((await getProductVariants(product!.id))[0]?.stock).toBe(1);
   });
 
   it("cancels an expired QR order and rejects a later matching payment", async () => {

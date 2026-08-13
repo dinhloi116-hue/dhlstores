@@ -55,5 +55,11 @@
 - [x] Bổ sung dữ liệu tài khoản nội bộ, mật khẩu băm và email liên kết với các ràng buộc duy nhất.
 - [x] Xây dựng đăng ký, đăng nhập, đăng xuất và phiên truy cập an toàn bằng tên đăng nhập cùng mật khẩu.
 - [x] Thêm giao diện tạo tài khoản, đăng nhập và liên kết email trong khu vực tài khoản.
-- [ ] Cấp quyền quản trị cho tài khoản chủ cửa hàng `dinhhoangloi` sau khi tài khoản này được tạo.
-- [ ] Kiểm thử luồng đăng ký, đăng nhập, liên kết email, quyền quản trị và xuất bản cập nhật.
+- [x] Cấp quyền quản trị cho tài khoản chủ cửa hàng `dinhhoangloi` sau khi tài khoản này được tạo.
+- [x] Kiểm thử luồng đăng ký, đăng nhập, liên kết email, quyền quản trị và xuất bản cập nhật.
+- [ ] Xác nhận trực quan luồng tạo tài khoản, đăng nhập và liên kết email trên giao diện với tài khoản chủ cửa hàng.
+- [ ] Xác nhận tài khoản chủ cửa hàng đã cấp quyền quản trị truy cập được `/admin`.
+- [x] Xác nhận và cấp quyền quản trị cho tài khoản `dinhhoangloi` vừa được tạo.
+- [x] Rà soát số lượng tồn kho sản phẩm và biến thể trong luồng đặt hàng hàng vật lý.
+- [x] Chặn khách tạo đơn vượt số lượng tồn kho và hiển thị thông báo tồn kho rõ ràng.
+- [ ] Hoàn thiện quản trị tồn kho sản phẩm và biến thể, kiểm thử rồi xuất bản cập nhật.

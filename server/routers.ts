@@ -142,7 +142,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
-        return await db.updateCartItem(input.cartItemId, input.quantity);
+        return await db.updateCartItem(ctx.user.id, input.cartItemId, input.quantity);
       }),
 
     removeFromCart: protectedProcedure

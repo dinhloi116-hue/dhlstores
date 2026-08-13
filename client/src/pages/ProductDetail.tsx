@@ -39,6 +39,13 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
+  const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
+  const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? 0 : product.stock) : Number.MAX_SAFE_INTEGER;
+  const requiresVariant = product?.type === "physical" && variants.length > 0;
+
+  useEffect(() => {
+    if (product?.type === "physical" && availableStock > 0) setQuantity(current => Math.min(current, availableStock));
+  }, [availableStock, product?.type]);
 
   const addToCartMutation = trpc.store.addToCart.useMutation({
     onSuccess: () => {
@@ -95,6 +102,7 @@ export default function ProductDetail() {
     }
 
     if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
+    if (product.type === "physical" && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
     setAdding(true);
     addToCartMutation.mutate({
       productId: product.id,
@@ -110,6 +118,7 @@ export default function ProductDetail() {
       return;
     }
     if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
+    if (product.type === "physical" && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
     addToCartMutation.mutate({
       productId: product.id,
       quantity,
@@ -144,7 +153,7 @@ export default function ProductDetail() {
             <div>
               <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
                 <Sparkles className="w-4 h-4" />
-                <span>{product.type === "physical" ? (lang === 'vi' ? `Còn ${product.stock} sản phẩm` : `${product.stock} items in stock`) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
+                <span>{product.type === "physical" ? (lang === 'vi' ? `${availableStock > 0 ? `Còn ${availableStock}` : "Đã hết"} trong kho` : `${availableStock > 0 ? availableStock : "Out of"} stock`) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{product.name}</h1>
               <p className="text-2xl font-black text-amber-600 mt-2">{formatCurrency(Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0))}</p>
@@ -178,7 +187,8 @@ export default function ProductDetail() {
                 <span className="flex-1 text-center font-bold text-slate-900">{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 flex items-center justify-center text-slate-700 hover:text-black font-bold"
+                  disabled={product.type === "physical" && quantity >= availableStock}
+                  className="w-10 h-10 flex items-center justify-center text-slate-700 hover:text-black font-bold disabled:cursor-not-allowed disabled:opacity-35"
                 >
                   +
                 </button>
@@ -188,7 +198,7 @@ export default function ProductDetail() {
             <div className="pt-2 flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={handleAddToCart}
-                disabled={adding}
+                disabled={adding || (product.type === "physical" && (availableStock <= 0 || (requiresVariant && !selectedVariantId)))}
                 variant="outline"
                 className="flex-1 border-amber-500 bg-white hover:bg-amber-50 text-amber-700 font-bold py-3.5 rounded-xl shadow-xs text-sm"
               >
@@ -197,7 +207,7 @@ export default function ProductDetail() {
               </Button>
               <Button
                 onClick={handleBuyNow}
-                disabled={adding}
+                disabled={adding || (product.type === "physical" && (availableStock <= 0 || (requiresVariant && !selectedVariantId)))}
                 className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl shadow-md text-sm"
               >
                 <Zap className="w-4 h-4 mr-2" />

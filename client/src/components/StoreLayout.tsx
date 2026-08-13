@@ -54,6 +54,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const updateCartMutation = trpc.store.updateCart.useMutation({
     onSuccess: () => {
       utils.store.cart.invalidate();
+    },
+    onError: error => {
+      toast.error(error.message || (lang === 'vi' ? "Không thể cập nhật số lượng do tồn kho thay đổi" : "Unable to update quantity because stock changed"));
+      utils.store.cart.invalidate();
     }
   });
   const removeCartMutation = trpc.store.removeFromCart.useMutation({
