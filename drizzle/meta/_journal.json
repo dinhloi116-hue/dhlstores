@@ -43,6 +43,13 @@
       "when": 1786608617114,
       "tag": "0005_tricky_jean_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1786617407372,
+      "tag": "0006_smiling_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }

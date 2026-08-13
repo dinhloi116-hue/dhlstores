@@ -18,6 +18,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [cartOpen, setCartOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authForm, setAuthForm] = useState({ name: '', username: '', password: '', confirmPassword: '' });
 
   const [lang, setLang] = useState<Language>(getClientLanguage());
 
@@ -34,6 +35,21 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   };
 
   const utils = trpc.useUtils();
+  const handleLocalAuthSuccess = async (result: { user: NonNullable<typeof user> }) => {
+    utils.auth.me.setData(undefined, result.user);
+    await utils.auth.me.invalidate();
+    setAuthDialogOpen(false);
+    setAuthForm({ name: '', username: '', password: '', confirmPassword: '' });
+    toast.success(lang === 'vi' ? 'Đăng nhập thành công' : 'Signed in successfully');
+  };
+  const localLoginMutation = trpc.auth.login.useMutation({
+    onSuccess: handleLocalAuthSuccess,
+    onError: error => toast.error(error.message),
+  });
+  const localRegisterMutation = trpc.auth.register.useMutation({
+    onSuccess: handleLocalAuthSuccess,
+    onError: error => toast.error(error.message),
+  });
   const cartQuery = trpc.store.cart.useQuery(undefined, { enabled: isAuthenticated });
   const updateCartMutation = trpc.store.updateCart.useMutation({
     onSuccess: () => {
@@ -62,9 +78,17 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   };
 
   const logoPath = "/manus-storage/logodhlstores_c8e433ed.png";
-  const beginAccountFlow = () => {
-    setAuthDialogOpen(false);
-    startLogin();
+  const submitLocalAuth = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (authMode === 'signup') {
+      if (authForm.password !== authForm.confirmPassword) {
+        toast.error(lang === 'vi' ? 'Xác nhận mật khẩu chưa khớp' : 'Password confirmation does not match');
+        return;
+      }
+      localRegisterMutation.mutate({ username: authForm.username, password: authForm.password, name: authForm.name || undefined });
+      return;
+    }
+    localLoginMutation.mutate({ username: authForm.username, password: authForm.password });
   };
 
   return (
@@ -288,21 +312,23 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <DialogDescription className="text-sm text-slate-200">{lang === 'vi' ? 'Tài khoản giúp bảo vệ đơn hàng và chỉ mở quyền tải file sau thanh toán.' : 'Your account protects orders and unlocks downloads only after payment.'}</DialogDescription>
             </DialogHeader>
           </div>
-          <div className="p-7 space-y-5">
+          <form onSubmit={submitLocalAuth} className="p-7 space-y-5">
             <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 gap-1">
               <button type="button" onClick={() => setAuthMode('signin')} className={`rounded-lg px-3 py-2.5 text-xs font-black transition-colors ${authMode === 'signin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{lang === 'vi' ? 'ĐĂNG NHẬP' : 'SIGN IN'}</button>
               <button type="button" onClick={() => setAuthMode('signup')} className={`rounded-lg px-3 py-2.5 text-xs font-black transition-colors ${authMode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{lang === 'vi' ? 'TẠO TÀI KHOẢN' : 'CREATE ACCOUNT'}</button>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 leading-relaxed">
-              {authMode === 'signin'
-                ? (lang === 'vi' ? 'Tiếp tục bằng Google hoặc email bạn đã dùng khi tạo tài khoản. Quên mật khẩu sẽ được xử lý an toàn tại cổng đăng nhập.' : 'Continue with Google or the email used to create your account. Password recovery is handled securely in the sign-in portal.')
-                : (lang === 'vi' ? 'Chọn tiếp tục để tạo tài khoản bằng Google hoặc email. Sau đó, mọi đơn hàng và quyền tải file sẽ gắn với tài khoản này.' : 'Continue to create an account with Google or email. Your orders and download access will be linked to this account.')}
+            <div className="space-y-3">
+              {authMode === 'signup' && <input value={authForm.name} onChange={event => setAuthForm(value => ({ ...value, name: event.target.value }))} placeholder={lang === 'vi' ? 'Tên hiển thị (tùy chọn)' : 'Display name (optional)'} autoComplete="name" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />}
+              <input value={authForm.username} onChange={event => setAuthForm(value => ({ ...value, username: event.target.value }))} placeholder={lang === 'vi' ? 'Tên đăng nhập' : 'Username'} autoComplete="username" required minLength={3} maxLength={32} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
+              <input value={authForm.password} onChange={event => setAuthForm(value => ({ ...value, password: event.target.value }))} type="password" placeholder={lang === 'vi' ? 'Mật khẩu tối thiểu 10 ký tự' : 'Password, at least 10 characters'} autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} required minLength={10} maxLength={128} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
+              {authMode === 'signup' && <input value={authForm.confirmPassword} onChange={event => setAuthForm(value => ({ ...value, confirmPassword: event.target.value }))} type="password" placeholder={lang === 'vi' ? 'Nhập lại mật khẩu' : 'Confirm password'} autoComplete="new-password" required minLength={10} maxLength={128} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />}
             </div>
-            <Button onClick={beginAccountFlow} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black py-5">
-              {authMode === 'signin' ? (lang === 'vi' ? 'TIẾP TỤC ĐĂNG NHẬP' : 'CONTINUE TO SIGN IN') : (lang === 'vi' ? 'TIẾP TỤC TẠO TÀI KHOẢN' : 'CONTINUE TO CREATE ACCOUNT')}
+            <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">{lang === 'vi' ? 'Tên đăng nhập chỉ dùng chữ cái, số và dấu gạch dưới. Mật khẩu được băm an toàn; sau khi tạo tài khoản, bạn có thể liên kết email trong mục Tài khoản.' : 'Usernames use letters, numbers and underscores. Passwords are stored only as secure hashes; you can link an email later from Account.'}</p>
+            <Button type="submit" disabled={localLoginMutation.isPending || localRegisterMutation.isPending} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black py-5">
+              {localLoginMutation.isPending || localRegisterMutation.isPending ? (lang === 'vi' ? 'ĐANG XỬ LÝ...' : 'PLEASE WAIT...') : authMode === 'signin' ? (lang === 'vi' ? 'ĐĂNG NHẬP' : 'SIGN IN') : (lang === 'vi' ? 'TẠO TÀI KHOẢN' : 'CREATE ACCOUNT')}
             </Button>
-            <p className="text-center text-[11px] leading-relaxed text-slate-500">{lang === 'vi' ? 'DHL Stores không lưu mật khẩu trực tiếp trên website. Bạn luôn cần đăng nhập trước khi thanh toán hoặc tải tài nguyên.' : 'DHL Stores does not store passwords directly. Sign-in is required before checkout or downloading resources.'}</p>
-          </div>
+            <button type="button" onClick={() => startLogin()} className="w-full text-center text-xs font-bold text-slate-500 underline-offset-4 hover:text-purple-700 hover:underline">{lang === 'vi' ? 'Hoặc tiếp tục với tài khoản Manus' : 'Or continue with your Manus account'}</button>
+          </form>
         </DialogContent>
       </Dialog>
 

@@ -1,4 +1,5 @@
 import { and, desc, eq, sql } from "drizzle-orm";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, cartItems, categories, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productVariants, products, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -110,8 +111,10 @@ export interface OrderType {
 export interface ExtendedUserType {
   id: number;
   openId: string;
+  username: string | null;
   name: string | null;
   email: string | null;
+  emailVerified: boolean;
   loginMethod: string | null;
   role: 'user' | 'admin';
   status: 'active' | 'blocked';
@@ -119,6 +122,10 @@ export interface ExtendedUserType {
   updatedAt: Date;
   lastSignedIn: Date;
 }
+
+type LocalUserRecordType = ExtendedUserType & {
+  passwordHash: string | null;
+};
 
 export type ShippingMethodCode = "pickup" | "standard" | "express";
 
@@ -313,12 +320,15 @@ const memoryProducts: ProductType[] = [
   }
 ];
 
-let memoryUsers: ExtendedUserType[] = [
+let memoryUsers: LocalUserRecordType[] = [
   {
     id: 1,
     openId: ENV.ownerOpenId || "owner-admin",
+    username: null,
+    passwordHash: null,
     name: "Admin DHL Stores",
     email: "admin@dhlstores.vn",
+    emailVerified: false,
     loginMethod: "manus",
     role: "admin",
     status: "active",
@@ -329,8 +339,11 @@ let memoryUsers: ExtendedUserType[] = [
   {
     id: 2,
     openId: "sample-user-2",
+    username: null,
+    passwordHash: null,
     name: "Nguyễn Văn Khách",
     email: "khachhang@gmail.com",
+    emailVerified: false,
     loginMethod: "manus",
     role: "user",
     status: "active",
@@ -446,8 +459,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     }
     await connection.insert(users).values({
       openId: user.openId,
+      username: user.username ?? null,
+      passwordHash: user.passwordHash ?? null,
       name: user.name ?? null,
       email: user.email ?? null,
+      emailVerified: user.emailVerified ?? false,
       loginMethod: user.loginMethod ?? null,
       role: user.openId === ENV.ownerOpenId ? "admin" : "user",
       status: "active",
@@ -464,8 +480,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     memoryUsers.push({
       id: memoryUsers.length + 1,
       openId: user.openId,
+      username: user.username ?? null,
+      passwordHash: user.passwordHash ?? null,
       name: user.name || "Khách hàng DHL",
       email: user.email || "user@dhlstores.vn",
+      emailVerified: user.emailVerified ?? false,
       loginMethod: user.loginMethod || "manus",
       role: user.openId === ENV.ownerOpenId ? "admin" : "user",
       status: "active",
@@ -488,8 +507,109 @@ export async function getUserByOpenId(openId: string) {
 
 export async function getAllUsers() {
   const connection = await getDb();
-  if (connection) return connection.select().from(users).orderBy(desc(users.createdAt));
-  return memoryUsers;
+  if (connection) return (await connection.select().from(users).orderBy(desc(users.createdAt))).map(toExtendedUserType);
+  return memoryUsers.map(toExtendedUserType);
+}
+
+function toExtendedUserType(user: LocalUserRecordType | typeof users.$inferSelect): ExtendedUserType {
+  return {
+    id: user.id,
+    openId: user.openId,
+    username: user.username ?? null,
+    name: user.name ?? null,
+    email: user.email ?? null,
+    emailVerified: user.emailVerified ?? false,
+    loginMethod: user.loginMethod ?? null,
+    role: user.role,
+    status: user.status,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    lastSignedIn: user.lastSignedIn,
+  };
+}
+
+export function hashLocalPassword(password: string) {
+  const salt = randomBytes(16).toString("base64url");
+  const derivedKey = scryptSync(password, salt, 64).toString("base64url");
+  return `scrypt$${salt}$${derivedKey}`;
+}
+
+export function verifyLocalPassword(password: string, passwordHash: string | null | undefined) {
+  if (!passwordHash) return false;
+  const [algorithm, salt, encodedKey] = passwordHash.split("$");
+  if (algorithm !== "scrypt" || !salt || !encodedKey) return false;
+  const expected = Buffer.from(encodedKey, "base64url");
+  const actual = scryptSync(password, salt, 64);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+export async function getUserByUsername(username: string) {
+  const connection = await getDb();
+  if (connection) {
+    const result = await connection.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
+  }
+  return memoryUsers.find(user => user.username === username);
+}
+
+export async function createLocalUser(input: { username: string; passwordHash: string; name?: string }) {
+  const connection = await getDb();
+  if (connection) {
+    const existing = await connection.select({ id: users.id }).from(users).where(eq(users.username, input.username)).limit(1);
+    if (existing[0]) throw new Error("USERNAME_TAKEN");
+    const inserted = await connection.insert(users).values({
+      openId: `local:${input.username}`,
+      username: input.username,
+      passwordHash: input.passwordHash,
+      name: input.name?.trim() || input.username,
+      email: null,
+      emailVerified: false,
+      loginMethod: "local",
+      role: "user",
+      status: "active",
+      lastSignedIn: new Date(),
+    });
+    const result = await connection.select().from(users).where(eq(users.id, Number(inserted[0].insertId))).limit(1);
+    return result[0];
+  }
+
+  if (memoryUsers.some(user => user.username === input.username)) throw new Error("USERNAME_TAKEN");
+  const now = new Date();
+  const user: LocalUserRecordType = {
+    id: Math.max(0, ...memoryUsers.map(item => item.id)) + 1,
+    openId: `local:${input.username}`,
+    username: input.username,
+    passwordHash: input.passwordHash,
+    name: input.name?.trim() || input.username,
+    email: null,
+    emailVerified: false,
+    loginMethod: "local",
+    role: "user",
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+    lastSignedIn: now,
+  };
+  memoryUsers.push(user);
+  return user;
+}
+
+export async function linkEmailToUser(userId: number, email: string) {
+  const connection = await getDb();
+  if (connection) {
+    const owned = await connection.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (owned[0] && owned[0].id !== userId) throw new Error("EMAIL_TAKEN");
+    await connection.update(users).set({ email, emailVerified: false }).where(eq(users.id, userId));
+    return { success: true };
+  }
+  const owned = memoryUsers.find(user => user.email === email);
+  if (owned && owned.id !== userId) throw new Error("EMAIL_TAKEN");
+  const user = memoryUsers.find(item => item.id === userId);
+  if (!user) throw new Error("USER_NOT_FOUND");
+  user.email = email;
+  user.emailVerified = false;
+  user.updatedAt = new Date();
+  return { success: true };
 }
 
 export async function updateUserStatus(userId: number, status: 'active' | 'blocked') {
@@ -502,6 +622,19 @@ export async function updateUserStatus(userId: number, status: 'active' | 'block
   if (u) {
     u.status = status;
   }
+  return { success: true };
+}
+
+export async function updateUserRole(userId: number, role: 'user' | 'admin') {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(users).set({ role }).where(eq(users.id, userId));
+    return { success: true };
+  }
+  const user = memoryUsers.find(item => item.id === userId);
+  if (!user) throw new Error("USER_NOT_FOUND");
+  user.role = role;
+  user.updatedAt = new Date();
   return { success: true };
 }
 

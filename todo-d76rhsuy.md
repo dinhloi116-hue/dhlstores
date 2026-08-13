@@ -46,8 +46,14 @@
 - [x] Kiểm thử chặn liên kết sau 7 ngày, kiểm tra giao diện và xuất bản bản cập nhật.
 - [x] Kiểm thử API tải ngay để xác nhận đơn sản phẩm số quá bảy ngày không trả liên kết tải.
 - [x] Kiểm tra trực quan trạng thái tải ngay và hết hạn sau thanh toán sản phẩm số.
-- [ ] Lưu checkpoint xuất bản cơ chế tải ngay bảy ngày.
+- [x] Lưu checkpoint xuất bản cơ chế tải ngay bảy ngày.
 - [x] Kiểm thử tRPC store.instantDownloads để xác nhận đơn số quá bảy ngày không nhận liên kết tải.
 - [x] Xác nhận giao diện checkout thay QR bằng nút Tải ngay sau khi thanh toán đơn số.
 - [x] Xác nhận hiển thị trạng thái liên kết tải hết hạn bảy ngày trong tài khoản.
 - [x] Làm rõ thông điệp xác nhận thanh toán số để hướng dẫn khách bấm Tải ngay thay vì vào tài khoản.
+- [x] Rà soát cơ chế xác thực hiện tại và các điểm tương thích cần giữ cho đơn hàng, tải tệp và quyền quản trị.
+- [x] Bổ sung dữ liệu tài khoản nội bộ, mật khẩu băm và email liên kết với các ràng buộc duy nhất.
+- [x] Xây dựng đăng ký, đăng nhập, đăng xuất và phiên truy cập an toàn bằng tên đăng nhập cùng mật khẩu.
+- [x] Thêm giao diện tạo tài khoản, đăng nhập và liên kết email trong khu vực tài khoản.
+- [ ] Cấp quyền quản trị cho tài khoản chủ cửa hàng `dinhhoangloi` sau khi tài khoản này được tạo.
+- [ ] Kiểm thử luồng đăng ký, đăng nhập, liên kết email, quyền quản trị và xuất bản cập nhật.

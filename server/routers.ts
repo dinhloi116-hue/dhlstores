@@ -7,6 +7,22 @@ import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { buildSePayQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
+import { sdk } from "./_core/sdk";
+
+const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
+const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
+const localPasswordSchema = z.string().min(10, "Mật khẩu cần có ít nhất 10 ký tự").max(128, "Mật khẩu quá dài");
+
+function publicUser(user: NonNullable<Awaited<ReturnType<typeof db.getUserByOpenId>>>) {
+  const { passwordHash: _passwordHash, ...safeUser } = user;
+  return safeUser;
+}
+
+async function createLocalAuthSession(ctx: { req: Parameters<typeof getSessionCookieOptions>[0]; res: { cookie: (name: string, value: string, options: Record<string, unknown>) => void } }, user: NonNullable<Awaited<ReturnType<typeof db.getUserByOpenId>>>) {
+  const token = await sdk.createSessionToken(user.openId, { expiresInMs: LOCAL_SESSION_MAX_AGE_MS, name: user.name || user.username || "DHL Stores" });
+  ctx.res.cookie(COOKIE_NAME, token, { ...getSessionCookieOptions(ctx.req), maxAge: LOCAL_SESSION_MAX_AGE_MS });
+  return publicUser(user);
+}
 
 async function requireActiveAccount(userId: number) {
   if (!(await db.isUserActive(userId))) {
@@ -20,7 +36,46 @@ async function requireActiveAccount(userId: number) {
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => opts.ctx.user ? publicUser(opts.ctx.user) : null),
+    register: publicProcedure
+      .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, name: z.string().trim().min(2).max(120).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const username = input.username.toLowerCase();
+        try {
+          const user = await db.createLocalUser({ username, passwordHash: db.hashLocalPassword(input.password), name: input.name });
+          return { user: await createLocalAuthSession(ctx, user) };
+        } catch (error) {
+          if (error instanceof Error && error.message === "USERNAME_TAKEN") {
+            throw new TRPCError({ code: "CONFLICT", message: "Tên đăng nhập này đã được sử dụng" });
+          }
+          throw error;
+        }
+      }),
+    login: publicProcedure
+      .input(z.object({ username: localUsernameSchema, password: localPasswordSchema }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await db.getUserByUsername(input.username.toLowerCase());
+        if (!user || !db.verifyLocalPassword(input.password, user.passwordHash)) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Tên đăng nhập hoặc mật khẩu không đúng" });
+        }
+        if (user.status !== "active") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ DHL Stores để được hỗ trợ." });
+        }
+        return { user: await createLocalAuthSession(ctx, user) };
+      }),
+    linkEmail: protectedProcedure
+      .input(z.object({ email: z.string().trim().toLowerCase().email("Email không hợp lệ") }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        try {
+          return await db.linkEmailToUser(ctx.user.id, input.email);
+        } catch (error) {
+          if (error instanceof Error && error.message === "EMAIL_TAKEN") {
+            throw new TRPCError({ code: "CONFLICT", message: "Email này đã liên kết với một tài khoản khác" });
+          }
+          throw error;
+        }
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -184,6 +239,21 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
         return await db.updateUserStatus(input.userId, input.status);
+      }),
+
+    updateUserRole: protectedProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        role: z.enum(["user", "admin"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật vai trò" });
+        }
+        if (ctx.user.id === input.userId && input.role !== "admin") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Bạn không thể tự gỡ quyền quản trị của chính mình" });
+        }
+        return await db.updateUserRole(input.userId, input.role);
       }),
 
     productDownloadLinks: protectedProcedure.query(async ({ ctx }) => {

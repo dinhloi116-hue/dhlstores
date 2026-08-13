@@ -7,12 +7,13 @@ import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Download, ExternalLink } from "lucide-react";
+import { Package, Download, ExternalLink, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Account() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refresh } = useAuth();
   const [lang, setLang] = useState<Language>(getClientLanguage());
+  const [emailToLink, setEmailToLink] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,6 +30,14 @@ export default function Account() {
   const downloadsQuery = trpc.store.downloads.useQuery(undefined, { enabled: isAuthenticated });
   const downloads = downloadsQuery.data || [];
   const downloadWindowMs = 7 * 24 * 60 * 60 * 1_000;
+  const linkEmailMutation = trpc.auth.linkEmail.useMutation({
+    onSuccess: async () => {
+      await refresh();
+      setEmailToLink("");
+      toast.success(lang === "vi" ? "Đã liên kết email với tài khoản" : "Email linked to your account");
+    },
+    onError: error => toast.error(error.message),
+  });
 
   if (!isAuthenticated) {
     return (
@@ -90,6 +99,22 @@ export default function Account() {
             </Link>
           )}
         </div>
+
+        <section className="rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-white p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-purple-600 text-white"><Mail className="h-5 w-5" /></div>
+              <div>
+                <h2 className="font-black text-slate-900">{lang === "vi" ? "Email liên kết" : "Linked email"}</h2>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">{user?.email ? (user.emailVerified ? (lang === "vi" ? `Email đã xác minh: ${user.email}` : `Verified email: ${user.email}`) : (lang === "vi" ? `Email đã liên kết: ${user.email}. Chưa xác minh.` : `Linked email: ${user.email}. Not verified.`)) : (lang === "vi" ? "Thêm email để liên kết với tài khoản của bạn. Email phải chưa được dùng ở tài khoản DHL Stores khác." : "Add an email to link it with your account. It must not belong to another DHL Stores account.")}</p>
+              </div>
+            </div>
+            <form onSubmit={event => { event.preventDefault(); linkEmailMutation.mutate({ email: emailToLink || user?.email || "" }); }} className="flex w-full gap-2 sm:w-auto">
+              <input value={emailToLink} onChange={event => setEmailToLink(event.target.value)} type="email" required placeholder={user?.email || "email@example.com"} className="h-10 min-w-0 flex-1 rounded-lg border border-purple-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100 sm:w-64" />
+              <Button type="submit" disabled={linkEmailMutation.isPending} className="h-10 bg-purple-600 px-4 text-xs font-black text-white hover:bg-purple-700">{linkEmailMutation.isPending ? "…" : (lang === "vi" ? "Liên kết" : "Link")}</Button>
+            </form>
+          </div>
+        </section>
 
         <div className="space-y-6">
           <div className="flex items-center justify-between">
