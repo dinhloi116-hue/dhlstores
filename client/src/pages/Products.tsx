@@ -58,21 +58,12 @@ export default function Products() {
 
   return (
     <StoreLayout>
-      <div className="border-b border-slate-800 bg-[#0b1220] py-11 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-400">DHL Stores · Resource Library</p>
-          <h1 className="font-display text-4xl font-black uppercase text-white sm:text-5xl">
-            {lang === 'vi' ? 'Kho Tài Nguyên Thiết Kế & Đồ Họa Số' : 'Digital Design & Sports Asset Library'}
-          </h1>
-          <p className="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto">
-            {lang === 'vi' 
-              ? 'Hơn 10+ danh mục tài liệu CorelDraw, Illustrator, Font chữ thể thao và File in DTF chuyên nghiệp.'
-              : 'Over 10+ categories of CorelDraw, Illustrator, sports fonts and professional DTF print files.'}
-          </p>
-        </div>
+      <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 border-b border-slate-200 px-4 py-5 sm:px-6 lg:px-8">
+        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library'}</h1></div>
+        <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.'}</p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Toolbar */}
         <div className="bg-white border border-slate-200 p-4 rounded-2xl mb-8 space-y-4 shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
@@ -107,7 +98,7 @@ export default function Products() {
             </span>
             <button
               onClick={() => setSelectedCategory(undefined)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${selectedCategory === undefined ? 'bg-amber-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:-translate-y-0.5 ${selectedCategory === undefined ? 'bg-amber-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
             >
               {t.allCategories}
             </button>
@@ -115,7 +106,7 @@ export default function Products() {
               <button
                 key={c.id}
                 onClick={() => setSelectedCategory(c.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${selectedCategory === c.id ? 'bg-amber-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:-translate-y-0.5 ${selectedCategory === c.id ? 'bg-amber-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
               >
                 {c.name}
               </button>
@@ -148,7 +139,7 @@ export default function Products() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map(p => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
-                  <div className="bg-white overflow-hidden border border-slate-200 group-hover:border-amber-500 group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-200 flex flex-col h-full">
+                  <div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                     <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">

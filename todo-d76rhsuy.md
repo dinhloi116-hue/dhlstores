@@ -72,8 +72,10 @@
 - [ ] Xác minh tên miền hoạt động sau khi DNS cập nhật.
 - [ ] Tạm dừng cấu hình dhlstores.com cho đến khi website sẵn sàng vận hành.
 - [ ] Rà soát các trang mua hàng, giỏ, thanh toán, tài khoản và quản trị để xác định hạng mục cần hoàn thiện.
+- [x] Sửa trang chi tiết sản phẩm để hiển thị lỗi hoặc trạng thái không tìm thấy thay vì quay vòng chờ tải.
 - [ ] Hoàn thiện các vấn đề ưu tiên được xác định trong quá trình rà soát.
 - [ ] Kiểm thử tổng thể và xuất bản phiên bản sẵn sàng vận hành.
 - [x] Bỏ banner lớn ở trang chủ và thay bằng đầu trang gọn hơn.
 - [x] Tăng cường hiệu ứng hover rõ ràng cho nút, danh mục và thẻ sản phẩm.
 - [x] Kiểm tra trực quan, kiểm thử và xuất bản cập nhật giao diện trang chủ.
+- [x] Thu gọn banner lớn còn lại ở trang danh mục sản phẩm và đồng bộ hover cho thẻ danh mục.

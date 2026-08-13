@@ -31,7 +31,7 @@ export default function ProductDetail() {
 
   const t = translations[lang];
 
-  const productQuery = trpc.store.productBySlug.useQuery({ slug }, { enabled: !!slug });
+  const productQuery = trpc.store.productBySlug.useQuery({ slug }, { enabled: !!slug, retry: false });
   const product = productQuery.data;
   const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: product?.type === "physical" });
   const variants = variantsQuery.data || [];
@@ -69,7 +69,7 @@ export default function ProductDetail() {
     );
   }
 
-  if (!product) {
+  if (productQuery.isError || !product) {
     return (
       <StoreLayout>
         <div className="max-w-7xl mx-auto px-4 py-24 text-center">
