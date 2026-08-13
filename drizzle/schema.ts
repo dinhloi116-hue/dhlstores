@@ -22,6 +22,7 @@ export const categories = mysqlTable("categories", {
   slug: varchar("slug", { length: 128 }).notNull().unique(),
   description: text("description"),
   type: mysqlEnum("type", ["physical", "digital", "all"]).default("all").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -42,6 +43,7 @@ export const products = mysqlTable("products", {
   stock: int("stock").default(100).notNull(), // Dành cho sản phẩm vật lý (áo bóng đá)
   specs: text("specs"), // Thông tin chi tiết (chất liệu, định dạng, kích thước...)
   featured: boolean("featured").default(false).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -127,3 +129,16 @@ export const productDownloadLinks = mysqlTable("product_download_links", {
 });
 
 export type ProductDownloadLink = typeof productDownloadLinks.$inferSelect;
+
+/** Metadata cho ảnh, video và tệp được tải vào kho S3 của dự án từ giao diện quản trị. */
+export const mediaAssets = mysqlTable("media_assets", {
+  id: int("id").autoincrement().primaryKey(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  storageKey: text("storageKey").notNull(),
+  url: text("url").notNull(),
+  mimeType: varchar("mimeType", { length: 128 }).notNull(),
+  sizeBytes: int("sizeBytes").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MediaAsset = typeof mediaAssets.$inferSelect;

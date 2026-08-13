@@ -105,11 +105,16 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {allProducts.map((p) => (
+            {productsQuery.isLoading ? Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="overflow-hidden border border-slate-200 bg-white">
+                <div className="aspect-[4/3] animate-pulse bg-slate-200" />
+                <div className="space-y-3 p-4"><div className="h-3 w-4/5 animate-pulse bg-slate-200" /><div className="h-3 w-full animate-pulse bg-slate-100" /><div className="h-4 w-1/3 animate-pulse bg-slate-200" /></div>
+              </div>
+            )) : allProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                   <div className="overflow-hidden border border-slate-200 bg-white transition-all duration-200 group-hover:-translate-y-1 group-hover:border-amber-500 group-hover:shadow-xl flex flex-col h-full">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} className="transition-transform duration-300 group-hover:scale-105" />
+                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-violet-700 text-white text-[10px] font-bold px-2 py-0.5">
                         Digital Asset

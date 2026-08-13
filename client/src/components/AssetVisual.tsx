@@ -6,6 +6,7 @@ type AssetVisualProps = {
   categoryId: number;
   title: string;
   fileSize?: string;
+  imageUrl?: string;
   className?: string;
 };
 
@@ -22,12 +23,14 @@ const categoryIcons: Record<number, LucideIcon> = {
   10: Layers3,
 };
 
-export default function AssetVisual({ categoryId, title, fileSize, className = "" }: AssetVisualProps) {
+export default function AssetVisual({ categoryId, title, fileSize, imageUrl, className = "" }: AssetVisualProps) {
   const cover = getAssetCoverConfig(categoryId);
   const Icon = categoryIcons[categoryId] ?? FileCode2;
+  const hasImage = imageUrl?.startsWith("/manus-storage/") || /^https?:\/\//.test(imageUrl || "");
 
   return (
     <div className={`relative isolate h-full w-full overflow-hidden bg-gradient-to-br ${cover.gradient} ${className}`}>
+      {hasImage && <><img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-slate-950/20" /></>}
       <div className="absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,.22)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.22)_1px,transparent_1px)] [background-size:22px_22px]" />
       <div className="absolute -right-12 -top-14 h-44 w-44 rounded-full border-[18px] border-white/10" />
       <div className="absolute -bottom-16 -left-12 h-48 w-48 rotate-12 border border-white/20" />

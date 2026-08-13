@@ -6,6 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { buildSePayQrUrl } from "./sepay";
+import { catalogAdminRouter } from "./routers/catalogAdmin";
 
 async function requireActiveAccount(userId: number) {
   if (!(await db.isUserActive(userId))) {
@@ -28,6 +29,8 @@ export const appRouter = router({
       } as const;
     }),
   }),
+
+  catalogAdmin: catalogAdminRouter,
 
   store: router({
     categories: publicProcedure.query(async () => {

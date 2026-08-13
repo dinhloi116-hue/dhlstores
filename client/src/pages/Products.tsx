@@ -38,6 +38,7 @@ export default function Products() {
 
   const categories = categoriesQuery.data || [];
   let products = productsQuery.data || [];
+  const isCatalogLoading = categoriesQuery.isLoading || productsQuery.isLoading;
 
   if (sortBy === "price-asc") {
     products = [...products].sort((a, b) => Number(a.price) - Number(b.price));
@@ -123,7 +124,11 @@ export default function Products() {
         </div>
 
         {/* Product Grid */}
-        {products.length === 0 ? (
+        {isCatalogLoading ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => <div key={index} className="overflow-hidden border border-slate-200 bg-white"><div className="aspect-[4/3] animate-pulse bg-slate-200" /><div className="space-y-3 p-4"><div className="h-3 w-4/5 animate-pulse bg-slate-200" /><div className="h-3 w-full animate-pulse bg-slate-100" /><div className="h-4 w-1/3 animate-pulse bg-slate-200" /></div></div>)}
+          </div>
+        ) : products.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-slate-200">
             <Download className="w-16 h-16 mx-auto mb-3 text-slate-300" />
             <h3 className="text-base font-bold text-slate-800">
@@ -145,7 +150,7 @@ export default function Products() {
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                   <div className="bg-white overflow-hidden border border-slate-200 group-hover:border-amber-500 group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-200 flex flex-col h-full">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} className="transition-transform duration-300 group-hover:scale-105" />
+                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5">
                         {lang === 'vi' ? 'Tài liệu số' : 'Digital Asset'}

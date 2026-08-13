@@ -326,7 +326,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div>
             <h4 className="font-display mb-4 text-xl font-black uppercase tracking-wider text-white">LIÊN HỆ</h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>{lang === 'vi' ? 'Kênh hỗ trợ và thông tin liên hệ sẽ được chủ cửa hàng bổ sung trước khi public.' : 'Support channels and contact details will be added by the store owner before launch.'}</li>
+              <li>{lang === 'vi' ? 'Zalo hỗ trợ: 0963.898.871' : 'Zalo support: 0963.898.871'}</li>
+              <li>{lang === 'vi' ? 'Liên hệ để được hỗ trợ về tài nguyên, đơn hàng và quyền tải tệp.' : 'Contact us for help with resources, orders and download access.'}</li>
             </ul>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, cartItems, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, users } from "../drizzle/schema";
+import { InsertUser, cartItems, categories, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, products, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -36,6 +36,7 @@ export interface ProductType {
   stock: number;
   specs?: string;
   featured: boolean;
+  isActive?: boolean;
   createdAt: Date;
 }
 
@@ -44,6 +45,7 @@ export interface CategoryType {
   name: string;
   slug: string;
   description: string;
+  isActive?: boolean;
 }
 
 export interface CartItemType {
@@ -304,9 +306,74 @@ let memoryOrders: OrderType[] = [];
 let memoryOrderItems: OrderItemType[] = [];
 const memoryProcessedTransactions = new Set<string>();
 const memoryDownloadLinks = new Map<number, string>();
+const memoryMediaAssets: Array<{ id: number; fileName: string; storageKey: string; url: string; mimeType: string; sizeBytes: number; createdAt: Date }> = [];
 let nextCartId = 1;
 let nextOrderId = 1;
 let nextOrderItemId = 1;
+let nextMediaAssetId = 1;
+
+async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
+  const existingCategory = await connection.select({ id: categories.id }).from(categories).limit(1);
+  if (existingCategory.length > 0) return;
+
+  await connection.insert(categories).values(memoryCategories.map(category => ({
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    type: "digital" as const,
+    isActive: true,
+  }))).onDuplicateKeyUpdate({ set: { name: sql`VALUES(name)` } });
+
+  const persistedCategories = await connection.select().from(categories);
+  const idBySlug = new Map(persistedCategories.map(category => [category.slug, category.id]));
+  const categorySlugByLegacyId = new Map(memoryCategories.map(category => [category.id, category.slug]));
+
+  await connection.insert(products).values(memoryProducts.map(product => ({
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    price: product.price,
+    type: "digital" as const,
+    categoryId: idBySlug.get(categorySlugByLegacyId.get(product.categoryId) ?? "") ?? 1,
+    image: product.image,
+    fileUrl: product.fileUrl ?? null,
+    fileSize: product.fileSize ?? null,
+    stock: product.stock,
+    specs: product.specs ?? null,
+    featured: product.featured,
+    isActive: true,
+  }))).onDuplicateKeyUpdate({ set: { name: sql`VALUES(name)` } });
+}
+
+function toCategoryType(category: typeof categories.$inferSelect): CategoryType {
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    description: category.description ?? "",
+    isActive: category.isActive,
+  };
+}
+
+function toProductType(product: typeof products.$inferSelect): ProductType {
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    description: product.description ?? "",
+    price: String(product.price),
+    type: "digital",
+    categoryId: product.categoryId,
+    image: product.image,
+    fileUrl: product.fileUrl ?? undefined,
+    fileSize: product.fileSize ?? undefined,
+    stock: product.stock,
+    specs: product.specs ?? undefined,
+    featured: product.featured,
+    isActive: product.isActive,
+    createdAt: product.createdAt,
+  };
+}
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required");
@@ -392,8 +459,185 @@ export async function isUserActive(userId: number) {
   return memoryUsers.find(user => user.id === userId)?.status === "active";
 }
 
-export async function getCategories() {
-  return memoryCategories;
+export async function getCategories(includeInactive = false) {
+  const connection = await getDb();
+  if (connection) {
+    await ensureDefaultCatalog(connection);
+    const rows = await connection.select().from(categories);
+    return rows
+      .filter(category => includeInactive || category.isActive)
+      .map(toCategoryType);
+  }
+  return memoryCategories.filter(category => includeInactive || category.isActive !== false);
+}
+
+export type CatalogCategoryInput = {
+  name: string;
+  slug: string;
+  description?: string;
+  isActive: boolean;
+};
+
+export type CatalogProductInput = {
+  name: string;
+  slug: string;
+  description?: string;
+  price: string;
+  categoryId: number;
+  image: string;
+  fileUrl?: string;
+  fileSize?: string;
+  specs?: string;
+  featured: boolean;
+  isActive: boolean;
+};
+
+export async function getAdminCategories() {
+  return getCategories(true);
+}
+
+export async function createCategory(input: CatalogCategoryInput) {
+  const connection = await getDb();
+  if (connection) {
+    await ensureDefaultCatalog(connection);
+    const inserted = await connection.insert(categories).values({
+      name: input.name,
+      slug: input.slug,
+      description: input.description ?? null,
+      type: "digital",
+      isActive: input.isActive,
+    });
+    const row = await connection.select().from(categories).where(eq(categories.id, Number(inserted[0].insertId))).limit(1);
+    return row[0] ? toCategoryType(row[0]) : undefined;
+  }
+  const category: CategoryType = {
+    id: Math.max(0, ...memoryCategories.map(item => item.id)) + 1,
+    name: input.name,
+    slug: input.slug,
+    description: input.description ?? "",
+    isActive: input.isActive,
+  };
+  memoryCategories.push(category);
+  return category;
+}
+
+export async function updateCategory(categoryId: number, input: CatalogCategoryInput) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(categories).set({
+      name: input.name,
+      slug: input.slug,
+      description: input.description ?? null,
+      isActive: input.isActive,
+    }).where(eq(categories.id, categoryId));
+    return { success: true };
+  }
+  const category = memoryCategories.find(item => item.id === categoryId);
+  if (!category) throw new Error("Category not found");
+  Object.assign(category, input);
+  return { success: true };
+}
+
+export async function getAdminProducts() {
+  const connection = await getDb();
+  if (connection) {
+    await ensureDefaultCatalog(connection);
+    return (await connection.select().from(products)).map(toProductType);
+  }
+  return [...memoryProducts];
+}
+
+export async function createProduct(input: CatalogProductInput) {
+  const connection = await getDb();
+  if (connection) {
+    await ensureDefaultCatalog(connection);
+    const inserted = await connection.insert(products).values({
+      name: input.name,
+      slug: input.slug,
+      description: input.description ?? null,
+      price: input.price,
+      type: "digital",
+      categoryId: input.categoryId,
+      image: input.image,
+      fileUrl: input.fileUrl ?? null,
+      fileSize: input.fileSize ?? null,
+      stock: 9999,
+      specs: input.specs ?? null,
+      featured: input.featured,
+      isActive: input.isActive,
+    });
+    const row = await connection.select().from(products).where(eq(products.id, Number(inserted[0].insertId))).limit(1);
+    return row[0] ? toProductType(row[0]) : undefined;
+  }
+  const product: ProductType = {
+    id: Math.max(0, ...memoryProducts.map(item => item.id)) + 1,
+    name: input.name,
+    slug: input.slug,
+    description: input.description ?? "",
+    price: input.price,
+    type: "digital",
+    categoryId: input.categoryId,
+    image: input.image,
+    fileUrl: input.fileUrl,
+    fileSize: input.fileSize,
+    stock: 9999,
+    specs: input.specs,
+    featured: input.featured,
+    isActive: input.isActive,
+    createdAt: new Date(),
+  };
+  memoryProducts.push(product);
+  return product;
+}
+
+export async function updateProduct(productId: number, input: CatalogProductInput) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(products).set({
+      name: input.name,
+      slug: input.slug,
+      description: input.description ?? null,
+      price: input.price,
+      categoryId: input.categoryId,
+      image: input.image,
+      fileUrl: input.fileUrl ?? null,
+      fileSize: input.fileSize ?? null,
+      specs: input.specs ?? null,
+      featured: input.featured,
+      isActive: input.isActive,
+    }).where(eq(products.id, productId));
+    return { success: true };
+  }
+  const product = memoryProducts.find(item => item.id === productId);
+  if (!product) throw new Error("Product not found");
+  Object.assign(product, input);
+  return { success: true };
+}
+
+export type MediaAssetInput = {
+  fileName: string;
+  storageKey: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+};
+
+export async function createMediaAsset(input: MediaAssetInput) {
+  const connection = await getDb();
+  if (connection) {
+    const inserted = await connection.insert(mediaAssets).values(input);
+    const row = await connection.select().from(mediaAssets).where(eq(mediaAssets.id, Number(inserted[0].insertId))).limit(1);
+    return row[0];
+  }
+  const asset = { id: nextMediaAssetId++, ...input, createdAt: new Date() };
+  memoryMediaAssets.unshift(asset);
+  return asset;
+}
+
+export async function getMediaAssets() {
+  const connection = await getDb();
+  if (connection) return connection.select().from(mediaAssets).orderBy(desc(mediaAssets.createdAt));
+  return memoryMediaAssets;
 }
 
 async function listDownloadLinks() {
@@ -403,27 +647,32 @@ async function listDownloadLinks() {
 }
 
 export async function getAdminProductDownloadLinks() {
+  const catalog = await getAdminProducts();
   const links = await listDownloadLinks();
   const linkMap = new Map(links.map(link => [link.productId, link.driveUrl]));
-  return memoryProducts.map(product => ({
+  return catalog.map(product => ({
     productId: product.id,
     productName: product.name,
-    currentUrl: linkMap.get(product.id) ?? null,
+    currentUrl: product.fileUrl ?? linkMap.get(product.id) ?? null,
   }));
 }
 
 export async function saveProductDownloadLink(productId: number, driveUrl: string) {
-  if (!memoryProducts.some(product => product.id === productId)) throw new Error("Product not found");
   const connection = await getDb();
   if (connection) {
+    await ensureDefaultCatalog(connection);
+    const product = await connection.select({ id: products.id }).from(products).where(eq(products.id, productId)).limit(1);
+    if (!product[0]) throw new Error("Product not found");
     const current = await connection.select().from(productDownloadLinks).where(eq(productDownloadLinks.productId, productId)).limit(1);
     if (current[0]) {
       await connection.update(productDownloadLinks).set({ driveUrl }).where(eq(productDownloadLinks.productId, productId));
     } else {
       await connection.insert(productDownloadLinks).values({ productId, driveUrl });
     }
+    await connection.update(products).set({ fileUrl: driveUrl }).where(eq(products.id, productId));
     return { success: true };
   }
+  if (!memoryProducts.some(product => product.id === productId)) throw new Error("Product not found");
   memoryDownloadLinks.set(productId, driveUrl);
   return { success: true };
 }
@@ -435,7 +684,14 @@ export async function getProducts(filter?: {
   minPrice?: number;
   maxPrice?: number;
 }) {
-  let list = [...memoryProducts];
+  const connection = await getDb();
+  let list: ProductType[];
+  if (connection) {
+    await ensureDefaultCatalog(connection);
+    list = (await connection.select().from(products)).map(toProductType).filter(product => product.isActive !== false);
+  } else {
+    list = [...memoryProducts];
+  }
   if (filter?.categoryId) {
     list = list.filter(p => p.categoryId === filter.categoryId);
   }
@@ -458,23 +714,36 @@ export async function getProducts(filter?: {
 }
 
 export async function getProductBySlug(slug: string) {
+  const connection = await getDb();
+  if (connection) {
+    await ensureDefaultCatalog(connection);
+    const product = await connection.select().from(products).where(eq(products.slug, slug)).limit(1);
+    return product[0] && product[0].isActive ? toProductType(product[0]) : undefined;
+  }
   return memoryProducts.find(p => p.slug === slug);
 }
 
 export async function getProductById(id: number) {
+  const connection = await getDb();
+  if (connection) {
+    await ensureDefaultCatalog(connection);
+    const product = await connection.select().from(products).where(eq(products.id, id)).limit(1);
+    return product[0] ? toProductType(product[0]) : undefined;
+  }
   return memoryProducts.find(p => p.id === id);
 }
 
 export async function getCartItems(userId: number) {
-  return memoryCart
-    .filter(item => item.userId === userId)
-    .map(item => ({
-      ...item,
-      product: memoryProducts.find(p => p.id === item.productId)
-    }));
+  const items = memoryCart.filter(item => item.userId === userId);
+  return Promise.all(items.map(async item => ({
+    ...item,
+    product: await getProductById(item.productId),
+  })));
 }
 
 export async function addToCart(userId: number, productId: number, quantity: number, attributes?: string) {
+  const product = await getProductById(productId);
+  if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
   const existing = memoryCart.find(i => i.userId === userId && i.productId === productId && i.attributes === attributes);
   if (existing) {
     existing.quantity += quantity;
@@ -517,19 +786,30 @@ export async function createOrder(userId: number, data: {
   items: Array<{ productId: number; quantity: number; price: number; attributes?: string }>;
 }) {
   const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const verifiedItems = await Promise.all(data.items.map(async item => {
+    const product = await getProductById(item.productId);
+    if (!product || product.isActive === false) throw new Error("Một sản phẩm trong giỏ hiện không khả dụng");
+    return {
+      productId: product.id,
+      quantity: item.quantity,
+      price: Number(product.price),
+      attributes: item.attributes,
+    };
+  }));
+  const verifiedTotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const connection = await getDb();
   if (connection) {
     const inserted = await connection.insert(ordersTable).values({
       userId,
       orderCode,
-      totalAmount: data.totalAmount.toFixed(2),
+      totalAmount: verifiedTotal.toFixed(2),
       status: "pending",
       paymentStatus: "pending",
       paymentMethod: "sepay_vietqr",
       hasPhysicalItems: false,
     });
     const orderId = Number(inserted[0].insertId);
-    await connection.insert(orderItemsTable).values(data.items.map(item => ({
+    await connection.insert(orderItemsTable).values(verifiedItems.map(item => ({
       orderId,
       productId: item.productId,
       quantity: item.quantity,
@@ -537,14 +817,14 @@ export async function createOrder(userId: number, data: {
       attributes: item.attributes ?? null,
     })));
     await connection.delete(cartItems).where(eq(cartItems.userId, userId));
-    return { success: true, orderId, orderCode, totalAmount: data.totalAmount };
+    return { success: true, orderId, orderCode, totalAmount: verifiedTotal };
   }
   const orderId = nextOrderId++;
   const newOrder: OrderType = {
     id: orderId,
     userId,
     orderCode,
-    totalAmount: data.totalAmount.toString(),
+    totalAmount: verifiedTotal.toString(),
     status: "pending",
     paymentStatus: "pending",
     paymentMethod: "sepay_vietqr",
@@ -553,7 +833,7 @@ export async function createOrder(userId: number, data: {
 
   memoryOrders.unshift(newOrder);
 
-  for (const item of data.items) {
+  for (const item of verifiedItems) {
     memoryOrderItems.push({
       id: nextOrderItemId++,
       orderId,
@@ -566,7 +846,7 @@ export async function createOrder(userId: number, data: {
 
   await clearCart(userId);
 
-  return { success: true, orderId, orderCode, totalAmount: data.totalAmount };
+  return { success: true, orderId, orderCode, totalAmount: verifiedTotal };
 }
 
 export async function getOrders(userId?: number, isAdmin?: boolean) {
@@ -582,11 +862,11 @@ export async function getOrders(userId?: number, isAdmin?: boolean) {
         totalAmount: String(order.totalAmount),
         status: order.status as OrderStatusType,
         paymentStatus: order.paymentStatus as "pending" | "paid",
-        items: itemRows.map(item => ({
+        items: await Promise.all(itemRows.map(async item => ({
           ...item,
           price: String(item.price),
-          product: memoryProducts.find(product => product.id === item.productId),
-        })),
+          product: await getProductById(item.productId),
+        }))),
       };
     }));
   }
@@ -641,7 +921,7 @@ export async function getPaidDownloadsForUser(userId: number) {
       productId: item.productId,
       productName: item.product?.name ?? "Digital resource",
       fileSize: item.product?.fileSize ?? null,
-      driveUrl: linkMap.get(item.productId) ?? null,
+      driveUrl: linkMap.get(item.productId) ?? item.product?.fileUrl ?? null,
     })));
 }
 
