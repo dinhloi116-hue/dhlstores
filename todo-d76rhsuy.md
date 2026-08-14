@@ -93,4 +93,9 @@
 - [x] Sửa vòng đời mã giảm giá để chỉ tiêu hao lượt sau thanh toán thành công hoặc hoàn lượt khi QR bị hủy/hết hạn.
 - [x] Hoàn thiện giao diện mã giảm giá với đơn tối thiểu, thời hạn bắt đầu-kết thúc và thao tác sửa.
 - [x] Thêm bộ lọc nhật ký theo từng tài khoản trong Trung tâm vận hành và kiểm thử API lọc theo thành viên.
-- [ ] Kiểm thử phân quyền, ưu đãi, thao tác tồn kho hàng loạt và xuất bản quản trị nâng cao.
+- [x] Kiểm thử phân quyền, ưu đãi, thao tác tồn kho hàng loạt và xuất bản quản trị nâng cao.
+- [ ] Kiểm thử trực quan đầy đủ trên bản mới nhất: sản phẩm, giỏ hàng, checkout QR, tài khoản/email, tải tệp và quản trị.
+- [x] Khắc phục tuyến trang chi tiết sản phẩm hợp lệ đang hiển thị 404.
+- [ ] Kiểm tra trực quan giỏ hàng trên bản mới nhất, gồm cập nhật số lượng, thông báo tồn kho và trạng thái trống/đầy.
+- [ ] Kiểm tra trực quan luồng tải tệp trên bản mới nhất, gồm trạng thái Tải ngay sau thanh toán và trạng thái hết hạn trong Tài khoản.
+- [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận website sẵn sàng vận hành.

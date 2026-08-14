@@ -12,9 +12,10 @@ import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Sparkles, Zap, CheckCirc
 import { toast } from "sonner";
 
 export default function ProductDetail() {
-  const [, params] = useRoute("/product/:slug");
+  const [, singularParams] = useRoute("/product/:slug");
+  const [, pluralParams] = useRoute("/products/:slug");
   const [, setLocation] = useLocation();
-  const slug = params?.slug || "";
+  const slug = singularParams?.slug || pluralParams?.slug || "";
 
   const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
