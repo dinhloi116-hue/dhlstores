@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
+import CustomerContactHub from "@/components/CustomerContactHub";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -146,9 +147,19 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Link href="/products?type=digital" className="transition-colors hover:text-amber-600 text-slate-700 flex items-center gap-1">
               <Download className="w-4 h-4 text-purple-600" /> {navDigital}
             </Link>
-            <Link href="/tools" className={`transition-colors hover:text-amber-600 flex items-center gap-1 ${location.startsWith('/tools') ? 'text-amber-600' : 'text-slate-700'}`}>
-              <WandSparkles className="w-4 h-4 text-cyan-600" /> Công cụ
-            </Link>
+            <div className="group relative">
+              <Link href="/tools" className={`transition-colors hover:text-amber-600 flex items-center gap-1 ${location.startsWith('/tools') ? 'text-amber-600' : 'text-slate-700'}`}>
+                <WandSparkles className="w-4 h-4 text-cyan-600" /> Công cụ
+              </Link>
+              <div className="pointer-events-none invisible absolute left-0 top-full z-[70] w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                <a href="/manus-storage/pet-tram-pro-x_89dce948.html" className="block rounded-xl border border-cyan-200 bg-slate-950 p-4 text-white shadow-2xl transition-transform hover:-translate-y-0.5">
+                  <div className="flex items-start justify-between gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400 text-slate-950"><WandSparkles className="h-5 w-5" /></div><span className="rounded-full bg-emerald-400 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-emerald-950">Đang hoạt động</span></div>
+                  <p className="mt-4 font-display text-xl font-black uppercase">PET TRAM PRO X</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-300">Xử lý ảnh, tạo tram, vector hóa và xuất file in ngay trong trình duyệt.</p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-black text-cyan-300">Mở Tool ngay →</span>
+                </a>
+              </div>
+            </div>
           </nav>
 
           {/* Right Actions */}
@@ -361,6 +372,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       <main className="flex-1">
         {children}
       </main>
+      <CustomerContactHub />
 
       {/* Footer (Giống ảnh tham khảo: thông tin công ty / liên hệ rõ ràng ở chân trang nền tối) */}
       <footer className="bg-slate-900 text-slate-300 pt-16 pb-12 text-sm border-t border-slate-800">

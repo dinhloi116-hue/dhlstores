@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getCategoryIcon } from "@/lib/category-icons";
 import { ArrowRight, CircleHelp, Download, FolderGit2, PackageCheck, ShieldCheck, Sparkles } from "lucide-react";
 
 export default function Home() {
@@ -46,13 +47,13 @@ export default function Home() {
           <Link href="/products"><Button variant="outline" size="sm" className="shrink-0 border-slate-300 bg-white text-xs font-bold text-slate-800 hover:border-amber-400 hover:bg-amber-50">{t.exploreShop}<ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
-          {categoriesQuery.isLoading ? Array.from({ length: 10 }).map((_, index) => <div key={index} className="h-16 animate-pulse border border-slate-200 bg-slate-100" />) : categories.map(category => (
+          {categoriesQuery.isLoading ? Array.from({ length: 10 }).map((_, index) => <div key={index} className="h-16 animate-pulse border border-slate-200 bg-slate-100" />) : categories.map(category => { const Icon = getCategoryIcon(category.iconKey); return (
             <Link key={category.id} href={`/products?categoryId=${category.id}`} className="dhl-hover-card relative border border-slate-200 bg-white p-3 text-center shadow-sm hover:bg-amber-50 group">
-              <FolderGit2 className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform duration-200 group-hover:scale-125 group-hover:-rotate-6" />
+              <Icon className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform duration-200 group-hover:scale-125 group-hover:-rotate-6" />
               <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{category.name}</h4>
               {category.type === "physical" && <span className="absolute right-1.5 top-1.5 rounded bg-emerald-100 px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-emerald-700">Hàng vật lý</span>}
             </Link>
-          ))}
+          ); })}
         </div>
       </div>
 

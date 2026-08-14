@@ -170,3 +170,13 @@
 - [x] Kiểm thử giá Order giảm 10%, SKU, đơn hàng và QR Techcombank trước khi xuất bản.
 - [x] Không áp dụng: kiểm thử iframe PET TRAM đã được thay bằng lối chạy Tool độc lập mặc định để tránh giới hạn sandbox/origin.
 - [x] Nếu iframe vẫn bị giới hạn theo sandbox/origin, đổi luồng mặc định sang trang Tool độc lập và cập nhật thông báo để khách thao tác ổn định.
+- [x] Sửa đường dẫn PET TRAM đang trả Not found và kiểm thử mở Tool từ thư viện.
+- [x] Thêm khu vực Góp ý của khách hàng ở cạnh trái trang cửa hàng, lưu an toàn để chủ cửa hàng xem trong quản trị.
+- [x] Thêm cổng nhắn tin trực tiếp giữa khách và chủ cửa hàng ở cạnh phải trên các trang chính.
+- [x] Xây dựng hộp thư quản trị để dinhhoangloi đọc, trả lời, đánh dấu đã đọc và lọc hội thoại/góp ý.
+- [x] Phát âm báo trong quản trị khi có tin nhắn hoặc góp ý mới, có nút bật/tắt rõ ràng.
+- [x] Tạo thư viện khoảng 50 icon danh mục và thêm trường chọn icon khi tạo/sửa danh mục.
+- [x] Đưa tồn kho cùng hàng với SKU trong bảng sản phẩm/biến thể để dễ đối chiếu.
+- [x] Chỉnh vùng cuộn độc lập cho danh sách/khối đặt hàng để không kéo toàn bộ trang ngoài ý muốn.
+- [x] Thêm preview các Tool khi rê chuột vào mục Công cụ trong điều hướng.
+- [x] Viết kiểm thử cho góp ý, nhắn tin, trạng thái đã đọc và quyền quản trị; kiểm thử trực quan các luồng mới.

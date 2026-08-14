@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, products, shippingAddresses, siteSettings, users, visitorEvents } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -69,6 +69,7 @@ export interface CategoryType {
   slug: string;
   description: string;
   type: 'digital' | 'physical' | 'all';
+  iconKey?: string;
   isActive?: boolean;
 }
 
@@ -442,6 +443,7 @@ function toCategoryType(category: typeof categories.$inferSelect): CategoryType 
     slug: category.slug,
     description: category.description ?? "",
     type: category.type,
+    iconKey: category.iconKey,
     isActive: category.isActive,
   };
 }
@@ -787,6 +789,9 @@ export type DiscountCodeInput = {
 type MemoryDiscountCode = DiscountCodeInput & { id: number; usedCount: number; createdByUserId: number; createdAt: Date };
 type MemoryBalanceMovement = { id: number; userId: number; amount: string; balanceAfter: string; reason: string; performedByUserId: number; createdAt: Date };
 type MemoryInventoryMovement = { id: number; productId: number; variantId: number | null; quantityBefore: number; quantityAfter: number; reason: string; performedByUserId: number; createdAt: Date };
+type MemoryFeedback = { id: number; userId: number | null; visitorKey: string; displayName: string | null; contact: string | null; topic: "suggestion" | "issue" | "other"; message: string; status: "new" | "reviewed" | "resolved"; readAt: Date | null; createdAt: Date; updatedAt: Date };
+type MemoryConversation = { id: number; userId: number | null; visitorKey: string; displayName: string | null; lastMessagePreview: string | null; lastMessageAt: Date; customerReadAt: Date | null; ownerReadAt: Date | null; createdAt: Date; updatedAt: Date };
+type MemorySupportMessage = { id: number; conversationId: number; senderType: "customer" | "owner"; senderUserId: number | null; body: string; readAt: Date | null; createdAt: Date };
 
 const memoryDiscountCodes: MemoryDiscountCode[] = [];
 const memoryBalanceMovements: MemoryBalanceMovement[] = [];
@@ -794,10 +799,176 @@ const memoryInventoryMovements: MemoryInventoryMovement[] = [];
 const memoryAdminActivity: Array<{ id: number; action: string; targetType: string; targetId: number; details: string | null; performedByUserId: number; createdAt: Date }> = [];
 const memorySiteSettings = new Map<string, string>();
 const memoryVisitorEvents: Array<{ visitorId: string; path: string; createdAt: Date }> = [];
+const memoryFeedback: MemoryFeedback[] = [];
+const memoryConversations: MemoryConversation[] = [];
+const memorySupportMessages: MemorySupportMessage[] = [];
 let nextDiscountCodeId = 1;
 let nextBalanceMovementId = 1;
 let nextInventoryMovementId = 1;
 let nextAdminActivityId = 1;
+let nextFeedbackId = 1;
+let nextConversationId = 1;
+let nextSupportMessageId = 1;
+
+export type FeedbackInput = {
+  visitorKey: string;
+  userId?: number;
+  displayName?: string;
+  contact?: string;
+  topic: "suggestion" | "issue" | "other";
+  message: string;
+};
+
+export type CustomerMessageInput = {
+  visitorKey: string;
+  userId?: number;
+  displayName?: string;
+  body: string;
+};
+
+function normalizeVisitorKey(visitorKey: string) {
+  const value = visitorKey.trim();
+  if (!/^[a-zA-Z0-9_-]{16,96}$/.test(value)) throw new Error("VISITOR_KEY_INVALID");
+  return value;
+}
+
+function previewMessage(body: string) {
+  return body.trim().replace(/\s+/g, " ").slice(0, 255);
+}
+
+export async function createCustomerFeedback(input: FeedbackInput) {
+  const visitorKey = normalizeVisitorKey(input.visitorKey);
+  const connection = await getDb();
+  const values = {
+    userId: input.userId ?? null,
+    visitorKey,
+    displayName: input.displayName?.trim().slice(0, 128) || null,
+    contact: input.contact?.trim().slice(0, 255) || null,
+    topic: input.topic,
+    message: input.message.trim(),
+  } as const;
+  if (connection) {
+    const inserted = await connection.insert(customerFeedback).values(values);
+    return { success: true, id: Number(inserted[0].insertId) };
+  }
+  memoryFeedback.unshift({ id: nextFeedbackId++, ...values, status: "new", readAt: null, createdAt: new Date(), updatedAt: new Date() });
+  return { success: true };
+}
+
+export async function getAdminFeedback() {
+  const connection = await getDb();
+  if (connection) return await connection.select().from(customerFeedback).orderBy(desc(customerFeedback.createdAt)).limit(200);
+  return [...memoryFeedback].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+export async function updateFeedbackStatus(id: number, status: "new" | "reviewed" | "resolved") {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(customerFeedback).set({ status, readAt: status === "new" ? null : new Date() }).where(eq(customerFeedback.id, id));
+    return { success: true };
+  }
+  const feedback = memoryFeedback.find(item => item.id === id);
+  if (!feedback) throw new Error("FEEDBACK_NOT_FOUND");
+  feedback.status = status;
+  feedback.readAt = status === "new" ? null : new Date();
+  feedback.updatedAt = new Date();
+  return { success: true };
+}
+
+export async function getCustomerConversation(visitorKeyInput: string) {
+  const visitorKey = normalizeVisitorKey(visitorKeyInput);
+  const connection = await getDb();
+  if (connection) {
+    const conversation = (await connection.select().from(supportConversations).where(eq(supportConversations.visitorKey, visitorKey)).limit(1))[0];
+    if (!conversation) return { conversation: null, messages: [] };
+    const messages = await connection.select().from(supportMessages).where(eq(supportMessages.conversationId, conversation.id)).orderBy(supportMessages.createdAt);
+    return { conversation, messages };
+  }
+  const conversation = memoryConversations.find(item => item.visitorKey === visitorKey) ?? null;
+  return { conversation, messages: conversation ? memorySupportMessages.filter(message => message.conversationId === conversation.id).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()) : [] };
+}
+
+export async function sendCustomerSupportMessage(input: CustomerMessageInput) {
+  const visitorKey = normalizeVisitorKey(input.visitorKey);
+  const body = input.body.trim();
+  const connection = await getDb();
+  if (connection) {
+    let conversation = (await connection.select().from(supportConversations).where(eq(supportConversations.visitorKey, visitorKey)).limit(1))[0];
+    if (!conversation) {
+      const inserted = await connection.insert(supportConversations).values({ visitorKey, userId: input.userId ?? null, displayName: input.displayName?.trim().slice(0, 128) || null, lastMessagePreview: previewMessage(body), lastMessageAt: new Date() });
+      conversation = (await connection.select().from(supportConversations).where(eq(supportConversations.id, Number(inserted[0].insertId))).limit(1))[0]!;
+    } else {
+      await connection.update(supportConversations).set({ userId: input.userId ?? conversation.userId, displayName: input.displayName?.trim().slice(0, 128) || conversation.displayName, lastMessagePreview: previewMessage(body), lastMessageAt: new Date(), customerReadAt: new Date() }).where(eq(supportConversations.id, conversation.id));
+    }
+    await connection.insert(supportMessages).values({ conversationId: conversation.id, senderType: "customer", senderUserId: input.userId ?? null, body });
+    return { success: true, conversationId: conversation.id };
+  }
+  let conversation = memoryConversations.find(item => item.visitorKey === visitorKey);
+  if (!conversation) {
+    conversation = { id: nextConversationId++, visitorKey, userId: input.userId ?? null, displayName: input.displayName?.trim().slice(0, 128) || null, lastMessagePreview: null, lastMessageAt: new Date(), customerReadAt: null, ownerReadAt: null, createdAt: new Date(), updatedAt: new Date() };
+    memoryConversations.unshift(conversation);
+  }
+  conversation.userId = input.userId ?? conversation.userId;
+  conversation.displayName = input.displayName?.trim().slice(0, 128) || conversation.displayName;
+  conversation.lastMessagePreview = previewMessage(body);
+  conversation.lastMessageAt = new Date();
+  conversation.customerReadAt = new Date();
+  conversation.updatedAt = new Date();
+  memorySupportMessages.push({ id: nextSupportMessageId++, conversationId: conversation.id, senderType: "customer", senderUserId: input.userId ?? null, body, readAt: null, createdAt: new Date() });
+  return { success: true, conversationId: conversation.id };
+}
+
+export async function getOwnerConversations() {
+  const connection = await getDb();
+  if (connection) return await connection.select().from(supportConversations).orderBy(desc(supportConversations.lastMessageAt)).limit(200);
+  return [...memoryConversations].sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+}
+
+export async function getOwnerConversationMessages(conversationId: number) {
+  const connection = await getDb();
+  if (connection) return await connection.select().from(supportMessages).where(eq(supportMessages.conversationId, conversationId)).orderBy(supportMessages.createdAt);
+  return memorySupportMessages.filter(message => message.conversationId === conversationId).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+}
+
+export async function sendOwnerSupportMessage(input: { conversationId: number; senderUserId: number; body: string }) {
+  const body = input.body.trim();
+  const connection = await getDb();
+  if (connection) {
+    const conversation = (await connection.select().from(supportConversations).where(eq(supportConversations.id, input.conversationId)).limit(1))[0];
+    if (!conversation) throw new Error("CONVERSATION_NOT_FOUND");
+    await connection.insert(supportMessages).values({ conversationId: conversation.id, senderType: "owner", senderUserId: input.senderUserId, body });
+    await connection.update(supportConversations).set({ lastMessagePreview: previewMessage(body), lastMessageAt: new Date(), ownerReadAt: new Date() }).where(eq(supportConversations.id, conversation.id));
+    return { success: true };
+  }
+  const conversation = memoryConversations.find(item => item.id === input.conversationId);
+  if (!conversation) throw new Error("CONVERSATION_NOT_FOUND");
+  conversation.lastMessagePreview = previewMessage(body);
+  conversation.lastMessageAt = new Date();
+  conversation.ownerReadAt = new Date();
+  conversation.updatedAt = new Date();
+  memorySupportMessages.push({ id: nextSupportMessageId++, conversationId: conversation.id, senderType: "owner", senderUserId: input.senderUserId, body, readAt: null, createdAt: new Date() });
+  return { success: true };
+}
+
+export async function markConversationRead(conversationId: number, reader: "customer" | "owner") {
+  const field = reader === "owner" ? "ownerReadAt" : "customerReadAt";
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(supportConversations).set({ [field]: new Date() }).where(eq(supportConversations.id, conversationId));
+    return { success: true };
+  }
+  const conversation = memoryConversations.find(item => item.id === conversationId);
+  if (!conversation) throw new Error("CONVERSATION_NOT_FOUND");
+  conversation[field] = new Date();
+  conversation.updatedAt = new Date();
+  return { success: true };
+}
+
+export async function getOwnerSupportSummary() {
+  const [feedback, conversations] = await Promise.all([getAdminFeedback(), getOwnerConversations()]);
+  const unreadConversations = conversations.filter(conversation => !conversation.ownerReadAt || conversation.lastMessageAt.getTime() > conversation.ownerReadAt.getTime()).length;
+  return { newFeedback: feedback.filter(item => item.status === "new").length, unreadConversations };
+}
 
 export async function adjustUserBalance(input: { userId: number; amount: number; reason: string; performedByUserId: number }) {
   if (!Number.isFinite(input.amount) || input.amount === 0) throw new Error("Số dư điều chỉnh phải khác 0");
@@ -1006,6 +1177,7 @@ export type CatalogCategoryInput = {
   name: string;
   slug: string;
   description?: string;
+  iconKey?: string;
   isActive: boolean;
 };
 
@@ -1036,6 +1208,7 @@ export async function createCategory(input: CatalogCategoryInput) {
       name: input.name,
       slug: input.slug,
       description: input.description ?? null,
+      iconKey: input.iconKey ?? "Package",
       type: "digital",
       isActive: input.isActive,
     });
@@ -1047,6 +1220,7 @@ export async function createCategory(input: CatalogCategoryInput) {
     name: input.name,
     slug: input.slug,
     description: input.description ?? "",
+    iconKey: input.iconKey ?? "Package",
     type: "digital",
     isActive: input.isActive,
   };
@@ -1061,6 +1235,7 @@ export async function updateCategory(categoryId: number, input: CatalogCategoryI
       name: input.name,
       slug: input.slug,
       description: input.description ?? null,
+      iconKey: input.iconKey ?? "Package",
       isActive: input.isActive,
     }).where(eq(categories.id, categoryId));
     return { success: true };

@@ -13,6 +13,8 @@ const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
 const localPasswordSchema = z.string().min(10, "Mật khẩu cần có ít nhất 10 ký tự").max(128, "Mật khẩu quá dài");
 const shippingAddressInputSchema = z.object({ recipientName: z.string().trim().min(2, "Vui lòng nhập họ tên người nhận").max(255), phone: z.string().trim().min(8, "Số điện thoại chưa hợp lệ").max(64), address: z.string().trim().min(5, "Vui lòng nhập địa chỉ cụ thể").max(2000), isDefault: z.boolean().optional() });
+const visitorKeySchema = z.string().trim().regex(/^[a-zA-Z0-9_-]{16,96}$/, "Phiên truy cập không hợp lệ");
+const supportMessageSchema = z.string().trim().min(1, "Vui lòng nhập nội dung").max(2000, "Tin nhắn tối đa 2.000 ký tự");
 
 function publicUser(user: NonNullable<Awaited<ReturnType<typeof db.getUserByOpenId>>>) {
   const { passwordHash: _passwordHash, ...safeUser } = user;
@@ -92,6 +94,16 @@ export const appRouter = router({
     recordVisit: publicProcedure.input(z.object({ visitorId: z.string().min(8).max(128), path: z.string().min(1).max(512) })).mutation(({ input }) => db.recordVisitorEvent(input.visitorId, input.path)),
   }),
 
+  feedback: router({
+    submit: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), contact: z.string().trim().max(255).optional(), topic: z.enum(["suggestion", "issue", "other"]), message: supportMessageSchema })).mutation(({ ctx, input }) => db.createCustomerFeedback({ ...input, userId: ctx.user?.id })),
+  }),
+
+  support: router({
+    conversation: publicProcedure.input(z.object({ visitorKey: visitorKeySchema })).query(({ input }) => db.getCustomerConversation(input.visitorKey)),
+    send: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), body: supportMessageSchema })).mutation(({ ctx, input }) => db.sendCustomerSupportMessage({ ...input, userId: ctx.user?.id })),
+    markRead: publicProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(({ input }) => db.markConversationRead(input.conversationId, "customer")),
+  }),
+
   operations: router({
     overview: ownerProcedure.query(() => db.getOperationsOverview()),
     members: ownerProcedure.query(() => db.getAllUsers()),
@@ -101,6 +113,13 @@ export const appRouter = router({
     discountCodes: ownerProcedure.query(() => db.getDiscountCodes()),
     createDiscountCode: ownerProcedure.input(z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() })).mutation(({ ctx, input }) => db.createDiscountCode({ ...input, createdByUserId: ctx.user.id })),
     updateDiscountCode: ownerProcedure.input(z.object({ id: z.number().int().positive(), data: z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() }) })).mutation(({ input }) => db.updateDiscountCode(input.id, input.data)),
+    feedback: ownerProcedure.query(() => db.getAdminFeedback()),
+    updateFeedback: ownerProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["new", "reviewed", "resolved"]) })).mutation(({ input }) => db.updateFeedbackStatus(input.id, input.status)),
+    supportSummary: ownerProcedure.query(() => db.getOwnerSupportSummary()),
+    supportConversations: ownerProcedure.query(() => db.getOwnerConversations()),
+    supportMessages: ownerProcedure.input(z.object({ conversationId: z.number().int().positive() })).query(({ input }) => db.getOwnerConversationMessages(input.conversationId)),
+    sendSupportMessage: ownerProcedure.input(z.object({ conversationId: z.number().int().positive(), body: supportMessageSchema })).mutation(({ ctx, input }) => db.sendOwnerSupportMessage({ ...input, senderUserId: ctx.user.id })),
+    markSupportRead: ownerProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(({ input }) => db.markConversationRead(input.conversationId, "owner")),
     inventory: adminProcedure.query(() => db.getInventoryBoard()),
     inventoryMovements: adminProcedure.query(() => db.getInventoryMovements()),
     bulkSetInventory: adminProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),

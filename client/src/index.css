@@ -40,6 +40,12 @@ button, a {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Các khu vực danh sách/đặt hàng tự cuộn độc lập, không kéo theo trang ngoài khi đã chạm đầu hoặc cuối. */
+.overflow-y-auto,
+.overflow-auto {
+  overscroll-behavior: contain;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   button:not(:disabled),
   a,

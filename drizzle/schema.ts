@@ -38,6 +38,51 @@ export const shippingAddresses = mysqlTable("shipping_addresses", {
 export type ShippingAddress = typeof shippingAddresses.$inferSelect;
 export type InsertShippingAddress = typeof shippingAddresses.$inferInsert;
 
+/** Góp ý độc lập của khách, có thể gửi khi chưa đăng nhập thông qua visitorKey. */
+export const customerFeedback = mysqlTable("customer_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  visitorKey: varchar("visitorKey", { length: 96 }).notNull(),
+  displayName: varchar("displayName", { length: 128 }),
+  contact: varchar("contact", { length: 255 }),
+  topic: mysqlEnum("topic", ["suggestion", "issue", "other"]).default("suggestion").notNull(),
+  message: text("message").notNull(),
+  status: mysqlEnum("status", ["new", "reviewed", "resolved"]).default("new").notNull(),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomerFeedback = typeof customerFeedback.$inferSelect;
+
+/** Một hội thoại hỗ trợ gắn với người dùng đăng nhập hoặc visitorKey ẩn danh. */
+export const supportConversations = mysqlTable("support_conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  visitorKey: varchar("visitorKey", { length: 96 }).notNull().unique(),
+  displayName: varchar("displayName", { length: 128 }),
+  lastMessagePreview: varchar("lastMessagePreview", { length: 255 }),
+  lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
+  customerReadAt: timestamp("customerReadAt"),
+  ownerReadAt: timestamp("ownerReadAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SupportConversation = typeof supportConversations.$inferSelect;
+
+export const supportMessages = mysqlTable("support_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  senderType: mysqlEnum("senderType", ["customer", "owner"]).notNull(),
+  senderUserId: int("senderUserId"),
+  body: text("body").notNull(),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SupportMessage = typeof supportMessages.$inferSelect;
+
 export const balanceLedger = mysqlTable("balance_ledger", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -104,6 +149,7 @@ export const categories = mysqlTable("categories", {
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 128 }).notNull().unique(),
   description: text("description"),
+  iconKey: varchar("iconKey", { length: 64 }).default("Package").notNull(),
   type: mysqlEnum("type", ["physical", "digital", "all"]).default("all").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

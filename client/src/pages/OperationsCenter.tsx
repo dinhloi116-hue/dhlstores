@@ -7,10 +7,32 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Archive, BarChart3, CircleOff, Coins, Gift, Landmark, LayoutPanelTop, PackageSearch, Pencil, ShieldCheck, Users } from "lucide-react";
+import { Archive, BarChart3, Bell, BellRing, CircleOff, Coins, Gift, Landmark, LayoutPanelTop, MessageCircleMore, PackageSearch, Pencil, Send, ShieldCheck, ThumbsUp, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const currency = (value: string | number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(Number(value));
+
+function playNotificationTone() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(740, context.currentTime);
+    oscillator.frequency.setValueAtTime(920, context.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.28);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.3);
+    window.setTimeout(() => context.close(), 500);
+  } catch {
+    // Trình duyệt có thể chặn âm thanh cho đến khi chủ cửa hàng đã bấm nút bật.
+  }
+}
 
 export default function OperationsCenter() {
   const { user, isAuthenticated } = useAuth();
@@ -25,6 +47,9 @@ export default function OperationsCenter() {
   const inventoryQuery = trpc.operations.inventory.useQuery(undefined, { enabled: isOwner });
   const movementsQuery = trpc.operations.inventoryMovements.useQuery(undefined, { enabled: isOwner });
   const settingsQuery = trpc.operations.siteSettings.useQuery(undefined, { enabled: isOwner });
+  const supportSummaryQuery = trpc.operations.supportSummary.useQuery(undefined, { enabled: isOwner, refetchInterval: 12_000 });
+  const feedbackQuery = trpc.operations.feedback.useQuery(undefined, { enabled: isOwner, refetchInterval: 12_000 });
+  const conversationsQuery = trpc.operations.supportConversations.useQuery(undefined, { enabled: isOwner, refetchInterval: 12_000 });
   const [memberId, setMemberId] = useState(0);
   const [balanceAmount, setBalanceAmount] = useState(0);
   const [balanceReason, setBalanceReason] = useState("Khuyến mại từ DHL Stores");
@@ -35,6 +60,11 @@ export default function OperationsCenter() {
   const [draftStocks, setDraftStocks] = useState<Record<string, string>>({});
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [settings, setSettings] = useState({ navHome: "Trang chủ", navProducts: "Tất cả sản phẩm", navDigital: "Tài nguyên số", homeHeading: "Tài nguyên thiết kế thể thao", physical_qr_bank_code: "", physical_qr_account_number: "", physical_qr_account_holder: "" });
+  const [activeConversationId, setActiveConversationId] = useState(0);
+  const [ownerReply, setOwnerReply] = useState("");
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [lastSupportCount, setLastSupportCount] = useState<number | null>(null);
+  const supportMessagesQuery = trpc.operations.supportMessages.useQuery({ conversationId: activeConversationId || 1 }, { enabled: isOwner && activeConversationId > 0, refetchInterval: activeConversationId ? 12_000 : false });
 
   useEffect(() => {
     if (inventoryQuery.data) setDraftStocks(Object.fromEntries(inventoryQuery.data.map(row => [`${row.target}:${row.id}`, String(row.stock)])));
@@ -42,6 +72,16 @@ export default function OperationsCenter() {
   useEffect(() => {
     if (settingsQuery.data) setSettings(current => ({ ...current, ...settingsQuery.data }));
   }, [settingsQuery.data]);
+  useEffect(() => {
+    setSoundEnabled(localStorage.getItem("dhl_owner_support_sound") === "on");
+  }, []);
+  useEffect(() => {
+    const summary = supportSummaryQuery.data;
+    if (!summary) return;
+    const currentCount = summary.newFeedback + summary.unreadConversations;
+    if (lastSupportCount !== null && currentCount > lastSupportCount && soundEnabled) playNotificationTone();
+    setLastSupportCount(currentCount);
+  }, [lastSupportCount, soundEnabled, supportSummaryQuery.data]);
 
   const refreshOperations = () => {
     utils.operations.overview.invalidate();
@@ -51,6 +91,10 @@ export default function OperationsCenter() {
     utils.operations.inventory.invalidate();
     utils.operations.inventoryMovements.invalidate();
     utils.operations.siteSettings.invalidate();
+    utils.operations.supportSummary.invalidate();
+    utils.operations.feedback.invalidate();
+    utils.operations.supportConversations.invalidate();
+    utils.operations.supportMessages.invalidate();
     utils.store.siteSettings.invalidate();
   };
   const adjustBalance = trpc.operations.adjustBalance.useMutation({ onSuccess: result => { toast.success(`Đã cập nhật số dư: ${currency(result.balance)}`); refreshOperations(); }, onError: error => toast.error(error.message) });
@@ -59,6 +103,9 @@ export default function OperationsCenter() {
   const updateDiscount = trpc.operations.updateDiscountCode.useMutation({ onSuccess: () => { toast.success("Đã cập nhật mã giảm giá"); setEditingDiscountId(null); setDiscount({ code: "", type: "percent", value: "10", minOrderAmount: "0", maxUses: "", startsAt: "", endsAt: "" }); refreshOperations(); }, onError: error => toast.error(error.message) });
   const bulkSetInventory = trpc.operations.bulkSetInventory.useMutation({ onSuccess: result => { toast.success(`Đã cập nhật ${result.updated} dòng tồn kho`); setSelectedRows([]); refreshOperations(); }, onError: error => toast.error(error.message) });
   const saveSettings = trpc.operations.saveSiteSettings.useMutation({ onSuccess: () => { toast.success("Đã lưu cài đặt hiển thị và QR hàng vật lý"); refreshOperations(); }, onError: error => toast.error(error.message) });
+  const updateFeedback = trpc.operations.updateFeedback.useMutation({ onSuccess: () => { toast.success("Đã cập nhật trạng thái góp ý"); refreshOperations(); }, onError: error => toast.error(error.message) });
+  const sendSupportMessage = trpc.operations.sendSupportMessage.useMutation({ onSuccess: () => { setOwnerReply(""); utils.operations.supportMessages.invalidate({ conversationId: activeConversationId }); utils.operations.supportConversations.invalidate(); utils.operations.supportSummary.invalidate(); }, onError: error => toast.error(error.message) });
+  const markSupportRead = trpc.operations.markSupportRead.useMutation({ onSuccess: () => { utils.operations.supportConversations.invalidate(); utils.operations.supportSummary.invalidate(); } });
 
   const inventory = useMemo(() => (inventoryQuery.data || []).filter(row => `${row.productName} ${row.variantLabel} ${row.sku}`.toLowerCase().includes(search.toLowerCase())), [inventoryQuery.data, search]);
   const keyFor = (target: "product" | "variant", id: number) => `${target}:${id}`;
@@ -73,7 +120,8 @@ export default function OperationsCenter() {
       { label: "Thành viên", value: overview?.members ?? "—", Icon: Users, tone: "bg-blue-100 text-blue-700" }, { label: "Đang hoạt động", value: overview?.activeMembers ?? "—", Icon: ShieldCheck, tone: "bg-emerald-100 text-emerald-700" }, { label: "Đơn đã thanh toán", value: overview?.paidOrders ?? "—", Icon: Archive, tone: "bg-emerald-100 text-emerald-700" }, { label: "Doanh thu", value: overview ? currency(overview.revenue) : "—", Icon: Coins, tone: "bg-amber-100 text-amber-700" }, { label: "Khách 30 ngày", value: overview?.visitors30d ?? "—", Icon: BarChart3, tone: "bg-violet-100 text-violet-700" }, { label: "Lượt xem 30 ngày", value: overview?.pageViews30d ?? "—", Icon: LayoutPanelTop, tone: "bg-amber-100 text-amber-700" },
     ].map(card => <div key={card.label} className="dhl-hover-card flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className={`grid h-10 w-10 place-items-center rounded-xl ${card.tone}`}><card.Icon className="h-5 w-5" /></div><div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{card.label}</p><p className="text-xl font-black text-slate-900">{card.value}</p></div></div>)}</section>
 
-    <Tabs defaultValue="members" className="space-y-5"><TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1"><TabsTrigger value="members">Thành viên</TabsTrigger><TabsTrigger value="activity">Nhật ký</TabsTrigger><TabsTrigger value="discounts">Mã giảm giá</TabsTrigger><TabsTrigger value="settings">Nhãn & tab</TabsTrigger></TabsList>
+    <Tabs defaultValue="inbox" className="space-y-5"><TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1"><TabsTrigger value="inbox" className="relative"><MessageCircleMore className="mr-1.5 h-3.5 w-3.5" />Hộp thư{(supportSummaryQuery.data?.newFeedback || 0) + (supportSummaryQuery.data?.unreadConversations || 0) > 0 && <span className="ml-1 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white">{(supportSummaryQuery.data?.newFeedback || 0) + (supportSummaryQuery.data?.unreadConversations || 0)}</span>}</TabsTrigger><TabsTrigger value="members">Thành viên</TabsTrigger><TabsTrigger value="activity">Nhật ký</TabsTrigger><TabsTrigger value="discounts">Mã giảm giá</TabsTrigger><TabsTrigger value="inventory">Tồn kho</TabsTrigger><TabsTrigger value="settings">Nhãn & tab</TabsTrigger></TabsList>
+      <TabsContent value="inbox" className="space-y-4"><section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">Chăm sóc khách hàng</p><h2 className="mt-1 font-display text-2xl font-black uppercase text-slate-900">Hộp thư & góp ý</h2><p className="mt-1 text-xs text-slate-500">Tin nhắn được làm mới định kỳ khi bảng này đang mở.</p></div><Button variant={soundEnabled ? "default" : "outline"} onClick={() => { const next = !soundEnabled; setSoundEnabled(next); localStorage.setItem("dhl_owner_support_sound", next ? "on" : "off"); if (next) playNotificationTone(); }} className={soundEnabled ? "bg-cyan-700 text-white hover:bg-cyan-600" : "border-cyan-200 text-cyan-800"}>{soundEnabled ? <BellRing className="mr-2 h-4 w-4" /> : <Bell className="mr-2 h-4 w-4" />}{soundEnabled ? "Âm báo đang bật" : "Bật âm báo"}</Button></section><div className="grid gap-4 xl:grid-cols-[minmax(17rem,.8fr)_minmax(20rem,1.2fr)_minmax(17rem,.8fr)]"><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="flex items-center justify-between border-b border-slate-100 p-4"><div><p className="font-black text-slate-900">Hội thoại</p><p className="text-xs text-slate-500">{supportSummaryQuery.data?.unreadConversations || 0} chưa đọc</p></div><MessageCircleMore className="h-5 w-5 text-cyan-700" /></div><div className="max-h-[30rem] overflow-y-auto">{(conversationsQuery.data || []).map(conversation => { const unread = !conversation.ownerReadAt || new Date(conversation.lastMessageAt) > new Date(conversation.ownerReadAt); return <button key={conversation.id} onClick={() => { setActiveConversationId(conversation.id); markSupportRead.mutate({ conversationId: conversation.id }); }} className={`w-full border-b border-slate-100 p-4 text-left transition hover:bg-cyan-50 ${activeConversationId === conversation.id ? "bg-cyan-50" : ""}`}><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-black text-slate-900">{conversation.displayName || "Khách chưa đặt tên"}</p>{unread && <span className="h-2 w-2 rounded-full bg-rose-500" />}</div><p className="mt-1 line-clamp-2 text-xs text-slate-500">{conversation.lastMessagePreview || "Chưa có nội dung"}</p><p className="mt-2 text-[10px] text-slate-400">{new Date(conversation.lastMessageAt).toLocaleString("vi-VN")}</p></button>; })}{!(conversationsQuery.data || []).length && <p className="p-6 text-center text-sm text-slate-500">Chưa có khách nhắn tin.</p>}</div></section><section className="flex min-h-[28rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="border-b border-slate-100 p-4"><p className="font-black text-slate-900">{activeConversationId ? "Trao đổi với khách" : "Chọn một hội thoại"}</p><p className="mt-1 text-xs text-slate-500">Phản hồi được gửi trực tiếp tới cửa sổ nhắn tin của khách.</p></div><div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">{activeConversationId ? (supportMessagesQuery.data || []).map(message => <div key={message.id} className={`flex ${message.senderType === "owner" ? "justify-end" : "justify-start"}`}><p className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2.5 text-sm ${message.senderType === "owner" ? "rounded-tr-sm bg-cyan-700 text-white" : "rounded-tl-sm bg-white text-slate-800 shadow-sm"}`}>{message.body}</p></div>) : <div className="grid h-full place-items-center text-center text-sm text-slate-500"><MessageCircleMore className="mb-2 h-8 w-8 text-slate-300" />Chọn hội thoại bên trái để trả lời.</div>}</div>{activeConversationId > 0 && <form onSubmit={event => { event.preventDefault(); if (ownerReply.trim()) sendSupportMessage.mutate({ conversationId: activeConversationId, body: ownerReply }); }} className="border-t border-slate-100 p-3"><div className="flex gap-2"><textarea value={ownerReply} onChange={event => setOwnerReply(event.target.value)} maxLength={2000} placeholder="Viết phản hồi cho khách…" className="min-h-10 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500" /><Button type="submit" size="icon" disabled={!ownerReply.trim() || sendSupportMessage.isPending} className="h-10 w-10 shrink-0 rounded-xl bg-cyan-700 text-white hover:bg-cyan-600"><Send className="h-4 w-4" /></Button></div></form>}</section><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="flex items-center justify-between border-b border-slate-100 p-4"><div><p className="font-black text-slate-900">Góp ý</p><p className="text-xs text-slate-500">{supportSummaryQuery.data?.newFeedback || 0} mới</p></div><ThumbsUp className="h-5 w-5 text-amber-600" /></div><div className="max-h-[30rem] overflow-y-auto">{(feedbackQuery.data || []).map(item => <div key={item.id} className="border-b border-slate-100 p-4"><div className="flex items-center justify-between gap-2"><p className="text-sm font-black text-slate-900">{item.displayName || "Khách ẩn danh"}</p><Badge className={item.status === "new" ? "bg-amber-100 text-amber-800" : item.status === "resolved" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"}>{item.status === "new" ? "Mới" : item.status === "reviewed" ? "Đã xem" : "Đã xử lý"}</Badge></div><p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{item.message}</p><div className="mt-3 flex items-center justify-between gap-2"><span className="text-[10px] text-slate-400">{item.contact || new Date(item.createdAt).toLocaleString("vi-VN")}</span><select value={item.status} onChange={event => updateFeedback.mutate({ id: item.id, status: event.target.value as "new" | "reviewed" | "resolved" })} className="h-7 rounded-md border border-slate-200 bg-white px-2 text-[10px] font-bold"><option value="new">Mới</option><option value="reviewed">Đã xem</option><option value="resolved">Đã xử lý</option></select></div></div>)}{!(feedbackQuery.data || []).length && <p className="p-6 text-center text-sm text-slate-500">Chưa có góp ý mới.</p>}</div></section></div></TabsContent>
       <TabsContent value="members" className="space-y-4"><div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 lg:grid-cols-[1fr_auto_auto] lg:items-end"><label className="text-xs font-bold text-slate-700">Chọn thành viên<select value={memberId} onChange={event => setMemberId(Number(event.target.value))} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"><option value={0}>Chọn thành viên để điều chỉnh số dư</option>{(membersQuery.data || []).map(member => <option key={member.id} value={member.id}>{member.name || member.username || member.openId} · {currency(member.balance)}</option>)}</select></label><label className="text-xs font-bold text-slate-700">Điều chỉnh (đ)<Input className="mt-1" type="number" value={balanceAmount} onChange={event => setBalanceAmount(Number(event.target.value))} placeholder="Ví dụ: 50000 hoặc -50000" /></label><div><Input value={balanceReason} onChange={event => setBalanceReason(event.target.value)} className="mb-2" placeholder="Lý do" /><Button disabled={!memberId || !balanceAmount || adjustBalance.isPending} onClick={() => adjustBalance.mutate({ userId: memberId, amount: balanceAmount, reason: balanceReason })} className="w-full bg-amber-500 text-slate-950 hover:bg-amber-400"><Coins className="mr-2 h-4 w-4" />Cập nhật số dư</Button></div></div>
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="grid grid-cols-[minmax(0,1fr)_auto] border-b border-slate-100 p-4 text-xs font-bold text-slate-500"><span>THÀNH VIÊN</span><span>THAO TÁC</span></div>{(membersQuery.data || []).map(member => <div key={member.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-100 p-4 last:border-0"><div><p className="font-bold text-slate-900">{member.name || member.username || "Chưa đặt tên"}</p><p className="mt-0.5 text-xs text-slate-500">@{member.username || "—"} · {member.email || "Chưa liên kết email"} · Số dư <strong>{currency(member.balance)}</strong></p></div><div className="flex items-center gap-2"><Badge className={member.role === "owner" ? "bg-violet-100 text-violet-800" : member.role === "admin" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}>{member.role === "owner" ? "Chủ cửa hàng" : member.role === "admin" ? "Quản trị" : "Khách"}</Badge>{member.id !== user?.id && <Button size="sm" variant="outline" onClick={() => updateUserStatus.mutate({ userId: member.id, status: member.status === "active" ? "blocked" : "active" })}>{member.status === "active" ? <><CircleOff className="mr-1 h-3.5 w-3.5" />Chặn</> : "Mở khóa"}</Button>}</div></div>)}</div></TabsContent>
       <TabsContent value="activity" className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="border-b border-slate-100 p-5"><h2 className="font-display text-2xl font-black uppercase text-slate-900">Nhật ký vận hành</h2><p className="mt-1 text-xs text-slate-500">Lưu vết điều chỉnh số dư, chặn/mở khóa và thay đổi quyền.</p><select value={activityUserId} onChange={event => setActivityUserId(Number(event.target.value))} className="mt-3 h-10 max-w-sm rounded-lg border border-slate-200 bg-white px-3 text-sm"><option value={0}>Tất cả tài khoản</option>{(membersQuery.data || []).map(member => <option key={member.id} value={member.id}>{member.name || member.username || member.openId}</option>)}</select></div>{(activityQuery.data || []).length ? (activityQuery.data || []).map(item => <div key={item.id} className="border-b border-slate-100 p-4 last:border-0"><p className="text-sm font-bold text-slate-900">{item.action === "member_blocked" ? "Đã chặn thành viên" : item.action === "member_unblocked" ? "Đã mở khóa thành viên" : item.action === "balance_adjusted" ? "Đã điều chỉnh số dư" : "Đã thay đổi quyền"} · tài khoản #{item.targetId}</p><p className="mt-1 text-xs text-slate-500">{item.details || "Không có chi tiết"} · {new Date(item.createdAt).toLocaleString("vi-VN")}</p></div>) : <p className="p-6 text-sm text-slate-500">Chưa có thao tác nào được ghi nhận.</p>}</TabsContent>

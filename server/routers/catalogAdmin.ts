@@ -9,6 +9,7 @@ const categoryInput = z.object({
   name: z.string().trim().min(2).max(128),
   slug: z.string().trim().min(2).max(128).regex(/^[a-z0-9-]+$/, "Slug chỉ gồm chữ thường, số và dấu gạch ngang"),
   description: z.string().trim().max(2000).optional(),
+  iconKey: z.string().trim().min(1).max(64).default("Package"),
   isActive: z.boolean().default(true),
 });
 
