@@ -99,3 +99,11 @@
 - [ ] Kiểm tra trực quan giỏ hàng trên bản mới nhất, gồm cập nhật số lượng, thông báo tồn kho và trạng thái trống/đầy.
 - [ ] Kiểm tra trực quan luồng tải tệp trên bản mới nhất, gồm trạng thái Tải ngay sau thanh toán và trạng thái hết hạn trong Tài khoản.
 - [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận website sẵn sàng vận hành.
+- [x] Rà soát và nhóm lại các tab quản trị để thao tác nhanh, dễ hiểu hơn.
+- [x] Liên kết mỗi dòng tồn kho tới sản phẩm/biến thể tương ứng và mở thẳng chỉnh sửa sản phẩm.
+- [x] Đồng bộ thao tác cập nhật tồn kho với tab Sản phẩm, hiển thị SKU, biến thể và trạng thái tồn rõ ràng.
+- [ ] Kiểm thử điều hướng tab quản trị mới và xuất bản cập nhật.
+- [x] Thiết kế lại điều hướng quản trị theo nhóm Catalog, Kho, Đơn hàng và Khách hàng để thao tác dễ hiểu hơn.
+- [x] Thêm nút trên từng dòng tồn kho để mở đúng sản phẩm hoặc biến thể tương ứng trong màn hình chỉnh sửa.
+- [ ] Hiển thị trạng thái tồn, SKU và biến thể đồng bộ giữa Tồn kho, Sản phẩm và Biến thể; kiểm thử trực quan luồng thực tế.
+- [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.

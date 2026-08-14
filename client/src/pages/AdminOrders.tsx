@@ -1,8 +1,8 @@
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import StoreLayout from "@/components/StoreLayout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,7 @@ function formatBytes(bytes: number) {
 
 export default function AdminOrders() {
   const { user, isAuthenticated } = useAuth();
+  const [location, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const uploadRef = useRef<HTMLInputElement>(null);
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft>(emptyCategory);
@@ -59,6 +60,7 @@ export default function AdminOrders() {
   const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
   const [variantDraft, setVariantDraft] = useState<VariantDraft>(emptyVariant);
   const [uploadTarget, setUploadTarget] = useState<"image" | "file" | null>(null);
+  const [activeTab, setActiveTab] = useState("products");
 
   const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "owner");
   const categoriesQuery = trpc.catalogAdmin.categories.useQuery(undefined, { enabled: isAdmin });
@@ -73,6 +75,35 @@ export default function AdminOrders() {
   const media = mediaQuery.data || [];
   const orders = ordersQuery.data || [];
   const users = usersQuery.data || [];
+
+  const selectProductForEdit = (product: typeof products[number]) => {
+    setEditingProductId(product.id);
+    setProductDraft({ name: product.name, slug: product.slug, description: product.description || "", price: product.price, categoryId: product.categoryId, image: product.image, fileUrl: product.fileUrl || "", fileSize: product.fileSize || "", specs: product.specs || "", stock: String(product.stock), featured: product.featured, isActive: product.isActive !== false });
+  };
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.split("?")[1] || "");
+    const targetId = Number(query.get("editProduct"));
+    const target = products.find(product => product.id === targetId);
+    if (target) {
+      selectProductForEdit(target);
+      setActiveTab("products");
+    }
+    const variantProductId = Number(query.get("variantProduct"));
+    if (variantProductId) {
+      setSelectedVariantProductId(variantProductId);
+      setActiveTab("variants");
+    }
+  }, [location, products]);
+
+  useEffect(() => {
+    const editVariantId = Number(new URLSearchParams(location.split("?")[1] || "").get("editVariant"));
+    const variant = variants.find(item => item.id === editVariantId);
+    if (variant) {
+      setEditingVariantId(variant.id);
+      setVariantDraft({ size: variant.size || "", color: variant.color || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive });
+    }
+  }, [location, variants]);
 
   const refreshCatalog = () => {
     utils.catalogAdmin.categories.invalidate();
@@ -249,19 +280,20 @@ export default function AdminOrders() {
           {[{ label: "Doanh thu đã thanh toán", value: formatCurrency(totalRevenue), icon: DollarSign, tone: "text-emerald-600 bg-emerald-100" }, { label: "Sản phẩm", value: products.length, icon: Package, tone: "text-blue-600 bg-blue-100" }, { label: "Danh mục", value: categories.length, icon: Archive, tone: "text-violet-600 bg-violet-100" }, { label: "Tệp đã tải", value: media.length, icon: FileArchive, tone: "text-amber-600 bg-amber-100" }].map(card => <div key={card.label} className="dhl-hover-card flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className={`flex h-11 w-11 items-center justify-center rounded-xl ${card.tone}`}><card.icon className="h-5 w-5" /></div><div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{card.label}</p><p className="mt-1 text-xl font-black text-slate-900">{card.value}</p></div></div>)}
         </section>
 
-        <Tabs defaultValue="products" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-            <TabsTrigger value="products" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Sản phẩm</TabsTrigger>
-            <TabsTrigger value="variants" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Biến thể</TabsTrigger>
-            <TabsTrigger value="categories" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Danh mục</TabsTrigger>
-            <TabsTrigger value="media" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Thư viện tệp</TabsTrigger>
-            <TabsTrigger value="orders" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Đơn hàng</TabsTrigger>
-            <TabsTrigger value="users" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Tài khoản</TabsTrigger>
+            <TabsTrigger value="products" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Catalog · Sản phẩm</TabsTrigger>
+            <TabsTrigger value="variants" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Catalog · Biến thể</TabsTrigger>
+            <TabsTrigger value="inventory" onClick={() => setLocation("/admin/operations?tab=inventory")} className="shrink-0 data-[state=active]:bg-violet-600 data-[state=active]:text-white">Kho · Tồn kho</TabsTrigger>
+            <TabsTrigger value="categories" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Catalog · Danh mục</TabsTrigger>
+            <TabsTrigger value="media" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Nội dung · Tệp</TabsTrigger>
+            <TabsTrigger value="orders" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Bán hàng · Đơn</TabsTrigger>
+            <TabsTrigger value="users" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Khách hàng</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-6">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">Danh sách sản phẩm</h2><p className="mt-1 text-xs text-slate-500">Chọn sửa để chỉnh giá, ảnh, file hoặc trạng thái hiển thị.</p></div><Badge variant="outline">{products.length} mục</Badge></div><div className="divide-y divide-slate-100">{products.map(product => <div key={product.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-violet-600 text-xs font-black text-white">{product.name.slice(0, 2).toUpperCase()}</div><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{product.name}</p><p className="mt-0.5 text-xs text-slate-500">{selectedCategoryName(product.categoryId)} · {formatCurrency(product.price)}</p></div></div><div className="flex items-center justify-between gap-2 sm:justify-end"><Badge className={product.isActive === false ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}>{product.isActive === false ? "Đang ẩn" : "Đang hiển thị"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingProductId(product.id); setProductDraft({ name: product.name, slug: product.slug, description: product.description || "", price: product.price, categoryId: product.categoryId, image: product.image, fileUrl: product.fileUrl || "", fileSize: product.fileSize || "", specs: product.specs || "", stock: String(product.stock), featured: product.featured, isActive: product.isActive !== false }); }}><Pencil className="mr-1 h-3.5 w-3.5" />Sửa</Button></div></div>)}{products.length === 0 && <div className="p-12 text-center text-sm text-slate-500">Chưa có sản phẩm. Hãy tạo sản phẩm đầu tiên ở biểu mẫu bên phải.</div>}</div></div>
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">Danh sách sản phẩm</h2><p className="mt-1 text-xs text-slate-500">Chọn sửa để chỉnh giá, ảnh, file hoặc trạng thái hiển thị.</p></div><Badge variant="outline">{products.length} mục</Badge></div><div className="divide-y divide-slate-100">{products.map(product => <div key={product.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-violet-600 text-xs font-black text-white">{product.name.slice(0, 2).toUpperCase()}</div><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{product.name}</p><p className="mt-0.5 text-xs text-slate-500">{selectedCategoryName(product.categoryId)} · {formatCurrency(product.price)}</p></div></div><div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end"><Badge className={product.type === "physical" ? "bg-violet-100 text-violet-800" : "bg-blue-100 text-blue-800"}>{product.type === "physical" ? "Hàng vật lý" : "Tài nguyên số"}</Badge>{product.type === "physical" && <Badge className={Number(product.stock) <= 5 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}>{Number(product.stock) <= 5 ? `Sắp hết · ${product.stock}` : `Kho chung · ${product.stock}`}</Badge>}<Badge className={product.isActive === false ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}>{product.isActive === false ? "Đang ẩn" : "Đang hiển thị"}</Badge><Button size="sm" variant="outline" onClick={() => selectProductForEdit(product)}><Pencil className="mr-1 h-3.5 w-3.5" />Sửa</Button></div></div>)}{products.length === 0 && <div className="p-12 text-center text-sm text-slate-500">Chưa có sản phẩm. Hãy tạo sản phẩm đầu tiên ở biểu mẫu bên phải.</div>}</div></div>
               <form onSubmit={handleProductSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">{editingProductId ? "Sửa sản phẩm" : "Thêm sản phẩm"}</h2><p className="mt-1 text-xs text-slate-500">Ảnh và file được lưu trong kho của website.</p></div>{editingProductId && <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingProductId(null); setProductDraft({ ...emptyProduct, categoryId: categories[0]?.id || 0 }); }}>Tạo mới</Button>}</div>
                 <Input value={productDraft.name} onChange={event => setProductDraft(prev => ({ ...prev, name: event.target.value, slug: prev.slug || slugify(event.target.value) }))} placeholder="Tên sản phẩm" required />
                 <Input value={productDraft.slug} onChange={event => setProductDraft(prev => ({ ...prev, slug: slugify(event.target.value) }))} placeholder="slug-san-pham" required />
