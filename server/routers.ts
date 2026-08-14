@@ -5,13 +5,14 @@ import { adminProcedure, publicProcedure, protectedProcedure, ownerProcedure, ro
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
-import { buildSePayQrUrl } from "./sepay";
+import { buildPhysicalVietQrUrl, buildSePayQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
 
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
 const localPasswordSchema = z.string().min(10, "Mật khẩu cần có ít nhất 10 ký tự").max(128, "Mật khẩu quá dài");
+const shippingAddressInputSchema = z.object({ recipientName: z.string().trim().min(2, "Vui lòng nhập họ tên người nhận").max(255), phone: z.string().trim().min(8, "Số điện thoại chưa hợp lệ").max(64), address: z.string().trim().min(5, "Vui lòng nhập địa chỉ cụ thể").max(2000), isDefault: z.boolean().optional() });
 
 function publicUser(user: NonNullable<Awaited<ReturnType<typeof db.getUserByOpenId>>>) {
   const { passwordHash: _passwordHash, ...safeUser } = user;
@@ -104,7 +105,7 @@ export const appRouter = router({
     inventoryMovements: adminProcedure.query(() => db.getInventoryMovements()),
     bulkSetInventory: adminProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),
     siteSettings: ownerProcedure.query(() => db.getSiteSettings()),
-    saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128) }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user.id)),
+    saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128), physical_qr_bank_code: z.string().trim().max(32).optional(), physical_qr_account_number: z.string().trim().max(64).optional(), physical_qr_account_holder: z.string().trim().max(255).optional() }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user.id)),
   }),
 
   store: router({
@@ -173,6 +174,42 @@ export const appRouter = router({
         return await db.removeFromCart(input.cartItemId);
       }),
 
+    shippingAddresses: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getShippingAddresses(ctx.user.id);
+    }),
+
+    createShippingAddress: protectedProcedure
+      .input(shippingAddressInputSchema)
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return db.createShippingAddress(ctx.user.id, input);
+      }),
+
+    updateShippingAddress: protectedProcedure
+      .input(z.object({ id: z.number().int().positive(), data: shippingAddressInputSchema }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        try {
+          return await db.updateShippingAddress(ctx.user.id, input.id, input.data);
+        } catch (error) {
+          if (error instanceof Error && error.message === "ADDRESS_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy địa chỉ cần cập nhật" });
+          throw error;
+        }
+      }),
+
+    deleteShippingAddress: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        try {
+          return await db.deleteShippingAddress(ctx.user.id, input.id);
+        } catch (error) {
+          if (error instanceof Error && error.message === "ADDRESS_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy địa chỉ cần xóa" });
+          throw error;
+        }
+      }),
+
     cancelPendingOrder: protectedProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
@@ -202,7 +239,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
         const order = await db.createOrder(ctx.user.id, input);
-        return { ...order, qrUrl: buildSePayQrUrl(order.orderCode, order.totalAmount) };
+        const siteSettings = order.hasPhysicalItems ? await db.getSiteSettings() : null;
+        const qrUrl = order.hasPhysicalItems
+          ? buildPhysicalVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, order.orderCode, Number(order.totalAmount))
+          : buildSePayQrUrl(order.orderCode, Number(order.totalAmount));
+        return { ...order, qrUrl };
       }),
 
     orders: protectedProcedure.query(async ({ ctx }) => {

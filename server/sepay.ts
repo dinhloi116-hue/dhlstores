@@ -63,6 +63,17 @@ export function buildSePayQrUrl(orderCode: string, totalAmount: number) {
   }, orderCode, totalAmount);
 }
 
+/** QR VietQR dành riêng cho đơn hàng vật lý, do chủ cửa hàng cấu hình trong Trung tâm vận hành. */
+export function buildPhysicalVietQrUrl(config: SePayQrConfig, orderCode: string, totalAmount: number) {
+  if (!config.bankCode || !config.accountNumber || !config.accountHolder) return null;
+  const params = new URLSearchParams({
+    amount: Math.round(totalAmount).toString(),
+    addInfo: `SEVQR ${orderCode}`,
+    accountName: config.accountHolder,
+  });
+  return `https://img.vietqr.io/image/${encodeURIComponent(config.bankCode)}-${encodeURIComponent(config.accountNumber)}-compact2.png?${params.toString()}`;
+}
+
 export function registerSePayWebhook(app: Express) {
   app.post("/api/sepay/webhook", async (req: Request, res: Response) => {
     if (!ENV.sepayWebhookApiKey) {

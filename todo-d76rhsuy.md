@@ -127,8 +127,8 @@
 - [x] Phóng to ảnh SKU khoảng 200% khi rê chuột hoặc chạm xem trước, không che nội dung bảng.
 - [x] Đổi mục Tool thành thư viện công cụ nổi bật, hỗ trợ mở rộng thêm nhiều Tool trong tương lai.
 - [ ] Chẩn đoán và sửa Tool PET TRAM không thao tác được trong website.
-- [ ] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
-- [ ] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
+- [x] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
+- [x] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
 - [ ] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
 - [ ] Kiểm thử toàn bộ SKU, Tool, hồ sơ địa chỉ, checkout vật lý và xuất bản cập nhật.
 - [x] Đặt khối chọn SKU và điều chỉnh số lượng cùng hàng; chuyển bảng tồn kho xuống cuối trang sản phẩm.
@@ -136,7 +136,7 @@
 - [x] Hỗ trợ chạm thumbnail trên điện thoại để mở/đóng ảnh SKU phóng to an toàn.
 - [ ] Kiểm thử trực quan preview ảnh SKU trên desktop và điện thoại.
 - [ ] Chụp bằng chứng preview ảnh SKU đang mở trên desktop và điện thoại; kiểm tra mở/đóng, vị trí không bị cắt và vẫn chọn SKU bình thường.
-- [ ] Việt hóa toàn bộ nhãn, hướng dẫn và biểu mẫu cấu hình QR/ngân hàng cho hàng vật lý.
+- [x] Việt hóa toàn bộ nhãn, hướng dẫn và biểu mẫu cấu hình QR/ngân hàng cho hàng vật lý.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.

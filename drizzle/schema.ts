@@ -23,6 +23,21 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+/** Địa chỉ khách lưu trong hồ sơ để dùng lại khi mua hàng vật lý. */
+export const shippingAddresses = mysqlTable("shipping_addresses", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  recipientName: varchar("recipientName", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 64 }).notNull(),
+  address: text("address").notNull(),
+  isDefault: boolean("isDefault").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ShippingAddress = typeof shippingAddresses.$inferSelect;
+export type InsertShippingAddress = typeof shippingAddresses.$inferInsert;
+
 export const balanceLedger = mysqlTable("balance_ledger", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),

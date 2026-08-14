@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, products, siteSettings, users, visitorEvents } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, products, shippingAddresses, siteSettings, users, visitorEvents } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -141,6 +141,19 @@ type LocalUserRecordType = ExtendedUserType & {
 };
 
 export type ShippingMethodCode = "pickup" | "standard" | "express";
+
+export interface ShippingAddressType {
+  id: number;
+  userId: number;
+  recipientName: string;
+  phone: string;
+  address: string;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type ShippingAddressInput = Pick<ShippingAddressType, "recipientName" | "phone" | "address"> & { isDefault?: boolean };
 
 export const shippingOptions: Array<{ code: ShippingMethodCode; label: string; fee: number }> = [
   { code: "pickup", label: "Nhận tại cửa hàng", fee: 0 },
@@ -373,6 +386,7 @@ let memoryOrders: OrderType[] = [];
 let memoryOrderItems: OrderItemType[] = [];
 let memoryProductVariants: ProductVariantType[] = [];
 let memoryProductOptionGroups: ProductOptionGroupType[] = [];
+let memoryShippingAddresses: ShippingAddressType[] = [];
 const memoryProcessedTransactions = new Set<string>();
 const memoryDownloadLinks = new Map<number, string>();
 const memoryMediaAssets: Array<{ id: number; fileName: string; storageKey: string; url: string; mimeType: string; sizeBytes: number; createdAt: Date }> = [];
@@ -382,6 +396,7 @@ let nextOrderItemId = 1;
 let nextMediaAssetId = 1;
 let nextProductVariantId = 1;
 let nextProductOptionGroupId = 1;
+let nextShippingAddressId = 1;
 
 async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
   await connection.insert(categories).values(memoryCategories.map(category => ({
@@ -632,6 +647,74 @@ export async function linkEmailToUser(userId: number, email: string) {
   user.email = email;
   user.emailVerified = false;
   user.updatedAt = new Date();
+  return { success: true };
+}
+
+export async function getShippingAddresses(userId: number): Promise<ShippingAddressType[]> {
+  const connection = await getDb();
+  if (connection) return await connection.select().from(shippingAddresses).where(eq(shippingAddresses.userId, userId)).orderBy(desc(shippingAddresses.isDefault), desc(shippingAddresses.updatedAt));
+  return memoryShippingAddresses.filter(address => address.userId === userId).sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || b.updatedAt.getTime() - a.updatedAt.getTime());
+}
+
+export async function createShippingAddress(userId: number, input: ShippingAddressInput): Promise<ShippingAddressType> {
+  const connection = await getDb();
+  if (connection) return connection.transaction(async transaction => {
+    const existing = await transaction.select({ id: shippingAddresses.id }).from(shippingAddresses).where(eq(shippingAddresses.userId, userId)).limit(1);
+    const isDefault = input.isDefault === true || existing.length === 0;
+    if (isDefault) await transaction.update(shippingAddresses).set({ isDefault: false }).where(eq(shippingAddresses.userId, userId));
+    const inserted = await transaction.insert(shippingAddresses).values({ userId, recipientName: input.recipientName, phone: input.phone, address: input.address, isDefault });
+    const created = (await transaction.select().from(shippingAddresses).where(eq(shippingAddresses.id, Number(inserted[0].insertId))).limit(1))[0];
+    if (!created) throw new Error("ADDRESS_NOT_FOUND");
+    return created;
+  });
+  const hasAddress = memoryShippingAddresses.some(address => address.userId === userId);
+  const isDefault = input.isDefault === true || !hasAddress;
+  if (isDefault) memoryShippingAddresses.forEach(address => { if (address.userId === userId) address.isDefault = false; });
+  const now = new Date();
+  const created: ShippingAddressType = { id: nextShippingAddressId++, userId, recipientName: input.recipientName, phone: input.phone, address: input.address, isDefault, createdAt: now, updatedAt: now };
+  memoryShippingAddresses.unshift(created);
+  return created;
+}
+
+export async function updateShippingAddress(userId: number, addressId: number, input: ShippingAddressInput): Promise<ShippingAddressType> {
+  const connection = await getDb();
+  if (connection) return connection.transaction(async transaction => {
+    const current = (await transaction.select().from(shippingAddresses).where(and(eq(shippingAddresses.id, addressId), eq(shippingAddresses.userId, userId))).limit(1))[0];
+    if (!current) throw new Error("ADDRESS_NOT_FOUND");
+    const isDefault = input.isDefault ?? current.isDefault;
+    if (isDefault) await transaction.update(shippingAddresses).set({ isDefault: false }).where(eq(shippingAddresses.userId, userId));
+    await transaction.update(shippingAddresses).set({ recipientName: input.recipientName, phone: input.phone, address: input.address, isDefault }).where(eq(shippingAddresses.id, addressId));
+    const updated = (await transaction.select().from(shippingAddresses).where(eq(shippingAddresses.id, addressId)).limit(1))[0];
+    if (!updated) throw new Error("ADDRESS_NOT_FOUND");
+    return updated;
+  });
+  const current = memoryShippingAddresses.find(address => address.id === addressId && address.userId === userId);
+  if (!current) throw new Error("ADDRESS_NOT_FOUND");
+  const isDefault = input.isDefault ?? current.isDefault;
+  if (isDefault) memoryShippingAddresses.forEach(address => { if (address.userId === userId) address.isDefault = false; });
+  Object.assign(current, { recipientName: input.recipientName, phone: input.phone, address: input.address, isDefault, updatedAt: new Date() });
+  return current;
+}
+
+export async function deleteShippingAddress(userId: number, addressId: number) {
+  const connection = await getDb();
+  if (connection) return connection.transaction(async transaction => {
+    const current = (await transaction.select().from(shippingAddresses).where(and(eq(shippingAddresses.id, addressId), eq(shippingAddresses.userId, userId))).limit(1))[0];
+    if (!current) throw new Error("ADDRESS_NOT_FOUND");
+    await transaction.delete(shippingAddresses).where(eq(shippingAddresses.id, addressId));
+    if (current.isDefault) {
+      const replacement = (await transaction.select({ id: shippingAddresses.id }).from(shippingAddresses).where(eq(shippingAddresses.userId, userId)).orderBy(desc(shippingAddresses.updatedAt)).limit(1))[0];
+      if (replacement) await transaction.update(shippingAddresses).set({ isDefault: true }).where(eq(shippingAddresses.id, replacement.id));
+    }
+    return { success: true };
+  });
+  const index = memoryShippingAddresses.findIndex(address => address.id === addressId && address.userId === userId);
+  if (index < 0) throw new Error("ADDRESS_NOT_FOUND");
+  const [removed] = memoryShippingAddresses.splice(index, 1);
+  if (removed?.isDefault) {
+    const replacement = memoryShippingAddresses.filter(address => address.userId === userId).sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0];
+    if (replacement) replacement.isDefault = true;
+  }
   return { success: true };
 }
 
