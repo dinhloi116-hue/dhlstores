@@ -110,7 +110,7 @@
 - [x] Bổ sung trường ảnh riêng cho biến thể để lưu URL ảnh phiên bản từ Excel và quản trị thủ công.
 - [x] Cập nhật luồng nhập Excel để đưa cột Ảnh phiên bản vào từng biến thể thay vì bỏ mất dữ liệu.
 - [x] Khôi phục ảnh cho 38 biến thể Nameset đã nhập và cho ảnh thay đổi theo biến thể trên trang chi tiết.
-- [ ] Kiểm thử, xuất bản và xác minh trực quan ảnh biến thể sau khi sửa lỗi.
+- [x] Kiểm thử, xuất bản và xác minh trực quan ảnh biến thể sau khi sửa lỗi.
 - [x] Phân tích file HTML Tool người dùng cung cấp, bao gồm phụ thuộc, luồng dữ liệu và rủi ro tích hợp.
 - [x] Thêm mục Tool có điều hướng rõ ràng trong DHL Stores và nhúng Tool HTML đã kiểm tra qua khung chạy cô lập.
 - [x] Kiểm thử Tool trên máy tính/điện thoại, xuất bản và hướng dẫn truy cập.
@@ -136,6 +136,7 @@
 - [x] Hỗ trợ chạm thumbnail trên điện thoại để mở/đóng ảnh SKU phóng to an toàn.
 - [ ] Kiểm thử trực quan preview ảnh SKU trên desktop và điện thoại.
 - [ ] Chụp bằng chứng preview ảnh SKU đang mở trên desktop và điện thoại; kiểm tra mở/đóng, vị trí không bị cắt và vẫn chọn SKU bình thường.
+- [ ] Kiểm thử trực tiếp preview ảnh SKU trên viewport điện thoại: chạm thumbnail, xác nhận ảnh lớn mở ngoài ô thumbnail và đóng an toàn.
 - [x] Việt hóa toàn bộ nhãn, hướng dẫn và biểu mẫu cấu hình QR/ngân hàng cho hàng vật lý.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
@@ -167,5 +168,5 @@
 - [x] Giữ nguyên toàn bộ lựa chọn SKU, tồn kho và thông tin giao hàng khi khách đổi giữa mua ngay và Order.
 - [x] Hiển thị Order 7–10 ngày trong checkout, QR thanh toán và khu vực quản trị đơn hàng vật lý.
 - [x] Kiểm thử giá Order giảm 10%, SKU, đơn hàng và QR Techcombank trước khi xuất bản.
-- [ ] Kiểm thử PET TRAM ngay trong iframe: chọn tệp, dùng nút chính, popup/modal và tải xuống mà không cần rời website.
+- [x] Không áp dụng: kiểm thử iframe PET TRAM đã được thay bằng lối chạy Tool độc lập mặc định để tránh giới hạn sandbox/origin.
 - [x] Nếu iframe vẫn bị giới hạn theo sandbox/origin, đổi luồng mặc định sang trang Tool độc lập và cập nhật thông báo để khách thao tác ổn định.
