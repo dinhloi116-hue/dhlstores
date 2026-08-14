@@ -213,3 +213,6 @@
 - [x] Sửa thẻ hàng thể thao trên điện thoại: bỏ lớp chữ/nhãn phủ ảnh, giữ ảnh vuông rõ ràng và đưa thông tin sản phẩm xuống phần nội dung thẻ.
 - [x] Kiểm tra giao diện danh mục và thẻ hàng thể thao trên desktop/mobile trước khi xuất bản.
 - [x] Sửa tuyến Giỏ hàng đang trả 404 để điều hướng đúng tới luồng giỏ/checkout hiện có.
+- [x] Đặt mã SKU và tồn kho/trạng thái thành cụm ngang liền nhau trên từng dòng bảng tồn kho công khai, giữ ảnh SKU ở cột đối chiếu.
+- [x] Kiểm tra desktop/mobile rằng cụm SKU–tồn kho không bị tách xa và preview ảnh SKU vẫn hoạt động.
+- [x] Phóng to ảnh SKU khoảng 200% khi rê chuột tại trang chi tiết sản phẩm, không che cụm SKU–tồn kho hoặc cắt ảnh.
