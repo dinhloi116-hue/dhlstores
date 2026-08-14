@@ -120,7 +120,9 @@
 - [x] Thêm điều khiển sắp xếp SKU/biến thể theo tên, giá và tồn kho trên trang sản phẩm.
 - [x] Chuyển ảnh đại diện sản phẩm và ảnh biến thể sang khung vuông rõ ràng, không phủ chữ hoặc nhãn lên nội dung ảnh.
 - [x] Hiển thị bảng tồn kho theo SKU/biến thể, gồm ảnh nhỏ, trạng thái còn hàng và thao tác chọn biến thể để mua.
-- [ ] Kiểm thử trải nghiệm SKU/tồn kho/ảnh trên máy tính và điện thoại, rồi xuất bản cập nhật.
+- [x] Kiểm thử trải nghiệm SKU/tồn kho/ảnh trên máy tính và điện thoại, rồi xuất bản cập nhật.
+- [x] Rút gọn bộ sắp xếp SKU chỉ còn Theo tên và Theo giá tiền.
+- [ ] Kiểm thử và xuất bản cập nhật sắp xếp SKU tối giản.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.
