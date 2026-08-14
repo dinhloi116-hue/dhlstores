@@ -69,7 +69,7 @@
 - [x] Kiểm tra trực quan giao diện mới trên máy tính, điện thoại và xuất bản cập nhật.
 - [x] Xác nhận miền dhlstores.com và miền đích hiện tại của website để chuẩn bị cấu hình Cloudflare.
 - [x] Hướng dẫn tạo bản ghi DNS Cloudflare và gắn dhlstores.com trong phần Domains của website.
-- [ ] Xác minh tên miền hoạt động sau khi DNS cập nhật.
+- [x] Đã tạm dừng theo yêu cầu: không xác minh hoặc chuyển sang dhlstores.com cho đến khi chủ cửa hàng chủ động yêu cầu.
 - [x] Tạm dừng cấu hình dhlstores.com cho đến khi website sẵn sàng vận hành.
 - [x] Rà soát các trang mua hàng, giỏ, thanh toán, tài khoản và quản trị để xác định hạng mục cần hoàn thiện.
 - [x] Sửa trang chi tiết sản phẩm để hiển thị lỗi hoặc trạng thái không tìm thấy thay vì quay vòng chờ tải.
@@ -216,3 +216,6 @@
 - [x] Đặt mã SKU và tồn kho/trạng thái thành cụm ngang liền nhau trên từng dòng bảng tồn kho công khai, giữ ảnh SKU ở cột đối chiếu.
 - [x] Kiểm tra desktop/mobile rằng cụm SKU–tồn kho không bị tách xa và preview ảnh SKU vẫn hoạt động.
 - [x] Phóng to ảnh SKU khoảng 200% khi rê chuột tại trang chi tiết sản phẩm, không che cụm SKU–tồn kho hoặc cắt ảnh.
+- [x] Di chuyển bảng tồn kho SKU lên ngay trong khối đặt hàng, ngang hàng với vùng chọn SKU và số lượng trên màn hình desktop.
+- [x] Khắc phục preview ảnh SKU để rê chuột trên thumbnail luôn mở ảnh phóng to dễ nhìn, không bị che hoặc trôi khỏi vùng quan sát.
+- [x] Kiểm thử trực quan lại bố cục đặt hàng–tồn kho và ảnh SKU phóng to trên desktop/mobile trước khi xuất bản.
