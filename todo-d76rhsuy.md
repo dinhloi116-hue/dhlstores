@@ -231,3 +231,6 @@
 - [x] Sửa preview thumbnail SKU để rê chuột trên desktop luôn mở ảnh lớn độc lập, kể cả SKU hết hàng.
 - [x] Đặt SKU đang chọn, số lượng, Mua ngay và Order sát ngay dưới khu chọn SKU; không để bảng tồn kho chen giữa luồng mua.
 - [x] Kiểm tra lại trực quan preview SKU và nhịp bố cục chi tiết sản phẩm trên desktop/mobile trước khi xuất bản.
+- [x] Thêm tìm kiếm trong Catalog theo tên sản phẩm, SKU, tên biến thể và thuộc tính liên quan.
+- [x] Hiển thị nút Lưu toàn bộ thứ tự SKU cố định trong cột SKU, kể cả khi chưa có thay đổi.
+- [x] Kiểm thử tìm kiếm Catalog, lưu toàn bộ SKU và trạng thái chưa lưu trước khi xuất bản.

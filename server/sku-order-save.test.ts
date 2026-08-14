@@ -17,4 +17,13 @@ describe("SKU order save flow", () => {
     expect(source).toContain('setVariantOrderDraft(nextOrder)');
     expect(source).toContain('reorderProductVariants.mutate({ productId: selectedVariantProductId, variantIds: variantOrderDraft })');
   });
+
+  it("offers catalog search and an always-visible save all SKU action", () => {
+    const source = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('const [catalogSearch, setCatalogSearch] = useState("")');
+    expect(source).toContain('Tên sản phẩm, SKU, biến thể, thuộc tính…');
+    expect(source).toContain('Lưu toàn bộ thứ tự SKU');
+    expect(source).toContain('Tìm thấy {catalogSearchResults.length} sản phẩm');
+  });
 });
