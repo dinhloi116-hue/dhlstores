@@ -82,7 +82,7 @@ export default function AdminOrders() {
   };
 
   useEffect(() => {
-    const query = new URLSearchParams(location.split("?")[1] || "");
+    const query = new URLSearchParams(window.location.search);
     const targetId = Number(query.get("editProduct"));
     const target = products.find(product => product.id === targetId);
     if (target) {
@@ -97,7 +97,7 @@ export default function AdminOrders() {
   }, [location, products]);
 
   useEffect(() => {
-    const editVariantId = Number(new URLSearchParams(location.split("?")[1] || "").get("editVariant"));
+    const editVariantId = Number(new URLSearchParams(window.location.search).get("editVariant"));
     const variant = variants.find(item => item.id === editVariantId);
     if (variant) {
       setEditingVariantId(variant.id);
