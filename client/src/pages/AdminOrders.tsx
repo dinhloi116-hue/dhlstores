@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Archive, Check, ChevronLeft, CircleOff, CloudUpload, DollarSign, FileArchive, Image, Link2, Package, Pencil, Plus, ShieldCheck, Users } from "lucide-react";
+import { Archive, Check, ChevronLeft, CircleOff, CloudUpload, DollarSign, FileArchive, FileSpreadsheet, Image, Link2, Package, Pencil, Plus, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 
 type CategoryDraft = { name: string; slug: string; description: string; isActive: boolean };
@@ -27,6 +27,7 @@ type ProductDraft = {
   isActive: boolean;
 };
 type VariantDraft = { size: string; color: string; attributes: string; sku: string; priceAdjustment: string; stock: string; isActive: boolean };
+type ExcelPreview = { sheetName: string; rowCount: number; productCount: number; variantCount: number; errors: Array<{ row: number; message: string }>; duplicates: string[]; products: Array<{ name: string; slug: string; price: number; image: string; tags: string; variants: number; options: Array<{ name: string; values: string[] }> }> };
 
 const emptyCategory: CategoryDraft = { name: "", slug: "", description: "", isActive: true };
 const emptyProduct: ProductDraft = {
@@ -52,6 +53,7 @@ export default function AdminOrders() {
   const [location, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const uploadRef = useRef<HTMLInputElement>(null);
+  const excelInputRef = useRef<HTMLInputElement>(null);
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft>(emptyCategory);
   const [productDraft, setProductDraft] = useState<ProductDraft>(emptyProduct);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
@@ -67,6 +69,9 @@ export default function AdminOrders() {
   const [selectedInventoryRows, setSelectedInventoryRows] = useState<string[]>([]);
   const [optionGroupsDraft, setOptionGroupsDraft] = useState("");
   const [combinationDefaults, setCombinationDefaults] = useState({ skuPrefix: "SKU", stock: "0", priceAdjustment: "0" });
+  const [excelImportFile, setExcelImportFile] = useState<{ fileName: string; base64: string } | null>(null);
+  const [excelPreview, setExcelPreview] = useState<ExcelPreview | null>(null);
+  const [excelCategoryId, setExcelCategoryId] = useState(0);
 
   const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "owner");
   const categoriesQuery = trpc.catalogAdmin.categories.useQuery(undefined, { enabled: isAdmin });
@@ -212,6 +217,25 @@ export default function AdminOrders() {
     },
     onError: error => toast.error(error.message),
   });
+  const previewExcelImport = trpc.catalogAdmin.previewExcelImport.useMutation({
+    onSuccess: preview => {
+      setExcelPreview(preview);
+      if (preview.errors.length) toast.error(`Phát hiện ${preview.errors.length} lỗi cần sửa trong file Excel`);
+      else toast.success(`Đã đọc ${preview.productCount} sản phẩm và ${preview.variantCount} biến thể từ Excel`);
+    },
+    onError: error => { setExcelPreview(null); toast.error(error.message); },
+  });
+  const importExcelProducts = trpc.catalogAdmin.importExcelProducts.useMutation({
+    onSuccess: result => {
+      toast.success(`Đã nhập ${result.createdProducts} sản phẩm và ${result.createdVariants} biến thể${result.skipped.length ? `; bỏ qua ${result.skipped.length} sản phẩm trùng` : ""}`);
+      setExcelPreview(null);
+      setExcelImportFile(null);
+      refreshCatalog();
+      utils.catalogAdmin.productVariants.invalidate();
+      utils.operations.inventory.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
   const uploadMedia = trpc.catalogAdmin.uploadMedia.useMutation({
     onSuccess: asset => {
       toast.success(`Đã tải lên ${asset.fileName}`);
@@ -268,6 +292,25 @@ export default function AdminOrders() {
       const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : "";
       if (!base64) return toast.error("Không thể đọc tệp đã chọn");
       uploadMedia.mutate({ fileName: file.name, mimeType: file.type || "application/octet-stream", base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleExcelFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".xlsx")) return toast.error("Chỉ hỗ trợ file Excel .xlsx");
+    if (file.size > 10 * 1024 * 1024) return toast.error("File Excel tối đa 10 MB");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : "";
+      if (!base64) return toast.error("Không thể đọc file Excel");
+      const payload = { fileName: file.name, base64 };
+      setExcelImportFile(payload);
+      setExcelPreview(null);
+      previewExcelImport.mutate(payload);
     };
     reader.readAsDataURL(file);
   };
@@ -335,6 +378,8 @@ export default function AdminOrders() {
           </TabsList>
 
           <TabsContent value="products" className="space-y-6">
+            <input ref={excelInputRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={handleExcelFileChange} />
+            <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm"><div className="flex flex-col gap-4 border-b border-emerald-100 bg-emerald-50/70 p-5 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Nhập hàng loạt</p><h2 className="font-display text-2xl font-black uppercase text-slate-900">Nhập sản phẩm từ Excel</h2><p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-600">Dùng file .xlsx xuất từ Bizweb/Sapo: hệ thống đọc tên sản phẩm, alias, giá, ảnh, SKU và tối đa ba thuộc tính biến thể. Bạn luôn xem trước trước khi nhập; sản phẩm trùng slug sẽ được bỏ qua.</p></div><Button type="button" onClick={() => excelInputRef.current?.click()} disabled={previewExcelImport.isPending} className="bg-emerald-600 font-black text-white hover:bg-emerald-700"><FileSpreadsheet className="mr-2 h-4 w-4" />{previewExcelImport.isPending ? "Đang đọc Excel..." : "Chọn file Excel"}</Button></div>{excelPreview && <div className="space-y-4 p-5"><div className="grid gap-3 sm:grid-cols-5"><div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-black uppercase text-slate-500">Sheet / dòng</p><p className="mt-1 text-sm font-black text-slate-900">{excelPreview.sheetName} · {excelPreview.rowCount}</p></div><div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-black uppercase text-slate-500">Sản phẩm</p><p className="mt-1 text-sm font-black text-slate-900">{excelPreview.productCount}</p></div><div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-black uppercase text-slate-500">Biến thể</p><p className="mt-1 text-sm font-black text-slate-900">{excelPreview.variantCount}</p></div><div className={`rounded-xl p-3 ${excelPreview.duplicates.length ? "bg-amber-50" : "bg-emerald-50"}`}><p className="text-[10px] font-black uppercase text-slate-500">Trùng slug</p><p className={`mt-1 text-sm font-black ${excelPreview.duplicates.length ? "text-amber-800" : "text-emerald-800"}`}>{excelPreview.duplicates.length || "Không có"}</p></div><div className={`rounded-xl p-3 ${excelPreview.errors.length ? "bg-rose-50" : "bg-emerald-50"}`}><p className="text-[10px] font-black uppercase text-slate-500">Lỗi dữ liệu</p><p className={`mt-1 text-sm font-black ${excelPreview.errors.length ? "text-rose-800" : "text-emerald-800"}`}>{excelPreview.errors.length || "Không có"}</p></div></div>{excelPreview.errors.length > 0 && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"><p className="font-black">Sửa các dòng sau trước khi nhập:</p>{excelPreview.errors.slice(0, 8).map(error => <p key={`${error.row}-${error.message}`} className="mt-1">Dòng {error.row}: {error.message}</p>)}</div>}{excelPreview.duplicates.length > 0 && <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">Các sản phẩm trùng sẽ không bị ghi đè: {excelPreview.duplicates.slice(0, 4).join(" · ")}{excelPreview.duplicates.length > 4 ? "…" : ""}</p>}<div className="overflow-x-auto rounded-xl border border-slate-200"><table className="min-w-[720px] w-full text-left text-xs"><thead className="bg-slate-50 text-[10px] font-black uppercase tracking-wide text-slate-500"><tr><th className="px-3 py-3">Sản phẩm</th><th className="px-3 py-3">Giá</th><th className="px-3 py-3">Biến thể</th><th className="px-3 py-3">Thuộc tính</th></tr></thead><tbody className="divide-y divide-slate-100">{excelPreview.products.map(product => <tr key={product.slug}><td className="px-3 py-3"><p className="font-bold text-slate-900">{product.name}</p><p className="mt-1 font-mono text-[10px] text-slate-500">{product.slug}</p></td><td className="px-3 py-3 font-semibold text-slate-900">{formatCurrency(product.price)}</td><td className="px-3 py-3 text-slate-700">{product.variants}</td><td className="px-3 py-3 text-slate-600">{product.options.map(group => `${group.name}: ${group.values.join(", ")}`).join(" · ") || "—"}</td></tr>)}</tbody></table></div><div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center"><select className="flex h-10 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm" value={excelCategoryId} onChange={event => setExcelCategoryId(Number(event.target.value))}><option value={0}>Chọn danh mục đích để nhập</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name} · {category.type === "physical" ? "Hàng vật lý" : "Tài nguyên số"}</option>)}</select><Button type="button" disabled={!excelImportFile || !excelCategoryId || Boolean(excelPreview.errors.length) || importExcelProducts.isPending} onClick={() => importExcelProducts.mutate({ ...excelImportFile!, categoryId: excelCategoryId, skipDuplicates: true })} className="bg-emerald-600 font-black text-white hover:bg-emerald-700"><Check className="mr-2 h-4 w-4" />{importExcelProducts.isPending ? "Đang nhập..." : `Xác nhận nhập ${excelPreview.productCount} sản phẩm`}</Button></div><p className="text-[11px] leading-relaxed text-slate-500">Lưu ý: nếu chọn danh mục hàng vật lý, các cột Thuộc tính 1–3 sẽ thành nhóm lựa chọn và từng dòng Excel sẽ thành một biến thể. Giá sẽ được gắn theo biến thể; tồn kho mặc định là 0 để bạn kiểm tra trước khi mở bán.</p></div>}</section>
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">Danh sách sản phẩm</h2><p className="mt-1 text-xs text-slate-500">Chọn sửa để chỉnh giá, ảnh, file hoặc trạng thái hiển thị.</p></div><Badge variant="outline">{products.length} mục</Badge></div><div className="divide-y divide-slate-100">{products.map(product => <div key={product.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-violet-600 text-xs font-black text-white">{product.name.slice(0, 2).toUpperCase()}</div><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{product.name}</p><p className="mt-0.5 text-xs text-slate-500">{selectedCategoryName(product.categoryId)} · {formatCurrency(product.price)}</p></div></div><div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end"><Badge className={product.type === "physical" ? "bg-violet-100 text-violet-800" : "bg-blue-100 text-blue-800"}>{product.type === "physical" ? "Hàng vật lý" : "Tài nguyên số"}</Badge>{product.type === "physical" && <Badge className={Number(product.stock) <= 5 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}>{Number(product.stock) <= 5 ? `Sắp hết · ${product.stock}` : `Kho chung · ${product.stock}`}</Badge>}<Badge className={product.isActive === false ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}>{product.isActive === false ? "Đang ẩn" : "Đang hiển thị"}</Badge><Button size="sm" variant="outline" onClick={() => selectProductForEdit(product)}><Pencil className="mr-1 h-3.5 w-3.5" />Sửa</Button></div></div>)}{products.length === 0 && <div className="p-12 text-center text-sm text-slate-500">Chưa có sản phẩm. Hãy tạo sản phẩm đầu tiên ở biểu mẫu bên phải.</div>}</div></div>
               <form onSubmit={handleProductSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">{editingProductId ? "Sửa sản phẩm" : "Thêm sản phẩm"}</h2><p className="mt-1 text-xs text-slate-500">Ảnh và file được lưu trong kho của website.</p></div>{editingProductId && <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingProductId(null); setProductDraft({ ...emptyProduct, categoryId: categories[0]?.id || 0 }); }}>Tạo mới</Button>}</div>

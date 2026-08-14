@@ -110,7 +110,7 @@
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.
 - [x] Cho phép chọn nhiều dòng tồn kho, nhập số lượng mới và lưu cập nhật hàng loạt ngay từ Catalog · Sản phẩm.
-- [ ] Kiểm thử giao diện quản trị hợp nhất và xuất bản cập nhật tồn kho.
+- [x] Kiểm thử giao diện quản trị hợp nhất và xuất bản cập nhật tồn kho.
 - [x] Đã hủy theo yêu cầu: mở rộng danh mục lớn, nhóm con và dòng sản phẩm.
 - [x] Đã hủy theo yêu cầu: quản trị danh mục con và chọn cấp danh mục khi thêm sản phẩm.
 - [x] Đã hủy theo yêu cầu: lọc công khai theo danh mục nhiều cấp.
@@ -121,3 +121,12 @@
 - [x] Hiển thị các nhóm lựa chọn của sản phẩm trên trang chi tiết để khách chọn đúng biến thể trước khi mua.
 - [x] Thêm quản trị nhóm lựa chọn ở cấp sản phẩm, ví dụ Màu sắc, Kiểu và Size, cùng nút tạo tổ hợp biến thể từ các giá trị đã nhập.
 - [x] Cho phép sinh tự động SKU/biến thể từ tổ hợp lựa chọn, sau đó chỉnh riêng giá, tồn kho và trạng thái cho từng tổ hợp.
+- [x] Phân tích file Excel mẫu người dùng cung cấp và xác định ánh xạ cột sang sản phẩm, danh mục, ảnh, giá và biến thể.
+- [x] Xây dựng API quản trị để kiểm tra dữ liệu Excel và nhập hàng loạt sản phẩm/biến thể an toàn.
+- [x] Thêm mục Nhập Excel trong Catalog · Sản phẩm: tải file, xem trước, báo lỗi theo dòng và xác nhận nhập.
+- [x] Kiểm thử nhập liệu bằng file mẫu và viết hướng dẫn định dạng Excel.
+- [x] Chạy đầy đủ luồng xem trước và nhập thực tế file Excel mẫu sau khi người dùng xác nhận danh mục đích, rồi đối chiếu sản phẩm/biến thể được tạo.
+- [ ] Lưu checkpoint sau khi xác nhận kiểm thử nhập Excel thực tế.
+- [x] Nhập file Excel đã xác nhận vào danh mục Nameset Chống Nhiễm và đối chiếu số lượng sản phẩm/biến thể tạo được.
+- [x] Bổ sung các khối nội dung cho trang chủ để giảm khoảng trống và làm rõ lợi ích, quy trình mua và danh mục nổi bật.
+- [x] Kiểm thử giao diện trang chủ sau khi bổ sung nội dung, rồi xuất bản cập nhật.
