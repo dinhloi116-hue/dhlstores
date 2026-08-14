@@ -113,10 +113,14 @@
 - [ ] Kiểm thử, xuất bản và xác minh trực quan ảnh biến thể sau khi sửa lỗi.
 - [x] Phân tích file HTML Tool người dùng cung cấp, bao gồm phụ thuộc, luồng dữ liệu và rủi ro tích hợp.
 - [x] Thêm mục Tool có điều hướng rõ ràng trong DHL Stores và nhúng Tool HTML đã kiểm tra qua khung chạy cô lập.
-- [ ] Kiểm thử Tool trên máy tính/điện thoại, xuất bản và hướng dẫn truy cập.
+- [x] Kiểm thử Tool trên máy tính/điện thoại, xuất bản và hướng dẫn truy cập.
 - [x] Đưa phần chọn biến thể lên đầu khu vực thông tin sản phẩm, ngay sau giá bán.
 - [x] Rút gọn mô tả sản phẩm dưới ảnh và thêm nút Xem thêm / Thu gọn.
-- [ ] Kiểm thử bố cục trang chi tiết trên máy tính/điện thoại và xuất bản cập nhật.
+- [x] Kiểm thử bố cục trang chi tiết trên máy tính/điện thoại và xuất bản cập nhật.
+- [x] Thêm điều khiển sắp xếp SKU/biến thể theo tên, giá và tồn kho trên trang sản phẩm.
+- [x] Chuyển ảnh đại diện sản phẩm và ảnh biến thể sang khung vuông rõ ràng, không phủ chữ hoặc nhãn lên nội dung ảnh.
+- [x] Hiển thị bảng tồn kho theo SKU/biến thể, gồm ảnh nhỏ, trạng thái còn hàng và thao tác chọn biến thể để mua.
+- [ ] Kiểm thử trải nghiệm SKU/tồn kho/ảnh trên máy tính và điện thoại, rồi xuất bản cập nhật.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.

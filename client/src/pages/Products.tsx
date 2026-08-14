@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import StoreLayout from "@/components/StoreLayout";
-import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
@@ -140,16 +139,12 @@ export default function Products() {
             {products.map(p => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                   <div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white">
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
-                    <div className="absolute top-2 left-2">
-                      <Badge className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5">
-                        {lang === 'vi' ? 'Tài liệu số' : 'Digital Asset'}
-                      </Badge>
-                    </div>
+                  <div className="aspect-square overflow-hidden bg-slate-100">
+                    <img src={p.image} alt={p.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
                   </div>
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
+                      <Badge className={`${p.type === 'physical' ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'} mb-2 text-[10px] font-bold px-2 py-0.5`}>{p.type === 'physical' ? (lang === 'vi' ? 'Hàng vật lý' : 'Physical item') : (lang === 'vi' ? 'Tài liệu số' : 'Digital asset')}</Badge>
                       <h3 className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed">
                         {p.name}
                       </h3>
