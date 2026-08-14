@@ -246,3 +246,5 @@
 - [x] Thêm bộ lọc nhanh SKU theo trạng thái xử lý và tìm SKU trong sản phẩm đang chọn.
 - [x] Thiết kế lại hành động chọn nhiều SKU với thanh thao tác rõ ràng, xem trước số SKU bị ảnh hưởng và lưu/cancel trực quan.
 - [x] Kiểm thử trực quan luồng tìm, lọc, chọn và chỉnh sửa SKU thông minh trước khi xuất bản.
+- [x] Thêm phóng to ảnh sản phẩm lớn bên trái khi rê chuột trên trang chi tiết, không áp dụng cho thumbnail SKU.
+- [x] Kiểm thử zoom ảnh lớn trên desktop và trải nghiệm ảnh tĩnh an toàn trên điện thoại trước khi xuất bản.

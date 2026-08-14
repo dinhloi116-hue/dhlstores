@@ -31,4 +31,12 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('max-h-72 overflow-y-auto');
     expect(source).toContain('lg:col-span-7 lg:h-full lg:overflow-y-auto lg:pr-3');
   });
+
+  it("zooms the main product image on desktop hover without changing mobile behavior", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('md:cursor-zoom-in');
+    expect(source).toContain('md:group-hover:scale-[1.65]');
+    expect(source).toContain('Rê chuột để phóng to');
+  });
 });
