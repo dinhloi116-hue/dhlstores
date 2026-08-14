@@ -27,7 +27,7 @@ export default function Account() {
 
   const t = translations[lang];
 
-  const ordersQuery = trpc.store.orders.useQuery(undefined, { enabled: isAuthenticated });
+  const ordersQuery = trpc.store.myOrders.useQuery(undefined, { enabled: isAuthenticated });
   const orders = ordersQuery.data || [];
   const downloadsQuery = trpc.store.downloads.useQuery(undefined, { enabled: isAuthenticated });
   const downloads = downloadsQuery.data || [];
@@ -183,6 +183,7 @@ export default function Account() {
                   </div>
 
                   <div className="p-6 divide-y divide-slate-100">
+                    {order.hasPhysicalItems && <section className="pb-5"><div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Theo dõi đơn hàng</p><p className="mt-1 text-sm font-black text-slate-900">{order.hasPreorderItems ? "Lộ trình Order trước 7–10 ngày" : "Vận chuyển đơn mua ngay"}</p></div>{order.trackingUrl && <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-700"><ExternalLink className="h-3.5 w-3.5" />Mở link theo dõi</a>}</div>{order.hasPreorderItems && <div className="mt-4 grid gap-2 sm:grid-cols-4">{[["ordered", "Đã đặt"], ["central_warehouse", "Hàng về kho trung"], ["ready_hanoi", "Hàng ở Hà Nội"], ["tracking", "Có link theo dõi"]].map(([stage, label], index) => { const completed = ["ordered", "central_warehouse", "ready_hanoi", "tracking"].indexOf(order.trackingStage || "ordered") >= index; return <div key={stage} className={`rounded-lg border px-3 py-2 text-center text-[11px] font-black ${completed ? "border-violet-300 bg-white text-violet-800" : "border-slate-200 bg-slate-100 text-slate-400"}`}>{completed ? "✓ " : ""}{label}</div>; })}</div>}{!order.trackingUrl && <p className="mt-3 text-xs leading-relaxed text-slate-600">{order.hasPreorderItems ? "Chủ cửa hàng sẽ cập nhật lần lượt các mốc thực tế và thêm link vận chuyển khi hàng sẵn sàng gửi." : "Link theo dõi vận chuyển sẽ xuất hiện tại đây sau khi chủ cửa hàng cập nhật."}</p>}</div></section>}
                     {order.items?.map(item => {
                       const p = item.product;
                       const download = downloads.find(resource => resource.orderId === order.id && resource.productId === item.productId);

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { MessageCircleMore, Send, Sparkles, ThumbsUp, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -80,21 +80,21 @@ export default function CustomerContactHub() {
   return (
     <>
       <div className="fixed left-3 top-1/2 z-40 -translate-y-1/2 sm:left-4">
-        <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
-          <DialogTrigger asChild>
+        <Sheet open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+          <SheetTrigger asChild>
             <button className="group flex w-11 flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-white px-2 py-3 text-amber-700 shadow-lg transition hover:-translate-y-1 hover:border-amber-400 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-400 sm:w-12" aria-label="Gửi góp ý cho DHL Stores">
               <ThumbsUp className="h-5 w-5 transition-transform group-hover:scale-110" />
               <span className="[writing-mode:vertical-rl] text-[10px] font-black uppercase tracking-[0.13em]">Góp ý</span>
             </button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md border-amber-100 bg-white p-0">
+          </SheetTrigger>
+          <SheetContent side="left" className="w-full gap-0 border-amber-100 bg-white p-0 sm:max-w-2xl">
             <div className="bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-200 px-6 py-5 text-slate-900">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-xl font-black"><ThumbsUp className="h-5 w-5" />Góp ý cho DHL Stores</DialogTitle>
-                <DialogDescription className="text-sm text-slate-700">Ý kiến của bạn được gửi thẳng tới chủ cửa hàng để cải thiện sản phẩm và trải nghiệm mua sắm.</DialogDescription>
-              </DialogHeader>
+              <SheetHeader className="p-0">
+                <SheetTitle className="flex items-center gap-2 text-xl font-black"><ThumbsUp className="h-5 w-5" />Góp ý cho DHL Stores</SheetTitle>
+                <SheetDescription className="text-sm text-slate-700">Ý kiến của bạn được gửi thẳng tới chủ cửa hàng để cải thiện sản phẩm và trải nghiệm mua sắm.</SheetDescription>
+              </SheetHeader>
             </div>
-            <form onSubmit={onFeedbackSubmit} className="space-y-3 p-6">
+            <form onSubmit={onFeedbackSubmit} className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6 sm:p-8">
               <div className="grid grid-cols-2 gap-3">
                 <input value={feedback.displayName} onChange={event => setFeedback(current => ({ ...current, displayName: event.target.value }))} maxLength={128} placeholder="Tên của bạn (không bắt buộc)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
                 <input value={feedback.contact} onChange={event => setFeedback(current => ({ ...current, contact: event.target.value }))} maxLength={255} placeholder="Zalo hoặc email (tùy chọn)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
@@ -104,28 +104,28 @@ export default function CustomerContactHub() {
                 <option value="issue">Báo lỗi / vấn đề</option>
                 <option value="other">Nội dung khác</option>
               </select>
-              <textarea value={feedback.message} onChange={event => setFeedback(current => ({ ...current, message: event.target.value }))} required maxLength={2000} placeholder="Viết góp ý của bạn tại đây…" className="min-h-32 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
+              <textarea value={feedback.message} onChange={event => setFeedback(current => ({ ...current, message: event.target.value }))} required maxLength={2000} placeholder="Viết góp ý của bạn tại đây…" className="min-h-52 w-full flex-1 resize-none rounded-xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
               <Button type="submit" disabled={!visitorKey || submitFeedback.isPending || !feedback.message.trim()} className="w-full bg-slate-900 font-black text-white hover:bg-slate-800">
                 {submitFeedback.isPending ? "ĐANG GỬI…" : "GỬI GÓP Ý"}
               </Button>
             </form>
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="fixed bottom-4 right-3 z-40 sm:bottom-6 sm:right-5">
-        <Dialog open={chatOpen} onOpenChange={setChatOpen}>
-          <DialogTrigger asChild>
+        <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+          <SheetTrigger asChild>
             <button className="group flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl transition hover:-translate-y-1 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-400">
               <MessageCircleMore className="h-5 w-5 text-cyan-300 transition-transform group-hover:scale-110" />
               <span>Nhắn tin</span>
             </button>
-          </DialogTrigger>
-          <DialogContent className="flex h-[min(680px,calc(100vh-2rem))] max-w-md flex-col gap-0 overflow-hidden border-slate-200 bg-white p-0">
+          </SheetTrigger>
+          <SheetContent side="right" className="flex h-full w-full max-w-none flex-col gap-0 overflow-hidden border-slate-200 bg-white p-0 sm:max-w-2xl">
             <div className="flex items-start justify-between bg-slate-950 px-5 py-4 text-white">
               <div>
-                <DialogTitle className="flex items-center gap-2 text-base font-black"><MessageCircleMore className="h-5 w-5 text-cyan-300" />Trao đổi trực tiếp</DialogTitle>
-                <DialogDescription className="mt-1 text-xs text-slate-300">Chủ DHL Stores sẽ nhận và trả lời trong cổng quản trị.</DialogDescription>
+                <SheetTitle className="flex items-center gap-2 text-base font-black text-white"><MessageCircleMore className="h-5 w-5 text-cyan-300" />Trao đổi trực tiếp</SheetTitle>
+                <SheetDescription className="mt-1 text-xs text-slate-300">Chủ DHL Stores sẽ nhận và trả lời trong cổng quản trị.</SheetDescription>
               </div>
               <Sparkles className="h-5 w-5 text-amber-300" />
             </div>
@@ -144,8 +144,8 @@ export default function CustomerContactHub() {
                 <Button type="submit" size="icon" disabled={!visitorKey || sendMessage.isPending || !chatMessage.trim()} className="h-10 w-10 shrink-0 rounded-xl bg-cyan-700 text-white hover:bg-cyan-600"><Send className="h-4 w-4" /></Button>
               </div>
             </form>
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
       </div>
     </>
   );

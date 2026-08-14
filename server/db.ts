@@ -51,6 +51,7 @@ export interface ProductVariantType {
   image?: string;
   priceAdjustment: string;
   stock: number;
+  sortOrder: number;
   isActive: boolean;
   createdAt: Date;
 }
@@ -122,6 +123,9 @@ export interface OrderType {
   hasPreorderItems?: boolean;
   preorderDiscountAmount?: string;
   preorderEstimatedDays?: string | null;
+  trackingStage?: 'ordered' | 'central_warehouse' | 'ready_hanoi' | 'tracking';
+  trackingUrl?: string | null;
+  isDeleted?: boolean;
   createdAt: Date;
   items?: OrderItemType[];
 }
@@ -479,6 +483,7 @@ function toProductVariantType(variant: typeof productVariants.$inferSelect): Pro
     image: variant.image ?? undefined,
     priceAdjustment: String(variant.priceAdjustment),
     stock: variant.stock,
+    sortOrder: variant.sortOrder,
     isActive: variant.isActive,
     createdAt: variant.createdAt,
   };
@@ -1065,20 +1070,20 @@ export async function getInventoryBoard() {
       reserved.set(key, (reserved.get(key) || 0) + item.quantity);
     }
   }
-  const rows = [] as Array<{ target: "product" | "variant"; id: number; productId: number; variantId: number | null; productName: string; variantLabel: string; sku: string; stock: number; reserved: number; available: number; isActive: boolean }>;
+  const rows = [] as Array<{ target: "product" | "variant"; id: number; productId: number; variantId: number | null; productName: string; variantLabel: string; sku: string; image: string; stock: number; reserved: number; available: number; sortOrder: number; isActive: boolean }>;
   for (const product of allProducts.filter(product => product.type === "physical")) {
     const variants = allVariants.filter(variant => variant.productId === product.id && variant.isActive);
     if (variants.length === 0) {
       const held = reserved.get(`product:${product.id}`) || 0;
-      rows.push({ target: "product", id: product.id, productId: product.id, variantId: null, productName: product.name, variantLabel: "Mặc định", sku: "", stock: product.stock, reserved: held, available: product.stock, isActive: product.isActive !== false });
+      rows.push({ target: "product", id: product.id, productId: product.id, variantId: null, productName: product.name, variantLabel: "Mặc định", sku: "", image: product.image, stock: product.stock, reserved: held, available: product.stock, sortOrder: 0, isActive: product.isActive !== false });
       continue;
     }
     for (const variant of variants) {
       const held = reserved.get(`variant:${variant.id}`) || 0;
-      rows.push({ target: "variant", id: variant.id, productId: product.id, variantId: variant.id, productName: product.name, variantLabel: [variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Biến thể", sku: variant.sku || "", stock: variant.stock, reserved: held, available: variant.stock, isActive: variant.isActive });
+      rows.push({ target: "variant", id: variant.id, productId: product.id, variantId: variant.id, productName: product.name, variantLabel: [variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Biến thể", sku: variant.sku || "", image: variant.image || product.image, stock: variant.stock, reserved: held, available: variant.stock, sortOrder: variant.sortOrder, isActive: variant.isActive });
     }
   }
-  return rows.sort((a, b) => a.productName.localeCompare(b.productName) || a.variantLabel.localeCompare(b.variantLabel));
+  return rows.sort((a, b) => a.productName.localeCompare(b.productName) || a.sortOrder - b.sortOrder || a.variantLabel.localeCompare(b.variantLabel));
 }
 
 export async function bulkSetInventory(input: { changes: Array<{ target: "product" | "variant"; id: number; stock: number }>; reason: string; performedByUserId: number }) {
@@ -1347,6 +1352,7 @@ export type CatalogVariantInput = {
   image?: string;
   priceAdjustment: string;
   stock: number;
+  sortOrder?: number;
   isActive: boolean;
 };
 
@@ -1354,22 +1360,23 @@ export async function getProductVariants(productId: number, includeInactive = fa
   const connection = await getDb();
   if (connection) {
     const rows = await connection.select().from(productVariants).where(eq(productVariants.productId, productId));
-    return rows.filter(variant => includeInactive || variant.isActive).map(toProductVariantType);
+    return rows.filter(variant => includeInactive || variant.isActive).map(toProductVariantType).sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
   }
-  return memoryProductVariants.filter(variant => variant.productId === productId && (includeInactive || variant.isActive));
+  return memoryProductVariants.filter(variant => variant.productId === productId && (includeInactive || variant.isActive)).sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
 }
 
 export async function getAdminProductVariants(productId?: number) {
   if (productId) return getProductVariants(productId, true);
   const connection = await getDb();
-  if (connection) return (await connection.select().from(productVariants)).map(toProductVariantType);
-  return [...memoryProductVariants];
+  if (connection) return (await connection.select().from(productVariants)).map(toProductVariantType).sort((a, b) => a.productId - b.productId || a.sortOrder - b.sortOrder || a.id - b.id);
+  return [...memoryProductVariants].sort((a, b) => a.productId - b.productId || a.sortOrder - b.sortOrder || a.id - b.id);
 }
 
 export async function createProductVariant(input: CatalogVariantInput) {
   const product = await getProductById(input.productId);
   if (!product || product.type !== "physical") throw new Error("Chỉ hàng vật lý mới có biến thể");
   const connection = await getDb();
+  const nextSortOrder = input.sortOrder ?? (await getProductVariants(input.productId, true)).reduce((maximum, variant) => Math.max(maximum, variant.sortOrder), -1) + 1;
   if (connection) {
     const inserted = await connection.insert(productVariants).values({
       productId: input.productId,
@@ -1380,6 +1387,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
       image: input.image?.trim() || null,
       priceAdjustment: input.priceAdjustment,
       stock: input.stock,
+      sortOrder: nextSortOrder,
       isActive: input.isActive,
     });
     const row = await connection.select().from(productVariants).where(eq(productVariants.id, Number(inserted[0].insertId))).limit(1);
@@ -1395,6 +1403,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
     image: input.image?.trim() || undefined,
     priceAdjustment: input.priceAdjustment,
     stock: input.stock,
+    sortOrder: nextSortOrder,
     isActive: input.isActive,
     createdAt: new Date(),
   };
@@ -1420,6 +1429,26 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
   const variant = memoryProductVariants.find(item => item.id === variantId);
   if (!variant) throw new Error("Không tìm thấy biến thể");
   Object.assign(variant, input);
+  return { success: true };
+}
+
+export async function reorderProductVariants(productId: number, variantIds: number[]) {
+  const variants = await getProductVariants(productId, true);
+  if (!variantIds.length || variantIds.length !== variants.length || new Set(variantIds).size !== variantIds.length || variants.some(variant => !variantIds.includes(variant.id))) throw new Error("Danh sách thứ tự SKU không hợp lệ");
+  const connection = await getDb();
+  if (connection) {
+    await connection.transaction(async transaction => {
+      for (let sortOrder = 0; sortOrder < variantIds.length; sortOrder += 1) {
+        const variantId = variantIds[sortOrder];
+        await transaction.update(productVariants).set({ sortOrder }).where(and(eq(productVariants.id, variantId), eq(productVariants.productId, productId)));
+      }
+    });
+  } else {
+    variantIds.forEach((variantId, sortOrder) => {
+      const variant = memoryProductVariants.find(item => item.id === variantId && item.productId === productId);
+      if (variant) variant.sortOrder = sortOrder;
+    });
+  }
   return { success: true };
 }
 
@@ -1782,7 +1811,7 @@ export async function createOrder(userId: number, data: {
   memoryOrders.unshift({
     id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "physical_vietqr" : "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
     shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
-    shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, createdAt: new Date(),
+    shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, trackingStage: "ordered", trackingUrl: null, isDeleted: false, createdAt: new Date(),
   });
   for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes });
   if (data.clearCart !== false) await clearCart(userId);
@@ -1811,13 +1840,13 @@ export async function confirmManualPayment(orderId: number, confirmedByUserId: n
         paymentStatus: "paid",
         paymentReference: confirmationReference,
         paymentConfirmedAt: new Date(),
-      }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.status, "pending"), eq(ordersTable.paymentStatus, "pending")));
+      }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.status, "pending"), eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.isDeleted, false)));
       if (Number(updated[0]?.affectedRows ?? 0) !== 1) throw new Error("ORDER_NOT_PENDING");
       if (order.discountCode) await transaction.update(discountCodes).set({ usedCount: sql`${discountCodes.usedCount} + 1` }).where(eq(discountCodes.code, order.discountCode));
       return { success: true, orderId: order.id, paymentStatus: "paid" as const };
     });
   }
-  const order = memoryOrders.find(item => item.id === orderId && item.status === "pending" && item.paymentStatus === "pending");
+  const order = memoryOrders.find(item => item.id === orderId && !item.isDeleted && item.status === "pending" && item.paymentStatus === "pending");
   if (!order) throw new Error("ORDER_NOT_PENDING");
   order.status = order.hasPhysicalItems ? "processing" : "completed";
   order.paymentStatus = "paid";
@@ -1836,7 +1865,7 @@ export async function getOrders(userId?: number, isAdmin?: boolean) {
     const orderRows = isAdmin
       ? await connection.select().from(ordersTable).orderBy(desc(ordersTable.createdAt))
       : await connection.select().from(ordersTable).where(eq(ordersTable.userId, userId!)).orderBy(desc(ordersTable.createdAt));
-    return Promise.all(orderRows.map(async order => {
+    return Promise.all(orderRows.filter(order => !order.isDeleted).map(async order => {
       const itemRows = await connection.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
       return {
         ...order,
@@ -1851,7 +1880,7 @@ export async function getOrders(userId?: number, isAdmin?: boolean) {
       };
     }));
   }
-  let list = [...memoryOrders];
+  let list = memoryOrders.filter(order => !order.isDeleted);
   if (!isAdmin && userId) {
     list = list.filter(o => o.userId === userId);
   }
@@ -1869,13 +1898,64 @@ export async function getOrders(userId?: number, isAdmin?: boolean) {
 export async function updateOrderStatus(orderId: number, status: OrderStatusType) {
   const connection = await getDb();
   if (connection) {
-    await connection.update(ordersTable).set({ status }).where(eq(ordersTable.id, orderId));
+    await connection.update(ordersTable).set({ status }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.isDeleted, false)));
     return { success: true };
   }
-  const order = memoryOrders.find(o => o.id === orderId);
+  const order = memoryOrders.find(o => o.id === orderId && !o.isDeleted);
   if (order) {
     order.status = status;
   }
+  return { success: true };
+}
+
+export async function updateOrderTracking(orderId: number, stage: NonNullable<OrderType["trackingStage"]>, trackingUrl?: string) {
+  const normalizedTrackingUrl = trackingUrl?.trim() || null;
+  const connection = await getDb();
+  if (connection) {
+    const updated = await connection.update(ordersTable).set({ trackingStage: stage, trackingUrl: normalizedTrackingUrl }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.isDeleted, false)));
+    if (Number(updated[0]?.affectedRows ?? 0) !== 1) throw new Error("Không tìm thấy đơn hàng");
+    return { success: true };
+  }
+  const order = memoryOrders.find(item => item.id === orderId && !item.isDeleted);
+  if (!order) throw new Error("Không tìm thấy đơn hàng");
+  order.trackingStage = stage;
+  order.trackingUrl = normalizedTrackingUrl;
+  return { success: true };
+}
+
+export async function deleteOrder(orderId: number, performedByUserId: number) {
+  const restoreStock = async (items: Array<{ productId: number; variantId?: number | null; quantity: number; fulfillmentMode?: string | null }>, transaction?: Pick<NonNullable<Awaited<ReturnType<typeof getDb>>>, "update">) => {
+    for (const item of items) {
+      if (item.fulfillmentMode === "preorder") continue;
+      if (transaction) {
+        if (item.variantId) await transaction.update(productVariants).set({ stock: sql`${productVariants.stock} + ${item.quantity}` }).where(eq(productVariants.id, item.variantId));
+        else await transaction.update(products).set({ stock: sql`${products.stock} + ${item.quantity}` }).where(and(eq(products.id, item.productId), eq(products.type, "physical")));
+      } else if (item.variantId) {
+        const variant = memoryProductVariants.find(candidate => candidate.id === item.variantId);
+        if (variant) variant.stock += item.quantity;
+      } else {
+        const product = memoryProducts.find(candidate => candidate.id === item.productId);
+        if (product?.type === "physical") product.stock += item.quantity;
+      }
+    }
+  };
+  const connection = await getDb();
+  if (connection) {
+    return connection.transaction(async transaction => {
+      const records = await transaction.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
+      const order = records[0];
+      if (!order || order.isDeleted) throw new Error("Không tìm thấy đơn hàng");
+      if (order.paymentStatus === "pending" && order.hasPhysicalItems) await restoreStock(await transaction.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, orderId)), transaction);
+      await transaction.update(ordersTable).set({ isDeleted: true }).where(eq(ordersTable.id, orderId));
+      await transaction.insert(adminActivity).values({ action: "order_deleted", targetType: "order", targetId: orderId, details: JSON.stringify({ paymentStatus: order.paymentStatus, stockRestored: order.paymentStatus === "pending" && order.hasPhysicalItems }), performedByUserId });
+      return { success: true };
+    });
+  }
+  const order = memoryOrders.find(item => item.id === orderId && !item.isDeleted);
+  if (!order) throw new Error("Không tìm thấy đơn hàng");
+  if (order.paymentStatus === "pending" && order.hasPhysicalItems) await restoreStock(memoryOrderItems.filter(item => item.orderId === orderId));
+  order.isDeleted = true;
+  memoryAdminActivity.unshift({ id: nextAdminActivityId++, action: "order_deleted", targetType: "order", targetId: orderId, details: JSON.stringify({ paymentStatus: order.paymentStatus, stockRestored: order.paymentStatus === "pending" && order.hasPhysicalItems }), performedByUserId, createdAt: new Date() });
   return { success: true };
 }
 
@@ -1927,10 +2007,11 @@ export async function getOrderPaymentForUser(userId: number, orderId: number) {
     const result = await connection.select().from(ordersTable).where(and(
       eq(ordersTable.id, orderId),
       eq(ordersTable.userId, userId),
+      eq(ordersTable.isDeleted, false),
     )).limit(1);
     return result[0];
   }
-  return memoryOrders.find(order => order.id === orderId && order.userId === userId);
+  return memoryOrders.find(order => order.id === orderId && order.userId === userId && !order.isDeleted);
 }
 
 export const DOWNLOAD_ACCESS_WINDOW_MS = 7 * 24 * 60 * 60 * 1_000;

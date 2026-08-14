@@ -68,7 +68,6 @@ export default function ProductDetail() {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [variantSort, setVariantSort] = useState<'label' | 'price-asc' | 'price-desc'>('label');
   const [fulfillmentMode, setFulfillmentMode] = useState<'in_stock' | 'preorder'>('in_stock');
   const [hoveredPreview, setHoveredPreview] = useState<{ variantId: number; x: number; y: number } | null>(null);
   const [previewVariantId, setPreviewVariantId] = useState<number | null>(null);
@@ -77,11 +76,7 @@ export default function ProductDetail() {
   const [inlinePaymentExpired, setInlinePaymentExpired] = useState(false);
   const [inlineShipping, setInlineShipping] = useState({ name: "", phone: "", address: "", note: "", method: "standard" as "pickup" | "standard" | "express" });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
-  const sortedVariants = [...variants].sort((a, b) => {
-    if (variantSort === 'price-asc') return Number(a.priceAdjustment) - Number(b.priceAdjustment);
-    if (variantSort === 'price-desc') return Number(b.priceAdjustment) - Number(a.priceAdjustment);
-    return formatVariantOptions(a).localeCompare(formatVariantOptions(b), 'vi');
-  });
+  const sortedVariants = variants;
   const previewVariant = variants.find(variant => variant.id === previewVariantId);
   const hoveredVariant = variants.find(variant => variant.id === hoveredPreview?.variantId);
   const optionGroups = Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).map(option => option.name))).map(name => ({ name, values: Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).filter(option => option.name === name).map(option => option.value))) }));
@@ -236,9 +231,9 @@ export default function ProductDetail() {
 
             {product.type === "physical" && variants.length > 0 && (
               <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <div><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản & xem tồn kho</label><p className="mt-1 text-xs text-emerald-700">Chọn theo thuộc tính hoặc chọn trực tiếp một dòng SKU có ảnh và số lượng còn lại.</p></div>
-                  <label className="text-xs font-bold text-slate-700">Sắp xếp SKU<select value={variantSort} onChange={event => setVariantSort(event.target.value as typeof variantSort)} className="mt-1 block h-9 w-full rounded-lg border border-emerald-200 bg-white px-2 text-xs font-bold text-slate-800"><option value="label">Theo tên</option><option value="price-asc">Giá thấp → cao</option><option value="price-desc">Giá cao → thấp</option></select></label>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản & xem tồn kho</label>
+                  <p className="mt-1 text-xs text-emerald-700">Thứ tự SKU được cửa hàng sắp xếp sẵn. Chọn theo thuộc tính hoặc chọn trực tiếp một dòng SKU có ảnh và số lượng còn lại.</p>
                 </div>
                 {optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = sortedVariants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = sortedVariants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}
                 <div className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">SKU đang chọn</p><p className="mt-1 text-xs font-semibold text-emerald-900">{selectedVariant ? formatVariantOptions(selectedVariant) : 'Chọn một phiên bản ở phía trên'}</p></div><div><label className="text-[10px] font-black uppercase tracking-wide text-slate-500">Số lượng</label><div className="mt-1 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-8 w-8 font-black text-slate-700 hover:text-black">−</button><span className="w-8 text-center text-sm font-black text-slate-900">{quantity}</span><button type="button" onClick={() => setQuantity(quantity + 1)} disabled={product.type === "physical" && !isPreorder && quantity >= availableStock} className="h-8 w-8 font-black text-slate-700 hover:text-black disabled:cursor-not-allowed disabled:opacity-35">+</button></div></div></div>

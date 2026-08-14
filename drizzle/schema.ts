@@ -189,6 +189,7 @@ export const productVariants = mysqlTable("product_variants", {
   image: text("image"),
   priceAdjustment: decimal("priceAdjustment", { precision: 12, scale: 2 }).default("0").notNull(),
   stock: int("stock").default(0).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -244,6 +245,9 @@ export const orders = mysqlTable("orders", {
   hasPreorderItems: boolean("hasPreorderItems").default(false).notNull(),
   preorderDiscountAmount: decimal("preorderDiscountAmount", { precision: 12, scale: 2 }).default("0").notNull(),
   preorderEstimatedDays: varchar("preorderEstimatedDays", { length: 32 }),
+  trackingStage: mysqlEnum("trackingStage", ["ordered", "central_warehouse", "ready_hanoi", "tracking"]).default("ordered").notNull(),
+  trackingUrl: text("trackingUrl"),
+  isDeleted: boolean("isDeleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

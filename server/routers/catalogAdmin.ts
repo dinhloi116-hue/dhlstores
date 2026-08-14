@@ -98,6 +98,10 @@ export const catalogAdminRouter = router({
   })).mutation(({ input }) =>
     db.updateProductVariant(input.variantId, { ...input.data, priceAdjustment: String(input.data.priceAdjustment) }),
   ),
+  reorderProductVariants: adminProcedure.input(z.object({
+    productId: z.number().int().positive(),
+    variantIds: z.array(z.number().int().positive()).min(1).max(1_000),
+  })).mutation(({ input }) => db.reorderProductVariants(input.productId, input.variantIds)),
   productOptionGroups: adminProcedure.input(z.object({ productId: z.number().int().positive() })).query(({ input }) =>
     db.getProductOptionGroups(input.productId),
   ),

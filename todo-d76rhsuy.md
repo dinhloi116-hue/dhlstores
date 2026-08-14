@@ -190,3 +190,11 @@
 - [x] Đồng bộ hướng dẫn mua hàng công khai để bỏ mô tả SePay/cú pháp cũ, nêu QR Techcombank và bước chủ cửa hàng xác nhận tiền về.
 - [x] Đặt mã SKU và trạng thái/số lượng tồn kho sát nhau trên cùng một hàng trong bảng SKU trang sản phẩm, rõ ràng ở desktop và điện thoại.
 - [x] Kiểm thử trực quan bố cục SKU–tồn kho mới trên desktop và điện thoại trước khi xuất bản.
+- [x] Sắp xếp quản trị sản phẩm theo ba cột: danh sách sản phẩm bên trái, tồn kho SKU có ảnh ở giữa và biểu mẫu sửa sản phẩm bên phải.
+- [x] Hiển thị ảnh biến thể/SKU đầy đủ trong tồn kho quản trị để đối chiếu nhanh.
+- [x] Mở rộng hộp góp ý và nhắn tin thành cửa sổ lớn, dễ đọc và dễ trả lời như hộp thoại chính.
+- [x] Cho phép chủ cửa hàng xóa đơn hàng an toàn, hoàn tồn kho nếu đơn chưa thanh toán và ghi lại thao tác.
+- [x] Thêm trang Đơn hàng của tôi cho khách với trạng thái hiện tại, ghi chú và liên kết theo dõi giao hàng do chủ cửa hàng nhập.
+- [x] Thêm mốc Order: Đã đặt, Hàng đã về kho trung, Hàng đã ở Hà Nội sẵn sàng gửi và liên kết theo dõi sau cùng; chủ cửa hàng tự tích theo thực tế.
+- [x] Di chuyển sắp xếp SKU sang quản trị; thứ tự chủ cửa hàng đặt được dùng cố định trên trang sản phẩm, không cho khách tự sắp xếp.
+- [x] Viết kiểm thử và kiểm tra trực quan quản trị ba cột, xóa đơn, theo dõi đơn, mốc Order, liên kết giao hàng và thứ tự SKU.

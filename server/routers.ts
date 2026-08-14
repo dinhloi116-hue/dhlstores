@@ -292,6 +292,11 @@ export const appRouter = router({
       return await db.getOrders(ctx.user.id, isAdmin);
     }),
 
+    myOrders: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getOrders(ctx.user.id, false);
+    }),
+
     paymentStatus: protectedProcedure
       .input(z.object({ orderId: z.number() }))
       .query(async ({ ctx, input }) => {
@@ -324,6 +329,20 @@ export const appRouter = router({
         }
         return await db.updateOrderStatus(input.orderId, input.status);
       }),
+
+    updateOrderTracking: adminProcedure
+      .input(z.object({
+        orderId: z.number().int().positive(),
+        stage: z.enum(["ordered", "central_warehouse", "ready_hanoi", "tracking"]),
+        trackingUrl: z.string().trim().url("Link theo dõi chưa hợp lệ").max(4096).optional(),
+      }).superRefine((value, context) => {
+        if (value.stage === "tracking" && !value.trackingUrl) context.addIssue({ code: z.ZodIssueCode.custom, path: ["trackingUrl"], message: "Vui lòng nhập link theo dõi trước khi hoàn tất đơn" });
+      }))
+      .mutation(({ input }) => db.updateOrderTracking(input.orderId, input.stage, input.trackingUrl)),
+
+    deleteOrder: adminProcedure
+      .input(z.object({ orderId: z.number().int().positive() }))
+      .mutation(({ ctx, input }) => db.deleteOrder(input.orderId, ctx.user.id)),
 
     usersList: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
