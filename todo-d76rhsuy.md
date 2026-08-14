@@ -140,7 +140,7 @@
 - [ ] Kiểm thử trực tiếp preview ảnh SKU trên viewport điện thoại: chạm thumbnail, xác nhận ảnh lớn mở ngoài ô thumbnail và đóng an toàn.
 - [ ] Chụp bằng chứng preview ảnh SKU đang mở trên điện thoại và xác nhận vẫn chọn SKU bình thường sau khi đóng.
 - [x] Việt hóa toàn bộ nhãn, hướng dẫn và biểu mẫu cấu hình QR/ngân hàng cho hàng vật lý.
-- [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
+- [x] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.
 - [x] Cho phép chọn nhiều dòng tồn kho, nhập số lượng mới và lưu cập nhật hàng loạt ngay từ Catalog · Sản phẩm.
@@ -186,7 +186,7 @@
 - [x] Dùng QR Techcombank chung cho cả hàng số và hàng vật lý; không hiển thị hoặc yêu cầu cú pháp/nội dung chuyển khoản từ khách.
 - [x] Giữ lựa chọn SKU, số lượng, Order trước và thông tin giao hàng khi khách mở QR tại trang sản phẩm.
 - [x] Điều chỉnh tạo đơn, trạng thái chờ thanh toán và xử lý xác nhận để tương thích với QR chung không có nội dung đối soát.
-- [ ] Kiểm thử hiển thị QR tại trang sản phẩm, tạo đơn và cách chủ cửa hàng xác nhận đơn thanh toán không có cú pháp.
+- [x] Đã thay thế theo yêu cầu mới: kiểm thử QR VietinBank SePay tự đối soát cho digital và QR Techcombank không cú pháp, xác nhận thủ công cho hàng vật lý.
 - [x] Đồng bộ hướng dẫn mua hàng công khai để bỏ mô tả SePay/cú pháp cũ, nêu QR Techcombank và bước chủ cửa hàng xác nhận tiền về.
 - [x] Đặt mã SKU và trạng thái/số lượng tồn kho sát nhau trên cùng một hàng trong bảng SKU trang sản phẩm, rõ ràng ở desktop và điện thoại.
 - [x] Kiểm thử trực quan bố cục SKU–tồn kho mới trên desktop và điện thoại trước khi xuất bản.
@@ -209,3 +209,6 @@
 - [x] Áp dụng giá sỉ an toàn vào giỏ hàng, mua ngay, đơn hàng, QR và tổng tiền thanh toán.
 - [x] Viết kiểm thử, kiểm tra trực quan desktop/mobile và xuất bản quản trị SKU cùng giá sỉ mới.
 - [x] Sửa lịch sử đơn hàng để đơn vật lý không hiển thị trạng thái hoặc hướng dẫn tải tệp; thay bằng trạng thái xử lý/giao hàng phù hợp.
+- [x] Tự gán icon phù hợp cho toàn bộ danh mục hiện có, gồm cả các nhóm hàng vật lý và tài nguyên số.
+- [x] Sửa thẻ hàng thể thao trên điện thoại: bỏ lớp chữ/nhãn phủ ảnh, giữ ảnh vuông rõ ràng và đưa thông tin sản phẩm xuống phần nội dung thẻ.
+- [x] Kiểm tra giao diện danh mục và thẻ hàng thể thao trên desktop/mobile trước khi xuất bản.
