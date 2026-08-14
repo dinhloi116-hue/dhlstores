@@ -5,7 +5,7 @@ import { adminProcedure, publicProcedure, protectedProcedure, ownerProcedure, ro
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
-import { buildStoreVietQrUrl } from "./sepay";
+import { buildSePayQrUrl, buildStoreVietQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
 
@@ -269,8 +269,10 @@ export const appRouter = router({
         await requireActiveAccount(ctx.user.id);
         const order = await db.createOrder(ctx.user.id, input);
         const siteSettings = await db.getSiteSettings();
-        const qrUrl = buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount));
-        return { ...order, qrUrl };
+        const qrUrl = order.hasPhysicalItems
+          ? buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount))
+          : buildSePayQrUrl(order.orderCode, Number(order.totalAmount));
+        return { ...order, qrUrl, paymentFlow: order.hasPhysicalItems ? "manual_techcombank" as const : "sepay_vietinbank" as const };
       }),
 
     quickCheckout: protectedProcedure
@@ -282,8 +284,10 @@ export const appRouter = router({
         await requireActiveAccount(ctx.user.id);
         const order = await db.createOrder(ctx.user.id, { totalAmount: 0, items: [{ ...input.item, price: 0 }], shipping: input.shipping, clearCart: false });
         const siteSettings = await db.getSiteSettings();
-        const qrUrl = buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount));
-        return { ...order, qrUrl };
+        const qrUrl = order.hasPhysicalItems
+          ? buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount))
+          : buildSePayQrUrl(order.orderCode, Number(order.totalAmount));
+        return { ...order, qrUrl, paymentFlow: order.hasPhysicalItems ? "manual_techcombank" as const : "sepay_vietinbank" as const };
       }),
 
     orders: protectedProcedure.query(async ({ ctx }) => {

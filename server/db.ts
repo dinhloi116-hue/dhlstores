@@ -1785,7 +1785,7 @@ export async function createOrder(userId: number, data: {
         if (Number(updated[0]?.affectedRows ?? 0) !== 1) throw new Error("Sản phẩm hoặc biến thể vừa hết tồn kho. Vui lòng cập nhật giỏ hàng.");
       }
       const inserted = await transaction.insert(ordersTable).values({
-        userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "physical_vietqr" : "sepay_vietqr",
+        userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr",
         discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
         shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
         shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null,
@@ -1809,7 +1809,7 @@ export async function createOrder(userId: number, data: {
   }
   const orderId = nextOrderId++;
   memoryOrders.unshift({
-    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "physical_vietqr" : "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
+    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
     shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
     shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, trackingStage: "ordered", trackingUrl: null, isDeleted: false, createdAt: new Date(),
   });
@@ -1818,13 +1818,13 @@ export async function createOrder(userId: number, data: {
   return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
 }
 
-/** Xác nhận đơn bằng tay khi khách chuyển vào QR chung không kèm nội dung đối soát. */
+/** Xác nhận đơn hàng vật lý bằng tay khi khách chuyển vào QR Techcombank không kèm nội dung đối soát. */
 export async function confirmManualPayment(orderId: number, confirmedByUserId: number) {
   const confirmationReference = `MANUAL-${orderId}-${Date.now()}`;
   const connection = await getDb();
   if (connection) {
     return connection.transaction(async transaction => {
-      const rows = await transaction.select().from(ordersTable).where(and(eq(ordersTable.id, orderId), eq(ordersTable.status, "pending"), eq(ordersTable.paymentStatus, "pending"))).limit(1);
+      const rows = await transaction.select().from(ordersTable).where(and(eq(ordersTable.id, orderId), eq(ordersTable.status, "pending"), eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.hasPhysicalItems, true), eq(ordersTable.isDeleted, false))).limit(1);
       const order = rows[0];
       if (!order) throw new Error("ORDER_NOT_PENDING");
       await transaction.insert(paymentTransactions).values({
@@ -1846,7 +1846,7 @@ export async function confirmManualPayment(orderId: number, confirmedByUserId: n
       return { success: true, orderId: order.id, paymentStatus: "paid" as const };
     });
   }
-  const order = memoryOrders.find(item => item.id === orderId && !item.isDeleted && item.status === "pending" && item.paymentStatus === "pending");
+  const order = memoryOrders.find(item => item.id === orderId && !item.isDeleted && item.hasPhysicalItems && item.status === "pending" && item.paymentStatus === "pending");
   if (!order) throw new Error("ORDER_NOT_PENDING");
   order.status = order.hasPhysicalItems ? "processing" : "completed";
   order.paymentStatus = "paid";
@@ -2057,8 +2057,9 @@ export async function confirmSePayPayment(input: {
     )).limit(1);
     if (duplicate[0]) return { success: true, alreadyProcessed: true };
 
-    const pendingOrders = await connection.select().from(ordersTable).where(and(eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.status, "pending")));
+    const pendingOrders = await connection.select().from(ordersTable).where(and(eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.status, "pending"), eq(ordersTable.isDeleted, false)));
     const matchedOrder = pendingOrders.find(order =>
+      !order.hasPhysicalItems &&
       normalizedContent.includes(order.orderCode.toUpperCase()) && Number(order.totalAmount) === Math.round(input.transferAmount),
     );
     if (!matchedOrder) return { success: false, reason: "No matching pending order" };
@@ -2090,6 +2091,8 @@ export async function confirmSePayPayment(input: {
   const duplicateKey = `sepay:${input.providerTransactionId}`;
   if (memoryProcessedTransactions.has(duplicateKey)) return { success: true, alreadyProcessed: true };
   const matchedOrder = memoryOrders.find(order =>
+    !order.isDeleted &&
+    !order.hasPhysicalItems &&
     order.paymentStatus === "pending" &&
     order.status === "pending" &&
     normalizedContent.includes(order.orderCode.toUpperCase()) &&

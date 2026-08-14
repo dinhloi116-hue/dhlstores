@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import { appRouter } from "./routers";
-import { confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, isDownloadAccessActive, saveProductDownloadLink } from "./db";
+import { confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, isDownloadAccessActive, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createMockContext(): TrpcContext {
@@ -120,7 +120,7 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(checkout.totalAmount).toBe(2000);
   });
 
-  it("creates a QR order directly from a product and lets the owner confirm payment without a transfer memo", async () => {
+  it("creates a VietinBank SePay QR for a digital product and unlocks downloads after automatic reconciliation", async () => {
     const customerCtx = createMockContext();
     const customerCaller = appRouter.createCaller(customerCtx);
     const directOrder = await customerCaller.store.quickCheckout({
@@ -128,12 +128,10 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     });
     expect(directOrder.orderCode).toMatch(/^DHL/);
     expect(directOrder.totalAmount).toBe(250000);
+    expect(directOrder.paymentFlow).toBe("sepay_vietinbank");
 
     await saveProductDownloadLink(1, "https://drive.google.com/file/d/direct-qr-resource/view");
-    const ownerCtx = createMockContext();
-    ownerCtx.user = { ...ownerCtx.user!, id: 9999, role: "owner" };
-    const ownerCaller = appRouter.createCaller(ownerCtx);
-    await expect(ownerCaller.operations.confirmManualPayment({ orderId: directOrder.orderId })).resolves.toMatchObject({ success: true, paymentStatus: "paid" });
+    await expect(confirmSePayPayment({ providerTransactionId: "sepay-digital-qr", transferAmount: directOrder.totalAmount, transferContent: `SEVQR ${directOrder.orderCode}`, gateway: "VietinBank", paymentReference: "DIGITAL-QR" })).resolves.toMatchObject({ success: true });
 
     const orders = await customerCaller.store.orders();
     expect(orders.find(order => order.id === directOrder.orderId)).toMatchObject({ paymentStatus: "paid", status: "completed" });
@@ -192,7 +190,9 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
 
     expect(checkout.totalAmount).toBe(135000);
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
-    const confirmation = await confirmSePayPayment({ providerTransactionId: `sepay-physical-${suffix}`, transferAmount: 135000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `PHYSICAL-${suffix}` });
+    expect(checkout.paymentFlow).toBe("manual_techcombank");
+    await expect(confirmSePayPayment({ providerTransactionId: `sepay-reject-physical-${suffix}`, transferAmount: 135000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `REJECT-PHYSICAL-${suffix}` })).resolves.toEqual({ success: false, reason: "No matching pending order" });
+    const confirmation = await confirmManualPayment(checkout.orderId, 1);
     expect(confirmation.success).toBe(true);
     const orders = await caller.store.orders();
     expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "30000.00" });

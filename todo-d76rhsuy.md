@@ -197,4 +197,8 @@
 - [x] Thêm trang Đơn hàng của tôi cho khách với trạng thái hiện tại, ghi chú và liên kết theo dõi giao hàng do chủ cửa hàng nhập.
 - [x] Thêm mốc Order: Đã đặt, Hàng đã về kho trung, Hàng đã ở Hà Nội sẵn sàng gửi và liên kết theo dõi sau cùng; chủ cửa hàng tự tích theo thực tế.
 - [x] Di chuyển sắp xếp SKU sang quản trị; thứ tự chủ cửa hàng đặt được dùng cố định trên trang sản phẩm, không cho khách tự sắp xếp.
-- [x] Viết kiểm thử và kiểm tra trực quan quản trị ba cột, xóa đơn, theo dõi đơn, mốc Order, liên kết giao hàng và thứ tự SKU.
+- [ ] Viết kiểm thử và kiểm tra trực quan quản trị ba cột, xóa đơn, theo dõi đơn, mốc Order, liên kết giao hàng và thứ tự SKU.
+- [x] Khôi phục QR VietinBank đã liên kết SePay cho đơn chỉ có sản phẩm digital để tự đối soát và mở tải ngay trong 7 ngày.
+- [x] Giữ QR Techcombank chỉ cho đơn có hàng vật lý, không yêu cầu cú pháp và xác nhận tiền về thủ công.
+- [x] Cập nhật QR, nhãn trạng thái và hướng dẫn mua tại trang sản phẩm theo đúng loại đơn hàng.
+- [x] Kiểm thử đối soát SePay đơn digital, xác nhận thủ công đơn vật lý và quyền tải tệp sau thanh toán.
