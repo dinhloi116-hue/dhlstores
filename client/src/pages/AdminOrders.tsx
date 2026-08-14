@@ -113,7 +113,7 @@ export default function AdminOrders() {
   });
   const savedVariantOrder = variants.map(variant => variant.id);
   const orderedVariants = variantOrderDraft.length === variants.length ? variantOrderDraft.map(id => variants.find(variant => variant.id === id)).filter((variant): variant is typeof variants[number] => Boolean(variant)) : [...variants];
-  const hasPendingSkuOrder = skuSortMode === "manual" && variantOrderDraft.length === savedVariantOrder.length && variantOrderDraft.some((id, index) => id !== savedVariantOrder[index]);
+  const hasPendingSkuOrder = variantOrderDraft.length === savedVariantOrder.length && variantOrderDraft.some((id, index) => id !== savedVariantOrder[index]);
   const visibleSkuVariants = [...orderedVariants].sort((a, b) => {
     if (skuSortMode === "name") return `${a.color || ""} ${a.size || ""} ${a.sku || ""}`.localeCompare(`${b.color || ""} ${b.size || ""} ${b.sku || ""}`, "vi");
     if (skuSortMode === "priceLow") return Number(a.priceAdjustment) - Number(b.priceAdjustment) || a.sortOrder - b.sortOrder;
@@ -166,6 +166,16 @@ export default function AdminOrders() {
     setSkuDrafts(Object.fromEntries(variants.map(variant => [variant.id, { priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive }])));
     setVariantOrderDraft(variants.map(variant => variant.id));
   }, [selectedVariantProductId, variantsQuery.data]);
+
+  useEffect(() => {
+    if (skuSortMode === "manual" || variants.length === 0) return;
+    const ordered = [...variants].sort((a, b) => {
+      if (skuSortMode === "name") return `${a.color || ""} ${a.size || ""} ${a.sku || ""}`.localeCompare(`${b.color || ""} ${b.size || ""} ${b.sku || ""}`, "vi") || a.sortOrder - b.sortOrder;
+      if (skuSortMode === "priceLow") return Number(a.priceAdjustment) - Number(b.priceAdjustment) || a.sortOrder - b.sortOrder;
+      return Number(b.priceAdjustment) - Number(a.priceAdjustment) || a.sortOrder - b.sortOrder;
+    }).map(variant => variant.id);
+    setVariantOrderDraft(ordered);
+  }, [skuSortMode, variantsQuery.data]);
 
   useEffect(() => {
     setWholesaleTierDrafts(wholesaleTiers.length ? wholesaleTiers.map(tier => ({ minQuantity: String(tier.minQuantity), unitPrice: tier.unitPrice })) : [{ minQuantity: "10", unitPrice: "" }, { minQuantity: "25", unitPrice: "" }, { minQuantity: "50", unitPrice: "" }]);
@@ -237,6 +247,7 @@ export default function AdminOrders() {
   const reorderProductVariants = trpc.catalogAdmin.reorderProductVariants.useMutation({
     onSuccess: () => {
       toast.success("Đã lưu thứ tự hiển thị SKU");
+      setSkuSortMode("manual");
       utils.catalogAdmin.productVariants.invalidate();
       utils.store.productVariants.invalidate();
     },

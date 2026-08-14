@@ -26,4 +26,13 @@ describe("SKU order save flow", () => {
     expect(source).toContain('Lưu toàn bộ thứ tự SKU');
     expect(source).toContain('Tìm thấy {catalogSearchResults.length} sản phẩm');
   });
+
+  it("turns name and price sort rules into a saveable SKU order", () => {
+    const source = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('if (skuSortMode === "manual" || variants.length === 0) return');
+    expect(source).toContain('setVariantOrderDraft(ordered)');
+    expect(source).toContain('setSkuSortMode("manual")');
+    expect(source).toContain('const hasPendingSkuOrder = variantOrderDraft.length === savedVariantOrder.length');
+  });
 });

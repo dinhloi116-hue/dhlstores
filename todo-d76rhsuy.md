@@ -237,3 +237,6 @@
 - [x] Tách trang chi tiết desktop thành ảnh sản phẩm cố định bên trái và vùng thao tác cuộn độc lập bên phải.
 - [x] Bảo đảm hover thumbnail SKU trong bảng tồn kho mở preview ảnh lớn rõ ràng ngay trong vùng thao tác bên phải.
 - [x] Kiểm thử vùng cuộn độc lập, preview SKU và bố cục điện thoại trước khi xuất bản.
+- [x] Khi chọn sắp xếp SKU theo tên hoặc giá, tạo thứ tự nháp thực tế để nút Lưu toàn bộ thứ tự SKU được bật.
+- [x] Cho phép lưu thứ tự theo tên/giá bằng một lần bấm và quay về chế độ thứ tự thủ công sau khi lưu.
+- [x] Kiểm thử sắp xếp theo tên/giá, nút lưu và thứ tự khách nhìn thấy trước khi xuất bản.
