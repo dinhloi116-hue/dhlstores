@@ -105,8 +105,8 @@
 - [x] Kiểm thử điều hướng tab quản trị mới và xuất bản cập nhật.
 - [x] Thiết kế lại điều hướng quản trị theo nhóm Catalog, Kho, Đơn hàng và Khách hàng để thao tác dễ hiểu hơn.
 - [x] Thêm nút trên từng dòng tồn kho để mở đúng sản phẩm hoặc biến thể tương ứng trong màn hình chỉnh sửa.
-- [ ] Hiển thị trạng thái tồn, SKU và biến thể đồng bộ giữa Tồn kho, Sản phẩm và Biến thể; kiểm thử trực quan luồng thực tế.
-- [ ] Đối chiếu trực quan cùng một SKU/biến thể giữa danh sách Sản phẩm, bảng Tồn kho trong Catalog và tab Biến thể trước khi đóng hạng mục đồng bộ tồn kho.
+- [x] Đã thay thế theo bố cục ba cột: trạng thái tồn, SKU và biến thể được thao tác trực tiếp ở cột SKU trong Catalog; không còn bảng Tồn kho riêng.
+- [x] Đối chiếu trực quan cùng một SKU giữa cột SKU Catalog và tab Biến thể, gồm mã SKU, tồn kho, giá điều chỉnh và trạng thái bán, trước khi đóng đồng bộ quản trị.
 - [x] Bổ sung trường ảnh riêng cho biến thể để lưu URL ảnh phiên bản từ Excel và quản trị thủ công.
 - [x] Cập nhật luồng nhập Excel để đưa cột Ảnh phiên bản vào từng biến thể thay vì bỏ mất dữ liệu.
 - [x] Khôi phục ảnh cho 38 biến thể Nameset đã nhập và cho ảnh thay đổi theo biến thể trên trang chi tiết.

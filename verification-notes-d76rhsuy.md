@@ -6,3 +6,5 @@
 - Trang sản phẩm vật lý hiển thị SKU theo thứ tự cửa hàng đặt, tồn kho từng SKU và lựa chọn Order trước.
 - Mở trực tiếp `/admin?editProduct=30001` trong phiên chủ cửa hàng đã nạp sản phẩm vật lý vào cột SKU, với 38 SKU, sắp xếp nhanh, chỉnh giá/tồn kho từng dòng, chọn nhiều và biểu mẫu giá sỉ ở cột phải.
 - Nút Sửa trong Catalog mở biểu mẫu đúng sản phẩm; nút bút chì của dòng SKU trong tab Biến thể mở biểu mẫu “Sửa biến thể” đúng trong phiên chủ cửa hàng.
+- Cột SKU Catalog có thể hiển thị tạm thời 0 SKU trong lúc truy vấn đang tải; sau khi dữ liệu hoàn tất, sản phẩm Argentina hiển thị đủ 38 SKU trùng với tab Biến thể.
+- Đối chiếu SKU `namearg-B-2026-0 nhỏ`: Catalog hiển thị giá 19.000 đ, tồn 0, đang bán; tab Biến thể hiển thị cùng SKU, tồn 0, điều chỉnh 0 đ và đang bán.
