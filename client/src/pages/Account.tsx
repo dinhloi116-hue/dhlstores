@@ -173,6 +173,7 @@ export default function Account() {
                   <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-4">
                       <span className="font-bold text-slate-900 text-sm">Order #{order.id}</span>
+                      {order.hasPreorderItems && <Badge className="bg-rose-100 text-rose-700 border border-rose-200">Order trước · {order.preorderEstimatedDays || "7–10 ngày"}</Badge>}
                       <span className="text-slate-500">Date: {new Date(order.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -193,6 +194,7 @@ export default function Account() {
                             <div>
                               <p className="text-sm font-bold text-slate-900">{p?.name || "Product"}</p>
                               {item.attributes && <p className="text-xs text-amber-600 font-semibold">{item.attributes}</p>}
+                              {item.fulfillmentMode === "preorder" && <p className="mt-1 text-[11px] font-black text-rose-700">Order trước · giảm 10% · dự kiến 7–10 ngày</p>}
                               <p className="text-xs text-slate-500 mt-0.5">Qty: {item.quantity} x {formatCurrency(Number(item.price))}</p>
                             </div>
                           </div>

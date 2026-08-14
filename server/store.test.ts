@@ -179,6 +179,26 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
   });
 
+  it("applies 10% Order discount to a physical SKU without reserving or restoring in-stock inventory", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const suffix = `preorder-${Date.now().toString(36)}`;
+    const product = await createProduct({ name: `Nameset Order ${suffix}`, slug: `nameset-order-${suffix}`, description: "Kiểm thử Order 7–10 ngày", price: "100000", categoryId: 13, image: "generated:preorder-cover", stock: 0, featured: false, isActive: true });
+    const variant = await createProductVariant({ productId: product!.id, size: "Chuẩn", color: "Đen", sku: `PRE-${suffix}`, priceAdjustment: "5000", stock: 0, isActive: true });
+
+    await expect(caller.store.addToCart({ productId: product!.id, variantId: variant!.id, quantity: 1, fulfillmentMode: "preorder" })).resolves.toEqual({ success: true });
+    const checkout = await caller.store.checkout({ totalAmount: 0, items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0, fulfillmentMode: "preorder" }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "pickup" } });
+
+    expect(checkout.totalAmount).toBe(94500);
+    expect((await getProductVariants(product!.id))[0]?.stock).toBe(0);
+    const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
+    expect(order).toMatchObject({ hasPhysicalItems: true, hasPreorderItems: true, preorderDiscountAmount: "10500.00", preorderEstimatedDays: "7–10 ngày" });
+    expect(order?.items?.[0]).toMatchObject({ fulfillmentMode: "preorder", price: "94500" });
+
+    await caller.store.cancelPendingOrder({ orderId: checkout.orderId });
+    expect((await getProductVariants(product!.id))[0]?.stock).toBe(0);
+  });
+
   it("reserves physical stock while a QR order is pending and restores it when the QR expires", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);

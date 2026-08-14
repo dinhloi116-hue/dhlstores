@@ -129,7 +129,7 @@
 - [ ] Chẩn đoán và sửa Tool PET TRAM không thao tác được trong website.
 - [x] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
 - [x] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
-- [ ] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
+- [x] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
 - [ ] Kiểm thử toàn bộ SKU, Tool, hồ sơ địa chỉ, checkout vật lý và xuất bản cập nhật.
 - [x] Đặt khối chọn SKU và điều chỉnh số lượng cùng hàng; chuyển bảng tồn kho xuống cuối trang sản phẩm.
 - [x] Thêm preview ảnh SKU thật sự khi hover/click, hiển thị ảnh phóng to ngoài ô thumbnail mà không bị cắt.
@@ -161,3 +161,9 @@
 - [x] Nhập file Excel đã xác nhận vào danh mục Nameset Chống Nhiễm và đối chiếu số lượng sản phẩm/biến thể tạo được.
 - [x] Bổ sung các khối nội dung cho trang chủ để giảm khoảng trống và làm rõ lợi ích, quy trình mua và danh mục nổi bật.
 - [x] Kiểm thử giao diện trang chủ sau khi bổ sung nội dung, rồi xuất bản cập nhật.
+- [x] Cấu hình QR VietQR Techcombank cho hàng vật lý: mã TCB, số tài khoản 19034203040019, tên chủ DINH HOANG LOI.
+- [x] Bổ sung lựa chọn Order trước 7–10 ngày cho toàn bộ SKU hàng vật lý, giảm 10% so với mua ngay.
+- [x] Lưu rõ loại mua ngay/Order, giá giảm và thời gian dự kiến ở cấp đơn hàng để cửa hàng xử lý chính xác.
+- [x] Giữ nguyên toàn bộ lựa chọn SKU, tồn kho và thông tin giao hàng khi khách đổi giữa mua ngay và Order.
+- [x] Hiển thị Order 7–10 ngày trong checkout, QR thanh toán và khu vực quản trị đơn hàng vật lý.
+- [x] Kiểm thử giá Order giảm 10%, SKU, đơn hàng và QR Techcombank trước khi xuất bản.

@@ -78,6 +78,7 @@ export interface CartItemType {
   productId: number;
   variantId?: number | null;
   quantity: number;
+  fulfillmentMode: 'in_stock' | 'preorder';
   attributes?: string;
   product?: ProductType;
   variant?: ProductVariantType;
@@ -91,6 +92,7 @@ export interface OrderItemType {
   variantLabel?: string | null;
   quantity: number;
   price: string;
+  fulfillmentMode: 'in_stock' | 'preorder';
   attributes?: string;
   product?: ProductType;
 }
@@ -116,6 +118,9 @@ export interface OrderType {
   shippingMethod?: string | null;
   shippingFee?: string;
   hasPhysicalItems?: boolean;
+  hasPreorderItems?: boolean;
+  preorderDiscountAmount?: string;
+  preorderEstimatedDays?: string | null;
   createdAt: Date;
   items?: OrderItemType[];
 }
@@ -1421,31 +1426,32 @@ export async function getCartItems(userId: number) {
   })));
 }
 
-export async function addToCart(userId: number, productId: number, quantity: number, variantId?: number, attributes?: string) {
+export async function addToCart(userId: number, productId: number, quantity: number, variantId?: number, attributes?: string, fulfillmentMode: 'in_stock' | 'preorder' = 'in_stock') {
   const product = await getProductById(productId);
   if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
+  if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
   let variant: ProductVariantType | undefined;
   if (product.type === "physical") {
     const variants = await getProductVariants(productId);
     variant = variantId ? variants.find(item => item.id === variantId) : undefined;
     if (variants.length > 0 && !variant) throw new Error("Hãy chọn kích thước hoặc màu sắc trước khi thêm vào giỏ");
-    if (variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
-    if (!variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
+    if (fulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+    if (fulfillmentMode === 'in_stock' && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
   }
   const connection = await getDb();
   if (connection) {
     const current = await connection.select().from(cartItems).where(eq(cartItems.userId, userId));
-    const existing = current.find(item => item.productId === productId && (item.variantId ?? null) === (variantId ?? null) && (item.attributes ?? undefined) === attributes);
+    const existing = current.find(item => item.productId === productId && (item.variantId ?? null) === (variantId ?? null) && (item.attributes ?? undefined) === attributes && item.fulfillmentMode === fulfillmentMode);
     const nextQuantity = (existing?.quantity ?? 0) + quantity;
-    if (variant && variant.stock < nextQuantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
-    if (product.type === "physical" && !variant && product.stock < nextQuantity) throw new Error("Sản phẩm không đủ tồn kho");
+    if (fulfillmentMode === 'in_stock' && variant && variant.stock < nextQuantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+    if (fulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < nextQuantity) throw new Error("Sản phẩm không đủ tồn kho");
     if (existing) await connection.update(cartItems).set({ quantity: nextQuantity }).where(eq(cartItems.id, existing.id));
-    else await connection.insert(cartItems).values({ userId, productId, variantId: variantId ?? null, quantity, attributes: attributes ?? null });
+    else await connection.insert(cartItems).values({ userId, productId, variantId: variantId ?? null, quantity, fulfillmentMode, attributes: attributes ?? null });
     return { success: true };
   }
-  const existing = memoryCart.find(i => i.userId === userId && i.productId === productId && (i.variantId ?? null) === (variantId ?? null) && i.attributes === attributes);
+  const existing = memoryCart.find(i => i.userId === userId && i.productId === productId && (i.variantId ?? null) === (variantId ?? null) && i.attributes === attributes && i.fulfillmentMode === fulfillmentMode);
   if (existing) {
-    if (variant && variant.stock < existing.quantity + quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+    if (fulfillmentMode === 'in_stock' && variant && variant.stock < existing.quantity + quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
     existing.quantity += quantity;
   } else {
     memoryCart.push({
@@ -1454,6 +1460,7 @@ export async function addToCart(userId: number, productId: number, quantity: num
       productId,
       variantId: variantId ?? null,
       quantity,
+      fulfillmentMode,
       attributes
     });
   }
@@ -1474,8 +1481,8 @@ export async function updateCartItem(userId: number, cartItemId: number, quantit
     if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
     const variant = item.variantId ? (await getProductVariants(item.productId)).find(candidate => candidate.id === item.variantId) : undefined;
     if (product.type === "physical" && item.variantId && !variant) throw new Error("Biến thể sản phẩm hiện không khả dụng");
-    if (variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
-    if (product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
+    if (item.fulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+    if (item.fulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
     await connection.update(cartItems).set({ quantity }).where(and(eq(cartItems.id, cartItemId), eq(cartItems.userId, userId)));
     return { success: true };
   }
@@ -1488,8 +1495,8 @@ export async function updateCartItem(userId: number, cartItemId: number, quantit
       const variant = item.variantId ? (await getProductVariants(item.productId)).find(candidate => candidate.id === item.variantId) : undefined;
       if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
       if (product.type === "physical" && item.variantId && !variant) throw new Error("Biến thể sản phẩm hiện không khả dụng");
-      if (variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
-      if (product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
+      if (item.fulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+      if (item.fulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
       item.quantity = quantity;
     }
   }
@@ -1518,7 +1525,7 @@ export async function clearCart(userId: number) {
 
 export async function createOrder(userId: number, data: {
   totalAmount: number;
-  items: Array<{ productId: number; quantity: number; price: number; variantId?: number; attributes?: string }>;
+  items: Array<{ productId: number; quantity: number; price: number; variantId?: number; attributes?: string; fulfillmentMode?: 'in_stock' | 'preorder' }>;
   discountCode?: string;
   shipping?: { name: string; phone: string; address: string; note?: string; method: ShippingMethodCode };
 }) {
@@ -1529,10 +1536,16 @@ export async function createOrder(userId: number, data: {
     const variants = product.type === "physical" ? await getProductVariants(product.id) : [];
     const variant = item.variantId ? variants.find(candidate => candidate.id === item.variantId) : undefined;
     if (product.type === "physical" && variants.length > 0 && !variant) throw new Error("Hãy chọn biến thể hợp lệ cho hàng vật lý");
+    const fulfillmentMode = item.fulfillmentMode ?? 'in_stock';
+    if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
+    const immediatePrice = Number(product.price) + Number(variant?.priceAdjustment ?? 0);
+    const finalPrice = fulfillmentMode === 'preorder' ? immediatePrice * 0.9 : immediatePrice;
     return {
       productId: product.id,
       quantity: item.quantity,
-      price: Number(product.price) + Number(variant?.priceAdjustment ?? 0),
+      price: finalPrice,
+      preorderDiscount: immediatePrice - finalPrice,
+      fulfillmentMode,
       variantId: variant?.id ?? null,
       variantLabel: variant ? [variant.size, variant.color].filter(Boolean).join(" · ") || null : null,
       isPhysical: product.type === "physical",
@@ -1541,7 +1554,7 @@ export async function createOrder(userId: number, data: {
     };
   }));
   const inventoryClaims = new Map<string, { productId: number; variantId: number | null; quantity: number; availableStock: number }>();
-  for (const item of verifiedItems.filter(item => item.isPhysical)) {
+  for (const item of verifiedItems.filter(item => item.isPhysical && item.fulfillmentMode === 'in_stock')) {
     const key = item.variantId ? `variant:${item.variantId}` : `product:${item.productId}`;
     const current = inventoryClaims.get(key);
     inventoryClaims.set(key, current ? { ...current, quantity: current.quantity + item.quantity } : { productId: item.productId, variantId: item.variantId, quantity: item.quantity, availableStock: item.availableStock });
@@ -1550,9 +1563,11 @@ export async function createOrder(userId: number, data: {
     if (claim.availableStock < claim.quantity) throw new Error("Sản phẩm hoặc biến thể đã chọn không đủ tồn kho");
   }
   const hasPhysicalItems = verifiedItems.some(item => item.isPhysical);
+  const hasPreorderItems = verifiedItems.some(item => item.fulfillmentMode === 'preorder');
   if (hasPhysicalItems && (!data.shipping?.name || !data.shipping.phone || !data.shipping.address)) throw new Error("Vui lòng điền đủ thông tin nhận hàng");
   const shipping = hasPhysicalItems ? getShippingOption(data.shipping?.method ?? "standard") : getShippingOption("pickup");
   const productSubtotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const preorderDiscountAmount = verifiedItems.reduce((sum, item) => sum + item.preorderDiscount * item.quantity, 0);
   const discount = await validateDiscountCode(data.discountCode || "", productSubtotal);
   const verifiedTotal = Math.max(0, productSubtotal - discount.amount) + shipping.fee;
   const connection = await getDb();
@@ -1565,15 +1580,15 @@ export async function createOrder(userId: number, data: {
         if (Number(updated[0]?.affectedRows ?? 0) !== 1) throw new Error("Sản phẩm hoặc biến thể vừa hết tồn kho. Vui lòng cập nhật giỏ hàng.");
       }
       const inserted = await transaction.insert(ordersTable).values({
-        userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: "sepay_vietqr",
+        userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "physical_vietqr" : "sepay_vietqr",
         discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
         shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
-        shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems,
+        shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null,
       });
       const orderId = Number(inserted[0].insertId);
-      await transaction.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), attributes: item.attributes ?? null })));
+      await transaction.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes ?? null })));
       await transaction.delete(cartItems).where(eq(cartItems.userId, userId));
-      return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems };
+      return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
     });
   }
   for (const claim of Array.from(inventoryClaims.values())) {
@@ -1589,13 +1604,13 @@ export async function createOrder(userId: number, data: {
   }
   const orderId = nextOrderId++;
   memoryOrders.unshift({
-    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
+    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "physical_vietqr" : "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
     shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
-    shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, createdAt: new Date(),
+    shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, createdAt: new Date(),
   });
-  for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), attributes: item.attributes });
+  for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes });
   await clearCart(userId);
-  return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems };
+  return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
 }
 
 export async function getOrders(userId?: number, isAdmin?: boolean) {
@@ -1662,6 +1677,7 @@ export async function cancelPendingOrderForUser(userId: number, orderId: number)
     if (cancelled && order[0].hasPhysicalItems) {
       const lineItems = await connection.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, orderId));
       for (const item of lineItems) {
+        if (item.fulfillmentMode === "preorder") continue;
         if (item.variantId) await connection.update(productVariants).set({ stock: sql`${productVariants.stock} + ${item.quantity}` }).where(eq(productVariants.id, item.variantId));
         else {
           const product = await getProductById(item.productId);
@@ -1675,6 +1691,7 @@ export async function cancelPendingOrderForUser(userId: number, orderId: number)
   if (order) {
     order.status = "cancelled";
     if (order.hasPhysicalItems) for (const item of memoryOrderItems.filter(item => item.orderId === orderId)) {
+      if (item.fulfillmentMode === "preorder") continue;
       if (item.variantId) {
         const variant = memoryProductVariants.find(candidate => candidate.id === item.variantId);
         if (variant) variant.stock += item.quantity;

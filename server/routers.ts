@@ -151,10 +151,11 @@ export const appRouter = router({
         quantity: z.number().min(1).default(1),
         variantId: z.number().int().positive().optional(),
         attributes: z.string().optional(),
+        fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
-        return await db.addToCart(ctx.user.id, input.productId, input.quantity, input.variantId, input.attributes);
+        return await db.addToCart(ctx.user.id, input.productId, input.quantity, input.variantId, input.attributes, input.fulfillmentMode);
       }),
 
     updateCart: protectedProcedure
@@ -226,6 +227,7 @@ export const appRouter = router({
           price: z.number(),
           variantId: z.number().int().positive().optional(),
           attributes: z.string().optional(),
+          fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
         })),
         discountCode: z.string().trim().max(64).optional(),
         shipping: z.object({

@@ -9,7 +9,7 @@ import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Sparkles, Zap, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Clock3, Sparkles, Tag, Zap, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 function formatVariantOptions(variant: { size?: string; color?: string; attributes?: string }) {
@@ -59,6 +59,7 @@ export default function ProductDetail() {
   const [adding, setAdding] = useState<boolean>(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [variantSort, setVariantSort] = useState<'label' | 'price-asc' | 'price-desc'>('label');
+  const [fulfillmentMode, setFulfillmentMode] = useState<'in_stock' | 'preorder'>('in_stock');
   const [hoveredPreview, setHoveredPreview] = useState<{ variantId: number; x: number; y: number } | null>(null);
   const [previewVariantId, setPreviewVariantId] = useState<number | null>(null);
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
@@ -73,10 +74,11 @@ export default function ProductDetail() {
   const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
   const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? Math.max(...variants.map(variant => variant.stock)) : product.stock) : Number.MAX_SAFE_INTEGER;
   const requiresVariant = product?.type === "physical" && variants.length > 0;
+  const isPreorder = product?.type === "physical" && fulfillmentMode === 'preorder';
 
   useEffect(() => {
-    if (product?.type === "physical" && availableStock > 0) setQuantity(current => Math.min(current, availableStock));
-  }, [availableStock, product?.type]);
+    if (product?.type === "physical" && fulfillmentMode === 'in_stock' && availableStock > 0) setQuantity(current => Math.min(current, availableStock));
+  }, [availableStock, product?.type, fulfillmentMode]);
 
   const addToCartMutation = trpc.store.addToCart.useMutation({
     onSuccess: () => {
@@ -133,12 +135,13 @@ export default function ProductDetail() {
     }
 
     if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
-    if (product.type === "physical" && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
+    if (product.type === "physical" && fulfillmentMode === 'in_stock' && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
     setAdding(true);
     addToCartMutation.mutate({
       productId: product.id,
       quantity,
       variantId: selectedVariantId || undefined,
+      fulfillmentMode: product.type === "physical" ? fulfillmentMode : undefined,
     });
   };
 
@@ -149,11 +152,12 @@ export default function ProductDetail() {
       return;
     }
     if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
-    if (product.type === "physical" && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
+    if (product.type === "physical" && fulfillmentMode === 'in_stock' && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
     addToCartMutation.mutate({
       productId: product.id,
       quantity,
       variantId: selectedVariantId || undefined,
+      fulfillmentMode: product.type === "physical" ? fulfillmentMode : undefined,
     }, {
       onSuccess: () => {
         setLocation("/checkout");
@@ -180,10 +184,10 @@ export default function ProductDetail() {
             <div>
               <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
                 <Sparkles className="w-4 h-4" />
-                <span>{product.type === "physical" ? (lang === 'vi' ? `${availableStock > 0 ? `Còn ${availableStock}` : "Đã hết"} trong kho` : `${availableStock > 0 ? availableStock : "Out of"} stock`) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
+                <span>{product.type === "physical" ? (isPreorder ? (lang === 'vi' ? 'Order trước · dự kiến 7–10 ngày' : 'Pre-order · estimated 7–10 days') : (lang === 'vi' ? `${availableStock > 0 ? `Còn ${availableStock}` : "Đã hết"} trong kho` : `${availableStock > 0 ? availableStock : "Out of"} stock`)) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{product.name}</h1>
-              <p className="text-2xl font-black text-amber-600 mt-2">{formatCurrency(Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0))}</p>
+              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className="text-2xl font-black text-amber-600">{formatCurrency((Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0)) * (isPreorder ? 0.9 : 1))}</p>{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0))}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
             </div>
 
             {product.type === "physical" && variants.length > 0 && (
@@ -193,7 +197,8 @@ export default function ProductDetail() {
                   <label className="text-xs font-bold text-slate-700">Sắp xếp SKU<select value={variantSort} onChange={event => setVariantSort(event.target.value as typeof variantSort)} className="mt-1 block h-9 w-full rounded-lg border border-emerald-200 bg-white px-2 text-xs font-bold text-slate-800"><option value="label">Theo tên</option><option value="price-asc">Giá thấp → cao</option><option value="price-desc">Giá cao → thấp</option></select></label>
                 </div>
                 {optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = sortedVariants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = sortedVariants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}
-                <div className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">SKU đang chọn</p><p className="mt-1 text-xs font-semibold text-emerald-900">{selectedVariant ? formatVariantOptions(selectedVariant) : 'Chọn một phiên bản ở phía trên'}</p></div><div><label className="text-[10px] font-black uppercase tracking-wide text-slate-500">Số lượng</label><div className="mt-1 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-8 w-8 font-black text-slate-700 hover:text-black">−</button><span className="w-8 text-center text-sm font-black text-slate-900">{quantity}</span><button type="button" onClick={() => setQuantity(quantity + 1)} disabled={product.type === "physical" && quantity >= availableStock} className="h-8 w-8 font-black text-slate-700 hover:text-black disabled:cursor-not-allowed disabled:opacity-35">+</button></div></div></div>
+                <div className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">SKU đang chọn</p><p className="mt-1 text-xs font-semibold text-emerald-900">{selectedVariant ? formatVariantOptions(selectedVariant) : 'Chọn một phiên bản ở phía trên'}</p></div><div><label className="text-[10px] font-black uppercase tracking-wide text-slate-500">Số lượng</label><div className="mt-1 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-8 w-8 font-black text-slate-700 hover:text-black">−</button><span className="w-8 text-center text-sm font-black text-slate-900">{quantity}</span><button type="button" onClick={() => setQuantity(quantity + 1)} disabled={product.type === "physical" && !isPreorder && quantity >= availableStock} className="h-8 w-8 font-black text-slate-700 hover:text-black disabled:cursor-not-allowed disabled:opacity-35">+</button></div></div></div>
+                <div className="grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setFulfillmentMode('in_stock')} className={`rounded-xl border p-3 text-left transition ${!isPreorder ? "border-amber-500 bg-amber-50 ring-2 ring-amber-100" : "border-slate-200 bg-white hover:border-amber-300"}`}><span className="flex items-center gap-1.5 text-xs font-black text-slate-900"><Zap className="h-3.5 w-3.5 text-amber-600" />Mua ngay</span><span className="mt-1 block text-[11px] text-slate-600">Giao từ hàng sẵn có; áp dụng tồn kho thực tế.</span></button><button type="button" onClick={() => setFulfillmentMode('preorder')} className={`rounded-xl border p-3 text-left transition ${isPreorder ? "border-rose-500 bg-rose-50 ring-2 ring-rose-100" : "border-slate-200 bg-white hover:border-rose-300"}`}><span className="flex items-center gap-1.5 text-xs font-black text-rose-700"><Clock3 className="h-3.5 w-3.5" />Order trước · giảm 10%</span><span className="mt-1 block text-[11px] text-slate-600">Dự kiến 7–10 ngày; dùng được với mọi SKU.</span></button></div>
               </section>
             )}
 
@@ -210,22 +215,23 @@ export default function ProductDetail() {
             <div className="pt-2 flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={handleAddToCart}
-                disabled={adding || (product.type === "physical" && (availableStock <= 0 || (requiresVariant && !selectedVariantId)))}
+                disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}
                 variant="outline"
                 className="flex-1 border-amber-500 bg-white hover:bg-amber-50 text-amber-700 font-bold py-3.5 rounded-xl shadow-xs text-sm"
               >
                 <ShoppingBag className="w-4 h-4 mr-2" />
-                {adding ? "Adding..." : t.addToCart}
+                {adding ? "Adding..." : (isPreorder ? "Thêm Order vào giỏ" : t.addToCart)}
               </Button>
               <Button
                 onClick={handleBuyNow}
-                disabled={adding || (product.type === "physical" && (availableStock <= 0 || (requiresVariant && !selectedVariantId)))}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl shadow-md text-sm"
+                disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}
+                className={`flex-1 font-bold py-3.5 rounded-xl shadow-md text-sm ${isPreorder ? "bg-rose-500 text-white hover:bg-rose-600" : "bg-amber-500 text-slate-950 hover:bg-amber-600"}`}
               >
-                <Zap className="w-4 h-4 mr-2" />
-                {product.type === "physical" ? (lang === 'vi' ? 'Mua ngay & chọn giao hàng' : 'Buy now & choose delivery') : (lang === 'vi' ? 'Tải ngay 1-Click (Mua ngay)' : 'Instant 1-Click Buy')}
+                {isPreorder ? <Clock3 className="w-4 h-4 mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
+                {product.type === "physical" ? (isPreorder ? 'Order ngay · giảm 10%' : (lang === 'vi' ? 'Mua ngay & chọn giao hàng' : 'Buy now & choose delivery')) : (lang === 'vi' ? 'Tải ngay 1-Click (Mua ngay)' : 'Instant 1-Click Buy')}
               </Button>
             </div>
+            {product.type === "physical" && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs leading-relaxed text-rose-900"><div className="flex items-center gap-2 font-black"><Tag className="h-4 w-4" />Order trước 7–10 ngày giảm 10%</div><p className="mt-1">Tất cả SKU đều có thể Order trước với mức giá giảm 10%. Đơn được ghi rõ hình thức Order để cửa hàng xử lý riêng; không dùng tồn kho sẵn có.</p></div>}
 
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
               <div className="flex items-center gap-2">

@@ -168,6 +168,7 @@ export const cartItems = mysqlTable("cart_items", {
   productId: int("productId").notNull(),
   variantId: int("variantId"),
   quantity: int("quantity").default(1).notNull(),
+  fulfillmentMode: mysqlEnum("fulfillmentMode", ["in_stock", "preorder"]).default("in_stock").notNull(),
   attributes: varchar("attributes", { length: 255 }), // VD: "Size: L, Màu: Đỏ"
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -194,6 +195,9 @@ export const orders = mysqlTable("orders", {
   shippingMethod: varchar("shippingMethod", { length: 64 }),
   shippingFee: decimal("shippingFee", { precision: 12, scale: 2 }).default("0").notNull(),
   hasPhysicalItems: boolean("hasPhysicalItems").default(false).notNull(),
+  hasPreorderItems: boolean("hasPreorderItems").default(false).notNull(),
+  preorderDiscountAmount: decimal("preorderDiscountAmount", { precision: 12, scale: 2 }).default("0").notNull(),
+  preorderEstimatedDays: varchar("preorderEstimatedDays", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -209,6 +213,7 @@ export const orderItems = mysqlTable("order_items", {
   variantLabel: varchar("variantLabel", { length: 255 }),
   quantity: int("quantity").notNull(),
   price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  fulfillmentMode: mysqlEnum("fulfillmentMode", ["in_stock", "preorder"]).default("in_stock").notNull(),
   attributes: varchar("attributes", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
