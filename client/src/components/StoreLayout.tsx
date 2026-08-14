@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles } from "lucide-react";
+import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -145,6 +145,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </Link>
             <Link href="/products?type=digital" className="transition-colors hover:text-amber-600 text-slate-700 flex items-center gap-1">
               <Download className="w-4 h-4 text-purple-600" /> {navDigital}
+            </Link>
+            <Link href="/tools/pet-tram" className={`transition-colors hover:text-amber-600 flex items-center gap-1 ${location.startsWith('/tools') ? 'text-amber-600' : 'text-slate-700'}`}>
+              <WandSparkles className="w-4 h-4 text-cyan-600" /> Tool
             </Link>
           </nav>
 
@@ -312,6 +315,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </Link>
             <Link href="/products?type=digital" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
               <Download className="w-4 h-4 text-purple-600" /> {navDigital}
+            </Link>
+            <Link href="/tools/pet-tram" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
+              <WandSparkles className="w-4 h-4 text-cyan-600" /> Tool PET TRAM
             </Link>
             {isAuthenticated && (
               <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-amber-600 py-1 pt-2 border-t border-slate-100">

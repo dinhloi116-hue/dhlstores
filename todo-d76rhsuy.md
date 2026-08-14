@@ -111,6 +111,9 @@
 - [x] Cập nhật luồng nhập Excel để đưa cột Ảnh phiên bản vào từng biến thể thay vì bỏ mất dữ liệu.
 - [x] Khôi phục ảnh cho 38 biến thể Nameset đã nhập và cho ảnh thay đổi theo biến thể trên trang chi tiết.
 - [ ] Kiểm thử, xuất bản và xác minh trực quan ảnh biến thể sau khi sửa lỗi.
+- [x] Phân tích file HTML Tool người dùng cung cấp, bao gồm phụ thuộc, luồng dữ liệu và rủi ro tích hợp.
+- [x] Thêm mục Tool có điều hướng rõ ràng trong DHL Stores và nhúng Tool HTML đã kiểm tra qua khung chạy cô lập.
+- [ ] Kiểm thử Tool trên máy tính/điện thoại, xuất bản và hướng dẫn truy cập.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.
