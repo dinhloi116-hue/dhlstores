@@ -67,17 +67,30 @@
 - [x] Bỏ hoặc thu gọn banner quản trị lớn để giao diện quản lý gọn hơn.
 - [x] Thêm hiệu ứng hover, trạng thái chọn và phản hồi bấm mượt cho nút, thẻ và tab chính.
 - [x] Kiểm tra trực quan giao diện mới trên máy tính, điện thoại và xuất bản cập nhật.
-- [ ] Xác nhận miền dhlstores.com và miền đích hiện tại của website để chuẩn bị cấu hình Cloudflare.
+- [x] Xác nhận miền dhlstores.com và miền đích hiện tại của website để chuẩn bị cấu hình Cloudflare.
 - [ ] Hướng dẫn tạo bản ghi DNS Cloudflare và gắn dhlstores.com trong phần Domains của website.
 - [ ] Xác minh tên miền hoạt động sau khi DNS cập nhật.
-- [ ] Tạm dừng cấu hình dhlstores.com cho đến khi website sẵn sàng vận hành.
-- [ ] Rà soát các trang mua hàng, giỏ, thanh toán, tài khoản và quản trị để xác định hạng mục cần hoàn thiện.
+- [x] Tạm dừng cấu hình dhlstores.com cho đến khi website sẵn sàng vận hành.
+- [x] Rà soát các trang mua hàng, giỏ, thanh toán, tài khoản và quản trị để xác định hạng mục cần hoàn thiện.
 - [x] Sửa trang chi tiết sản phẩm để hiển thị lỗi hoặc trạng thái không tìm thấy thay vì quay vòng chờ tải.
-- [ ] Hoàn thiện các vấn đề ưu tiên được xác định trong quá trình rà soát.
+- [x] Hoàn thiện các vấn đề ưu tiên được xác định trong quá trình rà soát.
 - [x] Làm rõ trạng thái chưa liên kết email và nút liên kết email trên trang Tài khoản.
 - [x] Tạo lối liên hệ Zalo trực tiếp từ chân trang để khách dễ nhận hỗ trợ.
-- [ ] Kiểm thử tổng thể và xuất bản phiên bản sẵn sàng vận hành.
+- [x] Kiểm thử tổng thể và xuất bản phiên bản sẵn sàng vận hành.
 - [x] Bỏ banner lớn ở trang chủ và thay bằng đầu trang gọn hơn.
 - [x] Tăng cường hiệu ứng hover rõ ràng cho nút, danh mục và thẻ sản phẩm.
 - [x] Kiểm tra trực quan, kiểm thử và xuất bản cập nhật giao diện trang chủ.
 - [x] Thu gọn banner lớn còn lại ở trang danh mục sản phẩm và đồng bộ hover cho thẻ danh mục.
+- [ ] Kiểm thử trực quan các luồng chính trên phiên bản mới nhất: sản phẩm, giỏ, checkout QR, tài khoản/email, tải tệp và quản trị.
+- [ ] Lưu checkpoint xác nhận website sẵn sàng vận hành sau kiểm thử tổng thể.
+- [x] Rà soát quyền của dinhhoangloi, dữ liệu hiện hữu và phân tích tệp PDF tham chiếu cho tồn kho.
+- [x] Bổ sung dữ liệu thành viên phục vụ số dư nội bộ, trạng thái chặn và lịch sử thao tác quản trị.
+- [x] Xây dựng mã giảm giá có thời hạn, điều kiện sử dụng và kiểm tra áp dụng an toàn khi thanh toán.
+- [x] Bổ sung trang thống kê vận hành gồm thành viên, đơn hàng, doanh thu và lưu lượng truy cập có sẵn.
+- [x] Cho phép chỉnh sửa nhãn tab/danh mục lớn trong quản trị mà không cần sửa mã nguồn.
+- [x] Xây dựng bảng tồn kho hiện đại có lọc, tìm kiếm, chỉnh sửa hàng loạt và cảnh báo sắp hết hàng.
+- [x] Bổ sung nhật ký quản trị cho chặn/mở khóa thành viên và thay đổi quyền, có thể xem theo tài khoản.
+- [x] Sửa vòng đời mã giảm giá để chỉ tiêu hao lượt sau thanh toán thành công hoặc hoàn lượt khi QR bị hủy/hết hạn.
+- [x] Hoàn thiện giao diện mã giảm giá với đơn tối thiểu, thời hạn bắt đầu-kết thúc và thao tác sửa.
+- [x] Thêm bộ lọc nhật ký theo từng tài khoản trong Trung tâm vận hành và kiểm thử API lọc theo thành viên.
+- [ ] Kiểm thử phân quyền, ưu đãi, thao tác tồn kho hàng loạt và xuất bản quản trị nâng cao.

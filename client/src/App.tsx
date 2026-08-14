@@ -7,6 +7,7 @@ import ProductDetail from "@/pages/ProductDetail";
 import Checkout from "@/pages/Checkout";
 import Account from "@/pages/Account";
 import AdminOrders from "@/pages/AdminOrders";
+import OperationsCenter from "@/pages/OperationsCenter";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -20,6 +21,7 @@ function Router() {
       <Route path={"/checkout"} component={Checkout} />
       <Route path={"/account"} component={Account} />
       <Route path={"/admin"} component={AdminOrders} />
+      <Route path={"/admin/operations"} component={OperationsCenter} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

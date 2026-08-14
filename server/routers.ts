@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, ownerProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
@@ -87,7 +87,28 @@ export const appRouter = router({
 
   catalogAdmin: catalogAdminRouter,
 
+  analytics: router({
+    recordVisit: publicProcedure.input(z.object({ visitorId: z.string().min(8).max(128), path: z.string().min(1).max(512) })).mutation(({ input }) => db.recordVisitorEvent(input.visitorId, input.path)),
+  }),
+
+  operations: router({
+    overview: ownerProcedure.query(() => db.getOperationsOverview()),
+    members: ownerProcedure.query(() => db.getAllUsers()),
+    adminActivity: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getAdminActivity(input?.userId)),
+    balanceLedger: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getBalanceLedger(input?.userId)),
+    adjustBalance: ownerProcedure.input(z.object({ userId: z.number().int().positive(), amount: z.number().finite().min(-9_999_999).max(9_999_999).refine(value => value !== 0), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.adjustUserBalance({ ...input, performedByUserId: ctx.user.id })),
+    discountCodes: ownerProcedure.query(() => db.getDiscountCodes()),
+    createDiscountCode: ownerProcedure.input(z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() })).mutation(({ ctx, input }) => db.createDiscountCode({ ...input, createdByUserId: ctx.user.id })),
+    updateDiscountCode: ownerProcedure.input(z.object({ id: z.number().int().positive(), data: z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() }) })).mutation(({ input }) => db.updateDiscountCode(input.id, input.data)),
+    inventory: ownerProcedure.query(() => db.getInventoryBoard()),
+    inventoryMovements: ownerProcedure.query(() => db.getInventoryMovements()),
+    bulkSetInventory: ownerProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),
+    siteSettings: ownerProcedure.query(() => db.getSiteSettings()),
+    saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128) }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user.id)),
+  }),
+
   store: router({
+    siteSettings: publicProcedure.query(() => db.getSiteSettings()),
     categories: publicProcedure.query(async () => {
       return await db.getCategories();
     }),
@@ -169,6 +190,7 @@ export const appRouter = router({
           variantId: z.number().int().positive().optional(),
           attributes: z.string().optional(),
         })),
+        discountCode: z.string().trim().max(64).optional(),
         shipping: z.object({
           name: z.string().trim().min(2).max(255),
           phone: z.string().trim().min(8).max(64),
@@ -185,7 +207,7 @@ export const appRouter = router({
 
     orders: protectedProcedure.query(async ({ ctx }) => {
       await requireActiveAccount(ctx.user.id);
-      const isAdmin = ctx.user.role === 'admin';
+      const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'owner';
       return await db.getOrders(ctx.user.id, isAdmin);
     }),
 
@@ -216,14 +238,14 @@ export const appRouter = router({
         status: z.enum(["pending", "processing", "shipping", "completed", "cancelled"]),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
           throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật" });
         }
         return await db.updateOrderStatus(input.orderId, input.status);
       }),
 
     usersList: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== 'admin') {
+      if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
       return await db.getAllUsers();
@@ -235,10 +257,10 @@ export const appRouter = router({
         status: z.enum(["active", "blocked"]),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
-        return await db.updateUserStatus(input.userId, input.status);
+        return await db.updateUserStatus(input.userId, input.status, ctx.user.id);
       }),
 
     updateUserRole: protectedProcedure
@@ -247,17 +269,17 @@ export const appRouter = router({
         role: z.enum(["user", "admin"]),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật vai trò" });
         }
         if (ctx.user.id === input.userId && input.role !== "admin") {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Bạn không thể tự gỡ quyền quản trị của chính mình" });
         }
-        return await db.updateUserRole(input.userId, input.role);
+        return await db.updateUserRole(input.userId, input.role, ctx.user.id);
       }),
 
     productDownloadLinks: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
       return db.getAdminProductDownloadLinks();
@@ -272,7 +294,7 @@ export const appRouter = router({
         }, "Link phải thuộc Google Drive"),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
         return db.saveProductDownloadLink(input.productId, input.driveUrl);

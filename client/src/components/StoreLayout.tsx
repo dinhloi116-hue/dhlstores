@@ -19,6 +19,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authForm, setAuthForm] = useState({ name: '', username: '', password: '', confirmPassword: '' });
+  const recordVisit = trpc.analytics.recordVisit.useMutation();
+  const siteSettingsQuery = trpc.store.siteSettings.useQuery();
 
   const [lang, setLang] = useState<Language>(getClientLanguage());
 
@@ -26,7 +28,20 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     localStorage.setItem('dhl_lang', lang);
   }, [lang]);
 
+  useEffect(() => {
+    const key = 'dhl_visitor_id';
+    let visitorId = localStorage.getItem(key);
+    if (!visitorId) {
+      visitorId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(key, visitorId);
+    }
+    recordVisit.mutate({ visitorId, path: location });
+  }, [location]);
+
   const t = translations[lang];
+  const navHome = siteSettingsQuery.data?.navHome || t.home;
+  const navProducts = siteSettingsQuery.data?.navProducts || t.allProducts;
+  const navDigital = siteSettingsQuery.data?.navDigital || (lang === 'vi' ? 'Tài nguyên số' : 'Digital resources');
 
   const toggleLanguage = () => {
     const nextLang = lang === 'vi' ? 'en' : 'vi';
@@ -123,13 +138,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold">
             <Link href="/" className={`transition-colors hover:text-amber-600 ${location === '/' ? 'text-amber-600' : 'text-slate-700'}`}>
-              {t.home}
+              {navHome}
             </Link>
             <Link href="/products" className={`transition-colors hover:text-amber-600 ${location.startsWith('/products') ? 'text-amber-600' : 'text-slate-700'}`}>
-              {t.allProducts}
+              {navProducts}
             </Link>
             <Link href="/products?type=digital" className="transition-colors hover:text-amber-600 text-slate-700 flex items-center gap-1">
-              <Download className="w-4 h-4 text-purple-600" /> {lang === 'vi' ? 'Tài nguyên số' : 'Digital resources'}
+              <Download className="w-4 h-4 text-purple-600" /> {navDigital}
             </Link>
           </nav>
 
@@ -254,7 +269,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   <Link href="/account" className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-amber-600">
                     <Package className="w-4 h-4 text-blue-600" /> {lang === 'vi' ? 'Tài khoản & Email' : 'Account & Email'}
                   </Link>
-                  {user.role === 'admin' && (
+                  {(user.role === 'admin' || user.role === 'owner') && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-amber-600">
                       <ShieldCheck className="w-4 h-4 text-amber-600" /> {t.admin}
                     </Link>
@@ -290,13 +305,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-200 px-4 py-5 space-y-3 shadow-lg">
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              {t.home}
+              {navHome}
             </Link>
             <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              {t.allProducts}
+              {navProducts}
             </Link>
             <Link href="/products?type=digital" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              <Download className="w-4 h-4 text-purple-600" /> {lang === 'vi' ? 'Tài nguyên số' : 'Digital resources'}
+              <Download className="w-4 h-4 text-purple-600" /> {navDigital}
             </Link>
             {isAuthenticated && (
               <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-amber-600 py-1 pt-2 border-t border-slate-100">

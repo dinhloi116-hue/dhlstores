@@ -9,8 +9,9 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   emailVerified: boolean("emailVerified").default(false).notNull(),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "owner"]).default("user").notNull(),
   status: mysqlEnum("status", ["active", "blocked"]).default("active").notNull(),
+  balance: decimal("balance", { precision: 12, scale: 2 }).default("0").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -21,6 +22,67 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+export const balanceLedger = mysqlTable("balance_ledger", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  balanceAfter: decimal("balanceAfter", { precision: 12, scale: 2 }).notNull(),
+  reason: varchar("reason", { length: 255 }).notNull(),
+  performedByUserId: int("performedByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const adminActivity = mysqlTable("admin_activity", {
+  id: int("id").autoincrement().primaryKey(),
+  action: varchar("action", { length: 96 }).notNull(),
+  targetType: varchar("targetType", { length: 64 }).notNull(),
+  targetId: int("targetId").notNull(),
+  details: text("details"),
+  performedByUserId: int("performedByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const discountCodes = mysqlTable("discount_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 64 }).notNull().unique(),
+  type: mysqlEnum("type", ["percent", "fixed"]).notNull(),
+  value: decimal("value", { precision: 12, scale: 2 }).notNull(),
+  minOrderAmount: decimal("minOrderAmount", { precision: 12, scale: 2 }).default("0").notNull(),
+  maxUses: int("maxUses"),
+  usedCount: int("usedCount").default(0).notNull(),
+  startsAt: timestamp("startsAt"),
+  endsAt: timestamp("endsAt"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const inventoryMovements = mysqlTable("inventory_movements", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  variantId: int("variantId"),
+  quantityBefore: int("quantityBefore").notNull(),
+  quantityAfter: int("quantityAfter").notNull(),
+  reason: varchar("reason", { length: 255 }).notNull(),
+  performedByUserId: int("performedByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const siteSettings = mysqlTable("site_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 128 }).notNull().unique(),
+  settingValue: text("settingValue").notNull(),
+  updatedByUserId: int("updatedByUserId"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const visitorEvents = mysqlTable("visitor_events", {
+  id: int("id").autoincrement().primaryKey(),
+  visitorId: varchar("visitorId", { length: 128 }).notNull(),
+  path: varchar("path", { length: 512 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
 
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
@@ -93,6 +155,8 @@ export const orders = mysqlTable("orders", {
   paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid"]).default("pending").notNull(),
   paymentMethod: varchar("paymentMethod", { length: 64 }).default("sepay_vietqr").notNull(),
   paymentReference: varchar("paymentReference", { length: 128 }),
+  discountCode: varchar("discountCode", { length: 64 }),
+  discountAmount: decimal("discountAmount", { precision: 12, scale: 2 }).default("0").notNull(),
   paymentConfirmedAt: timestamp("paymentConfirmedAt"),
   shippingName: varchar("shippingName", { length: 255 }),
   shippingPhone: varchar("shippingPhone", { length: 64 }),

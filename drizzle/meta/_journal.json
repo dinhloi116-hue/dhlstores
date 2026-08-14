@@ -50,6 +50,20 @@
       "when": 1786617407372,
       "tag": "0006_smiling_cassandra_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1786665361692,
+      "tag": "0007_uneven_nicolaos",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1786666235495,
+      "tag": "0008_exotic_senator_kelly",
+      "breakpoints": true
     }
   ]
 }

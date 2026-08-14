@@ -86,12 +86,12 @@ export default function Account() {
               <p className={`mt-1 text-xs ${user?.email ? "text-slate-500" : "font-semibold text-amber-700"}`}>{user?.email || (lang === "vi" ? "Chưa liên kết email — thêm ở phần bên dưới" : "No email linked — add one below")}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">
-                  {user?.role === 'admin' ? 'Admin' : 'VIP Member'}
+                  {user?.role === 'owner' ? 'Chủ cửa hàng' : user?.role === 'admin' ? 'Admin' : 'VIP Member'}
                 </Badge>
               </div>
             </div>
           </div>
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'owner') && (
             <Link href="/admin">
               <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
                 {t.admin} Dashboard

@@ -23,10 +23,12 @@ export default function Home() {
 
   const productsQuery = trpc.store.products.useQuery({});
   const categoriesQuery = trpc.store.categories.useQuery();
+  const siteSettingsQuery = trpc.store.siteSettings.useQuery();
   const allProducts = productsQuery.data || [];
   const digitalProducts = allProducts.filter(product => product.type === "digital");
   const physicalProducts = allProducts.filter(product => product.type === "physical");
   const categories = categoriesQuery.data || [];
+  const homeHeading = siteSettingsQuery.data?.homeHeading || (lang === "vi" ? "Tài nguyên thiết kế thể thao" : "Sports design resources");
 
   const formatCurrency = (val: string | number) => {
     const num = Number(val);
@@ -40,7 +42,7 @@ export default function Home() {
     <StoreLayout>
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-end justify-between gap-4 border-b border-slate-200 pb-3">
-          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{lang === 'vi' ? 'Tài nguyên thiết kế thể thao' : 'Sports design resources'}</h1></div>
+          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{homeHeading}</h1></div>
           <Link href="/products"><Button variant="outline" size="sm" className="shrink-0 border-slate-300 bg-white text-xs font-bold text-slate-800 hover:border-amber-400 hover:bg-amber-50">{t.exploreShop}<ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">

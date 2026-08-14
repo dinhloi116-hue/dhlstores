@@ -1,8 +1,7 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, cartItems, categories, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productVariants, products, users } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productVariants, products, siteSettings, users, visitorEvents } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -97,6 +96,8 @@ export interface OrderType {
   paymentStatus: 'pending' | 'paid';
   paymentMethod: string;
   paymentReference?: string | null;
+  discountCode?: string | null;
+  discountAmount?: string;
   paymentConfirmedAt?: Date | null;
   shippingName?: string | null;
   shippingPhone?: string | null;
@@ -117,8 +118,9 @@ export interface ExtendedUserType {
   email: string | null;
   emailVerified: boolean;
   loginMethod: string | null;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'owner';
   status: 'active' | 'blocked';
+  balance: string;
   createdAt: Date;
   updatedAt: Date;
   lastSignedIn: Date;
@@ -333,6 +335,7 @@ let memoryUsers: LocalUserRecordType[] = [
     loginMethod: "manus",
     role: "admin",
     status: "active",
+    balance: "0",
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
@@ -348,6 +351,7 @@ let memoryUsers: LocalUserRecordType[] = [
     loginMethod: "manus",
     role: "user",
     status: "active",
+    balance: "0",
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
@@ -489,6 +493,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       loginMethod: user.loginMethod || "manus",
       role: user.openId === ENV.ownerOpenId ? "admin" : "user",
       status: "active",
+      balance: "0",
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
@@ -523,6 +528,7 @@ function toExtendedUserType(user: LocalUserRecordType | typeof users.$inferSelec
     loginMethod: user.loginMethod ?? null,
     role: user.role,
     status: user.status,
+    balance: String(user.balance ?? "0"),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     lastSignedIn: user.lastSignedIn,
@@ -568,6 +574,7 @@ export async function createLocalUser(input: { username: string; passwordHash: s
       loginMethod: "local",
       role: "user",
       status: "active",
+      balance: "0",
       lastSignedIn: new Date(),
     });
     const result = await connection.select().from(users).where(eq(users.id, Number(inserted[0].insertId))).limit(1);
@@ -587,6 +594,7 @@ export async function createLocalUser(input: { username: string; passwordHash: s
     loginMethod: "local",
     role: "user",
     status: "active",
+    balance: "0",
     createdAt: now,
     updatedAt: now,
     lastSignedIn: now,
@@ -613,30 +621,45 @@ export async function linkEmailToUser(userId: number, email: string) {
   return { success: true };
 }
 
-export async function updateUserStatus(userId: number, status: 'active' | 'blocked') {
+export async function updateUserStatus(userId: number, status: 'active' | 'blocked', performedByUserId?: number) {
   const connection = await getDb();
   if (connection) {
+    const before = (await connection.select({ status: users.status }).from(users).where(eq(users.id, userId)).limit(1))[0];
+    if (!before) throw new Error("USER_NOT_FOUND");
     await connection.update(users).set({ status }).where(eq(users.id, userId));
+    if (performedByUserId) await connection.insert(adminActivity).values({ action: status === "blocked" ? "member_blocked" : "member_unblocked", targetType: "user", targetId: userId, details: JSON.stringify({ before: before.status, after: status }), performedByUserId });
     return { success: true };
   }
   const u = memoryUsers.find(item => item.id === userId);
-  if (u) {
-    u.status = status;
-  }
+  if (!u) throw new Error("USER_NOT_FOUND");
+  const before = u.status;
+  u.status = status;
+  if (performedByUserId) memoryAdminActivity.unshift({ id: nextAdminActivityId++, action: status === "blocked" ? "member_blocked" : "member_unblocked", targetType: "user", targetId: userId, details: JSON.stringify({ before, after: status }), performedByUserId, createdAt: new Date() });
   return { success: true };
 }
 
-export async function updateUserRole(userId: number, role: 'user' | 'admin') {
+export async function updateUserRole(userId: number, role: 'user' | 'admin', performedByUserId?: number) {
   const connection = await getDb();
   if (connection) {
+    const before = (await connection.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1))[0];
+    if (!before) throw new Error("USER_NOT_FOUND");
     await connection.update(users).set({ role }).where(eq(users.id, userId));
+    if (performedByUserId) await connection.insert(adminActivity).values({ action: "role_changed", targetType: "user", targetId: userId, details: JSON.stringify({ before: before.role, after: role }), performedByUserId });
     return { success: true };
   }
   const user = memoryUsers.find(item => item.id === userId);
   if (!user) throw new Error("USER_NOT_FOUND");
+  const before = user.role;
   user.role = role;
   user.updatedAt = new Date();
+  if (performedByUserId) memoryAdminActivity.unshift({ id: nextAdminActivityId++, action: "role_changed", targetType: "user", targetId: userId, details: JSON.stringify({ before, after: role }), performedByUserId, createdAt: new Date() });
   return { success: true };
+}
+
+export async function getAdminActivity(userId?: number) {
+  const connection = await getDb();
+  if (connection) return userId ? await connection.select().from(adminActivity).where(eq(adminActivity.targetId, userId)).orderBy(desc(adminActivity.createdAt)).limit(80) : await connection.select().from(adminActivity).orderBy(desc(adminActivity.createdAt)).limit(80);
+  return memoryAdminActivity.filter(row => !userId || row.targetId === userId).slice(0, 80);
 }
 
 export async function isUserActive(userId: number) {
@@ -646,6 +669,223 @@ export async function isUserActive(userId: number) {
     return result[0]?.status === "active";
   }
   return memoryUsers.find(user => user.id === userId)?.status === "active";
+}
+
+export type DiscountCodeInput = {
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  minOrderAmount?: number;
+  maxUses?: number | null;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+  isActive?: boolean;
+};
+
+type MemoryDiscountCode = DiscountCodeInput & { id: number; usedCount: number; createdByUserId: number; createdAt: Date };
+type MemoryBalanceMovement = { id: number; userId: number; amount: string; balanceAfter: string; reason: string; performedByUserId: number; createdAt: Date };
+type MemoryInventoryMovement = { id: number; productId: number; variantId: number | null; quantityBefore: number; quantityAfter: number; reason: string; performedByUserId: number; createdAt: Date };
+
+const memoryDiscountCodes: MemoryDiscountCode[] = [];
+const memoryBalanceMovements: MemoryBalanceMovement[] = [];
+const memoryInventoryMovements: MemoryInventoryMovement[] = [];
+const memoryAdminActivity: Array<{ id: number; action: string; targetType: string; targetId: number; details: string | null; performedByUserId: number; createdAt: Date }> = [];
+const memorySiteSettings = new Map<string, string>();
+const memoryVisitorEvents: Array<{ visitorId: string; path: string; createdAt: Date }> = [];
+let nextDiscountCodeId = 1;
+let nextBalanceMovementId = 1;
+let nextInventoryMovementId = 1;
+let nextAdminActivityId = 1;
+
+export async function adjustUserBalance(input: { userId: number; amount: number; reason: string; performedByUserId: number }) {
+  if (!Number.isFinite(input.amount) || input.amount === 0) throw new Error("Số dư điều chỉnh phải khác 0");
+  if (!input.reason.trim()) throw new Error("Hãy nhập lý do điều chỉnh số dư");
+  const connection = await getDb();
+  if (connection) {
+    return connection.transaction(async transaction => {
+      const result = await transaction.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      const member = result[0];
+      if (!member) throw new Error("USER_NOT_FOUND");
+      const balanceAfter = Number(member.balance) + input.amount;
+      if (balanceAfter < 0) throw new Error("Số dư không thể âm");
+      await transaction.update(users).set({ balance: balanceAfter.toFixed(2) }).where(eq(users.id, input.userId));
+      await transaction.insert(balanceLedger).values({ userId: input.userId, amount: input.amount.toFixed(2), balanceAfter: balanceAfter.toFixed(2), reason: input.reason.trim(), performedByUserId: input.performedByUserId });
+      await transaction.insert(adminActivity).values({ action: "balance_adjusted", targetType: "user", targetId: input.userId, details: JSON.stringify({ amount: input.amount, balanceAfter, reason: input.reason.trim() }), performedByUserId: input.performedByUserId });
+      return { success: true, balance: balanceAfter.toFixed(2) };
+    });
+  }
+  const member = memoryUsers.find(user => user.id === input.userId);
+  if (!member) throw new Error("USER_NOT_FOUND");
+  const balanceAfter = Number(member.balance) + input.amount;
+  if (balanceAfter < 0) throw new Error("Số dư không thể âm");
+  member.balance = balanceAfter.toFixed(2);
+  memoryBalanceMovements.unshift({ id: nextBalanceMovementId++, userId: input.userId, amount: input.amount.toFixed(2), balanceAfter: member.balance, reason: input.reason.trim(), performedByUserId: input.performedByUserId, createdAt: new Date() });
+  memoryAdminActivity.unshift({ id: nextAdminActivityId++, action: "balance_adjusted", targetType: "user", targetId: input.userId, details: JSON.stringify({ amount: input.amount, balanceAfter, reason: input.reason.trim() }), performedByUserId: input.performedByUserId, createdAt: new Date() });
+  return { success: true, balance: member.balance };
+}
+
+export async function getBalanceLedger(userId?: number) {
+  const connection = await getDb();
+  if (connection) {
+    const rows = userId ? await connection.select().from(balanceLedger).where(eq(balanceLedger.userId, userId)).orderBy(desc(balanceLedger.createdAt)) : await connection.select().from(balanceLedger).orderBy(desc(balanceLedger.createdAt));
+    return rows.map(row => ({ ...row, amount: String(row.amount), balanceAfter: String(row.balanceAfter) }));
+  }
+  return memoryBalanceMovements.filter(row => !userId || row.userId === userId);
+}
+
+export async function getDiscountCodes() {
+  const connection = await getDb();
+  if (connection) return (await connection.select().from(discountCodes).orderBy(desc(discountCodes.createdAt))).map(row => ({ ...row, value: String(row.value), minOrderAmount: String(row.minOrderAmount) }));
+  return [...memoryDiscountCodes].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).map(row => ({ ...row, value: String(row.value), minOrderAmount: String(row.minOrderAmount) }));
+}
+
+export async function createDiscountCode(input: DiscountCodeInput & { createdByUserId: number }) {
+  const normalized = input.code.trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,64}$/.test(normalized)) throw new Error("Mã giảm giá chỉ gồm chữ cái, số, gạch dưới hoặc gạch ngang");
+  if (!Number.isFinite(input.value) || input.value <= 0 || (input.type === "percent" && input.value > 100)) throw new Error("Giá trị giảm giá không hợp lệ");
+  const connection = await getDb();
+  if (connection) {
+    const existing = await connection.select({ id: discountCodes.id }).from(discountCodes).where(eq(discountCodes.code, normalized)).limit(1);
+    if (existing[0]) throw new Error("DISCOUNT_CODE_TAKEN");
+    const inserted = await connection.insert(discountCodes).values({ code: normalized, type: input.type, value: input.value.toFixed(2), minOrderAmount: (input.minOrderAmount ?? 0).toFixed(2), maxUses: input.maxUses ?? null, startsAt: input.startsAt ?? null, endsAt: input.endsAt ?? null, isActive: input.isActive ?? true, createdByUserId: input.createdByUserId });
+    return { success: true, id: Number(inserted[0].insertId) };
+  }
+  if (memoryDiscountCodes.some(row => row.code === normalized)) throw new Error("DISCOUNT_CODE_TAKEN");
+  memoryDiscountCodes.unshift({ id: nextDiscountCodeId++, ...input, code: normalized, minOrderAmount: input.minOrderAmount ?? 0, maxUses: input.maxUses ?? null, isActive: input.isActive ?? true, usedCount: 0, createdAt: new Date() });
+  return { success: true };
+}
+
+export async function updateDiscountCode(id: number, input: DiscountCodeInput) {
+  const normalized = input.code.trim().toUpperCase();
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(discountCodes).set({ code: normalized, type: input.type, value: input.value.toFixed(2), minOrderAmount: (input.minOrderAmount ?? 0).toFixed(2), maxUses: input.maxUses ?? null, startsAt: input.startsAt ?? null, endsAt: input.endsAt ?? null, isActive: input.isActive ?? true }).where(eq(discountCodes.id, id));
+    return { success: true };
+  }
+  const code = memoryDiscountCodes.find(row => row.id === id);
+  if (!code) throw new Error("DISCOUNT_NOT_FOUND");
+  Object.assign(code, { ...input, code: normalized, minOrderAmount: input.minOrderAmount ?? 0, maxUses: input.maxUses ?? null, isActive: input.isActive ?? true });
+  return { success: true };
+}
+
+export async function validateDiscountCode(code: string, subtotal: number, now = new Date()) {
+  const normalized = code.trim().toUpperCase();
+  if (!normalized) return { code: null, amount: 0 };
+  const connection = await getDb();
+  const discount = connection ? (await connection.select().from(discountCodes).where(eq(discountCodes.code, normalized)).limit(1))[0] : memoryDiscountCodes.find(row => row.code === normalized);
+  if (!discount || !discount.isActive) throw new Error("Mã giảm giá không khả dụng");
+  if (discount.startsAt && discount.startsAt.getTime() > now.getTime()) throw new Error("Mã giảm giá chưa có hiệu lực");
+  if (discount.endsAt && discount.endsAt.getTime() < now.getTime()) throw new Error("Mã giảm giá đã hết hạn");
+  if (discount.maxUses !== null && discount.maxUses !== undefined && discount.usedCount >= discount.maxUses) throw new Error("Mã giảm giá đã hết lượt sử dụng");
+  const minimum = Number(discount.minOrderAmount);
+  if (subtotal < minimum) throw new Error(`Đơn hàng cần tối thiểu ${minimum.toLocaleString("vi-VN")}đ để dùng mã này`);
+  const rawAmount = discount.type === "percent" ? subtotal * Number(discount.value) / 100 : Number(discount.value);
+  return { code: normalized, amount: Math.min(rawAmount, subtotal), discountId: discount.id };
+}
+
+export async function getInventoryBoard() {
+  const [allProducts, allVariants, orders] = await Promise.all([getAdminProducts(), getAdminProductVariants(), getOrders(undefined, true)]);
+  const reserved = new Map<string, number>();
+  for (const order of orders.filter(order => order.status === "pending" && order.paymentStatus === "pending")) {
+    for (const item of order.items || []) {
+      const key = item.variantId ? `variant:${item.variantId}` : `product:${item.productId}`;
+      reserved.set(key, (reserved.get(key) || 0) + item.quantity);
+    }
+  }
+  const rows = [] as Array<{ target: "product" | "variant"; id: number; productId: number; variantId: number | null; productName: string; variantLabel: string; sku: string; stock: number; reserved: number; available: number; isActive: boolean }>;
+  for (const product of allProducts.filter(product => product.type === "physical")) {
+    const variants = allVariants.filter(variant => variant.productId === product.id && variant.isActive);
+    if (variants.length === 0) {
+      const held = reserved.get(`product:${product.id}`) || 0;
+      rows.push({ target: "product", id: product.id, productId: product.id, variantId: null, productName: product.name, variantLabel: "Mặc định", sku: "", stock: product.stock, reserved: held, available: product.stock, isActive: product.isActive !== false });
+      continue;
+    }
+    for (const variant of variants) {
+      const held = reserved.get(`variant:${variant.id}`) || 0;
+      rows.push({ target: "variant", id: variant.id, productId: product.id, variantId: variant.id, productName: product.name, variantLabel: [variant.size, variant.color].filter(Boolean).join(" · ") || "Biến thể", sku: variant.sku || "", stock: variant.stock, reserved: held, available: variant.stock, isActive: variant.isActive });
+    }
+  }
+  return rows.sort((a, b) => a.productName.localeCompare(b.productName) || a.variantLabel.localeCompare(b.variantLabel));
+}
+
+export async function bulkSetInventory(input: { changes: Array<{ target: "product" | "variant"; id: number; stock: number }>; reason: string; performedByUserId: number }) {
+  if (!input.reason.trim()) throw new Error("Hãy nhập lý do điều chỉnh tồn kho");
+  const connection = await getDb();
+  const applyChange = async (executor: NonNullable<Awaited<ReturnType<typeof getDb>>>, change: { target: "product" | "variant"; id: number; stock: number }) => {
+    if (!Number.isInteger(change.stock) || change.stock < 0) throw new Error("Tồn kho phải là số nguyên không âm");
+    if (change.target === "variant") {
+      const row = (await executor.select().from(productVariants).where(eq(productVariants.id, change.id)).limit(1))[0];
+      if (!row) throw new Error("Không tìm thấy biến thể");
+      await executor.update(productVariants).set({ stock: change.stock }).where(eq(productVariants.id, change.id));
+      await executor.insert(inventoryMovements).values({ productId: row.productId, variantId: row.id, quantityBefore: row.stock, quantityAfter: change.stock, reason: input.reason.trim(), performedByUserId: input.performedByUserId });
+      return;
+    }
+    const row = (await executor.select().from(products).where(eq(products.id, change.id)).limit(1))[0];
+    if (!row) throw new Error("Không tìm thấy sản phẩm");
+    await executor.update(products).set({ stock: change.stock }).where(eq(products.id, change.id));
+    await executor.insert(inventoryMovements).values({ productId: row.id, variantId: null, quantityBefore: row.stock, quantityAfter: change.stock, reason: input.reason.trim(), performedByUserId: input.performedByUserId });
+  };
+  if (connection) {
+    await connection.transaction(async transaction => { for (const change of input.changes) await applyChange(transaction as never, change); });
+    return { success: true, updated: input.changes.length };
+  }
+  for (const change of input.changes) {
+    const row = change.target === "variant" ? memoryProductVariants.find(item => item.id === change.id) : memoryProducts.find(item => item.id === change.id);
+    if (!row || !Number.isInteger(change.stock) || change.stock < 0) throw new Error("Dòng tồn kho không hợp lệ");
+    const before = row.stock;
+    row.stock = change.stock;
+    memoryInventoryMovements.unshift({ id: nextInventoryMovementId++, productId: change.target === "variant" ? (row as ProductVariantType).productId : row.id, variantId: change.target === "variant" ? row.id : null, quantityBefore: before, quantityAfter: change.stock, reason: input.reason.trim(), performedByUserId: input.performedByUserId, createdAt: new Date() });
+  }
+  return { success: true, updated: input.changes.length };
+}
+
+export async function getInventoryMovements() {
+  const connection = await getDb();
+  if (connection) return await connection.select().from(inventoryMovements).orderBy(desc(inventoryMovements.createdAt)).limit(80);
+  return memoryInventoryMovements.slice(0, 80);
+}
+
+export async function getSiteSettings() {
+  const connection = await getDb();
+  const rows = connection ? await connection.select().from(siteSettings) : Array.from(memorySiteSettings.entries()).map(([settingKey, settingValue]) => ({ settingKey, settingValue }));
+  return Object.fromEntries(rows.map(row => [row.settingKey, row.settingValue]));
+}
+
+export async function saveSiteSettings(entries: Record<string, string>, updatedByUserId: number) {
+  const connection = await getDb();
+  if (connection) {
+    for (const [settingKey, settingValue] of Object.entries(entries)) {
+      const existing = (await connection.select({ id: siteSettings.id }).from(siteSettings).where(eq(siteSettings.settingKey, settingKey)).limit(1))[0];
+      if (existing) await connection.update(siteSettings).set({ settingValue, updatedByUserId }).where(eq(siteSettings.id, existing.id));
+      else await connection.insert(siteSettings).values({ settingKey, settingValue, updatedByUserId });
+    }
+  } else Object.entries(entries).forEach(([key, value]) => memorySiteSettings.set(key, value));
+  return { success: true };
+}
+
+export async function recordVisitorEvent(visitorId: string, path: string) {
+  if (!visitorId || visitorId.length > 128 || !path.startsWith("/")) return { success: false };
+  const connection = await getDb();
+  if (connection) await connection.insert(visitorEvents).values({ visitorId, path: path.slice(0, 512) });
+  else memoryVisitorEvents.push({ visitorId, path, createdAt: new Date() });
+  return { success: true };
+}
+
+export async function getOperationsOverview() {
+  const connection = await getDb();
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  if (connection) {
+    const [memberRows, orderRows, visitorRows] = await Promise.all([
+      connection.select().from(users),
+      connection.select().from(ordersTable),
+      connection.select().from(visitorEvents).where(gte(visitorEvents.createdAt, since)),
+    ]);
+    const paidOrders = orderRows.filter(order => order.paymentStatus === "paid");
+    return { members: memberRows.length, blockedMembers: memberRows.filter(member => member.status === "blocked").length, activeMembers: memberRows.filter(member => member.status === "active").length, paidOrders: paidOrders.length, revenue: paidOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0), visitors30d: new Set(visitorRows.map(row => row.visitorId)).size, pageViews30d: visitorRows.length };
+  }
+  const paidOrders = memoryOrders.filter(order => order.paymentStatus === "paid");
+  const visits = memoryVisitorEvents.filter(event => event.createdAt >= since);
+  return { members: memoryUsers.length, blockedMembers: memoryUsers.filter(member => member.status === "blocked").length, activeMembers: memoryUsers.filter(member => member.status === "active").length, paidOrders: paidOrders.length, revenue: paidOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0), visitors30d: new Set(visits.map(row => row.visitorId)).size, pageViews30d: visits.length };
 }
 
 export async function getCategories(includeInactive = false) {
@@ -1127,6 +1367,7 @@ export async function clearCart(userId: number) {
 export async function createOrder(userId: number, data: {
   totalAmount: number;
   items: Array<{ productId: number; quantity: number; price: number; variantId?: number; attributes?: string }>;
+  discountCode?: string;
   shipping?: { name: string; phone: string; address: string; note?: string; method: ShippingMethodCode };
 }) {
   const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -1159,7 +1400,9 @@ export async function createOrder(userId: number, data: {
   const hasPhysicalItems = verifiedItems.some(item => item.isPhysical);
   if (hasPhysicalItems && (!data.shipping?.name || !data.shipping.phone || !data.shipping.address)) throw new Error("Vui lòng điền đủ thông tin nhận hàng");
   const shipping = hasPhysicalItems ? getShippingOption(data.shipping?.method ?? "standard") : getShippingOption("pickup");
-  const verifiedTotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + shipping.fee;
+  const productSubtotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discount = await validateDiscountCode(data.discountCode || "", productSubtotal);
+  const verifiedTotal = Math.max(0, productSubtotal - discount.amount) + shipping.fee;
   const connection = await getDb();
   if (connection) {
     return connection.transaction(async transaction => {
@@ -1171,6 +1414,7 @@ export async function createOrder(userId: number, data: {
       }
       const inserted = await transaction.insert(ordersTable).values({
         userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: "sepay_vietqr",
+        discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
         shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
         shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems,
       });
@@ -1193,7 +1437,7 @@ export async function createOrder(userId: number, data: {
   }
   const orderId = nextOrderId++;
   memoryOrders.unshift({
-    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: "sepay_vietqr",
+    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
     shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
     shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, createdAt: new Date(),
   });
@@ -1372,6 +1616,7 @@ export async function confirmSePayPayment(input: {
       paymentConfirmedAt: new Date(),
     }).where(and(eq(ordersTable.id, matchedOrder.id), eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.status, "pending")));
     if (Number(confirmed[0]?.affectedRows ?? 0) !== 1) return { success: false, reason: "No matching pending order" };
+    if (matchedOrder.discountCode) await connection.update(discountCodes).set({ usedCount: sql`${discountCodes.usedCount} + 1` }).where(eq(discountCodes.code, matchedOrder.discountCode));
     return { success: true };
   }
 
@@ -1390,5 +1635,9 @@ export async function confirmSePayPayment(input: {
   matchedOrder.paymentStatus = "paid";
   matchedOrder.paymentReference = input.paymentReference || input.providerTransactionId;
   matchedOrder.paymentConfirmedAt = new Date();
+  if (matchedOrder.discountCode) {
+    const code = memoryDiscountCodes.find(item => item.code === matchedOrder.discountCode);
+    if (code) code.usedCount += 1;
+  }
   return { success: true };
 }
