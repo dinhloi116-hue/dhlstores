@@ -187,3 +187,4 @@
 - [x] Giữ lựa chọn SKU, số lượng, Order trước và thông tin giao hàng khi khách mở QR tại trang sản phẩm.
 - [x] Điều chỉnh tạo đơn, trạng thái chờ thanh toán và xử lý xác nhận để tương thích với QR chung không có nội dung đối soát.
 - [ ] Kiểm thử hiển thị QR tại trang sản phẩm, tạo đơn và cách chủ cửa hàng xác nhận đơn thanh toán không có cú pháp.
+- [x] Đồng bộ hướng dẫn mua hàng công khai để bỏ mô tả SePay/cú pháp cũ, nêu QR Techcombank và bước chủ cửa hàng xác nhận tiền về.
