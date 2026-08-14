@@ -8,6 +8,7 @@ import { startLogin } from "@/const";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Sparkles, Zap, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,12 +58,17 @@ export default function ProductDetail() {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [variantSort, setVariantSort] = useState<'label' | 'price'>('label');
+  const [variantSort, setVariantSort] = useState<'label' | 'price-asc' | 'price-desc'>('label');
+  const [hoveredPreview, setHoveredPreview] = useState<{ variantId: number; x: number; y: number } | null>(null);
+  const [previewVariantId, setPreviewVariantId] = useState<number | null>(null);
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
   const sortedVariants = [...variants].sort((a, b) => {
-    if (variantSort === 'price') return Number(a.priceAdjustment) - Number(b.priceAdjustment);
+    if (variantSort === 'price-asc') return Number(a.priceAdjustment) - Number(b.priceAdjustment);
+    if (variantSort === 'price-desc') return Number(b.priceAdjustment) - Number(a.priceAdjustment);
     return formatVariantOptions(a).localeCompare(formatVariantOptions(b), 'vi');
   });
+  const previewVariant = variants.find(variant => variant.id === previewVariantId);
+  const hoveredVariant = variants.find(variant => variant.id === hoveredPreview?.variantId);
   const optionGroups = Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).map(option => option.name))).map(name => ({ name, values: Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).filter(option => option.name === name).map(option => option.value))) }));
   const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
   const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? Math.max(...variants.map(variant => variant.stock)) : product.stock) : Number.MAX_SAFE_INTEGER;
@@ -184,11 +190,10 @@ export default function ProductDetail() {
               <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản & xem tồn kho</label><p className="mt-1 text-xs text-emerald-700">Chọn theo thuộc tính hoặc chọn trực tiếp một dòng SKU có ảnh và số lượng còn lại.</p></div>
-                  <label className="text-xs font-bold text-slate-700">Sắp xếp SKU<select value={variantSort} onChange={event => setVariantSort(event.target.value as typeof variantSort)} className="mt-1 block h-9 w-full rounded-lg border border-emerald-200 bg-white px-2 text-xs font-bold text-slate-800"><option value="label">Theo tên</option><option value="price">Theo giá tiền</option></select></label>
+                  <label className="text-xs font-bold text-slate-700">Sắp xếp SKU<select value={variantSort} onChange={event => setVariantSort(event.target.value as typeof variantSort)} className="mt-1 block h-9 w-full rounded-lg border border-emerald-200 bg-white px-2 text-xs font-bold text-slate-800"><option value="label">Theo tên</option><option value="price-asc">Giá thấp → cao</option><option value="price-desc">Giá cao → thấp</option></select></label>
                 </div>
                 {optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = sortedVariants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = sortedVariants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}
-                <div className="overflow-hidden rounded-xl border border-emerald-200 bg-white"><div className="max-h-80 overflow-y-auto"><table className="w-full text-left text-xs"><thead className="sticky top-0 z-10 bg-emerald-100 text-[10px] font-black uppercase tracking-wide text-emerald-900"><tr><th className="px-3 py-2">Ảnh SKU</th><th className="px-3 py-2">Phiên bản</th><th className="hidden px-3 py-2 sm:table-cell">Mã SKU</th><th className="px-3 py-2">Tồn kho</th><th className="hidden px-3 py-2 md:table-cell">Giá</th></tr></thead><tbody className="divide-y divide-emerald-100">{sortedVariants.map(variant => { const isSelected = variant.id === selectedVariantId; const outOfStock = variant.stock <= 0; return <tr key={variant.id} onClick={() => !outOfStock && setSelectedVariantId(variant.id)} className={`cursor-pointer transition-colors ${isSelected ? "bg-emerald-100" : outOfStock ? "bg-slate-50 text-slate-400" : "hover:bg-emerald-50"}`}><td className="px-3 py-2"><div className="h-11 w-11 overflow-hidden rounded-md border border-slate-200 bg-slate-50">{variant.image ? <img src={variant.image} alt={formatVariantOptions(variant)} className="h-full w-full object-contain" /> : <span className="flex h-full items-center justify-center text-[9px] font-bold text-slate-400">SKU</span>}</div></td><td className="px-3 py-2 font-bold text-slate-800"><span className="line-clamp-2">{formatVariantOptions(variant)}</span>{isSelected && <span className="mt-1 block text-[10px] font-black text-emerald-700">Đang chọn</span>}</td><td className="hidden px-3 py-2 font-mono text-[10px] text-slate-500 sm:table-cell">{variant.sku || '—'}</td><td className="px-3 py-2"><span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black ${outOfStock ? "bg-rose-100 text-rose-700" : variant.stock <= 5 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{outOfStock ? 'Hết hàng' : `Còn ${variant.stock}`}</span></td><td className="hidden px-3 py-2 font-bold text-amber-700 md:table-cell">{formatCurrency(Number(product.price) + Number(variant.priceAdjustment))}</td></tr>; })}</tbody></table></div></div>
-                {selectedVariant && <p className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-900">Đã chọn: {formatVariantOptions(selectedVariant)} · Còn {selectedVariant.stock} sản phẩm</p>}
+                <div className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">SKU đang chọn</p><p className="mt-1 text-xs font-semibold text-emerald-900">{selectedVariant ? formatVariantOptions(selectedVariant) : 'Chọn một phiên bản ở phía trên'}</p></div><div><label className="text-[10px] font-black uppercase tracking-wide text-slate-500">Số lượng</label><div className="mt-1 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-8 w-8 font-black text-slate-700 hover:text-black">−</button><span className="w-8 text-center text-sm font-black text-slate-900">{quantity}</span><button type="button" onClick={() => setQuantity(quantity + 1)} disabled={product.type === "physical" && quantity >= availableStock} className="h-8 w-8 font-black text-slate-700 hover:text-black disabled:cursor-not-allowed disabled:opacity-35">+</button></div></div></div>
               </section>
             )}
 
@@ -201,26 +206,6 @@ export default function ProductDetail() {
                 )}
               </div>
             )}
-
-            <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? (product.type === "physical" ? 'Số lượng:' : 'Số lượng gói:') : 'Quantity:'}</label>
-              <div className="flex items-center gap-3 w-36 bg-slate-50 border border-slate-200 rounded-xl p-1">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 flex items-center justify-center text-slate-700 hover:text-black font-bold"
-                >
-                  -
-                </button>
-                <span className="flex-1 text-center font-bold text-slate-900">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  disabled={product.type === "physical" && quantity >= availableStock}
-                  className="w-10 h-10 flex items-center justify-center text-slate-700 hover:text-black font-bold disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  +
-                </button>
-              </div>
-            </div>
 
             <div className="pt-2 flex flex-col sm:flex-row gap-4">
               <Button
@@ -252,9 +237,13 @@ export default function ProductDetail() {
                 <span>{lang === 'vi' ? 'Tải xuống tự động 24/7' : 'Instant 24/7 downloads'}</span>
               </div>
             </div>
+
+            {product.type === "physical" && variants.length > 0 && <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"><div className="flex items-start justify-between gap-4"><div><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">Tồn kho theo SKU</h2><p className="mt-1 text-xs text-slate-500">Rê chuột vào ảnh để xem lớn; trên điện thoại, chạm ảnh để mở xem trước.</p></div><span className="shrink-0 rounded-full bg-slate-200 px-2 py-1 text-[10px] font-black text-slate-700">{variants.length} SKU</span></div><div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="max-h-80 overflow-y-auto"><div className="sticky top-0 z-10 grid grid-cols-[3.5rem_minmax(0,1fr)_auto] gap-3 bg-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-600 sm:grid-cols-[3.5rem_minmax(0,1fr)_8rem_5.5rem]"><span>Ảnh</span><span>Phiên bản</span><span className="hidden sm:block">Mã SKU</span><span>Tồn kho</span></div>{sortedVariants.map(variant => { const isSelected = variant.id === selectedVariantId; const outOfStock = variant.stock <= 0; return <button key={variant.id} type="button" disabled={outOfStock} onClick={() => setSelectedVariantId(variant.id)} className={`grid w-full grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-slate-100 px-3 py-2 text-left text-xs transition-colors sm:grid-cols-[3.5rem_minmax(0,1fr)_8rem_5.5rem] ${isSelected ? "bg-emerald-50" : "hover:bg-slate-50"} disabled:cursor-not-allowed disabled:opacity-55`}><span role={variant.image ? "button" : undefined} tabIndex={variant.image ? 0 : undefined} aria-label={variant.image ? `Xem ảnh lớn ${formatVariantOptions(variant)}` : undefined} onMouseEnter={event => { if (variant.image && window.innerWidth >= 768) setHoveredPreview({ variantId: variant.id, x: Math.min(window.innerWidth - 250, event.clientX + 18), y: Math.min(window.innerHeight - 280, event.clientY - 32) }); }} onMouseLeave={() => setHoveredPreview(null)} onClick={event => { if (variant.image) { event.stopPropagation(); setPreviewVariantId(variant.id); } }} onKeyDown={event => { if (variant.image && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); event.stopPropagation(); setPreviewVariantId(variant.id); } }} className={`h-11 w-11 overflow-hidden rounded-md border border-slate-200 bg-slate-50 ${variant.image ? "cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-cyan-500" : ""}`}>{variant.image ? <img src={variant.image} alt={formatVariantOptions(variant)} className="h-full w-full object-contain" /> : <span className="flex h-full items-center justify-center text-[9px] font-bold text-slate-400">SKU</span>}</span><span className="min-w-0"><span className="block truncate font-bold text-slate-800">{formatVariantOptions(variant)}</span>{isSelected && <span className="mt-0.5 block text-[10px] font-black text-emerald-700">Đang chọn</span>}</span><span className="hidden truncate font-mono text-[10px] text-slate-500 sm:block">{variant.sku || '—'}</span><span className={`justify-self-end rounded-full px-2 py-1 text-[10px] font-black ${outOfStock ? "bg-rose-100 text-rose-700" : variant.stock <= 5 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{outOfStock ? 'Hết' : variant.stock}</span></button>; })}</div></div></section>}
           </div>
         </div>
       </div>
+      {hoveredPreview && hoveredVariant?.image && <div className="pointer-events-none fixed z-[90] hidden w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl md:block" style={{ left: hoveredPreview.x, top: hoveredPreview.y }}><img src={hoveredVariant.image} alt={formatVariantOptions(hoveredVariant)} className="aspect-square w-full rounded-lg object-contain" /><p className="mt-2 truncate px-1 text-[10px] font-bold text-slate-700">{formatVariantOptions(hoveredVariant)}</p></div>}
+      <Dialog open={previewVariantId !== null} onOpenChange={open => { if (!open) setPreviewVariantId(null); }}><DialogContent className="max-w-sm border-slate-200 bg-white"><DialogHeader><DialogTitle className="text-left text-base font-black text-slate-900">Ảnh SKU</DialogTitle><DialogDescription className="text-left text-xs text-slate-500">{previewVariant ? formatVariantOptions(previewVariant) : ""}</DialogDescription></DialogHeader>{previewVariant?.image && <img src={previewVariant.image} alt={formatVariantOptions(previewVariant)} className="aspect-square w-full rounded-xl border border-slate-200 bg-slate-50 object-contain" />}</DialogContent></Dialog>
     </StoreLayout>
   );
 }

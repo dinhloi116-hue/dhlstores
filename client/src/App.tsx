@@ -9,6 +9,7 @@ import Account from "@/pages/Account";
 import AdminOrders from "@/pages/AdminOrders";
 import OperationsCenter from "@/pages/OperationsCenter";
 import PetTramTool from "@/pages/PetTramTool";
+import ToolsLibrary from "@/pages/ToolsLibrary";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -21,6 +22,7 @@ function Router() {
       <Route path={"/products"} component={Products} />
       <Route path={"/product/:slug"} component={ProductDetail} />
       <Route path={"/checkout"} component={Checkout} />
+      <Route path={"/tools"} component={ToolsLibrary} />
       <Route path={"/tools/pet-tram"} component={PetTramTool} />
       <Route path={"/account"} component={Account} />
       <Route path={"/admin"} component={AdminOrders} />

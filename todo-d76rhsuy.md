@@ -122,7 +122,21 @@
 - [x] Hiển thị bảng tồn kho theo SKU/biến thể, gồm ảnh nhỏ, trạng thái còn hàng và thao tác chọn biến thể để mua.
 - [x] Kiểm thử trải nghiệm SKU/tồn kho/ảnh trên máy tính và điện thoại, rồi xuất bản cập nhật.
 - [x] Rút gọn bộ sắp xếp SKU chỉ còn Theo tên và Theo giá tiền.
-- [ ] Kiểm thử và xuất bản cập nhật sắp xếp SKU tối giản.
+- [x] Kiểm thử và xuất bản cập nhật sắp xếp SKU tối giản.
+- [x] Bổ sung sắp xếp SKU theo giá thấp → cao và giá cao → thấp, bên cạnh sắp xếp theo tên.
+- [x] Phóng to ảnh SKU khoảng 200% khi rê chuột hoặc chạm xem trước, không che nội dung bảng.
+- [x] Đổi mục Tool thành thư viện công cụ nổi bật, hỗ trợ mở rộng thêm nhiều Tool trong tương lai.
+- [ ] Chẩn đoán và sửa Tool PET TRAM không thao tác được trong website.
+- [ ] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
+- [ ] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
+- [ ] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
+- [ ] Kiểm thử toàn bộ SKU, Tool, hồ sơ địa chỉ, checkout vật lý và xuất bản cập nhật.
+- [x] Đặt khối chọn SKU và điều chỉnh số lượng cùng hàng; chuyển bảng tồn kho xuống cuối trang sản phẩm.
+- [x] Thêm preview ảnh SKU thật sự khi hover/click, hiển thị ảnh phóng to ngoài ô thumbnail mà không bị cắt.
+- [x] Hỗ trợ chạm thumbnail trên điện thoại để mở/đóng ảnh SKU phóng to an toàn.
+- [ ] Kiểm thử trực quan preview ảnh SKU trên desktop và điện thoại.
+- [ ] Chụp bằng chứng preview ảnh SKU đang mở trên desktop và điện thoại; kiểm tra mở/đóng, vị trí không bị cắt và vẫn chọn SKU bình thường.
+- [ ] Việt hóa toàn bộ nhãn, hướng dẫn và biểu mẫu cấu hình QR/ngân hàng cho hàng vật lý.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.
