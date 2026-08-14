@@ -67,6 +67,7 @@ export default function AdminOrders() {
   const [selectedSkuIds, setSelectedSkuIds] = useState<number[]>([]);
   const [skuDrafts, setSkuDrafts] = useState<Record<number, Pick<VariantDraft, "priceAdjustment" | "stock" | "isActive">>>({});
   const [skuSortMode, setSkuSortMode] = useState<"manual" | "name" | "priceLow" | "priceHigh">("manual");
+  const [variantOrderDraft, setVariantOrderDraft] = useState<number[]>([]);
   const [bulkSkuStock, setBulkSkuStock] = useState("");
   const [bulkSkuPrice, setBulkSkuPrice] = useState("");
   const [wholesaleTierDrafts, setWholesaleTierDrafts] = useState<WholesaleTierDraft[]>([{ minQuantity: "10", unitPrice: "" }, { minQuantity: "25", unitPrice: "" }, { minQuantity: "50", unitPrice: "" }]);
@@ -103,7 +104,10 @@ export default function AdminOrders() {
   const users = usersQuery.data || [];
   const inventoryRows = (inventoryQuery.data || []).filter(row => `${row.productName} ${row.variantLabel} ${row.sku}`.toLowerCase().includes(inventorySearch.toLowerCase()));
   const selectedInventoryChanges = inventoryRows.filter(row => selectedInventoryRows.includes(`${row.target}:${row.id}`)).map(row => ({ target: row.target, id: row.id, stock: Number(inventoryDraftStocks[`${row.target}:${row.id}`] ?? row.stock) }));
-  const visibleSkuVariants = [...variants].sort((a, b) => {
+  const savedVariantOrder = variants.map(variant => variant.id);
+  const orderedVariants = variantOrderDraft.length === variants.length ? variantOrderDraft.map(id => variants.find(variant => variant.id === id)).filter((variant): variant is typeof variants[number] => Boolean(variant)) : [...variants];
+  const hasPendingSkuOrder = skuSortMode === "manual" && variantOrderDraft.length === savedVariantOrder.length && variantOrderDraft.some((id, index) => id !== savedVariantOrder[index]);
+  const visibleSkuVariants = [...orderedVariants].sort((a, b) => {
     if (skuSortMode === "name") return `${a.color || ""} ${a.size || ""} ${a.sku || ""}`.localeCompare(`${b.color || ""} ${b.size || ""} ${b.sku || ""}`, "vi");
     if (skuSortMode === "priceLow") return Number(a.priceAdjustment) - Number(b.priceAdjustment) || a.sortOrder - b.sortOrder;
     if (skuSortMode === "priceHigh") return Number(b.priceAdjustment) - Number(a.priceAdjustment) || a.sortOrder - b.sortOrder;
@@ -153,6 +157,7 @@ export default function AdminOrders() {
   useEffect(() => {
     setSelectedSkuIds([]);
     setSkuDrafts(Object.fromEntries(variants.map(variant => [variant.id, { priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive }])));
+    setVariantOrderDraft(variants.map(variant => variant.id));
   }, [selectedVariantProductId, variantsQuery.data]);
 
   useEffect(() => {
@@ -349,18 +354,22 @@ export default function AdminOrders() {
     onError: error => toast.error(error.message),
   });
 
-  const saveVariantOrder = (variantIds: number[]) => {
+  const saveVariantOrder = (nextDraft?: number[]) => {
+    if (nextDraft) {
+      setVariantOrderDraft(nextDraft);
+      return;
+    }
     if (!selectedVariantProductId || reorderProductVariants.isPending) return;
-    reorderProductVariants.mutate({ productId: selectedVariantProductId, variantIds });
+    reorderProductVariants.mutate({ productId: selectedVariantProductId, variantIds: variantOrderDraft });
   };
 
   const moveVariant = (variantId: number, direction: -1 | 1) => {
-    const currentIndex = variants.findIndex(variant => variant.id === variantId);
+    const currentIndex = variantOrderDraft.indexOf(variantId);
     const targetIndex = currentIndex + direction;
-    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= variants.length) return;
-    const nextOrder = variants.map(variant => variant.id);
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= variantOrderDraft.length) return;
+    const nextOrder = [...variantOrderDraft];
     [nextOrder[currentIndex], nextOrder[targetIndex]] = [nextOrder[targetIndex], nextOrder[currentIndex]];
-    saveVariantOrder(nextOrder);
+    setVariantOrderDraft(nextOrder);
   };
 
   const selectFile = (target: "image" | "file") => {
@@ -469,6 +478,7 @@ export default function AdminOrders() {
   return (
     <StoreLayout>
       <input ref={uploadRef} type="file" className="hidden" accept={uploadTarget === "image" ? "image/png,image/jpeg,image/webp,image/gif" : "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,application/pdf,application/zip,.zip"} onChange={handleFileChange} />
+      {selectedProduct?.type === "physical" && skuSortMode === "manual" && hasPendingSkuOrder && <div className="fixed inset-x-4 bottom-5 z-[80] mx-auto flex max-w-xl flex-col gap-3 rounded-2xl border border-violet-300 bg-white p-3 shadow-2xl sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-black text-violet-950">Thứ tự SKU đã thay đổi</p><p className="mt-0.5 text-xs text-slate-600">Bấm lưu để cập nhật đúng thứ tự khách hàng nhìn thấy.</p></div><div className="flex shrink-0 gap-2"><Button type="button" variant="outline" className="border-slate-300 bg-white text-slate-700" onClick={() => setVariantOrderDraft(savedVariantOrder)}>Hoàn tác</Button><Button type="button" className="bg-violet-600 font-black text-white hover:bg-violet-700" disabled={reorderProductVariants.isPending} onClick={() => saveVariantOrder()}>{reorderProductVariants.isPending ? "Đang lưu…" : "Lưu thứ tự SKU"}</Button></div></div>}
       <div className="mx-auto max-w-[1600px] space-y-8 px-4 py-8 sm:px-6 lg:px-8 2xl:px-10">
         <section className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
           <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">DHL Stores · Quản trị</p><h1 className="mt-1 font-display text-3xl font-black uppercase text-slate-900">Quản trị cửa hàng</h1><p className="mt-1 text-xs leading-relaxed text-slate-500">Quản lý sản phẩm, tồn kho, tệp và đơn hàng tại một nơi. Liên kết email tại mục Tài khoản cá nhân.</p></div><div className="flex flex-wrap gap-2">{user?.role === "owner" && <Link href="/admin/operations"><Button className="bg-slate-900 text-white hover:bg-slate-800">Trung tâm vận hành</Button></Link>}<Link href="/account"><Button variant="outline" className="border-purple-200 bg-purple-50 text-purple-800 hover:border-purple-400 hover:bg-purple-100">Tài khoản & Email</Button></Link><Link href="/products"><Button variant="outline" className="border-slate-300 bg-white text-slate-800 hover:border-amber-400 hover:bg-amber-50">Xem cửa hàng <ChevronLeft className="ml-1 h-4 w-4 rotate-180" /></Button></Link></div>
