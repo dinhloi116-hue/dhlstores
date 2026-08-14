@@ -14,8 +14,8 @@ describe("public SKU inventory presentation", () => {
 
     expect(source).toContain('hidden w-44 rounded-xl');
     expect(source).toContain('h-11 w-11 overflow-hidden');
-    expect(source).toContain('onMouseMove={event => { if (variant.image && window.innerWidth >= 768) updateHoveredPreview');
-    expect(source).toContain('image.addEventListener("pointerenter", showPreview)');
+    expect(source).toContain('group/sku relative flex h-11 w-11');
+    expect(source).toContain('group-hover/sku:block');
     expect(source).toContain('id="sku-inventory-panel"');
     expect(source).toContain('SKU hết hàng vẫn xem được ảnh');
   });

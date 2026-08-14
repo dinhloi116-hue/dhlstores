@@ -240,3 +240,5 @@
 - [x] Khi chọn sắp xếp SKU theo tên hoặc giá, tạo thứ tự nháp thực tế để nút Lưu toàn bộ thứ tự SKU được bật.
 - [x] Cho phép lưu thứ tự theo tên/giá bằng một lần bấm và quay về chế độ thứ tự thủ công sau khi lưu.
 - [x] Kiểm thử sắp xếp theo tên/giá, nút lưu và thứ tự khách nhìn thấy trước khi xuất bản.
+- [x] Sửa dứt điểm preview ảnh SKU khi rê chuột bằng lớp hiển thị độc lập, không bị vùng cuộn che.
+- [x] Kiểm tra hover thumbnail SKU trên desktop và chạm mở ảnh trên điện thoại trước khi xuất bản.
