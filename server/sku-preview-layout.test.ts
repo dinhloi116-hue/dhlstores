@@ -18,11 +18,12 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('SKU hết hàng vẫn xem được ảnh');
   });
 
-  it("places SKU inventory beside the purchase controls on wide screens", () => {
+  it("keeps SKU inventory in the purchase flow without narrowing either panel", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.88fr)]');
+    expect(source).toContain('className="space-y-4">{optionGroups.map');
     expect(source).toContain('{skuInventoryPanel}');
-    expect(source).toContain('xl:sticky xl:top-4');
+    expect(source).toContain('max-h-72 overflow-y-auto');
+    expect(source).toContain('lg:col-span-7 space-y-6');
   });
 });

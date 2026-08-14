@@ -219,3 +219,6 @@
 - [x] Di chuyển bảng tồn kho SKU lên ngay trong khối đặt hàng, ngang hàng với vùng chọn SKU và số lượng trên màn hình desktop.
 - [x] Khắc phục preview ảnh SKU để rê chuột trên thumbnail luôn mở ảnh phóng to dễ nhìn, không bị che hoặc trôi khỏi vùng quan sát.
 - [x] Kiểm thử trực quan lại bố cục đặt hàng–tồn kho và ảnh SKU phóng to trên desktop/mobile trước khi xuất bản.
+- [x] Thiết kế lại khối chọn SKU, số lượng và Mua ngay/Order theo chiều rộng cân đối; không dùng cột tồn kho hẹp làm kéo dài toàn bộ khối mua hàng.
+- [x] Đặt tồn kho SKU thành bảng rộng ngay dưới thao tác đặt hàng, vẫn trong cùng cụm mua để dễ đối chiếu mà không làm vỡ bố cục.
+- [x] Giữ phóng to chỉ khi rê chuột vào thumbnail SKU; kiểm tra lại trực quan desktop/mobile trước khi xuất bản.
