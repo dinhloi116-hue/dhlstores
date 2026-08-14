@@ -29,6 +29,6 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('purchaseModes.after(purchaseActions)');
     expect(source).toContain('purchaseActions.after(panel)');
     expect(source).toContain('max-h-72 overflow-y-auto');
-    expect(source).toContain('lg:col-span-7 space-y-6');
+    expect(source).toContain('lg:col-span-7 lg:h-full lg:overflow-y-auto lg:pr-3');
   });
 });

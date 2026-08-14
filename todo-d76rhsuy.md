@@ -234,3 +234,6 @@
 - [x] Thêm tìm kiếm trong Catalog theo tên sản phẩm, SKU, tên biến thể và thuộc tính liên quan.
 - [x] Hiển thị nút Lưu toàn bộ thứ tự SKU cố định trong cột SKU, kể cả khi chưa có thay đổi.
 - [x] Kiểm thử tìm kiếm Catalog, lưu toàn bộ SKU và trạng thái chưa lưu trước khi xuất bản.
+- [x] Tách trang chi tiết desktop thành ảnh sản phẩm cố định bên trái và vùng thao tác cuộn độc lập bên phải.
+- [x] Bảo đảm hover thumbnail SKU trong bảng tồn kho mở preview ảnh lớn rõ ràng ngay trong vùng thao tác bên phải.
+- [x] Kiểm thử vùng cuộn độc lập, preview SKU và bố cục điện thoại trước khi xuất bản.

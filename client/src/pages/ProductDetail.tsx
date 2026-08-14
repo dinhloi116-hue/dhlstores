@@ -111,7 +111,7 @@ export default function ProductDetail() {
     const showPreview = (event: PointerEvent) => {
       if (window.innerWidth < 768) return;
       const image = event.currentTarget as HTMLImageElement;
-      const variant = variants.find(item => item.image === image.currentSrc || item.image === image.src);
+      const variant = variants.find(item => Boolean(item.image) && (image.currentSrc.endsWith(item.image!) || image.src.endsWith(item.image!)));
       if (variant) updateHoveredPreview(variant.id, event.clientX, event.clientY);
     };
     const clearPreview = () => setHoveredPreview(null);
@@ -276,15 +276,15 @@ export default function ProductDetail() {
           <ArrowLeft className="w-4 h-4" /> {lang === 'vi' ? 'Quay lại kho tài nguyên' : 'Back to library'}
         </Link>
 
-        <div className="grid grid-cols-1 gap-8 items-start bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-sm lg:grid-cols-12">
-          <div className="lg:col-span-5">
+        <div className="grid grid-cols-1 items-start gap-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:h-[calc(100vh-9rem)] lg:min-h-[44rem] lg:grid-cols-12 lg:overflow-hidden">
+          <div className="lg:col-span-5 lg:self-start">
             <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner">
               {(selectedVariant?.image || product.image) ? <img src={selectedVariant?.image || product.image} alt={selectedVariant ? `${product.name} · ${formatVariantOptions(selectedVariant)}` : product.name} className="h-full w-full object-contain" /> : <AssetVisual categoryId={product.categoryId} title={product.name} fileSize={product.fileSize} />}
             </div>
             {product.description && <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4"><div className="flex items-center justify-between gap-3"><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">{lang === 'vi' ? 'Mô tả sản phẩm' : 'Product description'}</h2>{product.description.length > 260 && <button type="button" onClick={() => setDescriptionExpanded(current => !current)} className="shrink-0 text-xs font-black text-amber-700 hover:text-amber-900">{descriptionExpanded ? (lang === 'vi' ? 'Thu gọn' : 'Show less') : (lang === 'vi' ? 'Xem thêm' : 'Read more')}</button>}</div><p className={`mt-2 text-xs leading-relaxed text-slate-600 sm:text-sm ${descriptionExpanded ? '' : 'line-clamp-5'}`}>{product.description}</p></section>}
           </div>
 
-          <div className="lg:col-span-7 space-y-6">
+          <div className="space-y-6 lg:col-span-7 lg:h-full lg:overflow-y-auto lg:pr-3">
             <div>
               <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
                 <Sparkles className="w-4 h-4" />
