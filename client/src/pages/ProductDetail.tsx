@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import StoreLayout from "@/components/StoreLayout";
 import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
-import { useRoute, Link, useLocation } from "wouter";
+import { useRoute, Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Clock3, Sparkles, Tag, Zap, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Clock3, Sparkles, Tag, Zap, CheckCircle2, QrCode, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 function formatVariantOptions(variant: { size?: string; color?: string; attributes?: string }) {
@@ -28,10 +29,19 @@ function getVariantOptions(variant: { size?: string; color?: string; attributes?
   return options;
 }
 
+type InlinePayment = {
+  orderId: number;
+  orderCode: string;
+  totalAmount: number;
+  qrUrl: string | null;
+  hasPhysicalItems: boolean;
+  hasPreorderItems?: boolean;
+  preorderEstimatedDays?: string | null;
+};
+
 export default function ProductDetail() {
   const [, singularParams] = useRoute("/product/:slug");
   const [, pluralParams] = useRoute("/products/:slug");
-  const [, setLocation] = useLocation();
   const slug = singularParams?.slug || pluralParams?.slug || "";
 
   const { isAuthenticated } = useAuth();
@@ -62,6 +72,10 @@ export default function ProductDetail() {
   const [fulfillmentMode, setFulfillmentMode] = useState<'in_stock' | 'preorder'>('in_stock');
   const [hoveredPreview, setHoveredPreview] = useState<{ variantId: number; x: number; y: number } | null>(null);
   const [previewVariantId, setPreviewVariantId] = useState<number | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [inlinePayment, setInlinePayment] = useState<InlinePayment | null>(null);
+  const [inlinePaymentExpired, setInlinePaymentExpired] = useState(false);
+  const [inlineShipping, setInlineShipping] = useState({ name: "", phone: "", address: "", note: "", method: "standard" as "pickup" | "standard" | "express" });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
   const sortedVariants = [...variants].sort((a, b) => {
     if (variantSort === 'price-asc') return Number(a.priceAdjustment) - Number(b.priceAdjustment);
@@ -75,10 +89,21 @@ export default function ProductDetail() {
   const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? Math.max(...variants.map(variant => variant.stock)) : product.stock) : Number.MAX_SAFE_INTEGER;
   const requiresVariant = product?.type === "physical" && variants.length > 0;
   const isPreorder = product?.type === "physical" && fulfillmentMode === 'preorder';
+  const savedAddressesQuery = trpc.store.shippingAddresses.useQuery(undefined, { enabled: isAuthenticated && product?.type === "physical" });
+  const savedAddresses = savedAddressesQuery.data || [];
+  const inlinePaymentInput = useMemo(() => inlinePayment ? { orderId: inlinePayment.orderId } : undefined, [inlinePayment]);
+  const inlinePaymentStatus = trpc.store.paymentStatus.useQuery(inlinePaymentInput!, { enabled: Boolean(inlinePaymentInput), refetchInterval: query => query.state.data?.paymentStatus === "paid" ? false : 3500 });
+  const inlineDownloads = trpc.store.instantDownloads.useQuery(inlinePaymentInput!, { enabled: Boolean(inlinePaymentInput) && inlinePaymentStatus.data?.paymentStatus === "paid" && !inlinePayment?.hasPhysicalItems });
 
   useEffect(() => {
     if (product?.type === "physical" && fulfillmentMode === 'in_stock' && availableStock > 0) setQuantity(current => Math.min(current, availableStock));
   }, [availableStock, product?.type, fulfillmentMode]);
+
+  useEffect(() => {
+    if (product?.type !== "physical" || inlineShipping.name || savedAddresses.length === 0) return;
+    const address = savedAddresses.find(item => item.isDefault) || savedAddresses[0];
+    if (address) setInlineShipping(current => ({ ...current, name: address.recipientName, phone: address.phone, address: address.address }));
+  }, [product?.type, savedAddresses, inlineShipping.name]);
 
   const addToCartMutation = trpc.store.addToCart.useMutation({
     onSuccess: () => {
@@ -91,6 +116,24 @@ export default function ProductDetail() {
       setAdding(false);
     }
   });
+
+  const cancelInlineOrder = trpc.store.cancelPendingOrder.useMutation();
+  const quickCheckoutMutation = trpc.store.quickCheckout.useMutation({
+    onSuccess: order => {
+      setInlinePayment(order);
+      setInlinePaymentExpired(false);
+      toast.success("Mã QR Techcombank đã sẵn sàng trên trang sản phẩm.");
+    },
+    onError: error => toast.error(error.message || "Không thể tạo đơn thanh toán"),
+  });
+
+  useEffect(() => {
+    if (!inlinePayment || inlinePaymentStatus.data?.paymentStatus === "paid" || inlinePaymentExpired) return;
+    const timer = window.setTimeout(() => {
+      cancelInlineOrder.mutate({ orderId: inlinePayment.orderId }, { onSuccess: result => { if (result.cancelled) setInlinePaymentExpired(true); } });
+    }, 10 * 60 * 1_000);
+    return () => window.clearTimeout(timer);
+  }, [inlinePayment?.orderId, inlinePaymentStatus.data?.paymentStatus, inlinePaymentExpired]);
 
   if (productQuery.isLoading) {
     return (
@@ -153,15 +196,16 @@ export default function ProductDetail() {
     }
     if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
     if (product.type === "physical" && fulfillmentMode === 'in_stock' && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
-    addToCartMutation.mutate({
-      productId: product.id,
-      quantity,
-      variantId: selectedVariantId || undefined,
-      fulfillmentMode: product.type === "physical" ? fulfillmentMode : undefined,
-    }, {
-      onSuccess: () => {
-        setLocation("/checkout");
-      }
+    setInlinePayment(null);
+    setInlinePaymentExpired(false);
+    setPaymentDialogOpen(true);
+  };
+
+  const createInlinePayment = () => {
+    if (product.type === "physical" && (!inlineShipping.name || !inlineShipping.phone || !inlineShipping.address)) return toast.error("Vui lòng điền đủ thông tin nhận hàng trước khi tạo QR.");
+    quickCheckoutMutation.mutate({
+      item: { productId: product.id, quantity, variantId: selectedVariantId || undefined, fulfillmentMode: product.type === "physical" ? fulfillmentMode : undefined },
+      shipping: product.type === "physical" ? inlineShipping : undefined,
     });
   };
 
@@ -250,6 +294,30 @@ export default function ProductDetail() {
       </div>
       {hoveredPreview && hoveredVariant?.image && <div className="pointer-events-none fixed z-[90] hidden w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl md:block" style={{ left: hoveredPreview.x, top: hoveredPreview.y }}><img src={hoveredVariant.image} alt={formatVariantOptions(hoveredVariant)} className="aspect-square w-full rounded-lg object-contain" /><p className="mt-2 truncate px-1 text-[10px] font-bold text-slate-700">{formatVariantOptions(hoveredVariant)}</p></div>}
       <Dialog open={previewVariantId !== null} onOpenChange={open => { if (!open) setPreviewVariantId(null); }}><DialogContent className="max-w-sm border-slate-200 bg-white"><DialogHeader><DialogTitle className="text-left text-base font-black text-slate-900">Ảnh SKU</DialogTitle><DialogDescription className="text-left text-xs text-slate-500">{previewVariant ? formatVariantOptions(previewVariant) : ""}</DialogDescription></DialogHeader>{previewVariant?.image && <img src={previewVariant.image} alt={formatVariantOptions(previewVariant)} className="aspect-square w-full rounded-xl border border-slate-200 bg-slate-50 object-contain" />}</DialogContent></Dialog>
+      <Dialog open={paymentDialogOpen} onOpenChange={open => {
+        if (!open && inlinePayment && inlinePaymentStatus.data?.paymentStatus !== "paid") cancelInlineOrder.mutate({ orderId: inlinePayment.orderId });
+        setPaymentDialogOpen(open);
+        if (!open) setInlinePayment(null);
+      }}>
+        <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto border-slate-200 bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-left text-lg font-black text-slate-900">Thanh toán ngay tại trang sản phẩm</DialogTitle>
+            <DialogDescription className="text-left text-xs text-slate-500">Quét QR Techcombank của DHL Stores. Không cần nhập nội dung chuyển khoản.</DialogDescription>
+          </DialogHeader>
+          {!inlinePayment ? <div className="space-y-4">
+            {product.type === "physical" && <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+              <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-emerald-700" /><div><p className="text-xs font-black uppercase tracking-wide text-emerald-800">Địa chỉ nhận hàng</p><p className="mt-1 text-[11px] text-emerald-700">Bạn vẫn ở nguyên trang sản phẩm khi tạo QR.</p></div></div>
+              {savedAddresses.length > 0 && <div className="flex flex-wrap gap-2">{savedAddresses.map(address => <button key={address.id} type="button" onClick={() => setInlineShipping(current => ({ ...current, name: address.recipientName, phone: address.phone, address: address.address }))} className={`rounded-lg border px-3 py-2 text-left text-[11px] font-bold ${inlineShipping.address === address.address ? "border-emerald-500 bg-white text-emerald-800" : "border-emerald-100 bg-white text-slate-600"}`}>{address.recipientName} · {address.phone}</button>)}</div>}
+              <input value={inlineShipping.name} onChange={event => setInlineShipping(current => ({ ...current, name: event.target.value }))} className="h-10 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm" placeholder="Họ tên người nhận" />
+              <input value={inlineShipping.phone} onChange={event => setInlineShipping(current => ({ ...current, phone: event.target.value }))} className="h-10 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm" placeholder="Số điện thoại" inputMode="tel" />
+              <textarea value={inlineShipping.address} onChange={event => setInlineShipping(current => ({ ...current, address: event.target.value }))} className="min-h-20 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm" placeholder="Địa chỉ nhận hàng" />
+              <select value={inlineShipping.method} onChange={event => setInlineShipping(current => ({ ...current, method: event.target.value as typeof current.method }))} className="h-10 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm"><option value="pickup">Nhận tại cửa hàng — 0 đ</option><option value="standard">Giao tiêu chuẩn — 30.000 đ</option><option value="express">Giao nhanh — 50.000 đ</option></select>
+            </div>}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-black uppercase tracking-wide text-amber-800">Đơn đang tạo</p><p className="mt-1 text-sm font-bold text-slate-900">{product.name}{selectedVariant ? ` · ${formatVariantOptions(selectedVariant)}` : ""}</p><p className="mt-1 text-xs text-slate-600">Số lượng: {quantity}{isPreorder ? " · Order trước giảm 10%, dự kiến 7–10 ngày" : ""}</p></div>
+            <Button onClick={createInlinePayment} disabled={quickCheckoutMutation.isPending} className="w-full bg-amber-500 py-5 font-black text-slate-950 hover:bg-amber-600"><QrCode className="mr-2 h-4 w-4" />{quickCheckoutMutation.isPending ? "ĐANG TẠO QR…" : "HIỆN MÃ QR THANH TOÁN"}</Button>
+          </div> : inlinePaymentStatus.data?.paymentStatus === "paid" ? <div className="space-y-4 py-4 text-center"><CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" /><p className="font-black text-slate-900">Thanh toán đã được chủ cửa hàng xác nhận.</p>{inlinePayment.hasPhysicalItems ? <p className="text-sm text-slate-600">Đơn hàng đang được xử lý{inlinePayment.hasPreorderItems ? `, dự kiến ${inlinePayment.preorderEstimatedDays || "7–10 ngày"}` : ""}.</p> : inlineDownloads.data?.length ? <div className="space-y-2">{inlineDownloads.data.map(download => <a key={`${download.orderId}-${download.productId}`} href={download.driveUrl || "#"} target="_blank" rel="noreferrer" className="block rounded-xl bg-purple-600 px-4 py-3 text-sm font-black text-white">Tải ngay: {download.productName}</a>)}</div> : <p className="text-sm text-slate-600">Đang chuẩn bị liên kết tải tệp.</p>}</div> : inlinePaymentExpired ? <div className="space-y-3 py-4 text-center"><QrCode className="mx-auto h-12 w-12 text-rose-500" /><p className="font-black text-slate-900">Mã QR đã hết hạn sau 10 phút.</p><Button onClick={() => { setInlinePayment(null); setInlinePaymentExpired(false); }} className="bg-amber-500 font-black text-slate-950">Tạo QR mới</Button></div> : <div className="grid gap-5 sm:grid-cols-[1fr_190px] sm:items-center"><div className="space-y-3"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Số tiền cần chuyển</p><p className="mt-1 text-2xl font-black text-slate-900">{formatCurrency(inlinePayment.totalAmount)}</p></div><div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-xs leading-relaxed text-cyan-900"><p className="font-black">Không cần nội dung chuyển khoản.</p><p className="mt-1">Sau khi bạn chuyển tiền, chủ cửa hàng sẽ kiểm tra giao dịch Techcombank và xác nhận đơn trực tiếp.</p></div><p className="text-[11px] text-slate-500">QR giữ chỗ trong 10 phút. Đơn: <span className="font-black text-slate-700">{inlinePayment.orderCode}</span></p></div><div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">{inlinePayment.qrUrl ? <img src={inlinePayment.qrUrl} alt="Mã QR Techcombank DHL Stores" className="w-full rounded-xl bg-white" /> : <QrCode className="mx-auto h-16 w-16 text-slate-400" />}<p className="mt-2 text-[10px] font-bold text-slate-500">Quét bằng ứng dụng ngân hàng</p></div></div>}
+        </DialogContent>
+      </Dialog>
     </StoreLayout>
   );
 }

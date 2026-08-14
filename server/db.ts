@@ -1703,6 +1703,7 @@ export async function createOrder(userId: number, data: {
   items: Array<{ productId: number; quantity: number; price: number; variantId?: number; attributes?: string; fulfillmentMode?: 'in_stock' | 'preorder' }>;
   discountCode?: string;
   shipping?: { name: string; phone: string; address: string; note?: string; method: ShippingMethodCode };
+  clearCart?: boolean;
 }) {
   const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const verifiedItems = await Promise.all(data.items.map(async item => {
@@ -1762,7 +1763,7 @@ export async function createOrder(userId: number, data: {
       });
       const orderId = Number(inserted[0].insertId);
       await transaction.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes ?? null })));
-      await transaction.delete(cartItems).where(eq(cartItems.userId, userId));
+      if (data.clearCart !== false) await transaction.delete(cartItems).where(eq(cartItems.userId, userId));
       return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
     });
   }
@@ -1784,8 +1785,49 @@ export async function createOrder(userId: number, data: {
     shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, createdAt: new Date(),
   });
   for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes });
-  await clearCart(userId);
+  if (data.clearCart !== false) await clearCart(userId);
   return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
+}
+
+/** Xác nhận đơn bằng tay khi khách chuyển vào QR chung không kèm nội dung đối soát. */
+export async function confirmManualPayment(orderId: number, confirmedByUserId: number) {
+  const confirmationReference = `MANUAL-${orderId}-${Date.now()}`;
+  const connection = await getDb();
+  if (connection) {
+    return connection.transaction(async transaction => {
+      const rows = await transaction.select().from(ordersTable).where(and(eq(ordersTable.id, orderId), eq(ordersTable.status, "pending"), eq(ordersTable.paymentStatus, "pending"))).limit(1);
+      const order = rows[0];
+      if (!order) throw new Error("ORDER_NOT_PENDING");
+      await transaction.insert(paymentTransactions).values({
+        provider: "manual",
+        providerTransactionId: confirmationReference,
+        orderId: order.id,
+        transferAmount: String(order.totalAmount),
+        transferContent: `Xác nhận thủ công bởi chủ cửa hàng #${confirmedByUserId}`,
+        gateway: "Techcombank",
+      });
+      const updated = await transaction.update(ordersTable).set({
+        status: order.hasPhysicalItems ? "processing" : "completed",
+        paymentStatus: "paid",
+        paymentReference: confirmationReference,
+        paymentConfirmedAt: new Date(),
+      }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.status, "pending"), eq(ordersTable.paymentStatus, "pending")));
+      if (Number(updated[0]?.affectedRows ?? 0) !== 1) throw new Error("ORDER_NOT_PENDING");
+      if (order.discountCode) await transaction.update(discountCodes).set({ usedCount: sql`${discountCodes.usedCount} + 1` }).where(eq(discountCodes.code, order.discountCode));
+      return { success: true, orderId: order.id, paymentStatus: "paid" as const };
+    });
+  }
+  const order = memoryOrders.find(item => item.id === orderId && item.status === "pending" && item.paymentStatus === "pending");
+  if (!order) throw new Error("ORDER_NOT_PENDING");
+  order.status = order.hasPhysicalItems ? "processing" : "completed";
+  order.paymentStatus = "paid";
+  order.paymentReference = confirmationReference;
+  order.paymentConfirmedAt = new Date();
+  if (order.discountCode) {
+    const code = memoryDiscountCodes.find(item => item.code === order.discountCode);
+    if (code) code.usedCount += 1;
+  }
+  return { success: true, orderId: order.id, paymentStatus: "paid" as const };
 }
 
 export async function getOrders(userId?: number, isAdmin?: boolean) {

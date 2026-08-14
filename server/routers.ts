@@ -5,7 +5,7 @@ import { adminProcedure, publicProcedure, protectedProcedure, ownerProcedure, ro
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
-import { buildPhysicalVietQrUrl, buildSePayQrUrl } from "./sepay";
+import { buildStoreVietQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
 
@@ -120,6 +120,14 @@ export const appRouter = router({
     supportMessages: ownerProcedure.input(z.object({ conversationId: z.number().int().positive() })).query(({ input }) => db.getOwnerConversationMessages(input.conversationId)),
     sendSupportMessage: ownerProcedure.input(z.object({ conversationId: z.number().int().positive(), body: supportMessageSchema })).mutation(({ ctx, input }) => db.sendOwnerSupportMessage({ ...input, senderUserId: ctx.user.id })),
     markSupportRead: ownerProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(({ input }) => db.markConversationRead(input.conversationId, "owner")),
+    confirmManualPayment: ownerProcedure.input(z.object({ orderId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      try {
+        return await db.confirmManualPayment(input.orderId, ctx.user.id);
+      } catch (error) {
+        if (error instanceof Error && error.message === "ORDER_NOT_PENDING") throw new TRPCError({ code: "CONFLICT", message: "Đơn này không còn ở trạng thái chờ thanh toán" });
+        throw error;
+      }
+    }),
     inventory: adminProcedure.query(() => db.getInventoryBoard()),
     inventoryMovements: adminProcedure.query(() => db.getInventoryMovements()),
     bulkSetInventory: adminProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),
@@ -260,10 +268,21 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
         const order = await db.createOrder(ctx.user.id, input);
-        const siteSettings = order.hasPhysicalItems ? await db.getSiteSettings() : null;
-        const qrUrl = order.hasPhysicalItems
-          ? buildPhysicalVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, order.orderCode, Number(order.totalAmount))
-          : buildSePayQrUrl(order.orderCode, Number(order.totalAmount));
+        const siteSettings = await db.getSiteSettings();
+        const qrUrl = buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount));
+        return { ...order, qrUrl };
+      }),
+
+    quickCheckout: protectedProcedure
+      .input(z.object({
+        item: z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(99), variantId: z.number().int().positive().optional(), attributes: z.string().max(255).optional(), fulfillmentMode: z.enum(["in_stock", "preorder"]).optional() }),
+        shipping: z.object({ name: z.string().trim().min(2).max(255), phone: z.string().trim().min(8).max(64), address: z.string().trim().min(5).max(2000), note: z.string().trim().max(2000).optional(), method: z.enum(["pickup", "standard", "express"]) }).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        const order = await db.createOrder(ctx.user.id, { totalAmount: 0, items: [{ ...input.item, price: 0 }], shipping: input.shipping, clearCart: false });
+        const siteSettings = await db.getSiteSettings();
+        const qrUrl = buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount));
         return { ...order, qrUrl };
       }),
 

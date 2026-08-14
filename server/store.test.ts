@@ -120,6 +120,26 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(checkout.totalAmount).toBe(2000);
   });
 
+  it("creates a QR order directly from a product and lets the owner confirm payment without a transfer memo", async () => {
+    const customerCtx = createMockContext();
+    const customerCaller = appRouter.createCaller(customerCtx);
+    const directOrder = await customerCaller.store.quickCheckout({
+      item: { productId: 1, quantity: 1 },
+    });
+    expect(directOrder.orderCode).toMatch(/^DHL/);
+    expect(directOrder.totalAmount).toBe(250000);
+
+    await saveProductDownloadLink(1, "https://drive.google.com/file/d/direct-qr-resource/view");
+    const ownerCtx = createMockContext();
+    ownerCtx.user = { ...ownerCtx.user!, id: 9999, role: "owner" };
+    const ownerCaller = appRouter.createCaller(ownerCtx);
+    await expect(ownerCaller.operations.confirmManualPayment({ orderId: directOrder.orderId })).resolves.toMatchObject({ success: true, paymentStatus: "paid" });
+
+    const orders = await customerCaller.store.orders();
+    expect(orders.find(order => order.id === directOrder.orderId)).toMatchObject({ paymentStatus: "paid", status: "completed" });
+    expect(await customerCaller.store.instantDownloads({ orderId: directOrder.orderId })).toMatchObject([{ driveUrl: "https://drive.google.com/file/d/direct-qr-resource/view" }]);
+  });
+
   it("limits in-site download access to seven days after payment", () => {
     const now = Date.UTC(2026, 7, 13, 0, 0, 0);
     expect(isDownloadAccessActive(new Date(now - 7 * 24 * 60 * 60 * 1_000 + 1), now)).toBe(true);

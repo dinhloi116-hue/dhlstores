@@ -136,7 +136,9 @@
 - [x] Hỗ trợ chạm thumbnail trên điện thoại để mở/đóng ảnh SKU phóng to an toàn.
 - [ ] Kiểm thử trực quan preview ảnh SKU trên desktop và điện thoại.
 - [ ] Chụp bằng chứng preview ảnh SKU đang mở trên desktop và điện thoại; kiểm tra mở/đóng, vị trí không bị cắt và vẫn chọn SKU bình thường.
+- [x] Đã xác minh preview ảnh SKU trên desktop: mở ảnh lớn ngoài thumbnail, đóng an toàn và bảng SKU vẫn hoạt động.
 - [ ] Kiểm thử trực tiếp preview ảnh SKU trên viewport điện thoại: chạm thumbnail, xác nhận ảnh lớn mở ngoài ô thumbnail và đóng an toàn.
+- [ ] Chụp bằng chứng preview ảnh SKU đang mở trên điện thoại và xác nhận vẫn chọn SKU bình thường sau khi đóng.
 - [x] Việt hóa toàn bộ nhãn, hướng dẫn và biểu mẫu cấu hình QR/ngân hàng cho hàng vật lý.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
@@ -180,3 +182,8 @@
 - [x] Chỉnh vùng cuộn độc lập cho danh sách/khối đặt hàng để không kéo toàn bộ trang ngoài ý muốn.
 - [x] Thêm preview các Tool khi rê chuột vào mục Công cụ trong điều hướng.
 - [x] Viết kiểm thử cho góp ý, nhắn tin, trạng thái đã đọc và quyền quản trị; kiểm thử trực quan các luồng mới.
+- [x] Hiển thị QR thanh toán trực tiếp trong trang sản phẩm để khách không cần chuyển sang trang thanh toán riêng.
+- [x] Dùng QR Techcombank chung cho cả hàng số và hàng vật lý; không hiển thị hoặc yêu cầu cú pháp/nội dung chuyển khoản từ khách.
+- [x] Giữ lựa chọn SKU, số lượng, Order trước và thông tin giao hàng khi khách mở QR tại trang sản phẩm.
+- [x] Điều chỉnh tạo đơn, trạng thái chờ thanh toán và xử lý xác nhận để tương thích với QR chung không có nội dung đối soát.
+- [ ] Kiểm thử hiển thị QR tại trang sản phẩm, tạo đơn và cách chủ cửa hàng xác nhận đơn thanh toán không có cú pháp.

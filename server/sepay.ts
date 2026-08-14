@@ -74,6 +74,16 @@ export function buildPhysicalVietQrUrl(config: SePayQrConfig, orderCode: string,
   return `https://img.vietqr.io/image/${encodeURIComponent(config.bankCode)}-${encodeURIComponent(config.accountNumber)}-compact2.png?${params.toString()}`;
 }
 
+/** QR chung của cửa hàng: chỉ có tài khoản nhận và số tiền, không ép khách nhập nội dung chuyển khoản. */
+export function buildStoreVietQrUrl(config: SePayQrConfig, totalAmount: number) {
+  if (!config.bankCode || !config.accountNumber || !config.accountHolder) return null;
+  const params = new URLSearchParams({
+    amount: Math.round(totalAmount).toString(),
+    accountName: config.accountHolder,
+  });
+  return `https://img.vietqr.io/image/${encodeURIComponent(config.bankCode)}-${encodeURIComponent(config.accountNumber)}-compact2.png?${params.toString()}`;
+}
+
 export function registerSePayWebhook(app: Express) {
   app.post("/api/sepay/webhook", async (req: Request, res: Response) => {
     if (!ENV.sepayWebhookApiKey) {
