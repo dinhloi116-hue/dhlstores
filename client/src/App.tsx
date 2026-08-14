@@ -21,6 +21,7 @@ function Router() {
       <Route path={"/products/:slug"} component={ProductDetail} />
       <Route path={"/products"} component={Products} />
       <Route path={"/product/:slug"} component={ProductDetail} />
+      <Route path={"/cart"} component={Checkout} />
       <Route path={"/checkout"} component={Checkout} />
       <Route path={"/tools"} component={ToolsLibrary} />
       <Route path={"/tools/pet-tram"} component={PetTramTool} />

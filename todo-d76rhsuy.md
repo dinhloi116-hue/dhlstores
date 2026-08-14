@@ -212,3 +212,4 @@
 - [x] Tự gán icon phù hợp cho toàn bộ danh mục hiện có, gồm cả các nhóm hàng vật lý và tài nguyên số.
 - [x] Sửa thẻ hàng thể thao trên điện thoại: bỏ lớp chữ/nhãn phủ ảnh, giữ ảnh vuông rõ ràng và đưa thông tin sản phẩm xuống phần nội dung thẻ.
 - [x] Kiểm tra giao diện danh mục và thẻ hàng thể thao trên desktop/mobile trước khi xuất bản.
+- [x] Sửa tuyến Giỏ hàng đang trả 404 để điều hướng đúng tới luồng giỏ/checkout hiện có.
