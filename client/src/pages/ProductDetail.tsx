@@ -56,6 +56,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
   const optionGroups = Array.from(new Set(variants.flatMap(variant => getVariantOptions(variant)).map(option => option.name))).map(name => ({ name, values: Array.from(new Set(variants.flatMap(variant => getVariantOptions(variant)).filter(option => option.name === name).map(option => option.value))) }));
   const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
@@ -166,6 +167,7 @@ export default function ProductDetail() {
                 </Badge>
               </div>
             </div>
+            {product.description && <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4"><div className="flex items-center justify-between gap-3"><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">{lang === 'vi' ? 'Mô tả sản phẩm' : 'Product description'}</h2>{product.description.length > 260 && <button type="button" onClick={() => setDescriptionExpanded(current => !current)} className="shrink-0 text-xs font-black text-amber-700 hover:text-amber-900">{descriptionExpanded ? (lang === 'vi' ? 'Thu gọn' : 'Show less') : (lang === 'vi' ? 'Xem thêm' : 'Read more')}</button>}</div><p className={`mt-2 text-xs leading-relaxed text-slate-600 sm:text-sm ${descriptionExpanded ? '' : 'line-clamp-5'}`}>{product.description}</p></section>}
           </div>
 
           <div className="lg:col-span-6 space-y-6">
@@ -178,9 +180,7 @@ export default function ProductDetail() {
               <p className="text-2xl font-black text-amber-600 mt-2">{formatCurrency(Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0))}</p>
             </div>
 
-            <p className="text-slate-600 text-xs sm:text-sm leading-relaxed border-t border-b border-slate-100 py-4">
-              {product.description}
-            </p>
+            {product.type === "physical" && variants.length > 0 && <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><div><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản</label><p className="mt-1 text-xs text-emerald-700">Chọn lần lượt màu sắc, kiểu dáng, size hoặc các thuộc tính mà sản phẩm đang có.</p></div>{optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = variants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = variants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}{selectedVariant && <p className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-900">Đã chọn: {formatVariantOptions(selectedVariant)} · Còn {selectedVariant.stock} sản phẩm</p>}</div>}
 
             {product.specs && (
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
@@ -191,8 +191,6 @@ export default function ProductDetail() {
                 )}
               </div>
             )}
-
-            {product.type === "physical" && variants.length > 0 && <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><div><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản</label><p className="mt-1 text-xs text-emerald-700">Chọn lần lượt màu sắc, kiểu dáng, size hoặc các thuộc tính mà sản phẩm đang có.</p></div>{optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = variants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = variants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}{selectedVariant && <p className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-900">Đã chọn: {formatVariantOptions(selectedVariant)} · Còn {selectedVariant.stock} sản phẩm</p>}</div>}
 
             <div className="space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? (product.type === "physical" ? 'Số lượng:' : 'Số lượng gói:') : 'Quantity:'}</label>
