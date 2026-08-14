@@ -222,3 +222,9 @@
 - [x] Thiết kế lại khối chọn SKU, số lượng và Mua ngay/Order theo chiều rộng cân đối; không dùng cột tồn kho hẹp làm kéo dài toàn bộ khối mua hàng.
 - [x] Đặt tồn kho SKU thành bảng rộng ngay dưới thao tác đặt hàng, vẫn trong cùng cụm mua để dễ đối chiếu mà không làm vỡ bố cục.
 - [x] Giữ phóng to chỉ khi rê chuột vào thumbnail SKU; kiểm tra lại trực quan desktop/mobile trước khi xuất bản.
+- [ ] Thêm thanh hành động trong cột SKU để báo thứ tự đã thay đổi và có nút Lưu thứ tự SKU rõ ràng.
+- [ ] Thêm Hoàn tác để quay về thứ tự SKU đã lưu gần nhất trước khi người quản trị xác nhận lưu.
+- [ ] Kiểm thử kéo thả, lưu, hoàn tác và thứ tự hiển thị công khai của SKU trước khi xuất bản.
+- [x] Mở rộng khung nội dung trang web và quản trị trên màn hình lớn để loại bỏ khoảng trắng thừa hai bên.
+- [x] Giữ khoảng đệm và khả năng cuộn an toàn trên điện thoại sau khi nới khung desktop.
+- [x] Kiểm thử trực quan desktop/mobile và xuất bản bố cục mở rộng.

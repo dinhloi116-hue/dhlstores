@@ -122,7 +122,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
       {/* Main Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto h-16 px-3 sm:h-[4.5rem] sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-3 sm:h-[4.5rem] sm:px-6 lg:px-8 2xl:px-10">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-sm sm:h-10 sm:w-10">
@@ -376,7 +376,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
       {/* Footer (Giống ảnh tham khảo: thông tin công ty / liên hệ rõ ràng ở chân trang nền tối) */}
       <footer className="bg-slate-900 text-slate-300 pt-16 pb-12 text-sm border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
+        <div className="mx-auto mb-12 grid max-w-[1600px] grid-cols-1 gap-10 px-4 sm:px-6 md:grid-cols-2 lg:px-8 2xl:px-10">
           <div>
             <h4 className="font-display mb-4 text-xl font-black uppercase tracking-wider text-white">DHL STORES</h4>
             <ul className="space-y-2 text-xs text-slate-400">
@@ -394,7 +394,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </ul>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
+        <div className="mx-auto max-w-[1600px] border-t border-slate-800 px-4 pt-6 text-center text-xs text-slate-500 sm:px-6 lg:px-8 2xl:px-10">
           Copyright 2026 © DHL Stores. All rights reserved.
         </div>
       </footer>

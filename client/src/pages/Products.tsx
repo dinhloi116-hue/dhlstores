@@ -57,12 +57,12 @@ export default function Products() {
 
   return (
     <StoreLayout>
-      <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 border-b border-slate-200 px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-[1600px] items-end justify-between gap-4 border-b border-slate-200 px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
         <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library'}</h1></div>
         <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.'}</p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
         {/* Toolbar */}
         <div className="bg-white border border-slate-200 p-4 rounded-2xl mb-8 space-y-4 shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">

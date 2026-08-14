@@ -469,7 +469,7 @@ export default function AdminOrders() {
   return (
     <StoreLayout>
       <input ref={uploadRef} type="file" className="hidden" accept={uploadTarget === "image" ? "image/png,image/jpeg,image/webp,image/gif" : "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,application/pdf,application/zip,.zip"} onChange={handleFileChange} />
-      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] space-y-8 px-4 py-8 sm:px-6 lg:px-8 2xl:px-10">
         <section className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
           <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">DHL Stores · Quản trị</p><h1 className="mt-1 font-display text-3xl font-black uppercase text-slate-900">Quản trị cửa hàng</h1><p className="mt-1 text-xs leading-relaxed text-slate-500">Quản lý sản phẩm, tồn kho, tệp và đơn hàng tại một nơi. Liên kết email tại mục Tài khoản cá nhân.</p></div><div className="flex flex-wrap gap-2">{user?.role === "owner" && <Link href="/admin/operations"><Button className="bg-slate-900 text-white hover:bg-slate-800">Trung tâm vận hành</Button></Link>}<Link href="/account"><Button variant="outline" className="border-purple-200 bg-purple-50 text-purple-800 hover:border-purple-400 hover:bg-purple-100">Tài khoản & Email</Button></Link><Link href="/products"><Button variant="outline" className="border-slate-300 bg-white text-slate-800 hover:border-amber-400 hover:bg-amber-50">Xem cửa hàng <ChevronLeft className="ml-1 h-4 w-4 rotate-180" /></Button></Link></div>
         </section>
