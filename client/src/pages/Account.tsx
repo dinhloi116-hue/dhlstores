@@ -201,7 +201,11 @@ export default function Account() {
                           </div>
 
                           <div>
-                            {order.paymentStatus === 'paid' && download?.driveUrl ? (
+                            {p?.type !== "digital" ? (
+                              <Badge variant="outline" className={order.paymentStatus === "paid" ? "border-violet-300 text-violet-700" : "border-amber-300 text-amber-700"}>
+                                {order.paymentStatus === "paid" ? (lang === "vi" ? "Đang xử lý giao hàng" : "Delivery is being processed") : (lang === "vi" ? "Chờ xác nhận thanh toán" : "Awaiting payment confirmation")}
+                              </Badge>
+                            ) : order.paymentStatus === 'paid' && download?.driveUrl ? (
                               <a
                                 href={download.driveUrl}
                                 target="_blank"
