@@ -197,6 +197,19 @@ export const productVariants = mysqlTable("product_variants", {
 export type ProductVariant = typeof productVariants.$inferSelect;
 export type InsertProductVariant = typeof productVariants.$inferInsert;
 
+/** Giá sỉ áp dụng cho mỗi đơn vị của cùng một sản phẩm khi đạt mốc số lượng. */
+export const productWholesaleTiers = mysqlTable("product_wholesale_tiers", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  minQuantity: int("minQuantity").notNull(),
+  unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProductWholesaleTier = typeof productWholesaleTiers.$inferSelect;
+export type InsertProductWholesaleTier = typeof productWholesaleTiers.$inferInsert;
+
 export const productOptionGroups = mysqlTable("product_option_groups", {
   id: int("id").autoincrement().primaryKey(),
   productId: int("productId").notNull(),

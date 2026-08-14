@@ -62,7 +62,9 @@ export default function ProductDetail() {
   const productQuery = trpc.store.productBySlug.useQuery({ slug }, { enabled: !!slug, retry: false });
   const product = productQuery.data;
   const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: product?.type === "physical" });
+  const wholesaleTiersQuery = trpc.store.productWholesaleTiers.useQuery({ productId: product?.id || 1 }, { enabled: product?.type === "physical" });
   const variants = variantsQuery.data || [];
+  const wholesaleTiers = wholesaleTiersQuery.data || [];
 
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
@@ -76,6 +78,8 @@ export default function ProductDetail() {
   const [inlinePaymentExpired, setInlinePaymentExpired] = useState(false);
   const [inlineShipping, setInlineShipping] = useState({ name: "", phone: "", address: "", note: "", method: "standard" as "pickup" | "standard" | "express" });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
+  const applicableWholesaleTier = [...wholesaleTiers].filter(tier => quantity >= tier.minQuantity).sort((a, b) => b.minQuantity - a.minQuantity)[0];
+  const unitPrice = Number(applicableWholesaleTier?.unitPrice ?? product?.price ?? 0) + Number(selectedVariant?.priceAdjustment || 0);
   const sortedVariants = variants;
   const previewVariant = variants.find(variant => variant.id === previewVariantId);
   const hoveredVariant = variants.find(variant => variant.id === hoveredPreview?.variantId);
@@ -226,8 +230,10 @@ export default function ProductDetail() {
                 <span>{product.type === "physical" ? (isPreorder ? (lang === 'vi' ? 'Order trước · dự kiến 7–10 ngày' : 'Pre-order · estimated 7–10 days') : (lang === 'vi' ? `${availableStock > 0 ? `Còn ${availableStock}` : "Đã hết"} trong kho` : `${availableStock > 0 ? availableStock : "Out of"} stock`)) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{product.name}</h1>
-              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className="text-2xl font-black text-amber-600">{formatCurrency((Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0)) * (isPreorder ? 0.9 : 1))}</p>{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(Number(product.price) + Number(variants.find(variant => variant.id === selectedVariantId)?.priceAdjustment || 0))}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
+              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className="text-2xl font-black text-amber-600">{formatCurrency(unitPrice * (isPreorder ? 0.9 : 1))}</p>{applicableWholesaleTier && <Badge className="bg-emerald-100 text-emerald-800">Giá sỉ từ {applicableWholesaleTier.minQuantity} cái</Badge>}{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(unitPrice)}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
             </div>
+
+            {product.type === "physical" && wholesaleTiers.length > 0 && <section className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-emerald-900">Giá sỉ theo số lượng</p><p className="mt-1 text-[11px] leading-relaxed text-emerald-800">Mua càng nhiều, đơn giá mỗi sản phẩm càng tốt. Giá sẽ tự áp dụng khi đạt mốc.</p></div>{applicableWholesaleTier && <Badge className="bg-emerald-600 text-white">Đang áp dụng</Badge>}</div><div className="mt-3 grid grid-cols-3 gap-2">{wholesaleTiers.map(tier => <div key={tier.id} className={`rounded-lg border p-2 text-center ${applicableWholesaleTier?.id === tier.id ? "border-emerald-600 bg-white ring-2 ring-emerald-100" : "border-emerald-100 bg-white/70"}`}><p className="text-[10px] font-black text-emerald-800">Từ {tier.minQuantity} cái</p><p className="mt-1 text-xs font-black text-slate-900">{formatCurrency(Number(tier.unitPrice) + Number(selectedVariant?.priceAdjustment || 0))}</p></div>)}</div></section>}
 
             {product.type === "physical" && variants.length > 0 && (
               <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">

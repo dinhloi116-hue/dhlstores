@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -61,6 +61,14 @@ export interface ProductOptionGroupType {
   productId: number;
   name: string;
   values: string[];
+  sortOrder: number;
+}
+
+export interface ProductWholesaleTierType {
+  id: number;
+  productId: number;
+  minQuantity: number;
+  unitPrice: string;
   sortOrder: number;
 }
 
@@ -396,6 +404,7 @@ let memoryOrders: OrderType[] = [];
 let memoryOrderItems: OrderItemType[] = [];
 let memoryProductVariants: ProductVariantType[] = [];
 let memoryProductOptionGroups: ProductOptionGroupType[] = [];
+let memoryProductWholesaleTiers: ProductWholesaleTierType[] = [];
 let memoryShippingAddresses: ShippingAddressType[] = [];
 const memoryProcessedTransactions = new Set<string>();
 const memoryDownloadLinks = new Map<number, string>();
@@ -406,6 +415,7 @@ let nextOrderItemId = 1;
 let nextMediaAssetId = 1;
 let nextProductVariantId = 1;
 let nextProductOptionGroupId = 1;
+let nextProductWholesaleTierId = 1;
 let nextShippingAddressId = 1;
 
 async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
@@ -1372,6 +1382,46 @@ export async function getAdminProductVariants(productId?: number) {
   return [...memoryProductVariants].sort((a, b) => a.productId - b.productId || a.sortOrder - b.sortOrder || a.id - b.id);
 }
 
+export function selectWholesaleTier(tiers: ProductWholesaleTierType[], quantity: number) {
+  return [...tiers].filter(tier => quantity >= tier.minQuantity).sort((a, b) => b.minQuantity - a.minQuantity || a.sortOrder - b.sortOrder)[0];
+}
+
+export async function getProductWholesaleTiers(productId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const rows = await connection.select().from(productWholesaleTiers).where(eq(productWholesaleTiers.productId, productId));
+    return rows.map(row => ({ id: row.id, productId: row.productId, minQuantity: row.minQuantity, unitPrice: String(row.unitPrice), sortOrder: row.sortOrder })).sort((a, b) => a.minQuantity - b.minQuantity || a.sortOrder - b.sortOrder || a.id - b.id);
+  }
+  return memoryProductWholesaleTiers.filter(tier => tier.productId === productId).sort((a, b) => a.minQuantity - b.minQuantity || a.sortOrder - b.sortOrder || a.id - b.id);
+}
+
+export async function getProductWholesaleTiersForProducts(productIds: number[]) {
+  const uniqueIds = Array.from(new Set(productIds.filter(id => Number.isInteger(id) && id > 0)));
+  return Promise.all(uniqueIds.map(async productId => ({ productId, tiers: await getProductWholesaleTiers(productId) })));
+}
+
+export async function replaceProductWholesaleTiers(input: { productId: number; tiers: Array<{ minQuantity: number; unitPrice: string }> }) {
+  const product = await getProductById(input.productId);
+  if (!product || product.type !== "physical") throw new Error("Giá sỉ chỉ áp dụng cho hàng vật lý");
+  const tiers = input.tiers
+    .map(tier => ({ minQuantity: Math.floor(tier.minQuantity), unitPrice: Number(tier.unitPrice) }))
+    .filter(tier => Number.isFinite(tier.minQuantity) && tier.minQuantity >= 2 && Number.isFinite(tier.unitPrice) && tier.unitPrice >= 0)
+    .sort((a, b) => a.minQuantity - b.minQuantity)
+    .filter((tier, index, rows) => index === 0 || tier.minQuantity !== rows[index - 1].minQuantity);
+  if (tiers.length > 12) throw new Error("Tối đa 12 mốc giá sỉ cho một sản phẩm");
+  const connection = await getDb();
+  if (connection) {
+    await connection.transaction(async transaction => {
+      await transaction.delete(productWholesaleTiers).where(eq(productWholesaleTiers.productId, input.productId));
+      if (tiers.length) await transaction.insert(productWholesaleTiers).values(tiers.map((tier, sortOrder) => ({ productId: input.productId, minQuantity: tier.minQuantity, unitPrice: tier.unitPrice.toFixed(2), sortOrder })));
+    });
+  } else {
+    memoryProductWholesaleTiers = memoryProductWholesaleTiers.filter(tier => tier.productId !== input.productId);
+    memoryProductWholesaleTiers.push(...tiers.map((tier, sortOrder) => ({ id: nextProductWholesaleTierId++, productId: input.productId, minQuantity: tier.minQuantity, unitPrice: tier.unitPrice.toFixed(2), sortOrder })));
+  }
+  return getProductWholesaleTiers(input.productId);
+}
+
 export async function createProductVariant(input: CatalogVariantInput) {
   const product = await getProductById(input.productId);
   if (!product || product.type !== "physical") throw new Error("Chỉ hàng vật lý mới có biến thể");
@@ -1430,6 +1480,33 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
   if (!variant) throw new Error("Không tìm thấy biến thể");
   Object.assign(variant, input);
   return { success: true };
+}
+
+export async function bulkUpdateProductVariants(input: { productId: number; changes: Array<{ variantId: number; stock?: number; priceAdjustment?: string; isActive?: boolean }> }) {
+  const variants = await getProductVariants(input.productId, true);
+  if (!input.changes.length || input.changes.length > 1_000 || input.changes.some(change => !variants.some(variant => variant.id === change.variantId))) throw new Error("Danh sách SKU cần cập nhật không hợp lệ");
+  const connection = await getDb();
+  if (connection) {
+    await connection.transaction(async transaction => {
+      for (const change of input.changes) {
+        const values: Partial<typeof productVariants.$inferInsert> = {};
+        if (change.stock !== undefined) values.stock = change.stock;
+        if (change.priceAdjustment !== undefined) values.priceAdjustment = change.priceAdjustment;
+        if (change.isActive !== undefined) values.isActive = change.isActive;
+        await transaction.update(productVariants).set(values).where(and(eq(productVariants.id, change.variantId), eq(productVariants.productId, input.productId)));
+      }
+    });
+  } else {
+    input.changes.forEach(change => {
+      const variant = memoryProductVariants.find(item => item.id === change.variantId && item.productId === input.productId);
+      if (variant) {
+        if (change.stock !== undefined) variant.stock = change.stock;
+        if (change.priceAdjustment !== undefined) variant.priceAdjustment = change.priceAdjustment;
+        if (change.isActive !== undefined) variant.isActive = change.isActive;
+      }
+    });
+  }
+  return { success: true, updated: input.changes.length };
 }
 
 export async function reorderProductVariants(productId: number, variantIds: number[]) {
@@ -1735,6 +1812,8 @@ export async function createOrder(userId: number, data: {
   clearCart?: boolean;
 }) {
   const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const quantityByProduct = new Map<number, number>();
+  data.items.forEach(item => quantityByProduct.set(item.productId, (quantityByProduct.get(item.productId) ?? 0) + item.quantity));
   const verifiedItems = await Promise.all(data.items.map(async item => {
     const product = await getProductById(item.productId);
     if (!product || product.isActive === false) throw new Error("Một sản phẩm trong giỏ hiện không khả dụng");
@@ -1743,7 +1822,8 @@ export async function createOrder(userId: number, data: {
     if (product.type === "physical" && variants.length > 0 && !variant) throw new Error("Hãy chọn biến thể hợp lệ cho hàng vật lý");
     const fulfillmentMode = item.fulfillmentMode ?? 'in_stock';
     if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
-    const immediatePrice = Number(product.price) + Number(variant?.priceAdjustment ?? 0);
+    const wholesaleTier = product.type === "physical" ? selectWholesaleTier(await getProductWholesaleTiers(product.id), quantityByProduct.get(product.id) ?? item.quantity) : undefined;
+    const immediatePrice = Number(wholesaleTier?.unitPrice ?? product.price) + Number(variant?.priceAdjustment ?? 0);
     const finalPrice = fulfillmentMode === 'preorder' ? immediatePrice * 0.9 : immediatePrice;
     return {
       productId: product.id,

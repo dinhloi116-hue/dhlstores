@@ -42,6 +42,19 @@ export default function Checkout() {
   const t = translations[lang];
   const cartQuery = trpc.store.cart.useQuery(undefined, { enabled: isAuthenticated });
   const cartItems = cartQuery.data || [];
+  const physicalProductIds = useMemo(() => Array.from(new Set(cartItems.filter(item => item.product?.type === "physical").map(item => item.productId))), [cartItems]);
+  const wholesaleTiersQuery = trpc.store.productWholesaleTiersForProducts.useQuery({ productIds: physicalProductIds.length ? physicalProductIds : [1] }, { enabled: isAuthenticated && physicalProductIds.length > 0 });
+  const wholesaleTiersByProduct = useMemo(() => new Map((wholesaleTiersQuery.data || []).map(entry => [entry.productId, entry.tiers])), [wholesaleTiersQuery.data]);
+  const cartQuantityByProduct = useMemo(() => {
+    const quantities = new Map<number, number>();
+    cartItems.forEach(item => quantities.set(item.productId, (quantities.get(item.productId) || 0) + item.quantity));
+    return quantities;
+  }, [cartItems]);
+  const getCartUnitPrice = (item: typeof cartItems[number]) => {
+    const quantity = cartQuantityByProduct.get(item.productId) || item.quantity;
+    const tier = (wholesaleTiersByProduct.get(item.productId) || []).filter(candidate => quantity >= candidate.minQuantity).sort((a, b) => b.minQuantity - a.minQuantity)[0];
+    return Number(tier?.unitPrice ?? item.product?.price ?? 0) + Number(item.variant?.priceAdjustment || 0);
+  };
   const addressesQuery = trpc.store.shippingAddresses.useQuery(undefined, { enabled: isAuthenticated });
   const savedAddresses = addressesQuery.data || [];
   const paymentInput = useMemo(() => pendingPayment ? { orderId: pendingPayment.orderId } : undefined, [pendingPayment]);
@@ -68,12 +81,12 @@ export default function Checkout() {
   }, [pendingPayment?.orderId, paymentQuery.data?.paymentStatus, paymentExpired]);
 
   const cartSubtotal = cartItems.reduce((sum, item) => {
-    const price = item.product ? Number(item.product.price) + Number(item.variant?.priceAdjustment || 0) : 0;
+    const price = item.product ? getCartUnitPrice(item) : 0;
     const adjustedPrice = item.fulfillmentMode === 'preorder' && item.product?.type === 'physical' ? price * 0.9 : price;
     return sum + adjustedPrice * item.quantity;
   }, 0);
   const hasPhysicalItems = cartItems.some(item => item.product?.type === "physical");
-  const preorderDiscount = cartItems.reduce((sum, item) => item.fulfillmentMode === 'preorder' && item.product?.type === 'physical' ? sum + (Number(item.product.price) + Number(item.variant?.priceAdjustment || 0)) * item.quantity * 0.1 : sum, 0);
+  const preorderDiscount = cartItems.reduce((sum, item) => item.fulfillmentMode === 'preorder' && item.product?.type === 'physical' ? sum + getCartUnitPrice(item) * item.quantity * 0.1 : sum, 0);
   const shippingFee = hasPhysicalItems ? ({ pickup: 0, standard: 30000, express: 50000 }[shipping.method]) : 0;
   const checkoutTotal = cartSubtotal + shippingFee;
 
@@ -174,7 +187,7 @@ export default function Checkout() {
         <div className="grid gap-7 lg:grid-cols-[1fr_360px] items-start">
           <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
             <div className="flex items-center gap-3 border-b border-slate-100 pb-4"><div className={`w-10 h-10 rounded-xl grid place-items-center ${hasPhysicalItems ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-purple-700"}`}><Download className="w-5 h-5" /></div><div><h1 className="text-xl font-black text-slate-900">{hasPhysicalItems ? (lang === "vi" ? "Thanh toán đơn hàng & giao nhận" : "Order and delivery checkout") : (lang === "vi" ? "Thanh toán tài nguyên số" : "Digital resource checkout")}</h1><p className="text-xs text-slate-500">{hasPhysicalItems ? "Điền địa chỉ nhận hàng và chọn hình thức giao." : (lang === "vi" ? "Tệp sẽ chỉ được mở khóa sau khi SePay xác nhận tiền vào." : "Files are unlocked only after SePay confirms the incoming payment.")}</p></div></div>
-            <div className="space-y-3">{cartItems.map(item => item.product && <div key={item.id} className="flex gap-3 items-center"><img src={item.product.image} alt={item.product.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" /><div className="flex-1 min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{item.product.name}</p><p className="text-xs text-slate-500">{item.variant ? `${[item.variant.size && `Size: ${item.variant.size}`, item.variant.color && `Màu: ${item.variant.color}`, ...(item.variant.attributes || "").split(/\n|;/).map(value => value.trim()).filter(Boolean)].filter(Boolean).join(" · ")} · ` : ""}× {item.quantity}</p>{item.fulfillmentMode === 'preorder' && <p className="mt-1 inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">Order trước · 7–10 ngày · giảm 10%</p>}</div><div className="text-right"><p className="text-sm font-black text-slate-900">{formatCurrency((Number(item.product.price) + Number(item.variant?.priceAdjustment || 0)) * (item.fulfillmentMode === 'preorder' ? 0.9 : 1) * item.quantity)}</p>{item.fulfillmentMode === 'preorder' && <p className="mt-0.5 text-[11px] font-semibold text-slate-400 line-through">{formatCurrency((Number(item.product.price) + Number(item.variant?.priceAdjustment || 0)) * item.quantity)}</p>}</div></div>)}</div>
+            <div className="space-y-3">{cartItems.map(item => { if (!item.product) return null; const quantity = cartQuantityByProduct.get(item.productId) || item.quantity; const tier = (wholesaleTiersByProduct.get(item.productId) || []).filter(candidate => quantity >= candidate.minQuantity).sort((a, b) => b.minQuantity - a.minQuantity)[0]; const unitPrice = getCartUnitPrice(item); return <div key={item.id} className="flex gap-3 items-center"><img src={item.product.image} alt={item.product.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" /><div className="flex-1 min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{item.product.name}</p><p className="text-xs text-slate-500">{item.variant ? `${[item.variant.size && `Size: ${item.variant.size}`, item.variant.color && `Màu: ${item.variant.color}`, ...(item.variant.attributes || "").split(/\n|;/).map(value => value.trim()).filter(Boolean)].filter(Boolean).join(" · ")} · ` : ""}× {item.quantity}</p>{tier && <p className="mt-1 text-[10px] font-black text-emerald-700">Giá sỉ từ {tier.minQuantity} sản phẩm: {formatCurrency(unitPrice)}/cái</p>}{item.fulfillmentMode === 'preorder' && <p className="mt-1 inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">Order trước · 7–10 ngày · giảm 10%</p>}</div><div className="text-right"><p className="text-sm font-black text-slate-900">{formatCurrency(unitPrice * (item.fulfillmentMode === 'preorder' ? 0.9 : 1) * item.quantity)}</p>{item.fulfillmentMode === 'preorder' && <p className="mt-0.5 text-[11px] font-semibold text-slate-400 line-through">{formatCurrency(unitPrice * item.quantity)}</p>}</div></div>; })}</div>
           </section>
           <form onSubmit={event => { event.preventDefault(); if (!acceptedTerms) return toast.error(lang === "vi" ? "Vui lòng đồng ý điều khoản trước khi đặt hàng." : "Please accept the terms before placing your order."); if (hasPhysicalItems && (!shipping.name || !shipping.phone || !shipping.address)) return toast.error("Vui lòng điền đủ thông tin nhận hàng."); checkoutMutation.mutate({ totalAmount: checkoutTotal, discountCode: discountCode.trim() || undefined, items: cartItems.map(item => ({ productId: item.productId, quantity: item.quantity, price: Number(item.product?.price ?? 0), variantId: item.variantId || undefined, attributes: item.attributes || undefined, fulfillmentMode: item.fulfillmentMode })), shipping: hasPhysicalItems ? shipping : undefined }); }} className="bg-white p-6 rounded-2xl border-2 border-sky-600 shadow-sm space-y-5">
             <h2 className="text-base font-black text-purple-700 uppercase">{lang === "vi" ? "Đơn hàng của bạn" : "Your order"}</h2>

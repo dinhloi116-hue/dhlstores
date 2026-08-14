@@ -150,4 +150,19 @@ describe("catalogAdmin", () => {
     expect(variants).toHaveLength(4);
     expect(variants).toEqual(expect.arrayContaining([expect.objectContaining({ stock: 7, sku: expect.stringContaining("DHL"), attributes: expect.stringContaining("Màu sắc") })]));
   });
+
+  it("updates selected SKU values in bulk and saves wholesale quantity tiers", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+    const suffix = `bulk-${Date.now().toString(36)}`;
+    const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "patch-tay");
+    const product = await caller.catalogAdmin.createProduct({ name: `Patch hàng loạt ${suffix}`, slug: `patch-hang-loat-${suffix}`, description: "Kiểm thử cập nhật nhanh SKU", price: 100000, categoryId: physicalCategory!.id, image: "/manus-storage/catalog/test-patch.png", stock: 0, featured: false, isActive: true });
+    const first = await caller.catalogAdmin.createProductVariant({ productId: product!.id, sku: `BULK-A-${suffix}`, priceAdjustment: 0, stock: 1, isActive: true });
+    const second = await caller.catalogAdmin.createProductVariant({ productId: product!.id, sku: `BULK-B-${suffix}`, priceAdjustment: 0, stock: 2, isActive: true });
+
+    await expect(caller.catalogAdmin.bulkUpdateProductVariants({ productId: product!.id, changes: [{ variantId: first!.id, stock: 15, priceAdjustment: 10000 }, { variantId: second!.id, stock: 25, priceAdjustment: 20000, isActive: false }] })).resolves.toMatchObject({ success: true, updated: 2 });
+    expect(await caller.catalogAdmin.productVariants({ productId: product!.id })).toEqual(expect.arrayContaining([expect.objectContaining({ id: first!.id, stock: 15, priceAdjustment: "10000" }), expect.objectContaining({ id: second!.id, stock: 25, priceAdjustment: "20000", isActive: false })]));
+
+    await caller.catalogAdmin.replaceProductWholesaleTiers({ productId: product!.id, tiers: [{ minQuantity: 10, unitPrice: 85000 }, { minQuantity: 25, unitPrice: 75000 }, { minQuantity: 50, unitPrice: 65000 }] });
+    expect(await caller.catalogAdmin.productWholesaleTiers({ productId: product!.id })).toEqual(expect.arrayContaining([expect.objectContaining({ minQuantity: 10, unitPrice: "85000.00" }), expect.objectContaining({ minQuantity: 25, unitPrice: "75000.00" }), expect.objectContaining({ minQuantity: 50, unitPrice: "65000.00" })]));
+  });
 });

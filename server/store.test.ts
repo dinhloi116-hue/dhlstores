@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import { appRouter } from "./routers";
-import { confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, isDownloadAccessActive, saveProductDownloadLink } from "./db";
+import { confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, isDownloadAccessActive, replaceProductWholesaleTiers, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createMockContext(): TrpcContext {
@@ -197,6 +197,22 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     const orders = await caller.store.orders();
     expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "30000.00" });
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
+  });
+
+  it("applies the highest eligible wholesale tier to the server-verified unit price", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const suffix = `wholesale-${Date.now().toString(36)}`;
+    const product = await createProduct({ name: `Patch giá sỉ ${suffix}`, slug: `patch-gia-si-${suffix}`, description: "Kiểm thử giá sỉ theo số lượng", price: "100000", categoryId: 12, image: "generated:wholesale-cover", stock: 20, featured: false, isActive: true });
+    const variant = await createProductVariant({ productId: product!.id, size: "Chuẩn", color: "Vàng", sku: `WHOLESALE-${suffix}`, priceAdjustment: "5000", stock: 20, isActive: true });
+    await replaceProductWholesaleTiers({ productId: product!.id, tiers: [{ minQuantity: 5, unitPrice: "80000" }, { minQuantity: 10, unitPrice: "70000" }] });
+
+    await expect(caller.store.productWholesaleTiers({ productId: product!.id })).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ minQuantity: 5, unitPrice: "80000.00" }), expect.objectContaining({ minQuantity: 10, unitPrice: "70000.00" })]));
+    const checkout = await caller.store.checkout({ totalAmount: 1, items: [{ productId: product!.id, variantId: variant!.id, quantity: 10, price: 1 }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "pickup" } });
+
+    expect(checkout.totalAmount).toBe(750000);
+    const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
+    expect(order?.items?.[0]).toMatchObject({ quantity: 10, price: "75000" });
   });
 
   it("applies 10% Order discount to a physical SKU without reserving or restoring in-stock inventory", async () => {

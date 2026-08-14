@@ -98,10 +98,30 @@ export const catalogAdminRouter = router({
   })).mutation(({ input }) =>
     db.updateProductVariant(input.variantId, { ...input.data, priceAdjustment: String(input.data.priceAdjustment) }),
   ),
+  bulkUpdateProductVariants: adminProcedure.input(z.object({
+    productId: z.number().int().positive(),
+    changes: z.array(z.object({
+      variantId: z.number().int().positive(),
+      stock: z.coerce.number().int().min(0).max(999_999).optional(),
+      priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).optional(),
+      isActive: z.boolean().optional(),
+    })).min(1).max(1_000),
+  })).mutation(({ input }) =>
+    db.bulkUpdateProductVariants({ productId: input.productId, changes: input.changes.map(change => ({ ...change, priceAdjustment: change.priceAdjustment === undefined ? undefined : String(change.priceAdjustment) })) }),
+  ),
   reorderProductVariants: adminProcedure.input(z.object({
     productId: z.number().int().positive(),
     variantIds: z.array(z.number().int().positive()).min(1).max(1_000),
   })).mutation(({ input }) => db.reorderProductVariants(input.productId, input.variantIds)),
+  productWholesaleTiers: adminProcedure.input(z.object({ productId: z.number().int().positive() })).query(({ input }) =>
+    db.getProductWholesaleTiers(input.productId),
+  ),
+  replaceProductWholesaleTiers: adminProcedure.input(z.object({
+    productId: z.number().int().positive(),
+    tiers: z.array(z.object({ minQuantity: z.coerce.number().int().min(2).max(999_999), unitPrice: z.coerce.number().min(0).max(999_999_999) })).max(12),
+  })).mutation(({ input }) =>
+    db.replaceProductWholesaleTiers({ productId: input.productId, tiers: input.tiers.map(tier => ({ minQuantity: tier.minQuantity, unitPrice: String(tier.unitPrice) })) }),
+  ),
   productOptionGroups: adminProcedure.input(z.object({ productId: z.number().int().positive() })).query(({ input }) =>
     db.getProductOptionGroups(input.productId),
   ),

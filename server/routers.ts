@@ -167,6 +167,14 @@ export const appRouter = router({
       .input(z.object({ productId: z.number().int().positive() }))
       .query(async ({ input }) => db.getProductVariants(input.productId)),
 
+    productWholesaleTiers: publicProcedure
+      .input(z.object({ productId: z.number().int().positive() }))
+      .query(async ({ input }) => db.getProductWholesaleTiers(input.productId)),
+
+    productWholesaleTiersForProducts: publicProcedure
+      .input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(100) }))
+      .query(async ({ input }) => db.getProductWholesaleTiersForProducts(input.productIds)),
+
     cart: protectedProcedure.query(async ({ ctx }) => {
       await requireActiveAccount(ctx.user.id);
       return await db.getCartItems(ctx.user.id);

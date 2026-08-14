@@ -68,7 +68,7 @@
 - [x] Thêm hiệu ứng hover, trạng thái chọn và phản hồi bấm mượt cho nút, thẻ và tab chính.
 - [x] Kiểm tra trực quan giao diện mới trên máy tính, điện thoại và xuất bản cập nhật.
 - [x] Xác nhận miền dhlstores.com và miền đích hiện tại của website để chuẩn bị cấu hình Cloudflare.
-- [ ] Hướng dẫn tạo bản ghi DNS Cloudflare và gắn dhlstores.com trong phần Domains của website.
+- [x] Hướng dẫn tạo bản ghi DNS Cloudflare và gắn dhlstores.com trong phần Domains của website.
 - [ ] Xác minh tên miền hoạt động sau khi DNS cập nhật.
 - [x] Tạm dừng cấu hình dhlstores.com cho đến khi website sẵn sàng vận hành.
 - [x] Rà soát các trang mua hàng, giỏ, thanh toán, tài khoản và quản trị để xác định hạng mục cần hoàn thiện.
@@ -202,3 +202,9 @@
 - [x] Giữ QR Techcombank chỉ cho đơn có hàng vật lý, không yêu cầu cú pháp và xác nhận tiền về thủ công.
 - [x] Cập nhật QR, nhãn trạng thái và hướng dẫn mua tại trang sản phẩm theo đúng loại đơn hàng.
 - [x] Kiểm thử đối soát SePay đơn digital, xác nhận thủ công đơn vật lý và quyền tải tệp sau thanh toán.
+- [x] Thiết kế lại cả ba cột quản trị với vùng cuộn độc lập, giữ cột SKU ở giữa là khu thao tác chính.
+- [x] Cho phép sửa trực tiếp giá, tồn kho, trạng thái và ảnh SKU trong cột giữa; hỗ trợ chọn nhiều SKU để cập nhật giá/tồn kho hàng loạt.
+- [x] Thêm sắp xếp nhanh SKU theo tên và giá trong quản trị, bên cạnh kéo thả thứ tự hiển thị cố định cho khách.
+- [x] Thêm cấu hình giá sỉ theo mốc số lượng 10, 25, 50 và cho phép chủ cửa hàng thêm/sửa/xóa mốc.
+- [x] Áp dụng giá sỉ an toàn vào giỏ hàng, mua ngay, đơn hàng, QR và tổng tiền thanh toán.
+- [ ] Viết kiểm thử, kiểm tra trực quan desktop/mobile và xuất bản quản trị SKU cùng giá sỉ mới.
