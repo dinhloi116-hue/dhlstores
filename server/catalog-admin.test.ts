@@ -86,4 +86,38 @@ describe("catalogAdmin", () => {
     const caller = appRouter.createCaller(createContext("user"));
     await expect(caller.catalogAdmin.products()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+
+  it("stores flexible product options alongside SKU and stock for a physical variant", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+    const suffix = Date.now().toString(36);
+    const categories = await caller.catalogAdmin.categories();
+    const physicalCategory = categories.find(category => category.slug === "quan-ao-bong-da");
+    expect(physicalCategory).toBeDefined();
+
+    const product = await caller.catalogAdmin.createProduct({
+      name: `Áo thử nghiệm ${suffix}`,
+      slug: `ao-thu-nghiem-${suffix}`,
+      description: "Sản phẩm vật lý có lựa chọn linh hoạt",
+      price: 2000,
+      categoryId: physicalCategory!.id,
+      image: "/manus-storage/catalog/test-shirt.png",
+      stock: 0,
+      featured: false,
+      isActive: true,
+    });
+
+    const created = await caller.catalogAdmin.createProductVariant({
+      productId: product!.id,
+      color: "Đỏ",
+      attributes: "Kiểu: Sân khách\nChất liệu: Thun lạnh",
+      sku: `AO-${suffix}`,
+      priceAdjustment: 10000,
+      stock: 12,
+      isActive: true,
+    });
+
+    expect(created).toMatchObject({ color: "Đỏ", sku: `AO-${suffix}`, stock: 12, attributes: "Kiểu: Sân khách\nChất liệu: Thun lạnh" });
+    const variants = await caller.catalogAdmin.productVariants({ productId: product!.id });
+    expect(variants.find(variant => variant.id === created!.id)?.attributes).toContain("Chất liệu: Thun lạnh");
+  });
 });

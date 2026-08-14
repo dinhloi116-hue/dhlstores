@@ -46,6 +46,7 @@ export interface ProductVariantType {
   productId: number;
   size?: string;
   color?: string;
+  attributes?: string;
   sku?: string;
   priceAdjustment: string;
   stock: number;
@@ -440,6 +441,7 @@ function toProductVariantType(variant: typeof productVariants.$inferSelect): Pro
     productId: variant.productId,
     size: variant.size ?? undefined,
     color: variant.color ?? undefined,
+    attributes: variant.attributes ?? undefined,
     sku: variant.sku ?? undefined,
     priceAdjustment: String(variant.priceAdjustment),
     stock: variant.stock,
@@ -802,7 +804,7 @@ export async function getInventoryBoard() {
     }
     for (const variant of variants) {
       const held = reserved.get(`variant:${variant.id}`) || 0;
-      rows.push({ target: "variant", id: variant.id, productId: product.id, variantId: variant.id, productName: product.name, variantLabel: [variant.size, variant.color].filter(Boolean).join(" · ") || "Biến thể", sku: variant.sku || "", stock: variant.stock, reserved: held, available: variant.stock, isActive: variant.isActive });
+      rows.push({ target: "variant", id: variant.id, productId: product.id, variantId: variant.id, productName: product.name, variantLabel: [variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Biến thể", sku: variant.sku || "", stock: variant.stock, reserved: held, available: variant.stock, isActive: variant.isActive });
     }
   }
   return rows.sort((a, b) => a.productName.localeCompare(b.productName) || a.variantLabel.localeCompare(b.variantLabel));
@@ -1065,6 +1067,7 @@ export type CatalogVariantInput = {
   productId: number;
   size?: string;
   color?: string;
+  attributes?: string;
   sku?: string;
   priceAdjustment: string;
   stock: number;
@@ -1096,6 +1099,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
       productId: input.productId,
       size: input.size || null,
       color: input.color || null,
+      attributes: input.attributes?.trim() || null,
       sku: input.sku || null,
       priceAdjustment: input.priceAdjustment,
       stock: input.stock,
@@ -1109,6 +1113,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
     productId: input.productId,
     size: input.size,
     color: input.color,
+    attributes: input.attributes?.trim() || undefined,
     sku: input.sku,
     priceAdjustment: input.priceAdjustment,
     stock: input.stock,
@@ -1125,6 +1130,7 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
     await connection.update(productVariants).set({
       size: input.size || null,
       color: input.color || null,
+      attributes: input.attributes?.trim() || null,
       sku: input.sku || null,
       priceAdjustment: input.priceAdjustment,
       stock: input.stock,

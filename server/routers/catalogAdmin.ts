@@ -30,6 +30,7 @@ const productVariantInput = z.object({
   productId: z.number().int().positive(),
   size: z.string().trim().max(64).optional(),
   color: z.string().trim().max(64).optional(),
+  attributes: z.string().trim().max(2000).optional(),
   sku: z.string().trim().max(128).optional(),
   priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).default(0),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),

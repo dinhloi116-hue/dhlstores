@@ -37,6 +37,14 @@ describe("advanced operations", () => {
     await expect(appRouter.createCaller(ownerContext()).operations.overview()).resolves.toMatchObject({ members: expect.any(Number) });
   });
 
+  it("lets an administrator access the catalog inventory board without granting owner-only operations", async () => {
+    const member = await createLocalUser({ username: `inventory_admin_${Date.now()}`, passwordHash: "scrypt$test$test" });
+    const admin = { ...member, role: "admin" as const };
+    const caller = appRouter.createCaller(createContext(admin));
+    await expect(caller.operations.inventory()).resolves.toEqual(expect.any(Array));
+    await expect(caller.operations.overview()).rejects.toMatchObject({ message: "Chỉ chủ cửa hàng mới có quyền thực hiện thao tác này" });
+  });
+
   it("creates a discount, validates it server-side, and records an owner balance adjustment", async () => {
     const username = `credit_${Date.now()}`;
     const member = await createLocalUser({ username, passwordHash: "scrypt$test$test" });

@@ -26,13 +26,13 @@ type ProductDraft = {
   featured: boolean;
   isActive: boolean;
 };
-type VariantDraft = { size: string; color: string; sku: string; priceAdjustment: string; stock: string; isActive: boolean };
+type VariantDraft = { size: string; color: string; attributes: string; sku: string; priceAdjustment: string; stock: string; isActive: boolean };
 
 const emptyCategory: CategoryDraft = { name: "", slug: "", description: "", isActive: true };
 const emptyProduct: ProductDraft = {
   name: "", slug: "", description: "", price: "", categoryId: 0, image: "generated:catalog-cover", fileUrl: "", fileSize: "", specs: "", stock: "0", featured: false, isActive: true,
 };
-const emptyVariant: VariantDraft = { size: "", color: "", sku: "", priceAdjustment: "0", stock: "0", isActive: true };
+const emptyVariant: VariantDraft = { size: "", color: "", attributes: "", sku: "", priceAdjustment: "0", stock: "0", isActive: true };
 
 function slugify(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/đ/g, "d").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -61,6 +61,10 @@ export default function AdminOrders() {
   const [variantDraft, setVariantDraft] = useState<VariantDraft>(emptyVariant);
   const [uploadTarget, setUploadTarget] = useState<"image" | "file" | null>(null);
   const [activeTab, setActiveTab] = useState("products");
+  const [inventorySearch, setInventorySearch] = useState("");
+  const [inventoryReason, setInventoryReason] = useState("Kiểm kê kho");
+  const [inventoryDraftStocks, setInventoryDraftStocks] = useState<Record<string, string>>({});
+  const [selectedInventoryRows, setSelectedInventoryRows] = useState<string[]>([]);
 
   const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "owner");
   const categoriesQuery = trpc.catalogAdmin.categories.useQuery(undefined, { enabled: isAdmin });
@@ -69,12 +73,15 @@ export default function AdminOrders() {
   const mediaQuery = trpc.catalogAdmin.media.useQuery(undefined, { enabled: isAdmin });
   const ordersQuery = trpc.store.orders.useQuery(undefined, { enabled: isAdmin });
   const usersQuery = trpc.store.usersList.useQuery(undefined, { enabled: isAdmin });
+  const inventoryQuery = trpc.operations.inventory.useQuery(undefined, { enabled: isAdmin });
   const categories = categoriesQuery.data || [];
   const products = productsQuery.data || [];
   const variants = variantsQuery.data || [];
   const media = mediaQuery.data || [];
   const orders = ordersQuery.data || [];
   const users = usersQuery.data || [];
+  const inventoryRows = (inventoryQuery.data || []).filter(row => `${row.productName} ${row.variantLabel} ${row.sku}`.toLowerCase().includes(inventorySearch.toLowerCase()));
+  const selectedInventoryChanges = inventoryRows.filter(row => selectedInventoryRows.includes(`${row.target}:${row.id}`)).map(row => ({ target: row.target, id: row.id, stock: Number(inventoryDraftStocks[`${row.target}:${row.id}`] ?? row.stock) }));
 
   const selectProductForEdit = (product: typeof products[number]) => {
     setEditingProductId(product.id);
@@ -101,9 +108,13 @@ export default function AdminOrders() {
     const variant = variants.find(item => item.id === editVariantId);
     if (variant) {
       setEditingVariantId(variant.id);
-      setVariantDraft({ size: variant.size || "", color: variant.color || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive });
+      setVariantDraft({ size: variant.size || "", color: variant.color || "", attributes: variant.attributes || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive });
     }
   }, [location, variants]);
+
+  useEffect(() => {
+    if (inventoryQuery.data) setInventoryDraftStocks(Object.fromEntries(inventoryQuery.data.map(row => [`${row.target}:${row.id}`, String(row.stock)])));
+  }, [inventoryQuery.data]);
 
   const refreshCatalog = () => {
     utils.catalogAdmin.categories.invalidate();
@@ -165,6 +176,16 @@ export default function AdminOrders() {
       setEditingVariantId(null);
       utils.catalogAdmin.productVariants.invalidate();
       utils.catalogAdmin.products.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const bulkSetInventory = trpc.operations.bulkSetInventory.useMutation({
+    onSuccess: result => {
+      toast.success(`Đã cập nhật tồn kho cho ${result.updated} dòng`);
+      setSelectedInventoryRows([]);
+      utils.operations.inventory.invalidate();
+      utils.catalogAdmin.products.invalidate();
+      utils.catalogAdmin.productVariants.invalidate();
     },
     onError: error => toast.error(error.message),
   });
@@ -284,7 +305,6 @@ export default function AdminOrders() {
           <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
             <TabsTrigger value="products" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Catalog · Sản phẩm</TabsTrigger>
             <TabsTrigger value="variants" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Catalog · Biến thể</TabsTrigger>
-            <TabsTrigger value="inventory" onClick={() => setLocation("/admin/operations?tab=inventory")} className="shrink-0 data-[state=active]:bg-violet-600 data-[state=active]:text-white">Kho · Tồn kho</TabsTrigger>
             <TabsTrigger value="categories" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Catalog · Danh mục</TabsTrigger>
             <TabsTrigger value="media" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Nội dung · Tệp</TabsTrigger>
             <TabsTrigger value="orders" className="shrink-0 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">Bán hàng · Đơn</TabsTrigger>
@@ -308,6 +328,7 @@ export default function AdminOrders() {
                 <Button type="submit" className="w-full bg-amber-500 font-black text-slate-950 hover:bg-amber-400" disabled={createProduct.isPending || updateProduct.isPending}><Check className="mr-2 h-4 w-4" />{editingProductId ? "Lưu thay đổi & cập nhật link tải" : "Tạo sản phẩm"}</Button>
               </form>
             </div>
+            <section className="overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm"><div className="flex flex-col gap-3 border-b border-violet-100 bg-violet-50/60 p-5 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Kho trong Catalog</p><h2 className="font-display text-2xl font-black uppercase text-slate-900">Tồn kho & SKU</h2><p className="mt-1 text-xs text-slate-600">Chọn các sản phẩm hoặc biến thể cần sửa, nhập số lượng mới rồi lưu một lần.</p></div><div className="flex flex-col gap-2 sm:flex-row"><Input value={inventorySearch} onChange={event => setInventorySearch(event.target.value)} className="sm:w-60" placeholder="Tìm sản phẩm, SKU..." /><Input value={inventoryReason} onChange={event => setInventoryReason(event.target.value)} className="sm:w-48" placeholder="Lý do điều chỉnh" /><Button disabled={!selectedInventoryChanges.length || bulkSetInventory.isPending} onClick={() => bulkSetInventory.mutate({ changes: selectedInventoryChanges, reason: inventoryReason })} className="bg-violet-600 text-white hover:bg-violet-700"><Archive className="mr-2 h-4 w-4" />Lưu {selectedInventoryChanges.length || ""} dòng</Button></div></div><div className="overflow-x-auto"><div className="min-w-[780px]"><div className="grid grid-cols-[2.5rem_minmax(16rem,1fr)_minmax(8rem,0.7fr)_7rem_6rem_7rem] gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500"><span></span><span>Sản phẩm / lựa chọn</span><span>SKU</span><span>Tồn</span><span>Đã giữ</span><span>Số lượng mới</span></div>{inventoryRows.map(row => { const key = `${row.target}:${row.id}`; return <div key={key} className="grid grid-cols-[2.5rem_minmax(16rem,1fr)_minmax(8rem,0.7fr)_7rem_6rem_7rem] items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-0"><input type="checkbox" checked={selectedInventoryRows.includes(key)} onChange={event => setSelectedInventoryRows(current => event.target.checked ? [...current, key] : current.filter(item => item !== key))} /><div><p className="text-sm font-bold text-slate-900">{row.productName}</p><p className="text-xs text-slate-500">{row.variantLabel}</p></div><span className="font-mono text-xs text-slate-600">{row.sku || "—"}</span><span className={row.stock <= 5 ? "font-black text-rose-600" : "font-black text-slate-900"}>{row.stock}</span><span className="text-sm text-amber-700">{row.reserved}</span><Input type="number" min="0" value={inventoryDraftStocks[key] ?? String(row.stock)} onChange={event => setInventoryDraftStocks(current => ({ ...current, [key]: event.target.value }))} className="h-9" /></div>})}{inventoryRows.length === 0 && <p className="p-8 text-center text-sm text-slate-500">Chưa có hàng vật lý hoặc biến thể để quản lý tồn kho.</p>}</div></div></section>
           </TabsContent>
 
           <TabsContent value="variants" className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
@@ -321,13 +342,14 @@ export default function AdminOrders() {
                   <option value={0}>Chọn sản phẩm vật lý</option>
                   {products.filter(product => product.type === "physical").map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
                 </select>
-                {!selectedVariantProductId ? <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">Hãy tạo hoặc chọn một sản phẩm thuộc danh mục hàng vật lý trước.</div> : <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">{variants.map(variant => <div key={variant.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">{[variant.size, variant.color].filter(Boolean).join(" · ") || "Biến thể chưa đặt tên"}</p><p className="mt-1 text-xs text-slate-500">SKU: {variant.sku || "—"} · Tồn: {variant.stock} · Điều chỉnh: {formatCurrency(variant.priceAdjustment)}</p></div><div className="flex items-center gap-2"><Badge className={variant.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}>{variant.isActive ? "Đang bán" : "Đang ẩn"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingVariantId(variant.id); setVariantDraft({ size: variant.size || "", color: variant.color || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive }); }}><Pencil className="h-3.5 w-3.5" /></Button></div></div>)}{variants.length === 0 && <div className="p-8 text-center text-sm text-slate-500">Chưa có biến thể. Thêm size hoặc màu đầu tiên ở biểu mẫu bên phải.</div>}</div>}
+                {!selectedVariantProductId ? <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">Hãy tạo hoặc chọn một sản phẩm thuộc danh mục hàng vật lý trước.</div> : <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">{variants.map(variant => <div key={variant.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">{[variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Biến thể chưa đặt tên"}</p><p className="mt-1 text-xs text-slate-500">SKU: {variant.sku || "—"} · Tồn: {variant.stock} · Điều chỉnh: {formatCurrency(variant.priceAdjustment)}</p></div><div className="flex items-center gap-2"><Badge className={variant.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}>{variant.isActive ? "Đang bán" : "Đang ẩn"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingVariantId(variant.id); setVariantDraft({ size: variant.size || "", color: variant.color || "", attributes: variant.attributes || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive }); }}><Pencil className="h-3.5 w-3.5" /></Button></div></div>)}{variants.length === 0 && <div className="p-8 text-center text-sm text-slate-500">Chưa có biến thể. Thêm size, màu hoặc kiểu đầu tiên ở biểu mẫu bên phải.</div>}</div>}
               </div>
             </section>
             <form onSubmit={handleVariantSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">{editingVariantId ? "Sửa biến thể" : "Thêm biến thể"}</h2><p className="mt-1 text-xs text-slate-500">Mỗi biến thể có tồn kho riêng.</p></div>{editingVariantId && <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingVariantId(null); setVariantDraft(emptyVariant); }}>Tạo mới</Button>}</div>
               <Input value={variantDraft.size} onChange={event => setVariantDraft(prev => ({ ...prev, size: event.target.value }))} placeholder="Kích thước, ví dụ: L" disabled={!selectedVariantProductId} />
               <Input value={variantDraft.color} onChange={event => setVariantDraft(prev => ({ ...prev, color: event.target.value }))} placeholder="Màu sắc, ví dụ: Đỏ" disabled={!selectedVariantProductId} />
+              <Textarea value={variantDraft.attributes} onChange={event => setVariantDraft(prev => ({ ...prev, attributes: event.target.value }))} placeholder={"Lựa chọn bổ sung, mỗi dòng một mục\nVí dụ: Kiểu: Sân khách\nChất liệu: Thun lạnh"} disabled={!selectedVariantProductId} />
               <Input value={variantDraft.sku} onChange={event => setVariantDraft(prev => ({ ...prev, sku: event.target.value }))} placeholder="Mã SKU (tùy chọn)" disabled={!selectedVariantProductId} />
               <div className="grid grid-cols-2 gap-3"><Input type="number" value={variantDraft.priceAdjustment} onChange={event => setVariantDraft(prev => ({ ...prev, priceAdjustment: event.target.value }))} placeholder="Chênh giá" disabled={!selectedVariantProductId} /><Input type="number" min="0" value={variantDraft.stock} onChange={event => setVariantDraft(prev => ({ ...prev, stock: event.target.value }))} placeholder="Tồn kho" disabled={!selectedVariantProductId} /></div>
               <label className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-700"><input type="checkbox" checked={variantDraft.isActive} onChange={event => setVariantDraft(prev => ({ ...prev, isActive: event.target.checked }))} disabled={!selectedVariantProductId} />Đang bán</label>

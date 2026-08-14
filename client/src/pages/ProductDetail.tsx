@@ -11,6 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Sparkles, Zap, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
+function formatVariantOptions(variant: { size?: string; color?: string; attributes?: string }) {
+  return [variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Phiên bản chuẩn";
+}
+
 export default function ProductDetail() {
   const [, singularParams] = useRoute("/product/:slug");
   const [, pluralParams] = useRoute("/products/:slug");
@@ -174,7 +178,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {product.type === "physical" && variants.length > 0 && <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Kích thước / Màu sắc</label><div className="flex flex-wrap gap-2">{variants.map(variant => <button key={variant.id} type="button" onClick={() => setSelectedVariantId(variant.id)} disabled={variant.stock <= 0} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${selectedVariantId === variant.id ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-40`}>{[variant.size, variant.color].filter(Boolean).join(" · ") || "Phiên bản chuẩn"}<span className="ml-1 opacity-75">({variant.stock})</span></button>)}</div></div>}
+            {product.type === "physical" && variants.length > 0 && <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản</label><p className="text-xs text-emerald-700">Màu sắc, kiểu dáng, size và các lựa chọn khác tùy theo sản phẩm.</p><div className="flex flex-wrap gap-2">{variants.map(variant => <button key={variant.id} type="button" onClick={() => setSelectedVariantId(variant.id)} disabled={variant.stock <= 0} className={`rounded-lg border px-3 py-2 text-left text-xs font-bold transition ${selectedVariantId === variant.id ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-40`}>{formatVariantOptions(variant)}<span className="ml-1 opacity-75">({variant.stock})</span></button>)}</div></div>}
 
             <div className="space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? (product.type === "physical" ? 'Số lượng:' : 'Số lượng gói:') : 'Quantity:'}</label>

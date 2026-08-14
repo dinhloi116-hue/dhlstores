@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, ownerProcedure, router } from "./_core/trpc";
+import { adminProcedure, publicProcedure, protectedProcedure, ownerProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
@@ -100,9 +100,9 @@ export const appRouter = router({
     discountCodes: ownerProcedure.query(() => db.getDiscountCodes()),
     createDiscountCode: ownerProcedure.input(z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() })).mutation(({ ctx, input }) => db.createDiscountCode({ ...input, createdByUserId: ctx.user.id })),
     updateDiscountCode: ownerProcedure.input(z.object({ id: z.number().int().positive(), data: z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() }) })).mutation(({ input }) => db.updateDiscountCode(input.id, input.data)),
-    inventory: ownerProcedure.query(() => db.getInventoryBoard()),
-    inventoryMovements: ownerProcedure.query(() => db.getInventoryMovements()),
-    bulkSetInventory: ownerProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),
+    inventory: adminProcedure.query(() => db.getInventoryBoard()),
+    inventoryMovements: adminProcedure.query(() => db.getInventoryMovements()),
+    bulkSetInventory: adminProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),
     siteSettings: ownerProcedure.query(() => db.getSiteSettings()),
     saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128) }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user.id)),
   }),

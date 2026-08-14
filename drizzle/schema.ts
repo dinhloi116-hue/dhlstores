@@ -123,6 +123,7 @@ export const productVariants = mysqlTable("product_variants", {
   productId: int("productId").notNull(),
   size: varchar("size", { length: 64 }),
   color: varchar("color", { length: 64 }),
+  attributes: text("attributes"),
   sku: varchar("sku", { length: 128 }),
   priceAdjustment: decimal("priceAdjustment", { precision: 12, scale: 2 }).default("0").notNull(),
   stock: int("stock").default(0).notNull(),
