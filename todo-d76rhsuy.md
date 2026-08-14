@@ -242,3 +242,7 @@
 - [x] Kiểm thử sắp xếp theo tên/giá, nút lưu và thứ tự khách nhìn thấy trước khi xuất bản.
 - [x] Sửa dứt điểm preview ảnh SKU khi rê chuột bằng lớp hiển thị độc lập, không bị vùng cuộn che.
 - [x] Kiểm tra hover thumbnail SKU trên desktop và chạm mở ảnh trên điện thoại trước khi xuất bản.
+- [x] Thêm chỉ báo tổng quan SKU theo trạng thái: còn hàng, sắp hết, hết hàng, đang ẩn và thiếu ảnh.
+- [x] Thêm bộ lọc nhanh SKU theo trạng thái xử lý và tìm SKU trong sản phẩm đang chọn.
+- [x] Thiết kế lại hành động chọn nhiều SKU với thanh thao tác rõ ràng, xem trước số SKU bị ảnh hưởng và lưu/cancel trực quan.
+- [x] Kiểm thử trực quan luồng tìm, lọc, chọn và chỉnh sửa SKU thông minh trước khi xuất bản.

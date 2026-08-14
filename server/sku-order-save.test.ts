@@ -35,4 +35,14 @@ describe("SKU order save flow", () => {
     expect(source).toContain('setSkuSortMode("manual")');
     expect(source).toContain('const hasPendingSkuOrder = variantOrderDraft.length === savedVariantOrder.length');
   });
+
+  it("provides SKU health counts, filters, search and clear filtering controls", () => {
+    const source = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('const [skuSearch, setSkuSearch] = useState("")');
+    expect(source).toContain('const [skuFilter, setSkuFilter]');
+    expect(source).toContain('const skuHealth = { low:');
+    expect(source).toContain('Tìm SKU, màu, size...');
+    expect(source).toContain('Không có SKU khớp bộ lọc');
+  });
 });
