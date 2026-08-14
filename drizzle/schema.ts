@@ -134,6 +134,18 @@ export const productVariants = mysqlTable("product_variants", {
 export type ProductVariant = typeof productVariants.$inferSelect;
 export type InsertProductVariant = typeof productVariants.$inferInsert;
 
+export const productOptionGroups = mysqlTable("product_option_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  name: varchar("name", { length: 64 }).notNull(),
+  values: text("values").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProductOptionGroup = typeof productOptionGroups.$inferSelect;
+export type InsertProductOptionGroup = typeof productOptionGroups.$inferInsert;
+
 export const cartItems = mysqlTable("cart_items", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),

@@ -37,6 +37,11 @@ const productVariantInput = z.object({
   isActive: z.boolean().default(true),
 });
 
+const productOptionGroupsInput = z.array(z.object({
+  name: z.string().trim().min(1).max(64),
+  values: z.array(z.string().trim().min(1).max(64)).min(1).max(30),
+})).max(5);
+
 const allowedMime = /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm)|application\/(pdf|zip|x-zip-compressed))$/;
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
@@ -76,6 +81,15 @@ export const catalogAdminRouter = router({
     data: productVariantInput.omit({ productId: true }),
   })).mutation(({ input }) =>
     db.updateProductVariant(input.variantId, { ...input.data, priceAdjustment: String(input.data.priceAdjustment) }),
+  ),
+  productOptionGroups: adminProcedure.input(z.object({ productId: z.number().int().positive() })).query(({ input }) =>
+    db.getProductOptionGroups(input.productId),
+  ),
+  saveProductOptionGroups: adminProcedure.input(z.object({ productId: z.number().int().positive(), groups: productOptionGroupsInput })).mutation(({ input }) =>
+    db.replaceProductOptionGroups(input),
+  ),
+  generateProductVariantCombinations: adminProcedure.input(z.object({ productId: z.number().int().positive(), skuPrefix: z.string().trim().max(48).optional(), stock: z.coerce.number().int().min(0).max(999_999), priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).default(0) })).mutation(({ input }) =>
+    db.generateProductVariantCombinations({ ...input, priceAdjustment: String(input.priceAdjustment) }),
   ),
 
   media: adminProcedure.query(() => db.getMediaAssets()),

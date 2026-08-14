@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productVariants, products, siteSettings, users, visitorEvents } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, products, siteSettings, users, visitorEvents } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -52,6 +52,14 @@ export interface ProductVariantType {
   stock: number;
   isActive: boolean;
   createdAt: Date;
+}
+
+export interface ProductOptionGroupType {
+  id: number;
+  productId: number;
+  name: string;
+  values: string[];
+  sortOrder: number;
 }
 
 export interface CategoryType {
@@ -363,6 +371,7 @@ let memoryCart: CartItemType[] = [];
 let memoryOrders: OrderType[] = [];
 let memoryOrderItems: OrderItemType[] = [];
 let memoryProductVariants: ProductVariantType[] = [];
+let memoryProductOptionGroups: ProductOptionGroupType[] = [];
 const memoryProcessedTransactions = new Set<string>();
 const memoryDownloadLinks = new Map<number, string>();
 const memoryMediaAssets: Array<{ id: number; fileName: string; storageKey: string; url: string; mimeType: string; sizeBytes: number; createdAt: Date }> = [];
@@ -371,6 +380,7 @@ let nextOrderId = 1;
 let nextOrderItemId = 1;
 let nextMediaAssetId = 1;
 let nextProductVariantId = 1;
+let nextProductOptionGroupId = 1;
 
 async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
   await connection.insert(categories).values(memoryCategories.map(category => ({
@@ -1142,6 +1152,53 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
   if (!variant) throw new Error("Không tìm thấy biến thể");
   Object.assign(variant, input);
   return { success: true };
+}
+
+export async function getProductOptionGroups(productId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const rows = await connection.select().from(productOptionGroups).where(eq(productOptionGroups.productId, productId));
+    return rows.map(row => ({ id: row.id, productId: row.productId, name: row.name, values: JSON.parse(row.values) as string[], sortOrder: row.sortOrder })).sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+  return memoryProductOptionGroups.filter(group => group.productId === productId).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export async function replaceProductOptionGroups(input: { productId: number; groups: Array<{ name: string; values: string[] }> }) {
+  const product = await getProductById(input.productId);
+  if (!product || product.type !== "physical") throw new Error("Chỉ hàng vật lý mới dùng nhóm lựa chọn");
+  const groups = input.groups.map(group => ({ name: group.name.trim(), values: Array.from(new Set(group.values.map(value => value.trim()).filter(Boolean))) })).filter(group => group.name && group.values.length);
+  const connection = await getDb();
+  if (connection) {
+    await connection.delete(productOptionGroups).where(eq(productOptionGroups.productId, input.productId));
+    if (groups.length) await connection.insert(productOptionGroups).values(groups.map((group, index) => ({ productId: input.productId, name: group.name, values: JSON.stringify(group.values), sortOrder: index })));
+  } else {
+    memoryProductOptionGroups = memoryProductOptionGroups.filter(group => group.productId !== input.productId);
+    memoryProductOptionGroups.push(...groups.map((group, index) => ({ id: nextProductOptionGroupId++, productId: input.productId, name: group.name, values: group.values, sortOrder: index })));
+  }
+  return getProductOptionGroups(input.productId);
+}
+
+function skuSegment(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 20);
+}
+
+export async function generateProductVariantCombinations(input: { productId: number; skuPrefix?: string; stock: number; priceAdjustment: string }) {
+  const groups = await getProductOptionGroups(input.productId);
+  if (!groups.length) throw new Error("Hãy lưu ít nhất một nhóm lựa chọn trước khi tạo tổ hợp");
+  const combinations = groups.reduce<string[][]>((result, group) => result.flatMap(items => group.values.map(value => [...items, value])), [[]]);
+  if (combinations.length > 100) throw new Error("Tối đa 100 tổ hợp mỗi lần");
+  const existing = await getProductVariants(input.productId, true);
+  const created: ProductVariantType[] = [];
+  for (const values of combinations) {
+    const attributes = groups.map((group, index) => `${group.name}: ${values[index]}`).join("\n");
+    if (existing.some(variant => variant.attributes === attributes)) continue;
+    const colorIndex = groups.findIndex(group => /màu|color/i.test(group.name));
+    const sizeIndex = groups.findIndex(group => /size|kích thước/i.test(group.name));
+    const sku = [input.skuPrefix?.trim() || "SKU", ...values.map(skuSegment)].filter(Boolean).join("-").slice(0, 128);
+    const variant = await createProductVariant({ productId: input.productId, color: colorIndex >= 0 ? values[colorIndex] : undefined, size: sizeIndex >= 0 ? values[sizeIndex] : undefined, attributes, sku, stock: input.stock, priceAdjustment: input.priceAdjustment, isActive: true });
+    if (variant) created.push(variant);
+  }
+  return { created: created.length, skipped: combinations.length - created.length, variants: created };
 }
 
 export type MediaAssetInput = {

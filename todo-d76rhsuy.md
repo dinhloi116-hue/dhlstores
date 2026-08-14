@@ -111,11 +111,13 @@
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.
 - [x] Cho phép chọn nhiều dòng tồn kho, nhập số lượng mới và lưu cập nhật hàng loạt ngay từ Catalog · Sản phẩm.
 - [ ] Kiểm thử giao diện quản trị hợp nhất và xuất bản cập nhật tồn kho.
-- [ ] Mở rộng danh mục để hỗ trợ phân loại sản phẩm nhiều cấp: danh mục lớn, nhóm con và dòng sản phẩm.
-- [ ] Bổ sung quản trị tạo/sửa/ẩn danh mục con và chọn đúng cấp phân loại khi thêm hoặc sửa sản phẩm.
-- [ ] Cập nhật trang sản phẩm công khai để lọc và điều hướng theo phân loại nhiều cấp.
-- [ ] Kiểm thử dữ liệu, giao diện quản trị và luồng lọc sản phẩm cho phân loại nhiều cấp.
+- [x] Đã hủy theo yêu cầu: mở rộng danh mục lớn, nhóm con và dòng sản phẩm.
+- [x] Đã hủy theo yêu cầu: quản trị danh mục con và chọn cấp danh mục khi thêm sản phẩm.
+- [x] Đã hủy theo yêu cầu: lọc công khai theo danh mục nhiều cấp.
+- [x] Đã hủy theo yêu cầu: kiểm thử phân loại danh mục nhiều cấp.
 - [x] Đã hủy theo yêu cầu: mở rộng danh mục lớn–nhỏ; không áp dụng migration quan hệ danh mục cha–con.
-- [ ] Mở rộng từng sản phẩm bằng nhóm lựa chọn linh hoạt như màu sắc, kiểu dáng, size, chất liệu và SKU.
-- [ ] Cho phép tạo tổ hợp biến thể từ các lựa chọn sản phẩm, gắn giá và tồn kho riêng cho từng SKU.
-- [ ] Hiển thị các nhóm lựa chọn của sản phẩm trên trang chi tiết để khách chọn đúng biến thể trước khi mua.
+- [x] Mở rộng từng sản phẩm bằng nhóm lựa chọn linh hoạt như màu sắc, kiểu dáng, size, chất liệu và SKU.
+- [x] Cho phép tạo tổ hợp biến thể từ các lựa chọn sản phẩm, gắn giá và tồn kho riêng cho từng SKU.
+- [x] Hiển thị các nhóm lựa chọn của sản phẩm trên trang chi tiết để khách chọn đúng biến thể trước khi mua.
+- [x] Thêm quản trị nhóm lựa chọn ở cấp sản phẩm, ví dụ Màu sắc, Kiểu và Size, cùng nút tạo tổ hợp biến thể từ các giá trị đã nhập.
+- [x] Cho phép sinh tự động SKU/biến thể từ tổ hợp lựa chọn, sau đó chỉnh riêng giá, tồn kho và trạng thái cho từng tổ hợp.

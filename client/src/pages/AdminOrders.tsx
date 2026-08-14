@@ -65,11 +65,14 @@ export default function AdminOrders() {
   const [inventoryReason, setInventoryReason] = useState("Kiểm kê kho");
   const [inventoryDraftStocks, setInventoryDraftStocks] = useState<Record<string, string>>({});
   const [selectedInventoryRows, setSelectedInventoryRows] = useState<string[]>([]);
+  const [optionGroupsDraft, setOptionGroupsDraft] = useState("");
+  const [combinationDefaults, setCombinationDefaults] = useState({ skuPrefix: "SKU", stock: "0", priceAdjustment: "0" });
 
   const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "owner");
   const categoriesQuery = trpc.catalogAdmin.categories.useQuery(undefined, { enabled: isAdmin });
   const productsQuery = trpc.catalogAdmin.products.useQuery(undefined, { enabled: isAdmin });
   const variantsQuery = trpc.catalogAdmin.productVariants.useQuery({ productId: selectedVariantProductId || undefined }, { enabled: isAdmin && Boolean(selectedVariantProductId) });
+  const optionGroupsQuery = trpc.catalogAdmin.productOptionGroups.useQuery({ productId: selectedVariantProductId || 1 }, { enabled: isAdmin && Boolean(selectedVariantProductId) });
   const mediaQuery = trpc.catalogAdmin.media.useQuery(undefined, { enabled: isAdmin });
   const ordersQuery = trpc.store.orders.useQuery(undefined, { enabled: isAdmin });
   const usersQuery = trpc.store.usersList.useQuery(undefined, { enabled: isAdmin });
@@ -115,6 +118,10 @@ export default function AdminOrders() {
   useEffect(() => {
     if (inventoryQuery.data) setInventoryDraftStocks(Object.fromEntries(inventoryQuery.data.map(row => [`${row.target}:${row.id}`, String(row.stock)])));
   }, [inventoryQuery.data]);
+
+  useEffect(() => {
+    if (optionGroupsQuery.data) setOptionGroupsDraft(optionGroupsQuery.data.map(group => `${group.name}: ${group.values.join(", ")}`).join("\n"));
+  }, [optionGroupsQuery.data]);
 
   const refreshCatalog = () => {
     utils.catalogAdmin.categories.invalidate();
@@ -186,6 +193,22 @@ export default function AdminOrders() {
       utils.operations.inventory.invalidate();
       utils.catalogAdmin.products.invalidate();
       utils.catalogAdmin.productVariants.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const saveProductOptionGroups = trpc.catalogAdmin.saveProductOptionGroups.useMutation({
+    onSuccess: () => {
+      toast.success("Đã lưu nhóm lựa chọn");
+      utils.catalogAdmin.productOptionGroups.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const generateProductVariantCombinations = trpc.catalogAdmin.generateProductVariantCombinations.useMutation({
+    onSuccess: result => {
+      toast.success(`Đã tạo ${result.created} biến thể${result.skipped ? `, bỏ qua ${result.skipped} tổ hợp trùng` : ""}`);
+      utils.catalogAdmin.productVariants.invalidate();
+      utils.catalogAdmin.products.invalidate();
+      utils.operations.inventory.invalidate();
     },
     onError: error => toast.error(error.message),
   });
@@ -347,6 +370,7 @@ export default function AdminOrders() {
             </section>
             <form onSubmit={handleVariantSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between"><div><h2 className="font-display text-2xl font-black uppercase text-slate-900">{editingVariantId ? "Sửa biến thể" : "Thêm biến thể"}</h2><p className="mt-1 text-xs text-slate-500">Mỗi biến thể có tồn kho riêng.</p></div>{editingVariantId && <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingVariantId(null); setVariantDraft(emptyVariant); }}>Tạo mới</Button>}</div>
+              <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/70 p-4"><div><p className="text-xs font-black uppercase tracking-wide text-violet-900">Tạo tổ hợp nhanh</p><p className="mt-1 text-[11px] leading-relaxed text-violet-800">Mỗi dòng là một nhóm. Ví dụ: <strong>Màu sắc: Đỏ, Xanh</strong> hoặc <strong>Kiểu: Sân nhà, Sân khách</strong>. Lưu nhóm trước, rồi hệ thống sẽ tạo mọi tổ hợp cùng SKU và tồn kho mặc định.</p></div><Textarea value={optionGroupsDraft} onChange={event => setOptionGroupsDraft(event.target.value)} placeholder={"Màu sắc: Đỏ, Xanh\nKiểu: Sân nhà, Sân khách\nKích thước: M, L"} disabled={!selectedVariantProductId} /><div className="grid grid-cols-3 gap-2"><Input value={combinationDefaults.skuPrefix} onChange={event => setCombinationDefaults(current => ({ ...current, skuPrefix: event.target.value }))} placeholder="Tiền tố SKU" disabled={!selectedVariantProductId} /><Input type="number" min="0" value={combinationDefaults.stock} onChange={event => setCombinationDefaults(current => ({ ...current, stock: event.target.value }))} placeholder="Tồn mỗi SKU" disabled={!selectedVariantProductId} /><Input type="number" value={combinationDefaults.priceAdjustment} onChange={event => setCombinationDefaults(current => ({ ...current, priceAdjustment: event.target.value }))} placeholder="Chênh giá" disabled={!selectedVariantProductId} /></div><div className="grid grid-cols-2 gap-2"><Button type="button" variant="outline" disabled={!selectedVariantProductId || saveProductOptionGroups.isPending} onClick={() => { const groups = optionGroupsDraft.split("\n").map(line => { const [name, ...values] = line.split(":"); return { name: name.trim(), values: values.join(":").split(",").map(value => value.trim()).filter(Boolean) }; }).filter(group => group.name && group.values.length); if (!groups.length) return toast.error("Hãy nhập ít nhất một nhóm, ví dụ: Màu sắc: Đỏ, Xanh"); saveProductOptionGroups.mutate({ productId: selectedVariantProductId!, groups }); }}>Lưu nhóm lựa chọn</Button><Button type="button" disabled={!selectedVariantProductId || generateProductVariantCombinations.isPending} onClick={() => generateProductVariantCombinations.mutate({ productId: selectedVariantProductId!, skuPrefix: combinationDefaults.skuPrefix || undefined, stock: Number(combinationDefaults.stock || 0), priceAdjustment: Number(combinationDefaults.priceAdjustment || 0) })} className="bg-violet-600 text-white hover:bg-violet-700">Tạo tổ hợp biến thể</Button></div></div>
               <Input value={variantDraft.size} onChange={event => setVariantDraft(prev => ({ ...prev, size: event.target.value }))} placeholder="Kích thước, ví dụ: L" disabled={!selectedVariantProductId} />
               <Input value={variantDraft.color} onChange={event => setVariantDraft(prev => ({ ...prev, color: event.target.value }))} placeholder="Màu sắc, ví dụ: Đỏ" disabled={!selectedVariantProductId} />
               <Textarea value={variantDraft.attributes} onChange={event => setVariantDraft(prev => ({ ...prev, attributes: event.target.value }))} placeholder={"Lựa chọn bổ sung, mỗi dòng một mục\nVí dụ: Kiểu: Sân khách\nChất liệu: Thun lạnh"} disabled={!selectedVariantProductId} />

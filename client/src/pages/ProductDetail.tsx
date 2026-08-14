@@ -15,6 +15,18 @@ function formatVariantOptions(variant: { size?: string; color?: string; attribut
   return [variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Phiên bản chuẩn";
 }
 
+function getVariantOptions(variant: { size?: string; color?: string; attributes?: string }) {
+  const options: Array<{ name: string; value: string }> = [];
+  if (variant.color) options.push({ name: "Màu sắc", value: variant.color });
+  if (variant.size) options.push({ name: "Kích thước", value: variant.size });
+  for (const item of (variant.attributes || "").split(/\n|;/).map(value => value.trim()).filter(Boolean)) {
+    const [name, ...rest] = item.split(":");
+    const value = rest.join(":").trim();
+    options.push({ name: value ? name.trim() || "Lựa chọn" : "Lựa chọn", value: value || name.trim() });
+  }
+  return options;
+}
+
 export default function ProductDetail() {
   const [, singularParams] = useRoute("/product/:slug");
   const [, pluralParams] = useRoute("/products/:slug");
@@ -45,7 +57,9 @@ export default function ProductDetail() {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
-  const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? 0 : product.stock) : Number.MAX_SAFE_INTEGER;
+  const optionGroups = Array.from(new Set(variants.flatMap(variant => getVariantOptions(variant)).map(option => option.name))).map(name => ({ name, values: Array.from(new Set(variants.flatMap(variant => getVariantOptions(variant)).filter(option => option.name === name).map(option => option.value))) }));
+  const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
+  const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? Math.max(...variants.map(variant => variant.stock)) : product.stock) : Number.MAX_SAFE_INTEGER;
   const requiresVariant = product?.type === "physical" && variants.length > 0;
 
   useEffect(() => {
@@ -178,7 +192,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {product.type === "physical" && variants.length > 0 && <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản</label><p className="text-xs text-emerald-700">Màu sắc, kiểu dáng, size và các lựa chọn khác tùy theo sản phẩm.</p><div className="flex flex-wrap gap-2">{variants.map(variant => <button key={variant.id} type="button" onClick={() => setSelectedVariantId(variant.id)} disabled={variant.stock <= 0} className={`rounded-lg border px-3 py-2 text-left text-xs font-bold transition ${selectedVariantId === variant.id ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-40`}>{formatVariantOptions(variant)}<span className="ml-1 opacity-75">({variant.stock})</span></button>)}</div></div>}
+            {product.type === "physical" && variants.length > 0 && <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><div><label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản</label><p className="mt-1 text-xs text-emerald-700">Chọn lần lượt màu sắc, kiểu dáng, size hoặc các thuộc tính mà sản phẩm đang có.</p></div>{optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = variants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = variants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}{selectedVariant && <p className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-900">Đã chọn: {formatVariantOptions(selectedVariant)} · Còn {selectedVariant.stock} sản phẩm</p>}</div>}
 
             <div className="space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? (product.type === "physical" ? 'Số lượng:' : 'Số lượng gói:') : 'Quantity:'}</label>

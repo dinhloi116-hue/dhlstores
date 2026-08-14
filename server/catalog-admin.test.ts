@@ -120,4 +120,32 @@ describe("catalogAdmin", () => {
     const variants = await caller.catalogAdmin.productVariants({ productId: product!.id });
     expect(variants.find(variant => variant.id === created!.id)?.attributes).toContain("Chất liệu: Thun lạnh");
   });
+
+  it("creates SKU combinations from saved product option groups", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+    const suffix = Date.now().toString(36);
+    const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "quan-ao-bong-da");
+    const product = await caller.catalogAdmin.createProduct({
+      name: `Áo tổ hợp ${suffix}`,
+      slug: `ao-to-hop-${suffix}`,
+      description: "Sản phẩm kiểm thử tổ hợp",
+      price: 2000,
+      categoryId: physicalCategory!.id,
+      image: "/manus-storage/catalog/test-combination.png",
+      stock: 0,
+      featured: false,
+      isActive: true,
+    });
+
+    await caller.catalogAdmin.saveProductOptionGroups({ productId: product!.id, groups: [
+      { name: "Màu sắc", values: ["Đỏ", "Xanh"] },
+      { name: "Kiểu", values: ["Sân nhà", "Sân khách"] },
+    ] });
+    const result = await caller.catalogAdmin.generateProductVariantCombinations({ productId: product!.id, skuPrefix: "DHL", stock: 7, priceAdjustment: 10000 });
+    expect(result).toMatchObject({ created: 4, skipped: 0 });
+
+    const variants = await caller.catalogAdmin.productVariants({ productId: product!.id });
+    expect(variants).toHaveLength(4);
+    expect(variants).toEqual(expect.arrayContaining([expect.objectContaining({ stock: 7, sku: expect.stringContaining("DHL"), attributes: expect.stringContaining("Màu sắc") })]));
+  });
 });
