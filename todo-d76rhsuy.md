@@ -126,7 +126,7 @@
 - [x] Bổ sung sắp xếp SKU theo giá thấp → cao và giá cao → thấp, bên cạnh sắp xếp theo tên.
 - [x] Phóng to ảnh SKU khoảng 200% khi rê chuột hoặc chạm xem trước, không che nội dung bảng.
 - [x] Đổi mục Tool thành thư viện công cụ nổi bật, hỗ trợ mở rộng thêm nhiều Tool trong tương lai.
-- [ ] Chẩn đoán và sửa Tool PET TRAM không thao tác được trong website.
+- [x] Thay luồng PET TRAM trong iframe dễ bị hạn chế bằng trang Tool độc lập trên cùng website; đã xác minh nạp ảnh mẫu và tạo tram hoạt động.
 - [x] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
 - [x] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
 - [x] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
@@ -167,3 +167,5 @@
 - [x] Giữ nguyên toàn bộ lựa chọn SKU, tồn kho và thông tin giao hàng khi khách đổi giữa mua ngay và Order.
 - [x] Hiển thị Order 7–10 ngày trong checkout, QR thanh toán và khu vực quản trị đơn hàng vật lý.
 - [x] Kiểm thử giá Order giảm 10%, SKU, đơn hàng và QR Techcombank trước khi xuất bản.
+- [ ] Kiểm thử PET TRAM ngay trong iframe: chọn tệp, dùng nút chính, popup/modal và tải xuống mà không cần rời website.
+- [x] Nếu iframe vẫn bị giới hạn theo sandbox/origin, đổi luồng mặc định sang trang Tool độc lập và cập nhật thông báo để khách thao tác ổn định.
