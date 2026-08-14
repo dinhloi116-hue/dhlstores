@@ -228,3 +228,6 @@
 - [x] Mở rộng khung nội dung trang web và quản trị trên màn hình lớn để loại bỏ khoảng trắng thừa hai bên.
 - [x] Giữ khoảng đệm và khả năng cuộn an toàn trên điện thoại sau khi nới khung desktop.
 - [x] Kiểm thử trực quan desktop/mobile và xuất bản bố cục mở rộng.
+- [x] Sửa preview thumbnail SKU để rê chuột trên desktop luôn mở ảnh lớn độc lập, kể cả SKU hết hàng.
+- [x] Đặt SKU đang chọn, số lượng, Mua ngay và Order sát ngay dưới khu chọn SKU; không để bảng tồn kho chen giữa luồng mua.
+- [x] Kiểm tra lại trực quan preview SKU và nhịp bố cục chi tiết sản phẩm trên desktop/mobile trước khi xuất bản.

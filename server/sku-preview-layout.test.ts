@@ -15,6 +15,8 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('hidden w-44 rounded-xl');
     expect(source).toContain('h-11 w-11 overflow-hidden');
     expect(source).toContain('onMouseMove={event => { if (variant.image && window.innerWidth >= 768) updateHoveredPreview');
+    expect(source).toContain('image.addEventListener("pointerenter", showPreview)');
+    expect(source).toContain('id="sku-inventory-panel"');
     expect(source).toContain('SKU hết hàng vẫn xem được ảnh');
   });
 
@@ -23,6 +25,9 @@ describe("public SKU inventory presentation", () => {
 
     expect(source).toContain('className="space-y-4">{optionGroups.map');
     expect(source).toContain('{skuInventoryPanel}');
+    expect(source).toContain('id="product-purchase-actions"');
+    expect(source).toContain('purchaseModes.after(purchaseActions)');
+    expect(source).toContain('purchaseActions.after(panel)');
     expect(source).toContain('max-h-72 overflow-y-auto');
     expect(source).toContain('lg:col-span-7 space-y-6');
   });

@@ -104,6 +104,39 @@ export default function ProductDetail() {
     if (address) setInlineShipping(current => ({ ...current, name: address.recipientName, phone: address.phone, address: address.address }));
   }, [product?.type, savedAddresses, inlineShipping.name]);
 
+  useEffect(() => {
+    const panel = document.getElementById("sku-inventory-panel");
+    if (!panel) return;
+    const images = Array.from(panel.querySelectorAll<HTMLImageElement>("img"));
+    const showPreview = (event: PointerEvent) => {
+      if (window.innerWidth < 768) return;
+      const image = event.currentTarget as HTMLImageElement;
+      const variant = variants.find(item => item.image === image.currentSrc || item.image === image.src);
+      if (variant) updateHoveredPreview(variant.id, event.clientX, event.clientY);
+    };
+    const clearPreview = () => setHoveredPreview(null);
+    images.forEach(image => {
+      image.addEventListener("pointerenter", showPreview);
+      image.addEventListener("pointermove", showPreview);
+      image.addEventListener("pointerleave", clearPreview);
+    });
+    return () => images.forEach(image => {
+      image.removeEventListener("pointerenter", showPreview);
+      image.removeEventListener("pointermove", showPreview);
+      image.removeEventListener("pointerleave", clearPreview);
+    });
+  }, [variants]);
+
+  useEffect(() => {
+    const panel = document.getElementById("sku-inventory-panel");
+    const purchaseActions = document.getElementById("product-purchase-actions");
+    const preorderButton = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent?.includes("Order trước · giảm 10%"));
+    const purchaseModes = preorderButton?.parentElement;
+    if (!purchaseModes) return;
+    if (purchaseActions) purchaseModes.after(purchaseActions);
+    if (panel && purchaseActions) purchaseActions.after(panel);
+  }, [product?.id, selectedVariantId, fulfillmentMode, variants.length]);
+
   const addToCartMutation = trpc.store.addToCart.useMutation({
     onSuccess: () => {
       toast.success(lang === 'vi' ? "Đã thêm tài nguyên vào giỏ hàng thành công!" : "Added resource to cart successfully!");
@@ -219,7 +252,7 @@ export default function ProductDetail() {
   };
 
   const skuInventoryPanel = product.type === "physical" && variants.length > 0 ? (
-    <aside className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4">
+    <aside id="sku-inventory-panel" className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4">
       <div className="flex items-start justify-between gap-4"><div><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">Tồn kho theo SKU</h2><p className="mt-1 text-[11px] leading-relaxed text-slate-500">Rê chuột vào ảnh để xem ảnh lớn. SKU hết hàng vẫn xem được ảnh.</p></div><span className="shrink-0 rounded-full bg-slate-200 px-2 py-1 text-[10px] font-black text-slate-700">{variants.length} SKU</span></div>
       <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="max-h-72 overflow-y-auto">
         <div className="sticky top-0 z-10 grid grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)] gap-3 bg-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-600"><span>Ảnh</span><span>Phiên bản</span><span className="text-right">SKU + tồn kho</span></div>
@@ -283,7 +316,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            <div className="pt-2 flex flex-col sm:flex-row gap-4">
+            <div id="product-purchase-actions" className="pt-2 flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={handleAddToCart}
                 disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}
