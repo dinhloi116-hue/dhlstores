@@ -110,15 +110,17 @@ describe("catalogAdmin", () => {
       productId: product!.id,
       color: "Đỏ",
       attributes: "Kiểu: Sân khách\nChất liệu: Thun lạnh",
-      sku: `AO-${suffix}`,
+      sku: `FLEX-${suffix}`,
+      image: "https://example.com/variant-red.jpg",
       priceAdjustment: 10000,
       stock: 12,
       isActive: true,
     });
 
-    expect(created).toMatchObject({ color: "Đỏ", sku: `AO-${suffix}`, stock: 12, attributes: "Kiểu: Sân khách\nChất liệu: Thun lạnh" });
+    expect(created).toMatchObject({ color: "Đỏ", sku: `FLEX-${suffix}`, stock: 12, attributes: "Kiểu: Sân khách\nChất liệu: Thun lạnh" });
     const variants = await caller.catalogAdmin.productVariants({ productId: product!.id });
     expect(variants.find(variant => variant.id === created!.id)?.attributes).toContain("Chất liệu: Thun lạnh");
+    expect(variants.find(variant => variant.id === created!.id)?.image).toBe("https://example.com/variant-red.jpg");
   });
 
   it("creates SKU combinations from saved product option groups", async () => {

@@ -33,6 +33,7 @@ const productVariantInput = z.object({
   color: z.string().trim().max(64).optional(),
   attributes: z.string().trim().max(2000).optional(),
   sku: z.string().trim().max(128).optional(),
+  image: z.string().trim().max(4096).optional(),
   priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).default(0),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
   isActive: z.boolean().default(true),
@@ -143,7 +144,7 @@ export const catalogAdminRouter = router({
           const attributes = variant.attributes.map(attribute => `${attribute.name}: ${attribute.value}`).join("\n");
           const color = variant.attributes.find(attribute => /màu|color/i.test(attribute.name))?.value;
           const size = variant.attributes.find(attribute => /size|kích thước/i.test(attribute.name))?.value;
-          const created = await db.createProductVariant({ productId: product.id, size, color, attributes: attributes || undefined, sku: variant.sku || undefined, priceAdjustment: String(Math.max(0, variant.price - basePrice)), stock: 0, isActive: true });
+          const created = await db.createProductVariant({ productId: product.id, size, color, attributes: attributes || undefined, sku: variant.sku || undefined, image: variant.image || undefined, priceAdjustment: String(Math.max(0, variant.price - basePrice)), stock: 0, isActive: true });
           if (created) createdVariants += 1;
         }
       }

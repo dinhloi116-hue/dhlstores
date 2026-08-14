@@ -106,6 +106,11 @@
 - [x] Thiết kế lại điều hướng quản trị theo nhóm Catalog, Kho, Đơn hàng và Khách hàng để thao tác dễ hiểu hơn.
 - [x] Thêm nút trên từng dòng tồn kho để mở đúng sản phẩm hoặc biến thể tương ứng trong màn hình chỉnh sửa.
 - [ ] Hiển thị trạng thái tồn, SKU và biến thể đồng bộ giữa Tồn kho, Sản phẩm và Biến thể; kiểm thử trực quan luồng thực tế.
+- [ ] Đối chiếu trực quan cùng một SKU/biến thể giữa danh sách Sản phẩm, bảng Tồn kho trong Catalog và tab Biến thể trước khi đóng hạng mục đồng bộ tồn kho.
+- [x] Bổ sung trường ảnh riêng cho biến thể để lưu URL ảnh phiên bản từ Excel và quản trị thủ công.
+- [x] Cập nhật luồng nhập Excel để đưa cột Ảnh phiên bản vào từng biến thể thay vì bỏ mất dữ liệu.
+- [x] Khôi phục ảnh cho 38 biến thể Nameset đã nhập và cho ảnh thay đổi theo biến thể trên trang chi tiết.
+- [ ] Kiểm thử, xuất bản và xác minh trực quan ảnh biến thể sau khi sửa lỗi.
 - [ ] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
 - [x] Hiển thị bảng tồn kho trong Catalog · Sản phẩm gồm sản phẩm, biến thể, SKU, tồn còn lại và số lượng đã giữ.
@@ -126,7 +131,7 @@
 - [x] Thêm mục Nhập Excel trong Catalog · Sản phẩm: tải file, xem trước, báo lỗi theo dòng và xác nhận nhập.
 - [x] Kiểm thử nhập liệu bằng file mẫu và viết hướng dẫn định dạng Excel.
 - [x] Chạy đầy đủ luồng xem trước và nhập thực tế file Excel mẫu sau khi người dùng xác nhận danh mục đích, rồi đối chiếu sản phẩm/biến thể được tạo.
-- [ ] Lưu checkpoint sau khi xác nhận kiểm thử nhập Excel thực tế.
+- [x] Lưu checkpoint sau khi xác nhận kiểm thử nhập Excel thực tế.
 - [x] Nhập file Excel đã xác nhận vào danh mục Nameset Chống Nhiễm và đối chiếu số lượng sản phẩm/biến thể tạo được.
 - [x] Bổ sung các khối nội dung cho trang chủ để giảm khoảng trống và làm rõ lợi ích, quy trình mua và danh mục nổi bật.
 - [x] Kiểm thử giao diện trang chủ sau khi bổ sung nội dung, rồi xuất bản cập nhật.

@@ -125,6 +125,7 @@ export const productVariants = mysqlTable("product_variants", {
   color: varchar("color", { length: 64 }),
   attributes: text("attributes"),
   sku: varchar("sku", { length: 128 }),
+  image: text("image"),
   priceAdjustment: decimal("priceAdjustment", { precision: 12, scale: 2 }).default("0").notNull(),
   stock: int("stock").default(0).notNull(),
   isActive: boolean("isActive").default(true).notNull(),

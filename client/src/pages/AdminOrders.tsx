@@ -26,14 +26,14 @@ type ProductDraft = {
   featured: boolean;
   isActive: boolean;
 };
-type VariantDraft = { size: string; color: string; attributes: string; sku: string; priceAdjustment: string; stock: string; isActive: boolean };
+type VariantDraft = { size: string; color: string; attributes: string; sku: string; image: string; priceAdjustment: string; stock: string; isActive: boolean };
 type ExcelPreview = { sheetName: string; rowCount: number; productCount: number; variantCount: number; errors: Array<{ row: number; message: string }>; duplicates: string[]; products: Array<{ name: string; slug: string; price: number; image: string; tags: string; variants: number; options: Array<{ name: string; values: string[] }> }> };
 
 const emptyCategory: CategoryDraft = { name: "", slug: "", description: "", isActive: true };
 const emptyProduct: ProductDraft = {
   name: "", slug: "", description: "", price: "", categoryId: 0, image: "generated:catalog-cover", fileUrl: "", fileSize: "", specs: "", stock: "0", featured: false, isActive: true,
 };
-const emptyVariant: VariantDraft = { size: "", color: "", attributes: "", sku: "", priceAdjustment: "0", stock: "0", isActive: true };
+const emptyVariant: VariantDraft = { size: "", color: "", attributes: "", sku: "", image: "", priceAdjustment: "0", stock: "0", isActive: true };
 
 function slugify(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/đ/g, "d").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -116,7 +116,7 @@ export default function AdminOrders() {
     const variant = variants.find(item => item.id === editVariantId);
     if (variant) {
       setEditingVariantId(variant.id);
-      setVariantDraft({ size: variant.size || "", color: variant.color || "", attributes: variant.attributes || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive });
+      setVariantDraft({ size: variant.size || "", color: variant.color || "", attributes: variant.attributes || "", sku: variant.sku || "", image: variant.image || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive });
     }
   }, [location, variants]);
 
@@ -343,7 +343,7 @@ export default function AdminOrders() {
     if (!selectedVariantProductId) return toast.error("Hãy chọn sản phẩm vật lý trước");
     if (!variantDraft.size && !variantDraft.color) return toast.error("Hãy nhập ít nhất kích thước hoặc màu sắc");
     const data = { ...variantDraft, productId: selectedVariantProductId, priceAdjustment: Number(variantDraft.priceAdjustment || 0), stock: Number(variantDraft.stock || 0) };
-    if (editingVariantId) updateVariant.mutate({ variantId: editingVariantId, data: { size: data.size || undefined, color: data.color || undefined, sku: data.sku || undefined, priceAdjustment: data.priceAdjustment, stock: data.stock, isActive: data.isActive } });
+    if (editingVariantId) updateVariant.mutate({ variantId: editingVariantId, data: { size: data.size || undefined, color: data.color || undefined, attributes: data.attributes || undefined, sku: data.sku || undefined, image: data.image || undefined, priceAdjustment: data.priceAdjustment, stock: data.stock, isActive: data.isActive } });
     else createVariant.mutate(data);
   };
 
@@ -410,7 +410,7 @@ export default function AdminOrders() {
                   <option value={0}>Chọn sản phẩm vật lý</option>
                   {products.filter(product => product.type === "physical").map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
                 </select>
-                {!selectedVariantProductId ? <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">Hãy tạo hoặc chọn một sản phẩm thuộc danh mục hàng vật lý trước.</div> : <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">{variants.map(variant => <div key={variant.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">{[variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Biến thể chưa đặt tên"}</p><p className="mt-1 text-xs text-slate-500">SKU: {variant.sku || "—"} · Tồn: {variant.stock} · Điều chỉnh: {formatCurrency(variant.priceAdjustment)}</p></div><div className="flex items-center gap-2"><Badge className={variant.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}>{variant.isActive ? "Đang bán" : "Đang ẩn"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingVariantId(variant.id); setVariantDraft({ size: variant.size || "", color: variant.color || "", attributes: variant.attributes || "", sku: variant.sku || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive }); }}><Pencil className="h-3.5 w-3.5" /></Button></div></div>)}{variants.length === 0 && <div className="p-8 text-center text-sm text-slate-500">Chưa có biến thể. Thêm size, màu hoặc kiểu đầu tiên ở biểu mẫu bên phải.</div>}</div>}
+                {!selectedVariantProductId ? <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">Hãy tạo hoặc chọn một sản phẩm thuộc danh mục hàng vật lý trước.</div> : <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">{variants.map(variant => <div key={variant.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">{[variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Biến thể chưa đặt tên"}</p><p className="mt-1 text-xs text-slate-500">SKU: {variant.sku || "—"} · Tồn: {variant.stock} · Điều chỉnh: {formatCurrency(variant.priceAdjustment)}</p></div><div className="flex items-center gap-2"><Badge className={variant.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}>{variant.isActive ? "Đang bán" : "Đang ẩn"}</Badge><Button size="sm" variant="outline" onClick={() => { setEditingVariantId(variant.id); setVariantDraft({ size: variant.size || "", color: variant.color || "", attributes: variant.attributes || "", sku: variant.sku || "", image: variant.image || "", priceAdjustment: variant.priceAdjustment, stock: String(variant.stock), isActive: variant.isActive }); }}><Pencil className="h-3.5 w-3.5" /></Button></div></div>)}{variants.length === 0 && <div className="p-8 text-center text-sm text-slate-500">Chưa có biến thể. Thêm size, màu hoặc kiểu đầu tiên ở biểu mẫu bên phải.</div>}</div>}
               </div>
             </section>
             <form onSubmit={handleVariantSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -420,6 +420,7 @@ export default function AdminOrders() {
               <Input value={variantDraft.color} onChange={event => setVariantDraft(prev => ({ ...prev, color: event.target.value }))} placeholder="Màu sắc, ví dụ: Đỏ" disabled={!selectedVariantProductId} />
               <Textarea value={variantDraft.attributes} onChange={event => setVariantDraft(prev => ({ ...prev, attributes: event.target.value }))} placeholder={"Lựa chọn bổ sung, mỗi dòng một mục\nVí dụ: Kiểu: Sân khách\nChất liệu: Thun lạnh"} disabled={!selectedVariantProductId} />
               <Input value={variantDraft.sku} onChange={event => setVariantDraft(prev => ({ ...prev, sku: event.target.value }))} placeholder="Mã SKU (tùy chọn)" disabled={!selectedVariantProductId} />
+              <Input value={variantDraft.image} onChange={event => setVariantDraft(prev => ({ ...prev, image: event.target.value }))} placeholder="URL ảnh riêng của biến thể (tùy chọn)" disabled={!selectedVariantProductId} />
               <div className="grid grid-cols-2 gap-3"><Input type="number" value={variantDraft.priceAdjustment} onChange={event => setVariantDraft(prev => ({ ...prev, priceAdjustment: event.target.value }))} placeholder="Chênh giá" disabled={!selectedVariantProductId} /><Input type="number" min="0" value={variantDraft.stock} onChange={event => setVariantDraft(prev => ({ ...prev, stock: event.target.value }))} placeholder="Tồn kho" disabled={!selectedVariantProductId} /></div>
               <label className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-700"><input type="checkbox" checked={variantDraft.isActive} onChange={event => setVariantDraft(prev => ({ ...prev, isActive: event.target.checked }))} disabled={!selectedVariantProductId} />Đang bán</label>
               <Button type="submit" disabled={!selectedVariantProductId || createVariant.isPending || updateVariant.isPending} className="w-full bg-violet-600 font-black text-white hover:bg-violet-500"><Check className="mr-2 h-4 w-4" />{editingVariantId ? "Lưu biến thể" : "Thêm biến thể"}</Button>

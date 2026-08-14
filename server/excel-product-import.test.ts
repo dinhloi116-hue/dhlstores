@@ -29,6 +29,7 @@ describe("excel product import", () => {
     expect(parsed.products).toHaveLength(1);
     expect(parsed.products[0]).toMatchObject({ name: "Áo câu lạc bộ", slug: "ao-do-xanh", price: 69000 });
     expect(parsed.products[0].variants).toEqual(expect.arrayContaining([expect.objectContaining({ sku: "AO-DO-M", attributes: expect.arrayContaining([expect.objectContaining({ name: "Màu sắc", value: "Đỏ" })]) })]));
+    expect(parsed.products[0].variants.find(variant => variant.sku === "AO-XANH-L")?.image).toBe("https://example.com/ao-xanh.jpg");
   });
 
   it("reports the source row when an Excel product starts without a name", () => {

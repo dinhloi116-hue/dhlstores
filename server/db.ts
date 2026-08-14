@@ -48,6 +48,7 @@ export interface ProductVariantType {
   color?: string;
   attributes?: string;
   sku?: string;
+  image?: string;
   priceAdjustment: string;
   stock: number;
   isActive: boolean;
@@ -453,6 +454,7 @@ function toProductVariantType(variant: typeof productVariants.$inferSelect): Pro
     color: variant.color ?? undefined,
     attributes: variant.attributes ?? undefined,
     sku: variant.sku ?? undefined,
+    image: variant.image ?? undefined,
     priceAdjustment: String(variant.priceAdjustment),
     stock: variant.stock,
     isActive: variant.isActive,
@@ -1079,6 +1081,7 @@ export type CatalogVariantInput = {
   color?: string;
   attributes?: string;
   sku?: string;
+  image?: string;
   priceAdjustment: string;
   stock: number;
   isActive: boolean;
@@ -1111,6 +1114,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
       color: input.color || null,
       attributes: input.attributes?.trim() || null,
       sku: input.sku || null,
+      image: input.image?.trim() || null,
       priceAdjustment: input.priceAdjustment,
       stock: input.stock,
       isActive: input.isActive,
@@ -1125,6 +1129,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
     color: input.color,
     attributes: input.attributes?.trim() || undefined,
     sku: input.sku,
+    image: input.image?.trim() || undefined,
     priceAdjustment: input.priceAdjustment,
     stock: input.stock,
     isActive: input.isActive,
@@ -1142,6 +1147,7 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
       color: input.color || null,
       attributes: input.attributes?.trim() || null,
       sku: input.sku || null,
+      image: input.image?.trim() || null,
       priceAdjustment: input.priceAdjustment,
       stock: input.stock,
       isActive: input.isActive,
