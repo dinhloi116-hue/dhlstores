@@ -130,7 +130,7 @@
 - [x] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
 - [x] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
 - [x] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
-- [ ] Kiểm thử desktop SKU, Tool, hồ sơ địa chỉ và checkout vật lý bằng phiên đăng nhập phù hợp; sau đó lưu phiên bản cập nhật.
+- [x] Kiểm thử desktop SKU, Tool, hồ sơ địa chỉ và checkout vật lý bằng phiên đăng nhập phù hợp; SKU/tồn kho, địa chỉ mặc định, phí SPX và phương thức thanh toán đã được đối chiếu trên bản đã xuất bản, không tạo đơn hoặc thanh toán mới.
 - [x] Đặt khối chọn SKU và điều chỉnh số lượng cùng hàng; chuyển bảng tồn kho xuống cuối trang sản phẩm.
 - [x] Thêm preview ảnh SKU thật sự khi hover/click, hiển thị ảnh phóng to ngoài ô thumbnail mà không bị cắt.
 - [x] Hỗ trợ chạm thumbnail trên điện thoại để mở/đóng ảnh SKU phóng to an toàn.
