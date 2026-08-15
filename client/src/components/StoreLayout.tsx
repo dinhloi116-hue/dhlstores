@@ -232,13 +232,21 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                             </button>
                             <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
                               <button
-                                onClick={() => updateCartMutation.mutate({ cartItemId: item.id, quantity: item.quantity - 1 })}
-                                className="text-slate-600 hover:text-black px-1 text-xs font-bold"
+                                disabled={updateCartMutation.isPending}
+                                onClick={() => {
+                                  if (updateCartMutation.isPending) return;
+                                  updateCartMutation.mutate({ cartItemId: item.id, quantity: item.quantity - 1 });
+                                }}
+                                className="text-slate-600 hover:text-black px-1 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40"
                               >-</button>
                               <span className="text-xs font-bold px-1">{item.quantity}</span>
                               <button
-                                onClick={() => updateCartMutation.mutate({ cartItemId: item.id, quantity: item.quantity + 1 })}
-                                className="text-slate-600 hover:text-black px-1 text-xs font-bold"
+                                disabled={updateCartMutation.isPending}
+                                onClick={() => {
+                                  if (updateCartMutation.isPending) return;
+                                  updateCartMutation.mutate({ cartItemId: item.id, quantity: item.quantity + 1 });
+                                }}
+                                className="text-slate-600 hover:text-black px-1 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40"
                               >+</button>
                             </div>
                           </div>

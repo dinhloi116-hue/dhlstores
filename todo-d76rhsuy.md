@@ -96,7 +96,7 @@
 - [x] Kiểm thử phân quyền, ưu đãi, thao tác tồn kho hàng loạt và xuất bản quản trị nâng cao.
 - [ ] Kiểm thử trực quan desktop trên bản mới nhất: sản phẩm, giỏ hàng, checkout QR, tài khoản/email, tải tệp và quản trị.
 - [x] Khắc phục tuyến trang chi tiết sản phẩm hợp lệ đang hiển thị 404.
-- [ ] Kiểm tra trực quan desktop giỏ hàng, gồm cập nhật số lượng, thông báo tồn kho và trạng thái trống/đầy.
+- [x] Kiểm tra trực quan desktop giỏ hàng trên bản đã xuất bản: thêm SKU còn hàng, tăng số lượng từ 1 lên 2, xóa dòng và xác nhận trạng thái trống; dữ liệu thử đã được dọn sạch.
 - [ ] Kiểm tra trực quan luồng tải tệp trên desktop, gồm Tải ngay sau thanh toán và trạng thái hết hạn trong Tài khoản.
 - [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận trạng thái vận hành bằng phiên tài khoản thật.
 - [x] Rà soát và nhóm lại các tab quản trị để thao tác nhanh, dễ hiểu hơn.
@@ -281,3 +281,5 @@
 - [x] Thêm thẻ thống kê dung lượng tệp đã đăng tải trong Trung tâm vận hành, gồm tổng số tệp và tổng dung lượng theo dữ liệu đã lưu.
 - [x] Tổng hợp checklist duy nhất cho các thao tác cần chủ cửa hàng kiểm thử bằng tài khoản thật sau khi hoàn thiện kỹ thuật.
 - [x] Đã xác minh không phải lỗi ứng dụng: lớp xem trước của môi trường chặn click nút Thêm vào giỏ; session replay cho thấy click bị nhận bởi `#manus-previewer-root` thay vì nút sản phẩm.
+- [ ] Kiểm tra trực quan desktop cảnh báo tồn kho trong giỏ hàng: tăng số lượng đến/vượt ngưỡng tồn hoặc tạo tình huống tồn thay đổi để xác nhận thông báo lỗi/giới hạn hiển thị đúng.
+- [x] Ngăn thao tác tăng/giảm liên tiếp trong giỏ khi yêu cầu cập nhật số lượng đang xử lý, tránh gửi các yêu cầu lặp với dữ liệu tồn kho cũ; đã bổ sung hồi quy, chạy 67 kiểm thử, TypeScript và build thành công.
