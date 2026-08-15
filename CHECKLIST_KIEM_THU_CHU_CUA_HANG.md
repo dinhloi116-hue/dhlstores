@@ -23,6 +23,10 @@
 
 Ghi lại tên trang, thao tác vừa bấm, ảnh màn hình và thời điểm gặp lỗi. Với phần thanh toán, không chuyển khoản lặp lại nếu số dư/đơn chưa cập nhật; hãy chờ đối soát trong thời gian ngắn và kiểm tra lịch sử biến động trước.
 
+## Lưu ý khi kiểm thử trong cửa sổ xem trước
+
+Thanh **Preview mode** của môi trường quản lý có thể nằm đè lên các nút cố định sát cuối trang và nhận click thay cho website. Nếu nút giỏ hàng, mua ngay hoặc một nút cuối trang không phản hồi trong cửa sổ xem trước, hãy kiểm tra lại trên phiên bản đã xuất bản hoặc trong một cửa sổ trình duyệt thông thường trước khi coi đó là lỗi của website.
+
 ## Kết quả cần gửi lại
 
 Sau khi kiểm thử, chỉ cần gửi lại danh sách ngắn theo mẫu:
