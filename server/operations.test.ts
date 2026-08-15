@@ -72,6 +72,11 @@ describe("advanced operations", () => {
     expect((await getUserByUsername(ownerRecord.username!))?.balance).toBe("5000.00");
   });
 
+  it("exposes catalog storage summary only to the owner", async () => {
+    const owner = appRouter.createCaller(ownerContext());
+    await expect(owner.operations.storageSummary()).resolves.toMatchObject({ fileCount: expect.any(Number), totalBytes: expect.any(Number) });
+  });
+
   it("uses a valid discount code when calculating the QR payment total", async () => {
     const code = `QR${Date.now()}`;
     await createDiscountCode({ code, type: "percent", value: 10, minOrderAmount: 0, createdByUserId: 990001 });

@@ -124,6 +124,7 @@ export const appRouter = router({
 
   operations: router({
     overview: ownerProcedure.query(() => db.getOperationsOverview()),
+    storageSummary: ownerProcedure.query(() => db.getCatalogStorageSummary()),
     members: ownerProcedure.query(() => db.getAllUsers()),
     createTestCustomer: ownerProcedure
       .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, name: z.string().trim().min(2).max(120).optional() }))

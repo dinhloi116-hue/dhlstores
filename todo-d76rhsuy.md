@@ -270,11 +270,12 @@
 - [x] Sửa bố cục desktop trang sản phẩm để nút Thêm vào giỏ hàng và Mua ngay & chọn giao hàng luôn nằm trong vùng thao tác cuộn được, không phụ thuộc vào thao tác chuyển DOM theo nội dung nút.
 - [x] Mở rộng preview ảnh SKU để rê chuột trên cả dòng SKU có ảnh đều xem được ảnh lớn, không chỉ giới hạn ở thumbnail.
 - [x] Thêm khu tạo tài khoản khách thử nghiệm cho chủ cửa hàng trong quản trị, với username, tên hiển thị và mật khẩu tạm do chủ cửa hàng tự đặt.
-- [ ] Rà soát dịch vụ gửi email và chốt phương án email tự động cho mã giảm giá, khuyến mãi và sản phẩm mới trước khi tích hợp.
-- [ ] So sánh gói miễn phí hiện tại của Resend, Mailchimp và Elastic Email, gồm giới hạn gửi, điều kiện dùng và khả năng phục vụ chiến dịch của cửa hàng.
+- [x] Đã tạm hoãn theo yêu cầu: rà soát dịch vụ gửi email và chốt phương án email tự động cho mã giảm giá, khuyến mãi và sản phẩm mới.
+- [x] Đã tạm hoãn theo yêu cầu: so sánh gói miễn phí của Resend, Mailchimp và Elastic Email trước khi tích hợp email.
 - [x] Thêm ví số dư cho từng tài khoản, hiển thị số dư và lịch sử biến động trong mục Tài khoản.
 - [x] Tạo QR nạp số dư qua VietinBank SePay với mã giao dịch riêng, tự đối soát và chống cộng trùng giao dịch.
 - [x] Cho phép dùng số dư để thanh toán sản phẩm số và hàng vật lý, trừ số dư nguyên tử và mở khóa/tạo đơn theo đúng luồng thanh toán.
 - [x] Cho phép chủ cửa hàng cộng hoặc trừ số dư cho bất kỳ tài khoản nào, bao gồm chính chủ cửa hàng, kèm lịch sử và lý do điều chỉnh.
 - [x] Đồng bộ nhãn và thông báo checkout khi đơn đã được thanh toán ngay bằng số dư, không mô tả nhầm là QR ngân hàng.
-- [ ] Giải thích quy trình bàn giao mã nguồn/quyền quản trị và vị trí theo dõi dữ liệu lưu trữ của website.
+- [x] Giải thích quy trình bàn giao mã nguồn/quyền quản trị và vị trí theo dõi dữ liệu lưu trữ của website.
+- [x] Thêm thẻ thống kê dung lượng tệp đã đăng tải trong Trung tâm vận hành, gồm tổng số tệp và tổng dung lượng theo dữ liệu đã lưu.

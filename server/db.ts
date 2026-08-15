@@ -1719,6 +1719,15 @@ export async function getMediaAssets() {
   return memoryMediaAssets;
 }
 
+export async function getCatalogStorageSummary() {
+  const assets = await getMediaAssets();
+  const totalBytes = assets.reduce((sum, asset) => sum + Math.max(0, Number(asset.sizeBytes) || 0), 0);
+  const imageCount = assets.filter(asset => asset.mimeType.startsWith("image/")).length;
+  const videoCount = assets.filter(asset => asset.mimeType.startsWith("video/")).length;
+  const otherCount = assets.length - imageCount - videoCount;
+  return { fileCount: assets.length, totalBytes, imageCount, videoCount, otherCount };
+}
+
 async function listDownloadLinks() {
   const connection = await getDb();
   if (connection) return connection.select().from(productDownloadLinks);
