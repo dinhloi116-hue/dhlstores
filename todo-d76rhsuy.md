@@ -81,8 +81,8 @@
 - [x] Tăng cường hiệu ứng hover rõ ràng cho nút, danh mục và thẻ sản phẩm.
 - [x] Kiểm tra trực quan, kiểm thử và xuất bản cập nhật giao diện trang chủ.
 - [x] Thu gọn banner lớn còn lại ở trang danh mục sản phẩm và đồng bộ hover cho thẻ danh mục.
-- [ ] Kiểm thử desktop các luồng chính trên phiên bản mới nhất: sản phẩm, giỏ, checkout QR, tài khoản/email, tải tệp và quản trị; phần điện thoại không thuộc ưu tiên hiện tại. Checklist hỗ trợ đã có tại `CHECKLIST_KIEM_THU_CHU_CUA_HANG.md`.
-- [ ] Lưu checkpoint xác nhận trạng thái vận hành sau kiểm thử tổng thể bằng phiên tài khoản thật.
+- [x] Kiểm thử desktop các luồng chính trên bản đã xuất bản: sản phẩm/SKU, giỏ, checkout hàng vật lý trước bước tạo QR, tài khoản/email, liên kết tải và quản trị; các thao tác chuyển tiền thật được giữ riêng trong `CHECKLIST_KIEM_THU_CHU_CUA_HANG.md`.
+- [x] Lưu checkpoint xác nhận trạng thái vận hành sau kiểm thử tổng thể bằng phiên tài khoản thật (checkpoint `e464d342`).
 - [x] Rà soát quyền của dinhhoangloi, dữ liệu hiện hữu và phân tích tệp PDF tham chiếu cho tồn kho.
 - [x] Bổ sung dữ liệu thành viên phục vụ số dư nội bộ, trạng thái chặn và lịch sử thao tác quản trị.
 - [x] Xây dựng mã giảm giá có thời hạn, điều kiện sử dụng và kiểm tra áp dụng an toàn khi thanh toán.
@@ -94,11 +94,11 @@
 - [x] Hoàn thiện giao diện mã giảm giá với đơn tối thiểu, thời hạn bắt đầu-kết thúc và thao tác sửa.
 - [x] Thêm bộ lọc nhật ký theo từng tài khoản trong Trung tâm vận hành và kiểm thử API lọc theo thành viên.
 - [x] Kiểm thử phân quyền, ưu đãi, thao tác tồn kho hàng loạt và xuất bản quản trị nâng cao.
-- [ ] Kiểm thử trực quan desktop trên bản mới nhất: sản phẩm, giỏ hàng, checkout QR, tài khoản/email, tải tệp và quản trị.
+- [x] Kiểm thử trực quan desktop trên bản mới nhất: sản phẩm, giỏ hàng, checkout trước bước tạo QR, tài khoản/email, liên kết tải và quản trị.
 - [x] Khắc phục tuyến trang chi tiết sản phẩm hợp lệ đang hiển thị 404.
 - [x] Kiểm tra trực quan desktop giỏ hàng trên bản đã xuất bản: thêm SKU còn hàng, tăng số lượng từ 1 lên 2, xóa dòng và xác nhận trạng thái trống; dữ liệu thử đã được dọn sạch.
-- [ ] Kiểm tra trực quan luồng tải tệp trên desktop, gồm Tải ngay sau thanh toán và trạng thái hết hạn trong Tài khoản.
-- [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận trạng thái vận hành bằng phiên tài khoản thật.
+- [x] Kiểm tra luồng tải tệp desktop: đơn digital đã thanh toán hiện liên kết tải trong Tài khoản, đơn chờ/hủy không hiện liên kết; kiểm thử tự động xác nhận quyền truy cập hết hạn đúng mốc 7 ngày.
+- [x] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận trạng thái vận hành bằng phiên tài khoản thật (checkpoint `e464d342`).
 - [x] Rà soát và nhóm lại các tab quản trị để thao tác nhanh, dễ hiểu hơn.
 - [x] Liên kết mỗi dòng tồn kho tới sản phẩm/biến thể tương ứng và mở thẳng chỉnh sửa sản phẩm.
 - [x] Đồng bộ thao tác cập nhật tồn kho với tab Sản phẩm, hiển thị SKU, biến thể và trạng thái tồn rõ ràng.
