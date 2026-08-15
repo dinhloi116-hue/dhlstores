@@ -35,6 +35,7 @@ export interface ProductType {
   fileUrl?: string;
   fileSize?: string;
   stock: number;
+  weightGrams?: number;
   specs?: string;
   featured: boolean;
   isActive?: boolean;
@@ -51,6 +52,7 @@ export interface ProductVariantType {
   image?: string;
   priceAdjustment: string;
   stock: number;
+  weightGrams?: number;
   sortOrder: number;
   isActive: boolean;
   createdAt: Date;
@@ -90,6 +92,7 @@ export interface CartItemType {
   quantity: number;
   fulfillmentMode: 'in_stock' | 'preorder';
   attributes?: string;
+  weightGrams?: number;
   product?: ProductType;
   variant?: ProductVariantType;
 }
@@ -104,6 +107,7 @@ export interface OrderItemType {
   price: string;
   fulfillmentMode: 'in_stock' | 'preorder';
   attributes?: string;
+  weightGrams?: number;
   product?: ProductType;
 }
 
@@ -127,6 +131,7 @@ export interface OrderType {
   shippingNote?: string | null;
   shippingMethod?: string | null;
   shippingFee?: string;
+  shippingWeightGrams?: number;
   hasPhysicalItems?: boolean;
   hasPreorderItems?: boolean;
   preorderDiscountAmount?: string;
@@ -479,6 +484,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     fileUrl: product.fileUrl ?? undefined,
     fileSize: product.fileSize ?? undefined,
     stock: product.stock,
+    weightGrams: product.weightGrams,
     specs: product.specs ?? undefined,
     featured: product.featured,
     isActive: product.isActive,
@@ -497,6 +503,7 @@ function toProductVariantType(variant: typeof productVariants.$inferSelect): Pro
     image: variant.image ?? undefined,
     priceAdjustment: String(variant.priceAdjustment),
     stock: variant.stock,
+    weightGrams: variant.weightGrams ?? undefined,
     sortOrder: variant.sortOrder,
     isActive: variant.isActive,
     createdAt: variant.createdAt,
@@ -1217,6 +1224,7 @@ export type CatalogProductInput = {
   fileSize?: string;
   specs?: string;
   stock: number;
+  weightGrams?: number;
   featured: boolean;
   isActive: boolean;
 };
@@ -1298,6 +1306,7 @@ export async function createProduct(input: CatalogProductInput) {
       fileUrl: input.fileUrl ?? null,
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,
+      weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       specs: input.specs ?? null,
       featured: input.featured,
       isActive: input.isActive,
@@ -1320,6 +1329,7 @@ export async function createProduct(input: CatalogProductInput) {
     fileUrl: input.fileUrl,
     fileSize: input.fileSize,
     stock: productType === "physical" ? input.stock : 9999,
+    weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
     specs: input.specs,
     featured: input.featured,
     isActive: input.isActive,
@@ -1346,6 +1356,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       fileUrl: input.fileUrl ?? null,
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,
+      weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       specs: input.specs ?? null,
       featured: input.featured,
       isActive: input.isActive,
@@ -1359,6 +1370,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
   Object.assign(product, input, {
     type: category.type === "physical" ? "physical" : "digital",
     stock: category.type === "physical" ? input.stock : 9999,
+    weightGrams: category.type === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
   });
   return { success: true };
 }
@@ -1372,6 +1384,7 @@ export type CatalogVariantInput = {
   image?: string;
   priceAdjustment: string;
   stock: number;
+  weightGrams?: number;
   sortOrder?: number;
   isActive: boolean;
 };
@@ -1447,6 +1460,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
       image: input.image?.trim() || null,
       priceAdjustment: input.priceAdjustment,
       stock: input.stock,
+      weightGrams: input.weightGrams ?? null,
       sortOrder: nextSortOrder,
       isActive: input.isActive,
     });
@@ -1463,6 +1477,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
     image: input.image?.trim() || undefined,
     priceAdjustment: input.priceAdjustment,
     stock: input.stock,
+    weightGrams: input.weightGrams,
     sortOrder: nextSortOrder,
     isActive: input.isActive,
     createdAt: new Date(),
@@ -1482,6 +1497,7 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
       image: input.image?.trim() || null,
       priceAdjustment: input.priceAdjustment,
       stock: input.stock,
+      weightGrams: input.weightGrams ?? null,
       isActive: input.isActive,
     }).where(eq(productVariants.id, variantId));
     return { success: true };
@@ -1818,7 +1834,7 @@ export async function createOrder(userId: number, data: {
   totalAmount: number;
   items: Array<{ productId: number; quantity: number; price: number; variantId?: number; attributes?: string; fulfillmentMode?: 'in_stock' | 'preorder' }>;
   discountCode?: string;
-  shipping?: { name: string; phone: string; address: string; note?: string; method: ShippingMethodCode };
+  shipping?: { name: string; phone: string; address: string; note?: string };
   clearCart?: boolean;
 }) {
   const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -1844,6 +1860,7 @@ export async function createOrder(userId: number, data: {
       variantId: variant?.id ?? null,
       variantLabel: variant ? [variant.size, variant.color].filter(Boolean).join(" · ") || null : null,
       isPhysical: product.type === "physical",
+      weightGrams: product.type === "physical" ? Math.max(0, variant?.weightGrams ?? product.weightGrams ?? 0) : 0,
       availableStock: variant?.stock ?? product.stock,
       attributes: item.attributes,
     };
@@ -1860,7 +1877,8 @@ export async function createOrder(userId: number, data: {
   const hasPhysicalItems = verifiedItems.some(item => item.isPhysical);
   const hasPreorderItems = verifiedItems.some(item => item.fulfillmentMode === 'preorder');
   if (hasPhysicalItems && (!data.shipping?.name || !data.shipping.phone || !data.shipping.address)) throw new Error("Vui lòng điền đủ thông tin nhận hàng");
-  const shipping = hasPhysicalItems ? getShippingOption(data.shipping?.method ?? "standard") : getShippingOption("pickup");
+  const shippingWeightGrams = verifiedItems.reduce((sum, item) => sum + (item.isPhysical ? item.weightGrams * item.quantity : 0), 0);
+  const shipping = hasPhysicalItems ? { code: "spx", fee: getSpxShippingFee(shippingWeightGrams) } : { code: "digital", fee: 0 };
   const productSubtotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const preorderDiscountAmount = verifiedItems.reduce((sum, item) => sum + item.preorderDiscount * item.quantity, 0);
   const discount = await validateDiscountCode(data.discountCode || "", productSubtotal);
@@ -1878,12 +1896,12 @@ export async function createOrder(userId: number, data: {
         userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr",
         discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
         shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
-        shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null,
+        shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null,
       });
       const orderId = Number(inserted[0].insertId);
-      await transaction.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes ?? null })));
+      await transaction.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes ?? null, weightGrams: item.weightGrams })));
       if (data.clearCart !== false) await transaction.delete(cartItems).where(eq(cartItems.userId, userId));
-      return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
+      return { success: true, orderId, orderCode, totalAmount: verifiedTotal, shippingFee: shipping.fee, shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
     });
   }
   for (const claim of Array.from(inventoryClaims.values())) {
@@ -1901,11 +1919,17 @@ export async function createOrder(userId: number, data: {
   memoryOrders.unshift({
     id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
     shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
-    shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, trackingStage: "ordered", trackingUrl: null, isDeleted: false, createdAt: new Date(),
+    shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, trackingStage: "ordered", trackingUrl: null, isDeleted: false, createdAt: new Date(),
   });
-  for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes });
+  for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes, weightGrams: item.weightGrams });
   if (data.clearCart !== false) await clearCart(userId);
-  return { success: true, orderId, orderCode, totalAmount: verifiedTotal, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
+  return { success: true, orderId, orderCode, totalAmount: verifiedTotal, shippingFee: shipping.fee, shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
+}
+
+/** SPX: đến 1 kg là 20.000đ; mỗi kg hoặc phần kg tiếp theo thêm 10.000đ. */
+export function getSpxShippingFee(totalWeightGrams: number) {
+  const billableKg = Math.max(1, Math.ceil(Math.max(0, totalWeightGrams) / 1000));
+  return 10_000 + billableKg * 10_000;
 }
 
 /** Xác nhận đơn hàng vật lý bằng tay khi khách chuyển vào QR Techcombank không kèm nội dung đối soát. */

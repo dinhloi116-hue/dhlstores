@@ -288,7 +288,6 @@ export const appRouter = router({
           phone: z.string().trim().min(8).max(64),
           address: z.string().trim().min(5).max(2000),
           note: z.string().trim().max(2000).optional(),
-          method: z.enum(["pickup", "standard", "express"]),
         }).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -304,7 +303,7 @@ export const appRouter = router({
     quickCheckout: protectedProcedure
       .input(z.object({
         item: z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(99), variantId: z.number().int().positive().optional(), attributes: z.string().max(255).optional(), fulfillmentMode: z.enum(["in_stock", "preorder"]).optional() }),
-        shipping: z.object({ name: z.string().trim().min(2).max(255), phone: z.string().trim().min(8).max(64), address: z.string().trim().min(5).max(2000), note: z.string().trim().max(2000).optional(), method: z.enum(["pickup", "standard", "express"]) }).optional(),
+        shipping: z.object({ name: z.string().trim().min(2).max(255), phone: z.string().trim().min(8).max(64), address: z.string().trim().min(5).max(2000), note: z.string().trim().max(2000).optional() }).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);

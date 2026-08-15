@@ -174,6 +174,7 @@ export const products = mysqlTable("products", {
   fileUrl: text("fileUrl"), // Dành cho sản phẩm số (link tải file)
   fileSize: varchar("fileSize", { length: 64 }), // VD: "45 MB", "Vector AI/SVG"
   stock: int("stock").default(100).notNull(), // Dành cho sản phẩm vật lý (áo bóng đá)
+  weightGrams: int("weightGrams").default(0).notNull(), // Khối lượng mặc định để tính phí SPX
   specs: text("specs"), // Thông tin chi tiết (chất liệu, định dạng, kích thước...)
   featured: boolean("featured").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
@@ -193,6 +194,7 @@ export const productVariants = mysqlTable("product_variants", {
   image: text("image"),
   priceAdjustment: decimal("priceAdjustment", { precision: 12, scale: 2 }).default("0").notNull(),
   stock: int("stock").default(0).notNull(),
+  weightGrams: int("weightGrams"), // Ghi đè khối lượng sản phẩm nếu SKU khác nhau
   sortOrder: int("sortOrder").default(0).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -258,6 +260,7 @@ export const orders = mysqlTable("orders", {
   shippingNote: text("shippingNote"),
   shippingMethod: varchar("shippingMethod", { length: 64 }),
   shippingFee: decimal("shippingFee", { precision: 12, scale: 2 }).default("0").notNull(),
+  shippingWeightGrams: int("shippingWeightGrams").default(0).notNull(),
   hasPhysicalItems: boolean("hasPhysicalItems").default(false).notNull(),
   hasPreorderItems: boolean("hasPreorderItems").default(false).notNull(),
   preorderDiscountAmount: decimal("preorderDiscountAmount", { precision: 12, scale: 2 }).default("0").notNull(),
@@ -282,6 +285,7 @@ export const orderItems = mysqlTable("order_items", {
   price: decimal("price", { precision: 12, scale: 2 }).notNull(),
   fulfillmentMode: mysqlEnum("fulfillmentMode", ["in_stock", "preorder"]).default("in_stock").notNull(),
   attributes: varchar("attributes", { length: 255 }),
+  weightGrams: int("weightGrams").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

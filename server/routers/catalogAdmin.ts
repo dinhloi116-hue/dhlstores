@@ -24,6 +24,7 @@ const productInput = z.object({
   fileSize: z.string().trim().max(64).optional(),
   specs: z.string().trim().max(5000).optional(),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
+  weightGrams: z.coerce.number().int().min(0).max(100_000).default(0),
   featured: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
@@ -37,6 +38,7 @@ const productVariantInput = z.object({
   image: z.string().trim().max(4096).optional(),
   priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).default(0),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
+  weightGrams: z.coerce.number().int().min(0).max(100_000).optional(),
   isActive: z.boolean().default(true),
 });
 

@@ -260,4 +260,8 @@
 - [x] Cho phép khách đính kèm ảnh trong Tin nhắn và Góp ý, có xem trước trước khi gửi.
 - [x] Hiển thị ảnh đính kèm an toàn trong hộp thư quản trị và cuộc hội thoại khách.
 - [x] Kiểm thử gửi/hiển thị ảnh, phân quyền và trạng thái lỗi trong Tin nhắn/Góp ý.
-- [ ] Rà soát giao diện, tiện ích và vận hành để đề xuất lộ trình cải tiến theo mức ưu tiên.
+- [x] Rà soát giao diện, tiện ích và vận hành để đề xuất lộ trình cải tiến theo mức ưu tiên.
+- [x] Thêm khối lượng (gram) cho sản phẩm và SKU vật lý trong quản trị.
+- [x] Tính phí SPX theo tổng khối lượng: đến 1 kg 20.000đ, đến 2 kg 30.000đ, đến 3 kg 40.000đ, sau đó tăng 10.000đ mỗi kg.
+- [x] Đồng bộ khối lượng và phí SPX vào trang sản phẩm, giỏ hàng, checkout, đơn hàng và quản trị.
+- [ ] Kiểm thử các mốc phí SPX, đơn hỗn hợp và hiển thị desktop/mobile trước khi xuất bản.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import { appRouter } from "./routers";
-import { confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, isDownloadAccessActive, replaceProductWholesaleTiers, saveProductDownloadLink } from "./db";
+import { confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, getSpxShippingFee, isDownloadAccessActive, replaceProductWholesaleTiers, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createMockContext(): TrpcContext {
@@ -144,6 +144,34 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(isDownloadAccessActive(new Date(now - 7 * 24 * 60 * 60 * 1_000), now)).toBe(false);
   });
 
+  it("calculates SPX shipping by total weight, rounding each additional kilogram up", () => {
+    expect(getSpxShippingFee(0)).toBe(20_000);
+    expect(getSpxShippingFee(1_000)).toBe(20_000);
+    expect(getSpxShippingFee(1_001)).toBe(30_000);
+    expect(getSpxShippingFee(2_000)).toBe(30_000);
+    expect(getSpxShippingFee(2_001)).toBe(40_000);
+  });
+
+  it("charges SPX only for physical items in a mixed digital and physical order", async () => {
+    const ctx = createMockContext();
+    const caller = appRouter.createCaller(ctx);
+    const suffix = `mixed-spx-${Date.now().toString(36)}`;
+    const physical = await createProduct({ name: `Áo SPX ${suffix}`, slug: `ao-spx-${suffix}`, description: "Kiểm thử đơn hỗn hợp", price: "100000", categoryId: 11, image: "generated:mixed-spx", stock: 5, weightGrams: "1100", featured: false, isActive: true });
+    const variant = await createProductVariant({ productId: physical!.id, size: "L", color: "Đen", sku: `MIX-${suffix}`, priceAdjustment: "0", stock: 5, isActive: true });
+    const digital = await createProduct({ name: `Tài nguyên số ${suffix}`, slug: `tai-nguyen-so-${suffix}`, description: "Kiểm thử đơn hỗn hợp", price: "2000", categoryId: 1, image: "generated:mixed-digital", stock: 0, featured: false, isActive: true });
+
+    const checkout = await caller.store.checkout({
+      totalAmount: 0,
+      items: [{ productId: physical!.id, variantId: variant!.id, quantity: 1, price: 0 }, { productId: digital!.id, quantity: 1, price: 0 }],
+      shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" },
+    });
+
+    expect(checkout).toMatchObject({ totalAmount: 132000, shippingFee: 30000, paymentFlow: "manual_techcombank" });
+    const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
+    expect(order).toMatchObject({ shippingWeightGrams: 1100, shippingFee: "30000.00", hasPhysicalItems: true });
+    expect(order?.items).toEqual(expect.arrayContaining([expect.objectContaining({ productId: physical!.id, weightGrams: 1100 }), expect.objectContaining({ productId: digital!.id, weightGrams: 0 })]));
+  });
+
   it("does not return instant download links for a digital order after seven days", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);
@@ -185,17 +213,17 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     const checkout = await caller.store.checkout({
       totalAmount: 0,
       items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0 }],
-      shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "standard" },
+      shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" },
     });
 
-    expect(checkout.totalAmount).toBe(135000);
+    expect(checkout.totalAmount).toBe(125000);
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
     expect(checkout.paymentFlow).toBe("manual_techcombank");
-    await expect(confirmSePayPayment({ providerTransactionId: `sepay-reject-physical-${suffix}`, transferAmount: 135000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `REJECT-PHYSICAL-${suffix}` })).resolves.toEqual({ success: false, reason: "No matching pending order" });
+    await expect(confirmSePayPayment({ providerTransactionId: `sepay-reject-physical-${suffix}`, transferAmount: 125000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `REJECT-PHYSICAL-${suffix}` })).resolves.toEqual({ success: false, reason: "No matching pending order" });
     const confirmation = await confirmManualPayment(checkout.orderId, 1);
     expect(confirmation.success).toBe(true);
     const orders = await caller.store.orders();
-    expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "30000.00" });
+    expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "20000.00" });
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
   });
 
@@ -208,9 +236,9 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     await replaceProductWholesaleTiers({ productId: product!.id, tiers: [{ minQuantity: 5, unitPrice: "80000" }, { minQuantity: 10, unitPrice: "70000" }] });
 
     await expect(caller.store.productWholesaleTiers({ productId: product!.id })).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ minQuantity: 5, unitPrice: "80000.00" }), expect.objectContaining({ minQuantity: 10, unitPrice: "70000.00" })]));
-    const checkout = await caller.store.checkout({ totalAmount: 1, items: [{ productId: product!.id, variantId: variant!.id, quantity: 10, price: 1 }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "pickup" } });
+    const checkout = await caller.store.checkout({ totalAmount: 1, items: [{ productId: product!.id, variantId: variant!.id, quantity: 10, price: 1 }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" } });
 
-    expect(checkout.totalAmount).toBe(750000);
+    expect(checkout.totalAmount).toBe(770000);
     const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
     expect(order?.items?.[0]).toMatchObject({ quantity: 10, price: "75000" });
   });
@@ -223,9 +251,9 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     const variant = await createProductVariant({ productId: product!.id, size: "Chuẩn", color: "Đen", sku: `PRE-${suffix}`, priceAdjustment: "5000", stock: 0, isActive: true });
 
     await expect(caller.store.addToCart({ productId: product!.id, variantId: variant!.id, quantity: 1, fulfillmentMode: "preorder" })).resolves.toEqual({ success: true });
-    const checkout = await caller.store.checkout({ totalAmount: 0, items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0, fulfillmentMode: "preorder" }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "pickup" } });
+    const checkout = await caller.store.checkout({ totalAmount: 0, items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0, fulfillmentMode: "preorder" }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" } });
 
-    expect(checkout.totalAmount).toBe(94500);
+    expect(checkout.totalAmount).toBe(114500);
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(0);
     const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
     expect(order).toMatchObject({ hasPhysicalItems: true, hasPreorderItems: true, preorderDiscountAmount: "10500.00", preorderEstimatedDays: "7–10 ngày" });
@@ -254,7 +282,7 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     const checkout = await caller.store.checkout({
       totalAmount: 0,
       items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0 }],
-      shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM", method: "pickup" },
+      shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" },
     });
 
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(0);
