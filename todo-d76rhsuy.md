@@ -267,3 +267,4 @@
 - [x] Kiểm thử các mốc phí SPX, đơn hỗn hợp và hiển thị desktop/mobile trước khi xuất bản.
 - [x] Theo yêu cầu mới của chủ cửa hàng, dừng kiểm thử giao diện điện thoại và chỉ ưu tiên kiểm thử desktop cùng các chức năng vận hành.
 - [x] Hiển thị rõ khối lượng thực tế và phí SPX đã tính trong quản trị đơn hàng, đồng thời nêu ước tính giao SPX ở trang sản phẩm vật lý trên desktop.
+- [x] Sửa bố cục desktop trang sản phẩm để nút Thêm vào giỏ hàng và Mua ngay & chọn giao hàng luôn nằm trong vùng thao tác cuộn được, không phụ thuộc vào thao tác chuyển DOM theo nội dung nút.

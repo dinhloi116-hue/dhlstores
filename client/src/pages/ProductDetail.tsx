@@ -132,11 +132,7 @@ export default function ProductDetail() {
   useEffect(() => {
     const panel = document.getElementById("sku-inventory-panel");
     const purchaseActions = document.getElementById("product-purchase-actions");
-    const preorderButton = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent?.includes("Order trước · giảm 10%"));
-    const purchaseModes = preorderButton?.parentElement;
-    if (!purchaseModes) return;
-    if (purchaseActions) purchaseModes.after(purchaseActions);
-    if (panel && purchaseActions) purchaseActions.after(panel);
+    if (panel && purchaseActions && panel.previousElementSibling !== purchaseActions) panel.before(purchaseActions);
   }, [product?.id, selectedVariantId, fulfillmentMode, variants.length]);
 
   const addToCartMutation = trpc.store.addToCart.useMutation({
@@ -319,7 +315,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            <div id="product-purchase-actions" className="pt-2 flex flex-col sm:flex-row gap-4">
+            <div id="product-purchase-actions" className="sticky bottom-0 z-20 rounded-xl bg-emerald-50/95 p-2 pt-3 shadow-[0_-8px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:flex sm:flex-row sm:gap-4">
               <Button
                 onClick={handleAddToCart}
                 disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}

@@ -26,8 +26,9 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('className="space-y-4">{optionGroups.map');
     expect(source).toContain('{skuInventoryPanel}');
     expect(source).toContain('id="product-purchase-actions"');
-    expect(source).toContain('purchaseModes.after(purchaseActions)');
-    expect(source).toContain('purchaseActions.after(panel)');
+    expect(source).not.toContain('purchaseModes.after(purchaseActions)');
+    expect(source).not.toContain('purchaseActions.after(panel)');
+    expect(source).toContain('panel.before(purchaseActions)');
     expect(source).toContain('max-h-72 overflow-y-auto');
     expect(source).toContain('lg:col-span-7 lg:h-full lg:overflow-y-auto lg:pr-3');
   });
