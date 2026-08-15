@@ -9,14 +9,15 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('inline-flex max-w-full items-center gap-1.5 rounded-lg bg-slate-100');
   });
 
-  it("uses a roughly 200 percent hover preview for a 44px SKU thumbnail", () => {
+  it("opens a hover preview from the whole SKU row when that SKU has an image", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('hidden w-44 rounded-xl');
+    expect(source).toContain('data-sku-preview-variant={variant.image ? variant.id : undefined}');
+    expect(source).toContain('querySelectorAll<HTMLButtonElement>("[data-sku-preview-variant]")');
+    expect(source).toContain('const variantId = Number(row.dataset.skuPreviewVariant)');
     expect(source).toContain('h-11 w-11 overflow-hidden');
-    expect(source).toContain('group/sku relative flex h-11 w-11');
-    expect(source).toContain('group-hover/sku:block');
     expect(source).toContain('id="sku-inventory-panel"');
+    expect(source).toContain('bất kỳ vùng nào của SKU có ảnh');
     expect(source).toContain('SKU hết hàng vẫn xem được ảnh');
   });
 

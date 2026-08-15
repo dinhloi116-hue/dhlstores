@@ -99,6 +99,27 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(downloads[0]?.driveUrl).toBe("https://drive.google.com/file/d/test-resource/view");
   });
 
+  it("tops up wallet through SePay once and pays an order atomically from the balance", async () => {
+    const caller = appRouter.createCaller(createMockContext());
+    const before = Number((await caller.store.walletSummary()).balance);
+    const topup = await caller.store.createWalletTopup({ amount: 300000 });
+    expect(topup.topupCode).toMatch(/^DHLW/);
+    expect(topup.qrUrl).toContain(topup.topupCode);
+
+    const webhook = { providerTransactionId: `wallet-${Date.now()}`, transferAmount: 300000, transferContent: `SEVQR ${topup.topupCode}`, gateway: "VietinBank", paymentReference: "WALLET-TEST" };
+    await expect(confirmSePayPayment(webhook)).resolves.toEqual({ success: true });
+    await expect(confirmSePayPayment(webhook)).resolves.toEqual({ success: true, alreadyProcessed: true });
+    expect(Number((await caller.store.walletSummary()).balance)).toBe(before + 300000);
+
+    const paidOrder = await caller.store.checkout({ totalAmount: 0, items: [{ productId: 1, quantity: 1, price: 0 }], paymentMethod: "wallet_balance" });
+    expect(paidOrder).toMatchObject({ paymentFlow: "wallet_balance", paymentStatus: "paid", paymentMethod: "wallet_balance" });
+    const after = await caller.store.walletSummary();
+    expect(Number(after.balance)).toBe(before + 300000 - paidOrder.totalAmount);
+    expect(after.topups.find(item => item.topupCode === topup.topupCode)).toMatchObject({ status: "paid", providerTransactionId: webhook.providerTransactionId });
+    expect(after.movements.some(item => item.reason.includes(topup.topupCode))).toBe(true);
+    expect(after.movements.some(item => item.reason.includes(paidOrder.orderCode) && Number(item.amount) < 0)).toBe(true);
+  });
+
   it("calculates checkout from the server-side 2,000 VND product price", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);

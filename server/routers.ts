@@ -125,6 +125,20 @@ export const appRouter = router({
   operations: router({
     overview: ownerProcedure.query(() => db.getOperationsOverview()),
     members: ownerProcedure.query(() => db.getAllUsers()),
+    createTestCustomer: ownerProcedure
+      .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, name: z.string().trim().min(2).max(120).optional() }))
+      .mutation(async ({ input }) => {
+        const username = input.username.toLowerCase();
+        try {
+          const user = await db.createLocalUser({ username, passwordHash: db.hashLocalPassword(input.password), name: input.name });
+          return publicUser(user);
+        } catch (error) {
+          if (error instanceof Error && error.message === "USERNAME_TAKEN") {
+            throw new TRPCError({ code: "CONFLICT", message: "Tên đăng nhập này đã được sử dụng" });
+          }
+          throw error;
+        }
+      }),
     adminActivity: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getAdminActivity(input?.userId)),
     balanceLedger: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getBalanceLedger(input?.userId)),
     adjustBalance: ownerProcedure.input(z.object({ userId: z.number().int().positive(), amount: z.number().finite().min(-9_999_999).max(9_999_999).refine(value => value !== 0), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.adjustUserBalance({ ...input, performedByUserId: ctx.user.id })),
@@ -271,6 +285,19 @@ export const appRouter = router({
         return db.cancelPendingOrderForUser(ctx.user.id, input.orderId);
       }),
 
+    walletSummary: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getWalletSummary(ctx.user.id);
+    }),
+
+    createWalletTopup: protectedProcedure
+      .input(z.object({ amount: z.number().int().min(1_000).max(20_000_000) }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        const topup = await db.createWalletTopup(ctx.user.id, input.amount);
+        return { ...topup, qrUrl: buildSePayQrUrl(topup.topupCode, Number(topup.amount)) };
+      }),
+
     checkout: protectedProcedure
       .input(z.object({
         totalAmount: z.number(),
@@ -283,6 +310,7 @@ export const appRouter = router({
           fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
         })),
         discountCode: z.string().trim().max(64).optional(),
+        paymentMethod: z.enum(["sepay_vietqr", "wallet_balance"]).optional(),
         shipping: z.object({
           name: z.string().trim().min(2).max(255),
           phone: z.string().trim().min(8).max(64),
@@ -293,6 +321,10 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
         const order = await db.createOrder(ctx.user.id, input);
+        if (input.paymentMethod === "wallet_balance") {
+          const payment = await db.payOrderWithWalletBalance(ctx.user.id, order.orderId);
+          return { ...order, ...payment, qrUrl: null, paymentFlow: "wallet_balance" as const };
+        }
         const siteSettings = await db.getSiteSettings();
         const qrUrl = order.hasPhysicalItems
           ? buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount))
@@ -304,10 +336,15 @@ export const appRouter = router({
       .input(z.object({
         item: z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(99), variantId: z.number().int().positive().optional(), attributes: z.string().max(255).optional(), fulfillmentMode: z.enum(["in_stock", "preorder"]).optional() }),
         shipping: z.object({ name: z.string().trim().min(2).max(255), phone: z.string().trim().min(8).max(64), address: z.string().trim().min(5).max(2000), note: z.string().trim().max(2000).optional() }).optional(),
+        paymentMethod: z.enum(["sepay_vietqr", "wallet_balance"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
         const order = await db.createOrder(ctx.user.id, { totalAmount: 0, items: [{ ...input.item, price: 0 }], shipping: input.shipping, clearCart: false });
+        if (input.paymentMethod === "wallet_balance") {
+          const payment = await db.payOrderWithWalletBalance(ctx.user.id, order.orderId);
+          return { ...order, ...payment, qrUrl: null, paymentFlow: "wallet_balance" as const };
+        }
         const siteSettings = await db.getSiteSettings();
         const qrUrl = order.hasPhysicalItems
           ? buildStoreVietQrUrl({ bankCode: siteSettings?.physical_qr_bank_code || "", accountNumber: siteSettings?.physical_qr_account_number || "", accountHolder: siteSettings?.physical_qr_account_holder || "" }, Number(order.totalAmount))

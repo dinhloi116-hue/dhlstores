@@ -97,6 +97,24 @@ export const balanceLedger = mysqlTable("balance_ledger", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+/** Yêu cầu nạp ví VietinBank/SePay; một giao dịch ngân hàng chỉ được đối soát một lần. */
+export const walletTopups = mysqlTable("wallet_topups", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  topupCode: varchar("topupCode", { length: 64 }).notNull().unique(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "expired", "cancelled"]).default("pending").notNull(),
+  provider: varchar("provider", { length: 32 }).default("sepay").notNull(),
+  providerTransactionId: varchar("providerTransactionId", { length: 128 }).unique(),
+  transferContent: text("transferContent"),
+  gateway: varchar("gateway", { length: 64 }),
+  paidAt: timestamp("paidAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WalletTopup = typeof walletTopups.$inferSelect;
+
 export const adminActivity = mysqlTable("admin_activity", {
   id: int("id").autoincrement().primaryKey(),
   action: varchar("action", { length: 96 }).notNull(),

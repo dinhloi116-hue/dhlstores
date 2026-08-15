@@ -7,7 +7,7 @@ import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Download, ExternalLink, Mail, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { Package, Download, ExternalLink, Mail, MapPin, Pencil, Plus, Trash2, WalletCards, QrCode, ArrowDownToLine, History } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Account() {
@@ -16,6 +16,8 @@ export default function Account() {
   const [emailToLink, setEmailToLink] = useState("");
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [addressDraft, setAddressDraft] = useState({ recipientName: "", phone: "", address: "", isDefault: false });
+  const [topupAmount, setTopupAmount] = useState("20000");
+  const [activeTopup, setActiveTopup] = useState<{ topupCode: string; amount: string; qrUrl: string | null } | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,6 +35,8 @@ export default function Account() {
   const downloads = downloadsQuery.data || [];
   const addressesQuery = trpc.store.shippingAddresses.useQuery(undefined, { enabled: isAuthenticated });
   const addresses = addressesQuery.data || [];
+  const walletQuery = trpc.store.walletSummary.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: activeTopup ? 3500 : false });
+  const wallet = walletQuery.data;
   const downloadWindowMs = 7 * 24 * 60 * 60 * 1_000;
   const linkEmailMutation = trpc.auth.linkEmail.useMutation({
     onSuccess: async () => {
@@ -60,6 +64,14 @@ export default function Account() {
     onSuccess: async () => {
       await addressesQuery.refetch();
       toast.success(lang === "vi" ? "Đã xóa địa chỉ giao hàng" : "Shipping address deleted");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const createWalletTopup = trpc.store.createWalletTopup.useMutation({
+    onSuccess: topup => {
+      setActiveTopup({ topupCode: topup.topupCode, amount: topup.amount, qrUrl: topup.qrUrl });
+      walletQuery.refetch();
+      toast.success("Đã tạo mã QR nạp số dư. Hãy chuyển đúng số tiền và giữ nguyên nội dung.");
     },
     onError: error => toast.error(error.message),
   });
@@ -139,6 +151,11 @@ export default function Account() {
               <Button type="submit" disabled={linkEmailMutation.isPending} className="h-10 bg-purple-600 px-4 text-xs font-black text-white hover:bg-purple-700">{linkEmailMutation.isPending ? "…" : (user?.email ? (lang === "vi" ? "Cập nhật" : "Update") : (lang === "vi" ? "Liên kết email" : "Link email"))}</Button>
             </form>
           </div>
+        </section>
+
+        <section className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-emerald-50 p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 border-b border-amber-100 pb-4 lg:flex-row lg:items-start lg:justify-between"><div className="flex items-start gap-3"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-amber-500 text-slate-950"><WalletCards className="h-5 w-5" /></div><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">Ví số dư</p><h2 className="mt-1 text-xl font-black text-slate-900">{formatCurrency(wallet?.balance || 0)}</h2><p className="mt-1 text-xs leading-relaxed text-slate-600">Nạp tiền qua VietinBank SePay và dùng số dư để thanh toán toàn bộ đơn hàng trong giỏ.</p></div></div><Link href="/cart"><Button variant="outline" className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100">Dùng số dư thanh toán</Button></Link></div>
+          <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]"><div className="space-y-4"><form onSubmit={event => { event.preventDefault(); createWalletTopup.mutate({ amount: Number(topupAmount) }); }} className="rounded-xl border border-amber-200 bg-white/80 p-4"><div className="flex items-center gap-2"><ArrowDownToLine className="h-4 w-4 text-amber-700" /><h3 className="text-sm font-black text-slate-900">Nạp số dư qua VietinBank</h3></div><p className="mt-1 text-xs leading-relaxed text-slate-600">Tối thiểu 1.000đ, tối đa 20.000.000đ mỗi lượt. SePay chỉ cộng tiền khi số tiền và mã nạp khớp hoàn toàn.</p><div className="mt-3 flex gap-2"><input value={topupAmount} onChange={event => setTopupAmount(event.target.value.replace(/\D/g, ""))} inputMode="numeric" className="h-10 min-w-0 flex-1 rounded-lg border border-amber-200 bg-white px-3 text-sm font-bold outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" placeholder="Ví dụ: 20000" /><Button type="submit" disabled={createWalletTopup.isPending || Number(topupAmount) < 1000} className="bg-amber-500 text-slate-950 hover:bg-amber-400">{createWalletTopup.isPending ? "Đang tạo…" : "Tạo QR"}</Button></div></form><div className="rounded-xl border border-slate-200 bg-white p-4"><div className="flex items-center gap-2"><History className="h-4 w-4 text-slate-600" /><h3 className="text-sm font-black text-slate-900">Biến động gần đây</h3></div><div className="mt-3 max-h-48 divide-y divide-slate-100 overflow-y-auto">{walletQuery.isLoading ? <p className="py-4 text-xs text-slate-500">Đang tải lịch sử…</p> : !(wallet?.movements || []).length ? <p className="py-4 text-xs text-slate-500">Chưa có biến động số dư.</p> : (wallet?.movements || []).map(item => <div key={item.id} className="flex items-center justify-between gap-3 py-2.5 text-xs"><div className="min-w-0"><p className="truncate font-bold text-slate-800">{item.reason}</p><p className="mt-0.5 text-[10px] text-slate-500">{new Date(item.createdAt).toLocaleString("vi-VN")}</p></div><div className={`shrink-0 text-right font-black ${Number(item.amount) >= 0 ? "text-emerald-700" : "text-rose-700"}`}><p>{Number(item.amount) >= 0 ? "+" : ""}{formatCurrency(item.amount)}</p><p className="mt-0.5 text-[10px] font-semibold text-slate-500">Còn {formatCurrency(item.balanceAfter)}</p></div></div>)}</div></div></div>{activeTopup && <aside className="rounded-2xl border border-violet-200 bg-white p-3 text-center shadow-sm"><p className="text-[10px] font-black uppercase tracking-wide text-violet-700">QR nạp số dư</p>{activeTopup.qrUrl ? <img src={activeTopup.qrUrl} alt={`QR nạp ví ${activeTopup.topupCode}`} className="mx-auto mt-2 w-full max-w-[220px] rounded-xl border border-slate-100" /> : <div className="mt-2 grid aspect-square place-items-center rounded-xl border border-dashed border-slate-300 text-xs text-slate-500"><QrCode className="h-8 w-8" /></div>}<p className="mt-2 text-sm font-black text-slate-900">{formatCurrency(activeTopup.amount)}</p><p className="mt-1 break-all font-mono text-xs font-black text-violet-700">{activeTopup.topupCode}</p>{wallet?.topups?.find(item => item.topupCode === activeTopup.topupCode)?.status === "paid" ? <p className="mt-2 rounded-lg bg-emerald-100 px-2 py-1.5 text-xs font-black text-emerald-800">Đã cộng vào số dư</p> : <p className="mt-2 text-[11px] leading-relaxed text-slate-600">Quét QR, chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống đang tự đối soát.</p>}</aside>}</div>
         </section>
 
         <section className="rounded-2xl border border-cyan-200 bg-white p-5 shadow-sm sm:p-6">

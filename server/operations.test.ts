@@ -37,6 +37,14 @@ describe("advanced operations", () => {
     await expect(appRouter.createCaller(ownerContext()).operations.overview()).resolves.toMatchObject({ members: expect.any(Number) });
   });
 
+  it("lets only the owner create a local customer account for testing", async () => {
+    const username = `customer_test_${Date.now()}`;
+    const owner = appRouter.createCaller(ownerContext());
+    await expect(owner.operations.createTestCustomer({ username, password: "customer-pass-123", name: "Khách thử" })).resolves.toMatchObject({ username, name: "Khách thử", role: "user", status: "active" });
+    const member = await createLocalUser({ username: `member_${Date.now()}`, passwordHash: "scrypt$test$test" });
+    await expect(appRouter.createCaller(createContext(member)).operations.createTestCustomer({ username: `${username}_x`, password: "customer-pass-123" })).rejects.toMatchObject({ message: "Chỉ chủ cửa hàng mới có quyền thực hiện thao tác này" });
+  });
+
   it("lets an administrator access the catalog inventory board without granting owner-only operations", async () => {
     const member = await createLocalUser({ username: `inventory_admin_${Date.now()}`, passwordHash: "scrypt$test$test" });
     const admin = { ...member, role: "admin" as const };
@@ -55,6 +63,13 @@ describe("advanced operations", () => {
     await expect(owner.operations.adjustBalance({ userId: member.id, amount: 50000, reason: "Quà thành viên" })).resolves.toMatchObject({ success: true, balance: "50000.00" });
     expect((await getUserByUsername(username))?.balance).toBe("50000.00");
     await expect(owner.operations.adminActivity({ userId: member.id })).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ targetId: member.id, action: "balance_adjusted" })]));
+  });
+
+  it("allows the owner to adjust their own balance", async () => {
+    const ownerRecord = await createLocalUser({ username: `owner_wallet_${Date.now()}`, passwordHash: "scrypt$test$test" });
+    const owner = appRouter.createCaller(createContext({ ...ownerRecord, role: "owner" }));
+    await expect(owner.operations.adjustBalance({ userId: ownerRecord.id, amount: 5000, reason: "Nạp thử ví chủ cửa hàng" })).resolves.toMatchObject({ success: true, balance: "5000.00" });
+    expect((await getUserByUsername(ownerRecord.username!))?.balance).toBe("5000.00");
   });
 
   it("uses a valid discount code when calculating the QR payment total", async () => {

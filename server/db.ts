@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -814,6 +814,7 @@ export type DiscountCodeInput = {
 
 type MemoryDiscountCode = DiscountCodeInput & { id: number; usedCount: number; createdByUserId: number; createdAt: Date };
 type MemoryBalanceMovement = { id: number; userId: number; amount: string; balanceAfter: string; reason: string; performedByUserId: number; createdAt: Date };
+type MemoryWalletTopup = { id: number; userId: number; topupCode: string; amount: string; status: "pending" | "paid" | "expired" | "cancelled"; provider: string; providerTransactionId: string | null; transferContent: string | null; gateway: string | null; paidAt: Date | null; createdAt: Date; updatedAt: Date };
 type MemoryInventoryMovement = { id: number; productId: number; variantId: number | null; quantityBefore: number; quantityAfter: number; reason: string; performedByUserId: number; createdAt: Date };
 type MemoryFeedback = { id: number; userId: number | null; visitorKey: string; displayName: string | null; contact: string | null; topic: "suggestion" | "issue" | "other"; message: string; imageUrl: string | null; imageKey: string | null; status: "new" | "reviewed" | "resolved"; readAt: Date | null; createdAt: Date; updatedAt: Date };
 type MemoryConversation = { id: number; userId: number | null; visitorKey: string; displayName: string | null; lastMessagePreview: string | null; lastMessageAt: Date; customerReadAt: Date | null; ownerReadAt: Date | null; createdAt: Date; updatedAt: Date };
@@ -821,6 +822,7 @@ type MemorySupportMessage = { id: number; conversationId: number; senderType: "c
 
 const memoryDiscountCodes: MemoryDiscountCode[] = [];
 const memoryBalanceMovements: MemoryBalanceMovement[] = [];
+const memoryWalletTopups: MemoryWalletTopup[] = [];
 const memoryInventoryMovements: MemoryInventoryMovement[] = [];
 const memoryAdminActivity: Array<{ id: number; action: string; targetType: string; targetId: number; details: string | null; performedByUserId: number; createdAt: Date }> = [];
 const memorySiteSettings = new Map<string, string>();
@@ -830,6 +832,7 @@ const memoryConversations: MemoryConversation[] = [];
 const memorySupportMessages: MemorySupportMessage[] = [];
 let nextDiscountCodeId = 1;
 let nextBalanceMovementId = 1;
+let nextWalletTopupId = 1;
 let nextInventoryMovementId = 1;
 let nextAdminActivityId = 1;
 let nextFeedbackId = 1;
@@ -1036,6 +1039,94 @@ export async function getBalanceLedger(userId?: number) {
     return rows.map(row => ({ ...row, amount: String(row.amount), balanceAfter: String(row.balanceAfter) }));
   }
   return memoryBalanceMovements.filter(row => !userId || row.userId === userId);
+}
+
+const WALLET_TOPUP_MIN_AMOUNT = 1_000;
+const WALLET_TOPUP_MAX_AMOUNT = 20_000_000;
+
+function normalizeWalletAmount(amount: number) {
+  const rounded = Math.round(amount);
+  if (!Number.isSafeInteger(rounded) || rounded < WALLET_TOPUP_MIN_AMOUNT || rounded > WALLET_TOPUP_MAX_AMOUNT) {
+    throw new Error(`Số tiền nạp phải từ ${WALLET_TOPUP_MIN_AMOUNT.toLocaleString("vi-VN")}đ đến ${WALLET_TOPUP_MAX_AMOUNT.toLocaleString("vi-VN")}đ`);
+  }
+  return rounded;
+}
+
+function createWalletTopupCode() {
+  return `DHLW${Date.now().toString(36).toUpperCase()}${randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+export async function createWalletTopup(userId: number, amount: number) {
+  const normalizedAmount = normalizeWalletAmount(amount);
+  const topupCode = createWalletTopupCode();
+  const connection = await getDb();
+  if (connection) {
+    const inserted = await connection.insert(walletTopups).values({ userId, topupCode, amount: normalizedAmount.toFixed(2), status: "pending", provider: "sepay" });
+    const result = await connection.select().from(walletTopups).where(eq(walletTopups.id, Number(inserted[0].insertId))).limit(1);
+    return { ...result[0], amount: String(result[0].amount) };
+  }
+  const now = new Date();
+  const topup: MemoryWalletTopup = { id: nextWalletTopupId++, userId, topupCode, amount: normalizedAmount.toFixed(2), status: "pending", provider: "sepay", providerTransactionId: null, transferContent: null, gateway: null, paidAt: null, createdAt: now, updatedAt: now };
+  memoryWalletTopups.unshift(topup);
+  return topup;
+}
+
+export async function getWalletTopups(userId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const rows = await connection.select().from(walletTopups).where(eq(walletTopups.userId, userId)).orderBy(desc(walletTopups.createdAt)).limit(50);
+    return rows.map(row => ({ ...row, amount: String(row.amount) }));
+  }
+  return memoryWalletTopups.filter(topup => topup.userId === userId).slice(0, 50);
+}
+
+export async function getWalletSummary(userId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const user = (await connection.select({ balance: users.balance }).from(users).where(eq(users.id, userId)).limit(1))[0];
+    if (!user) throw new Error("USER_NOT_FOUND");
+    return { balance: String(user.balance), movements: await getBalanceLedger(userId), topups: await getWalletTopups(userId) };
+  }
+  const user = memoryUsers.find(candidate => candidate.id === userId);
+  if (!user) throw new Error("USER_NOT_FOUND");
+  return { balance: user.balance, movements: await getBalanceLedger(userId), topups: await getWalletTopups(userId) };
+}
+
+export async function payOrderWithWalletBalance(userId: number, orderId: number) {
+  const connection = await getDb();
+  if (connection) {
+    return connection.transaction(async transaction => {
+      const order = (await transaction.select().from(ordersTable).where(and(eq(ordersTable.id, orderId), eq(ordersTable.userId, userId), eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.status, "pending"), eq(ordersTable.isDeleted, false))).limit(1))[0];
+      if (!order) throw new Error("ORDER_NOT_PENDING");
+      const amount = Number(order.totalAmount);
+      const debited = await transaction.update(users).set({ balance: sql`${users.balance} - ${amount.toFixed(2)}` }).where(and(eq(users.id, userId), gte(users.balance, amount.toFixed(2))));
+      if (Number(debited[0]?.affectedRows ?? 0) !== 1) throw new Error("INSUFFICIENT_BALANCE");
+      const user = (await transaction.select({ balance: users.balance }).from(users).where(eq(users.id, userId)).limit(1))[0];
+      const paidAt = new Date();
+      const paid = await transaction.update(ordersTable).set({ status: order.hasPhysicalItems ? "processing" : "completed", paymentStatus: "paid", paymentMethod: "wallet_balance", paymentReference: `WALLET-${order.orderCode}`, paymentConfirmedAt: paidAt }).where(and(eq(ordersTable.id, order.id), eq(ordersTable.paymentStatus, "pending"), eq(ordersTable.status, "pending")));
+      if (Number(paid[0]?.affectedRows ?? 0) !== 1) throw new Error("ORDER_NOT_PENDING");
+      await transaction.insert(balanceLedger).values({ userId, amount: (-amount).toFixed(2), balanceAfter: String(user.balance), reason: `Thanh toán đơn ${order.orderCode}`, performedByUserId: userId });
+      if (order.discountCode) await transaction.update(discountCodes).set({ usedCount: sql`${discountCodes.usedCount} + 1` }).where(eq(discountCodes.code, order.discountCode));
+      return { paymentStatus: "paid" as const, paymentMethod: "wallet_balance" as const, paymentReference: `WALLET-${order.orderCode}`, paymentConfirmedAt: paidAt, status: order.hasPhysicalItems ? "processing" as const : "completed" as const, balance: String(user.balance) };
+    });
+  }
+  const order = memoryOrders.find(candidate => candidate.id === orderId && candidate.userId === userId && candidate.paymentStatus === "pending" && candidate.status === "pending" && !candidate.isDeleted);
+  const user = memoryUsers.find(candidate => candidate.id === userId);
+  if (!order) throw new Error("ORDER_NOT_PENDING");
+  if (!user || Number(user.balance) < Number(order.totalAmount)) throw new Error("INSUFFICIENT_BALANCE");
+  user.balance = (Number(user.balance) - Number(order.totalAmount)).toFixed(2);
+  const paidAt = new Date();
+  order.status = order.hasPhysicalItems ? "processing" : "completed";
+  order.paymentStatus = "paid";
+  order.paymentMethod = "wallet_balance";
+  order.paymentReference = `WALLET-${order.orderCode}`;
+  order.paymentConfirmedAt = paidAt;
+  memoryBalanceMovements.unshift({ id: nextBalanceMovementId++, userId, amount: (-Number(order.totalAmount)).toFixed(2), balanceAfter: user.balance, reason: `Thanh toán đơn ${order.orderCode}`, performedByUserId: userId, createdAt: paidAt });
+  if (order.discountCode) {
+    const discount = memoryDiscountCodes.find(candidate => candidate.code === order.discountCode);
+    if (discount) discount.usedCount += 1;
+  }
+  return { paymentStatus: "paid" as const, paymentMethod: "wallet_balance" as const, paymentReference: order.paymentReference, paymentConfirmedAt: paidAt, status: order.status, balance: user.balance };
 }
 
 export async function getDiscountCodes() {
@@ -2155,6 +2246,45 @@ export async function getInstantDownloadsForOrder(userId: number, orderId: numbe
   return downloads.filter(download => download.orderId === orderId);
 }
 
+async function confirmWalletTopupPayment(input: { providerTransactionId: string; transferAmount: number; transferContent: string; gateway: string }): Promise<{ success: boolean; alreadyProcessed?: boolean; reason?: string }> {
+  const normalizedContent = input.transferContent.toUpperCase();
+  const connection = await getDb();
+  if (connection) {
+    const duplicate = (await connection.select().from(walletTopups).where(eq(walletTopups.providerTransactionId, input.providerTransactionId)).limit(1))[0];
+    if (duplicate) return { success: true, alreadyProcessed: true };
+    const pendingTopups = await connection.select().from(walletTopups).where(eq(walletTopups.status, "pending"));
+    const matchedTopup = pendingTopups.find(topup => normalizedContent.includes(topup.topupCode.toUpperCase()) && Number(topup.amount) === Math.round(input.transferAmount));
+    if (!matchedTopup) return { success: false, reason: "No matching pending wallet topup" };
+    return connection.transaction(async transaction => {
+      const confirmed = await transaction.update(walletTopups).set({ status: "paid", providerTransactionId: input.providerTransactionId, transferContent: input.transferContent, gateway: input.gateway || null, paidAt: new Date() }).where(and(eq(walletTopups.id, matchedTopup.id), eq(walletTopups.status, "pending")));
+      if (Number(confirmed[0]?.affectedRows ?? 0) !== 1) return { success: true, alreadyProcessed: true };
+      await transaction.update(users).set({ balance: sql`${users.balance} + ${Number(matchedTopup.amount).toFixed(2)}` }).where(eq(users.id, matchedTopup.userId));
+      const user = (await transaction.select({ balance: users.balance }).from(users).where(eq(users.id, matchedTopup.userId)).limit(1))[0];
+      if (!user) throw new Error("USER_NOT_FOUND");
+      await transaction.insert(balanceLedger).values({ userId: matchedTopup.userId, amount: Number(matchedTopup.amount).toFixed(2), balanceAfter: String(user.balance), reason: `Nạp ví SePay ${matchedTopup.topupCode}`, performedByUserId: matchedTopup.userId });
+      await transaction.insert(adminActivity).values({ action: "wallet_topped_up", targetType: "user", targetId: matchedTopup.userId, details: JSON.stringify({ amount: Number(matchedTopup.amount), topupCode: matchedTopup.topupCode, providerTransactionId: input.providerTransactionId }), performedByUserId: matchedTopup.userId });
+      return { success: true };
+    });
+  }
+  const duplicate = memoryWalletTopups.find(topup => topup.providerTransactionId === input.providerTransactionId);
+  if (duplicate) return { success: true, alreadyProcessed: true };
+  const topup = memoryWalletTopups.find(candidate => candidate.status === "pending" && normalizedContent.includes(candidate.topupCode.toUpperCase()) && Number(candidate.amount) === Math.round(input.transferAmount));
+  if (!topup) return { success: false, reason: "No matching pending wallet topup" };
+  const user = memoryUsers.find(candidate => candidate.id === topup.userId);
+  if (!user) throw new Error("USER_NOT_FOUND");
+  const now = new Date();
+  topup.status = "paid";
+  topup.providerTransactionId = input.providerTransactionId;
+  topup.transferContent = input.transferContent;
+  topup.gateway = input.gateway || null;
+  topup.paidAt = now;
+  topup.updatedAt = now;
+  user.balance = (Number(user.balance) + Number(topup.amount)).toFixed(2);
+  memoryBalanceMovements.unshift({ id: nextBalanceMovementId++, userId: user.id, amount: topup.amount, balanceAfter: user.balance, reason: `Nạp ví SePay ${topup.topupCode}`, performedByUserId: user.id, createdAt: now });
+  memoryAdminActivity.unshift({ id: nextAdminActivityId++, action: "wallet_topped_up", targetType: "user", targetId: user.id, details: JSON.stringify({ amount: Number(topup.amount), topupCode: topup.topupCode, providerTransactionId: input.providerTransactionId }), performedByUserId: user.id, createdAt: now });
+  return { success: true };
+}
+
 export async function confirmSePayPayment(input: {
   providerTransactionId: string;
   transferAmount: number;
@@ -2163,6 +2293,8 @@ export async function confirmSePayPayment(input: {
   paymentReference: string;
 }): Promise<{ success: boolean; alreadyProcessed?: boolean; reason?: string }> {
   const normalizedContent = input.transferContent.toUpperCase();
+  const walletResult = await confirmWalletTopupPayment(input);
+  if (walletResult.success) return walletResult;
   const connection = await getDb();
   if (connection) {
     const duplicate = await connection.select().from(paymentTransactions).where(and(

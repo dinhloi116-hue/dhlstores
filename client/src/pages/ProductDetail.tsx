@@ -109,23 +109,24 @@ export default function ProductDetail() {
   useEffect(() => {
     const panel = document.getElementById("sku-inventory-panel");
     if (!panel) return;
-    const images = Array.from(panel.querySelectorAll<HTMLImageElement>("img"));
+    const skuRows = Array.from(panel.querySelectorAll<HTMLButtonElement>("[data-sku-preview-variant]"));
     const showPreview = (event: PointerEvent) => {
       if (window.innerWidth < 768) return;
-      const image = event.currentTarget as HTMLImageElement;
-      const variant = variants.find(item => Boolean(item.image) && (image.currentSrc.endsWith(item.image!) || image.src.endsWith(item.image!)));
+      const row = event.currentTarget as HTMLButtonElement;
+      const variantId = Number(row.dataset.skuPreviewVariant);
+      const variant = variants.find(item => item.id === variantId && Boolean(item.image));
       if (variant) updateHoveredPreview(variant.id, event.clientX, event.clientY);
     };
     const clearPreview = () => setHoveredPreview(null);
-    images.forEach(image => {
-      image.addEventListener("pointerenter", showPreview);
-      image.addEventListener("pointermove", showPreview);
-      image.addEventListener("pointerleave", clearPreview);
+    skuRows.forEach(row => {
+      row.addEventListener("pointerenter", showPreview);
+      row.addEventListener("pointermove", showPreview);
+      row.addEventListener("pointerleave", clearPreview);
     });
-    return () => images.forEach(image => {
-      image.removeEventListener("pointerenter", showPreview);
-      image.removeEventListener("pointermove", showPreview);
-      image.removeEventListener("pointerleave", clearPreview);
+    return () => skuRows.forEach(row => {
+      row.removeEventListener("pointerenter", showPreview);
+      row.removeEventListener("pointermove", showPreview);
+      row.removeEventListener("pointerleave", clearPreview);
     });
   }, [variants]);
 
@@ -251,14 +252,14 @@ export default function ProductDetail() {
 
   const skuInventoryPanel = product.type === "physical" && variants.length > 0 ? (
     <aside id="sku-inventory-panel" className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4">
-      <div className="flex items-start justify-between gap-4"><div><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">Tồn kho theo SKU</h2><p className="mt-1 text-[11px] leading-relaxed text-slate-500">Rê chuột vào ảnh để xem ảnh lớn. SKU hết hàng vẫn xem được ảnh.</p></div><span className="shrink-0 rounded-full bg-slate-200 px-2 py-1 text-[10px] font-black text-slate-700">{variants.length} SKU</span></div>
+      <div className="flex items-start justify-between gap-4"><div><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">Tồn kho theo SKU</h2><p className="mt-1 text-[11px] leading-relaxed text-slate-500">Rê chuột vào bất kỳ vùng nào của SKU có ảnh để xem ảnh lớn. SKU hết hàng vẫn xem được ảnh.</p></div><span className="shrink-0 rounded-full bg-slate-200 px-2 py-1 text-[10px] font-black text-slate-700">{variants.length} SKU</span></div>
       <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="max-h-72 overflow-y-auto">
         <div className="sticky top-0 z-10 grid grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)] gap-3 bg-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-600"><span>Ảnh</span><span>Phiên bản</span><span className="text-right">SKU + tồn kho</span></div>
         {sortedVariants.map(variant => {
           const isSelected = variant.id === selectedVariantId;
           const outOfStock = variant.stock <= 0;
-          return <button key={variant.id} type="button" aria-disabled={outOfStock} onClick={() => { if (!outOfStock) setSelectedVariantId(variant.id); }} className={`grid w-full grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)] items-center gap-3 border-t border-slate-100 px-3 py-2 text-left text-xs transition-colors ${isSelected ? "bg-emerald-50" : "hover:bg-slate-50"} ${outOfStock ? "cursor-not-allowed opacity-55" : ""}`}>
-            <span className="group/sku relative flex h-11 w-11 shrink-0 items-center justify-center" aria-label={variant.image ? `Xem ảnh lớn ${formatVariantOptions(variant)}` : undefined} onClick={event => { if (variant.image) { event.stopPropagation(); setPreviewVariantId(variant.id); } }}><span className={`block h-11 w-11 overflow-hidden rounded-md border border-slate-200 bg-slate-50 ${variant.image ? "cursor-zoom-in" : ""}`}>{variant.image ? <img src={variant.image} alt={formatVariantOptions(variant)} className="h-full w-full object-contain" /> : <span className="flex h-full items-center justify-center text-[9px] font-bold text-slate-400">SKU</span>}</span>{variant.image && <span className="pointer-events-none absolute left-12 top-1 z-[100] hidden w-44 -translate-y-1 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl group-hover/sku:block"><img src={variant.image} alt={`Preview ${formatVariantOptions(variant)}`} className="aspect-square w-full rounded-lg object-contain" /><span className="mt-1 block truncate text-[10px] font-bold text-slate-700">{formatVariantOptions(variant)}</span></span>}</span>
+          return <button key={variant.id} type="button" data-sku-preview-variant={variant.image ? variant.id : undefined} aria-disabled={outOfStock} onClick={() => { if (!outOfStock) setSelectedVariantId(variant.id); }} className={`grid w-full grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)] items-center gap-3 border-t border-slate-100 px-3 py-2 text-left text-xs transition-colors ${isSelected ? "bg-emerald-50" : "hover:bg-slate-50"} ${outOfStock ? "cursor-not-allowed opacity-55" : ""}`}>
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center" aria-label={variant.image ? `Xem ảnh lớn ${formatVariantOptions(variant)}` : undefined} onClick={event => { if (variant.image) { event.stopPropagation(); setPreviewVariantId(variant.id); } }}><span className={`block h-11 w-11 overflow-hidden rounded-md border border-slate-200 bg-slate-50 ${variant.image ? "cursor-zoom-in" : ""}`}>{variant.image ? <img src={variant.image} alt={formatVariantOptions(variant)} className="h-full w-full object-contain" /> : <span className="flex h-full items-center justify-center text-[9px] font-bold text-slate-400">SKU</span>}</span></span>
             <span className="min-w-0"><span className="block truncate font-bold text-slate-800">{formatVariantOptions(variant)}</span>{isSelected && <span className="mt-0.5 block text-[10px] font-black text-emerald-700">Đang chọn</span>}</span>
             <span className="justify-self-end inline-flex max-w-full items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600"><span className="font-sans text-[8px] font-black uppercase text-slate-400">SKU</span><span className="max-w-[6rem] truncate" title={variant.sku || "Không có SKU"}>{variant.sku || "—"}</span><span className="h-3 w-px bg-slate-300" aria-hidden="true" /><span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${outOfStock ? "bg-rose-100 text-rose-700" : variant.stock <= 5 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}><span className="text-[8px] uppercase opacity-70">Tồn</span>{outOfStock ? "Hết" : variant.stock}</span></span>
           </button>;

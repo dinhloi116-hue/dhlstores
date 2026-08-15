@@ -8,6 +8,7 @@ import Checkout from "@/pages/Checkout";
 import Account from "@/pages/Account";
 import AdminOrders from "@/pages/AdminOrders";
 import OperationsCenter from "@/pages/OperationsCenter";
+import TestCustomerAccount from "@/pages/TestCustomerAccount";
 import PetTramTool from "@/pages/PetTramTool";
 import ToolsLibrary from "@/pages/ToolsLibrary";
 import { Route, Switch } from "wouter";
@@ -28,6 +29,7 @@ function Router() {
       <Route path={"/account"} component={Account} />
       <Route path={"/admin"} component={AdminOrders} />
       <Route path={"/admin/operations"} component={OperationsCenter} />
+      <Route path={"/admin/test-customer"} component={TestCustomerAccount} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
