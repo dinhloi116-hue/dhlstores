@@ -251,3 +251,6 @@
 - [x] Thêm thanh tìm kiếm trên trang chủ với gợi ý sản phẩm theo tên, mô tả, SKU và danh mục khi khách nhập từ khóa.
 - [x] Cho phép mở trang sản phẩm trực tiếp từ từng gợi ý và có trạng thái không tìm thấy rõ ràng.
 - [x] Kiểm thử tìm kiếm gợi ý trên desktop/mobile trước khi xuất bản.
+- [x] Thêm bộ chọn doanh thu theo Hôm nay, 7 ngày, 30 ngày, Tháng này và Năm nay trong quản trị.
+- [x] Tính doanh thu đã thanh toán theo mốc thời gian chọn, đồng bộ nhãn khoảng thời gian hiển thị.
+- [x] Kiểm thử bộ lọc doanh thu trên dữ liệu đơn hàng trước khi xuất bản.
