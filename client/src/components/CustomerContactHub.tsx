@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { MessageCircleMore, Send, Sparkles, ThumbsUp, X } from "lucide-react";
+import { ImagePlus, MessageCircleMore, Send, Sparkles, ThumbsUp, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -17,6 +17,8 @@ function getVisitorKey() {
   return next;
 }
 
+type PendingImage = { fileName: string; mimeType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"; base64: string };
+
 export default function CustomerContactHub() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -26,6 +28,18 @@ export default function CustomerContactHub() {
   const [feedback, setFeedback] = useState({ displayName: "", contact: "", topic: "suggestion" as "suggestion" | "issue" | "other", message: "" });
   const [chatName, setChatName] = useState("");
   const [chatMessage, setChatMessage] = useState("");
+  const [feedbackImage, setFeedbackImage] = useState<PendingImage | null>(null);
+  const [chatImage, setChatImage] = useState<PendingImage | null>(null);
+
+  const selectImage = (file: File | undefined, setImage: (image: PendingImage | null) => void) => {
+    if (!file) return;
+    if (!(["image/jpeg", "image/png", "image/webp", "image/gif"] as const).includes(file.type as PendingImage["mimeType"])) return toast.error("Chỉ nhận ảnh JPG, PNG, WebP hoặc GIF");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Ảnh đính kèm tối đa 5 MB");
+    const reader = new FileReader();
+    reader.onload = () => setImage({ fileName: file.name, mimeType: file.type as PendingImage["mimeType"], base64: String(reader.result) });
+    reader.onerror = () => toast.error("Không thể đọc ảnh đã chọn");
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => setVisitorKey(getVisitorKey()), []);
 
@@ -40,6 +54,7 @@ export default function CustomerContactHub() {
     onSuccess: () => {
       toast.success("DHL Stores đã nhận góp ý của bạn. Cảm ơn bạn!");
       setFeedback({ displayName: "", contact: "", topic: "suggestion", message: "" });
+      setFeedbackImage(null);
       setFeedbackOpen(false);
     },
     onError: error => toast.error(error.message),
@@ -47,6 +62,7 @@ export default function CustomerContactHub() {
   const sendMessage = trpc.support.send.useMutation({
     onSuccess: async () => {
       setChatMessage("");
+      setChatImage(null);
       await utils.support.conversation.invalidate({ visitorKey });
     },
     onError: error => toast.error(error.message),
@@ -61,20 +77,20 @@ export default function CustomerContactHub() {
 
   const onFeedbackSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!visitorKey || !feedback.message.trim()) return;
+    if (!visitorKey || (!feedback.message.trim() && !feedbackImage)) return;
     submitFeedback.mutate({
       visitorKey,
       displayName: feedback.displayName || undefined,
       contact: feedback.contact || undefined,
       topic: feedback.topic,
-      message: feedback.message,
+      submission: { message: feedback.message, ...(feedbackImage ? { image: feedbackImage } : {}) },
     });
   };
 
   const onChatSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!visitorKey || !chatMessage.trim()) return;
-    sendMessage.mutate({ visitorKey, displayName: customerName, body: chatMessage });
+    if (!visitorKey || (!chatMessage.trim() && !chatImage)) return;
+    sendMessage.mutate({ visitorKey, displayName: customerName, submission: { message: chatMessage, ...(chatImage ? { image: chatImage } : {}) } });
   };
 
   return (
@@ -104,8 +120,9 @@ export default function CustomerContactHub() {
                 <option value="issue">Báo lỗi / vấn đề</option>
                 <option value="other">Nội dung khác</option>
               </select>
-              <textarea value={feedback.message} onChange={event => setFeedback(current => ({ ...current, message: event.target.value }))} required maxLength={2000} placeholder="Viết góp ý của bạn tại đây…" className="min-h-52 w-full flex-1 resize-none rounded-xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
-              <Button type="submit" disabled={!visitorKey || submitFeedback.isPending || !feedback.message.trim()} className="w-full bg-slate-900 font-black text-white hover:bg-slate-800">
+              <textarea value={feedback.message} onChange={event => setFeedback(current => ({ ...current, message: event.target.value }))} maxLength={2000} placeholder="Viết góp ý của bạn tại đây…" className="min-h-52 w-full flex-1 resize-none rounded-xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 p-3"><label className="inline-flex cursor-pointer items-center gap-2 text-xs font-black text-amber-900"><ImagePlus className="h-4 w-4" />Đính kèm ảnh<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={event => selectImage(event.target.files?.[0], setFeedbackImage)} /></label>{feedbackImage && <div className="flex items-center gap-2"><img src={feedbackImage.base64} alt="Ảnh góp ý chuẩn bị gửi" className="h-10 w-10 rounded-lg border border-amber-200 object-cover" /><button type="button" aria-label="Bỏ ảnh đính kèm" onClick={() => setFeedbackImage(null)} className="text-amber-800 hover:text-rose-600"><X className="h-4 w-4" /></button></div>}</div>
+              <Button type="submit" disabled={!visitorKey || submitFeedback.isPending || (!feedback.message.trim() && !feedbackImage)} className="w-full bg-slate-900 font-black text-white hover:bg-slate-800">
                 {submitFeedback.isPending ? "ĐANG GỬI…" : "GỬI GÓP Ý"}
               </Button>
             </form>
@@ -133,15 +150,17 @@ export default function CustomerContactHub() {
               {!messages.length && <div className="rounded-2xl border border-cyan-100 bg-white p-4 text-sm leading-relaxed text-slate-600"><p className="font-black text-slate-900">Chào bạn!</p><p className="mt-1">Bạn cần tư vấn về sản phẩm, SKU, thanh toán hoặc đơn hàng? Hãy để lại tin nhắn tại đây.</p></div>}
               {messages.map(message => (
                 <div key={message.id} className={`flex ${message.senderType === "owner" ? "justify-start" : "justify-end"}`}>
-                  <p className={`max-w-[86%] whitespace-pre-wrap rounded-2xl px-3 py-2.5 text-sm leading-relaxed ${message.senderType === "owner" ? "rounded-tl-sm bg-white text-slate-800 shadow-sm" : "rounded-tr-sm bg-cyan-700 text-white"}`}>{message.body}</p>
+                  <div className={`max-w-[86%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed ${message.senderType === "owner" ? "rounded-tl-sm bg-white text-slate-800 shadow-sm" : "rounded-tr-sm bg-cyan-700 text-white"}`}>{message.body && <p className="whitespace-pre-wrap">{message.body}</p>}{message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Ảnh đính kèm trong hội thoại" className="mt-2 max-h-56 rounded-xl border border-white/30 object-contain" /></a>}</div>
                 </div>
               ))}
             </div>
             <form onSubmit={onChatSubmit} className="border-t border-slate-200 bg-white p-3">
               {!user && !messages.length && <input value={chatName} onChange={event => setChatName(event.target.value)} maxLength={128} placeholder="Tên để xưng hô (tùy chọn)" className="mb-2 h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-cyan-500" />}
+              {chatImage && <div className="mb-2 flex items-center justify-between rounded-lg border border-cyan-100 bg-cyan-50 p-2"><div className="flex items-center gap-2"><img src={chatImage.base64} alt="Ảnh tin nhắn chuẩn bị gửi" className="h-10 w-10 rounded-md object-cover" /><span className="max-w-48 truncate text-xs font-semibold text-cyan-900">{chatImage.fileName}</span></div><button type="button" aria-label="Bỏ ảnh đính kèm" onClick={() => setChatImage(null)} className="text-cyan-800 hover:text-rose-600"><X className="h-4 w-4" /></button></div>}
               <div className="flex gap-2">
                 <textarea value={chatMessage} onChange={event => setChatMessage(event.target.value)} maxLength={2000} placeholder="Nhập tin nhắn…" className="min-h-10 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
-                <Button type="submit" size="icon" disabled={!visitorKey || sendMessage.isPending || !chatMessage.trim()} className="h-10 w-10 shrink-0 rounded-xl bg-cyan-700 text-white hover:bg-cyan-600"><Send className="h-4 w-4" /></Button>
+                <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 text-cyan-800 hover:bg-cyan-100"><ImagePlus className="h-4 w-4" /><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={event => selectImage(event.target.files?.[0], setChatImage)} /></label>
+                <Button type="submit" size="icon" disabled={!visitorKey || sendMessage.isPending || (!chatMessage.trim() && !chatImage)} className="h-10 w-10 shrink-0 rounded-xl bg-cyan-700 text-white hover:bg-cyan-600"><Send className="h-4 w-4" /></Button>
               </div>
             </form>
           </SheetContent>

@@ -257,3 +257,7 @@
 - [x] Tách doanh thu đã thanh toán theo sản phẩm số và sản phẩm vật lý trong từng khoảng thời gian.
 - [x] Hiển thị tổng doanh thu cùng hai khoản doanh thu số/vật lý rõ ràng trong quản trị.
 - [x] Kiểm thử số liệu doanh thu tách nhóm trước khi xuất bản.
+- [x] Cho phép khách đính kèm ảnh trong Tin nhắn và Góp ý, có xem trước trước khi gửi.
+- [x] Hiển thị ảnh đính kèm an toàn trong hộp thư quản trị và cuộc hội thoại khách.
+- [x] Kiểm thử gửi/hiển thị ảnh, phân quyền và trạng thái lỗi trong Tin nhắn/Góp ý.
+- [ ] Rà soát giao diện, tiện ích và vận hành để đề xuất lộ trình cải tiến theo mức ưu tiên.

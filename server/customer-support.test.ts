@@ -33,8 +33,8 @@ describe("customer feedback and support", () => {
   it("lưu góp ý, tạo hội thoại, cho chủ cửa hàng phản hồi và báo số chưa đọc", async () => {
     const visitorKey = `support_${Date.now()}_visitor`;
     const publicCaller = appRouter.createCaller(createContext());
-    await expect(publicCaller.feedback.submit({ visitorKey, displayName: "Khách thử", contact: "0900000000", topic: "suggestion", message: "Hãy thêm nhiều icon danh mục hơn." })).resolves.toMatchObject({ success: true });
-    const sent = await publicCaller.support.send({ visitorKey, displayName: "Khách thử", body: "Tôi cần tư vấn nhanh về nameset." });
+    await expect(publicCaller.feedback.submit({ visitorKey, displayName: "Khách thử", contact: "0900000000", topic: "suggestion", submission: { message: "Hãy thêm nhiều icon danh mục hơn." } })).resolves.toMatchObject({ success: true });
+    const sent = await publicCaller.support.send({ visitorKey, displayName: "Khách thử", submission: { message: "Tôi cần tư vấn nhanh về nameset." } });
 
     const owner = appRouter.createCaller(ownerContext());
     await expect(owner.operations.supportSummary()).resolves.toMatchObject({ newFeedback: expect.any(Number), unreadConversations: expect.any(Number) });

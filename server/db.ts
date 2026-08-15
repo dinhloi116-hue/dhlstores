@@ -808,9 +808,9 @@ export type DiscountCodeInput = {
 type MemoryDiscountCode = DiscountCodeInput & { id: number; usedCount: number; createdByUserId: number; createdAt: Date };
 type MemoryBalanceMovement = { id: number; userId: number; amount: string; balanceAfter: string; reason: string; performedByUserId: number; createdAt: Date };
 type MemoryInventoryMovement = { id: number; productId: number; variantId: number | null; quantityBefore: number; quantityAfter: number; reason: string; performedByUserId: number; createdAt: Date };
-type MemoryFeedback = { id: number; userId: number | null; visitorKey: string; displayName: string | null; contact: string | null; topic: "suggestion" | "issue" | "other"; message: string; status: "new" | "reviewed" | "resolved"; readAt: Date | null; createdAt: Date; updatedAt: Date };
+type MemoryFeedback = { id: number; userId: number | null; visitorKey: string; displayName: string | null; contact: string | null; topic: "suggestion" | "issue" | "other"; message: string; imageUrl: string | null; imageKey: string | null; status: "new" | "reviewed" | "resolved"; readAt: Date | null; createdAt: Date; updatedAt: Date };
 type MemoryConversation = { id: number; userId: number | null; visitorKey: string; displayName: string | null; lastMessagePreview: string | null; lastMessageAt: Date; customerReadAt: Date | null; ownerReadAt: Date | null; createdAt: Date; updatedAt: Date };
-type MemorySupportMessage = { id: number; conversationId: number; senderType: "customer" | "owner"; senderUserId: number | null; body: string; readAt: Date | null; createdAt: Date };
+type MemorySupportMessage = { id: number; conversationId: number; senderType: "customer" | "owner"; senderUserId: number | null; body: string; imageUrl: string | null; imageKey: string | null; readAt: Date | null; createdAt: Date };
 
 const memoryDiscountCodes: MemoryDiscountCode[] = [];
 const memoryBalanceMovements: MemoryBalanceMovement[] = [];
@@ -836,6 +836,8 @@ export type FeedbackInput = {
   contact?: string;
   topic: "suggestion" | "issue" | "other";
   message: string;
+  imageUrl?: string;
+  imageKey?: string;
 };
 
 export type CustomerMessageInput = {
@@ -843,6 +845,8 @@ export type CustomerMessageInput = {
   userId?: number;
   displayName?: string;
   body: string;
+  imageUrl?: string;
+  imageKey?: string;
 };
 
 function normalizeVisitorKey(visitorKey: string) {
@@ -865,6 +869,8 @@ export async function createCustomerFeedback(input: FeedbackInput) {
     contact: input.contact?.trim().slice(0, 255) || null,
     topic: input.topic,
     message: input.message.trim(),
+    imageUrl: input.imageUrl ?? null,
+    imageKey: input.imageKey ?? null,
   } as const;
   if (connection) {
     const inserted = await connection.insert(customerFeedback).values(values);
@@ -876,8 +882,8 @@ export async function createCustomerFeedback(input: FeedbackInput) {
 
 export async function getAdminFeedback() {
   const connection = await getDb();
-  if (connection) return await connection.select().from(customerFeedback).orderBy(desc(customerFeedback.createdAt)).limit(200);
-  return [...memoryFeedback].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const rows = connection ? await connection.select().from(customerFeedback).orderBy(desc(customerFeedback.createdAt)).limit(200) : [...memoryFeedback].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return rows.map(item => ({ ...item, message: item.imageUrl ? `${item.message}${item.message ? "\n" : ""}Ảnh đính kèm: ${item.imageUrl}` : item.message }));
 }
 
 export async function updateFeedbackStatus(id: number, status: "new" | "reviewed" | "resolved") {
@@ -919,7 +925,7 @@ export async function sendCustomerSupportMessage(input: CustomerMessageInput) {
     } else {
       await connection.update(supportConversations).set({ userId: input.userId ?? conversation.userId, displayName: input.displayName?.trim().slice(0, 128) || conversation.displayName, lastMessagePreview: previewMessage(body), lastMessageAt: new Date(), customerReadAt: new Date() }).where(eq(supportConversations.id, conversation.id));
     }
-    await connection.insert(supportMessages).values({ conversationId: conversation.id, senderType: "customer", senderUserId: input.userId ?? null, body });
+    await connection.insert(supportMessages).values({ conversationId: conversation.id, senderType: "customer", senderUserId: input.userId ?? null, body, imageUrl: input.imageUrl ?? null, imageKey: input.imageKey ?? null });
     return { success: true, conversationId: conversation.id };
   }
   let conversation = memoryConversations.find(item => item.visitorKey === visitorKey);
@@ -933,7 +939,7 @@ export async function sendCustomerSupportMessage(input: CustomerMessageInput) {
   conversation.lastMessageAt = new Date();
   conversation.customerReadAt = new Date();
   conversation.updatedAt = new Date();
-  memorySupportMessages.push({ id: nextSupportMessageId++, conversationId: conversation.id, senderType: "customer", senderUserId: input.userId ?? null, body, readAt: null, createdAt: new Date() });
+  memorySupportMessages.push({ id: nextSupportMessageId++, conversationId: conversation.id, senderType: "customer", senderUserId: input.userId ?? null, body, imageUrl: input.imageUrl ?? null, imageKey: input.imageKey ?? null, readAt: null, createdAt: new Date() });
   return { success: true, conversationId: conversation.id };
 }
 
@@ -945,8 +951,8 @@ export async function getOwnerConversations() {
 
 export async function getOwnerConversationMessages(conversationId: number) {
   const connection = await getDb();
-  if (connection) return await connection.select().from(supportMessages).where(eq(supportMessages.conversationId, conversationId)).orderBy(supportMessages.createdAt);
-  return memorySupportMessages.filter(message => message.conversationId === conversationId).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const rows = connection ? await connection.select().from(supportMessages).where(eq(supportMessages.conversationId, conversationId)).orderBy(supportMessages.createdAt) : memorySupportMessages.filter(message => message.conversationId === conversationId).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return rows.map(item => ({ ...item, body: item.imageUrl ? `${item.body}${item.body ? "\n" : ""}Ảnh đính kèm: ${item.imageUrl}` : item.body }));
 }
 
 export async function sendOwnerSupportMessage(input: { conversationId: number; senderUserId: number; body: string }) {
@@ -965,7 +971,7 @@ export async function sendOwnerSupportMessage(input: { conversationId: number; s
   conversation.lastMessageAt = new Date();
   conversation.ownerReadAt = new Date();
   conversation.updatedAt = new Date();
-  memorySupportMessages.push({ id: nextSupportMessageId++, conversationId: conversation.id, senderType: "owner", senderUserId: input.senderUserId, body, readAt: null, createdAt: new Date() });
+  memorySupportMessages.push({ id: nextSupportMessageId++, conversationId: conversation.id, senderType: "owner", senderUserId: input.senderUserId, body, imageUrl: null, imageKey: null, readAt: null, createdAt: new Date() });
   return { success: true };
 }
 

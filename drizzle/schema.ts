@@ -47,6 +47,8 @@ export const customerFeedback = mysqlTable("customer_feedback", {
   contact: varchar("contact", { length: 255 }),
   topic: mysqlEnum("topic", ["suggestion", "issue", "other"]).default("suggestion").notNull(),
   message: text("message").notNull(),
+  imageUrl: varchar("imageUrl", { length: 1024 }),
+  imageKey: varchar("imageKey", { length: 1024 }),
   status: mysqlEnum("status", ["new", "reviewed", "resolved"]).default("new").notNull(),
   readAt: timestamp("readAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -77,6 +79,8 @@ export const supportMessages = mysqlTable("support_messages", {
   senderType: mysqlEnum("senderType", ["customer", "owner"]).notNull(),
   senderUserId: int("senderUserId"),
   body: text("body").notNull(),
+  imageUrl: varchar("imageUrl", { length: 1024 }),
+  imageKey: varchar("imageKey", { length: 1024 }),
   readAt: timestamp("readAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

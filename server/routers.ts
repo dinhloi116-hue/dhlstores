@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { buildSePayQrUrl, buildStoreVietQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
+import { storagePut } from "./storage";
 
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
@@ -15,6 +16,17 @@ const localPasswordSchema = z.string().min(10, "Mật khẩu cần có ít nhấ
 const shippingAddressInputSchema = z.object({ recipientName: z.string().trim().min(2, "Vui lòng nhập họ tên người nhận").max(255), phone: z.string().trim().min(8, "Số điện thoại chưa hợp lệ").max(64), address: z.string().trim().min(5, "Vui lòng nhập địa chỉ cụ thể").max(2000), isDefault: z.boolean().optional() });
 const visitorKeySchema = z.string().trim().regex(/^[a-zA-Z0-9_-]{16,96}$/, "Phiên truy cập không hợp lệ");
 const supportMessageSchema = z.string().trim().min(1, "Vui lòng nhập nội dung").max(2000, "Tin nhắn tối đa 2.000 ký tự");
+const supportImageSchema = z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]), base64: z.string().min(1) });
+const supportSubmissionSchema = z.object({ message: z.string().trim().max(2000, "Nội dung tối đa 2.000 ký tự"), image: supportImageSchema.optional() }).refine(value => Boolean(value.message || value.image), "Vui lòng nhập nội dung hoặc chọn một ảnh");
+
+async function storeSupportImage(visitorKey: string, image?: z.infer<typeof supportImageSchema>) {
+  if (!image) return {};
+  const buffer = Buffer.from(image.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+  if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Ảnh đính kèm phải có dung lượng từ 1 byte đến 5 MB" });
+  const safeName = image.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "attachment";
+  const stored = await storagePut(`support/${visitorKey}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${safeName}`, buffer, image.mimeType);
+  return { imageUrl: stored.url, imageKey: stored.key };
+}
 
 function publicUser(user: NonNullable<Awaited<ReturnType<typeof db.getUserByOpenId>>>) {
   const { passwordHash: _passwordHash, ...safeUser } = user;
@@ -95,12 +107,18 @@ export const appRouter = router({
   }),
 
   feedback: router({
-    submit: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), contact: z.string().trim().max(255).optional(), topic: z.enum(["suggestion", "issue", "other"]), message: supportMessageSchema })).mutation(({ ctx, input }) => db.createCustomerFeedback({ ...input, userId: ctx.user?.id })),
+    submit: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), contact: z.string().trim().max(255).optional(), topic: z.enum(["suggestion", "issue", "other"]), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
+      const image = await storeSupportImage(input.visitorKey, input.submission.image);
+      return db.createCustomerFeedback({ visitorKey: input.visitorKey, displayName: input.displayName, contact: input.contact, topic: input.topic, message: input.submission.message, ...image, userId: ctx.user?.id });
+    }),
   }),
 
   support: router({
     conversation: publicProcedure.input(z.object({ visitorKey: visitorKeySchema })).query(({ input }) => db.getCustomerConversation(input.visitorKey)),
-    send: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), body: supportMessageSchema })).mutation(({ ctx, input }) => db.sendCustomerSupportMessage({ ...input, userId: ctx.user?.id })),
+    send: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
+      const image = await storeSupportImage(input.visitorKey, input.submission.image);
+      return db.sendCustomerSupportMessage({ visitorKey: input.visitorKey, displayName: input.displayName, body: input.submission.message, ...image, userId: ctx.user?.id });
+    }),
     markRead: publicProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(({ input }) => db.markConversationRead(input.conversationId, "customer")),
   }),
 
