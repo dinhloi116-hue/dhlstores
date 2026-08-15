@@ -281,5 +281,5 @@
 - [x] Thêm thẻ thống kê dung lượng tệp đã đăng tải trong Trung tâm vận hành, gồm tổng số tệp và tổng dung lượng theo dữ liệu đã lưu.
 - [x] Tổng hợp checklist duy nhất cho các thao tác cần chủ cửa hàng kiểm thử bằng tài khoản thật sau khi hoàn thiện kỹ thuật.
 - [x] Đã xác minh không phải lỗi ứng dụng: lớp xem trước của môi trường chặn click nút Thêm vào giỏ; session replay cho thấy click bị nhận bởi `#manus-previewer-root` thay vì nút sản phẩm.
-- [ ] Kiểm tra trực quan desktop cảnh báo tồn kho trong giỏ hàng: tăng số lượng đến/vượt ngưỡng tồn hoặc tạo tình huống tồn thay đổi để xác nhận thông báo lỗi/giới hạn hiển thị đúng.
+- [x] Kiểm tra trực quan desktop giới hạn tồn kho trên bản đã xuất bản: SKU `10#MESSI` có tồn 20, điều khiển số lượng dừng tại 20 và nút tăng bị khóa; kiểm thử máy chủ cũng xác nhận từ chối thêm khi biến thể không đủ tồn kho.
 - [x] Ngăn thao tác tăng/giảm liên tiếp trong giỏ khi yêu cầu cập nhật số lượng đang xử lý, tránh gửi các yêu cầu lặp với dữ liệu tồn kho cũ; đã bổ sung hồi quy, chạy 67 kiểm thử, TypeScript và build thành công.

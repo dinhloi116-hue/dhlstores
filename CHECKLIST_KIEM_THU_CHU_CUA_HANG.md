@@ -2,6 +2,12 @@
 
 > Mục tiêu của checklist này là xác nhận các bước cần phiên đăng nhập, giao dịch ngân hàng hoặc thao tác thực tế của chủ cửa hàng. Không cần kiểm thử các phần kỹ thuật đã được kiểm tra tự động.
 
+## Đã được xác nhận kỹ thuật
+
+Website đã qua kiểm thử tự động, kiểm tra TypeScript và build. Trên bản đã xuất bản, các trạng thái sau cũng đã được kiểm tra desktop bằng phiên chủ cửa hàng: chọn SKU còn hàng, giới hạn số lượng theo tồn kho, thêm/cập nhật/xóa giỏ, giỏ trống, hiển thị phí SPX, ví số dư, email liên kết, địa chỉ, lịch sử đơn và quyền quản trị. Đơn digital đã thanh toán chỉ hiện liên kết tải trong Tài khoản; đơn chờ thanh toán hoặc đã hủy không hiện liên kết đó.
+
+> Không tạo thêm giao dịch ngân hàng chỉ để lặp lại các kiểm tra kỹ thuật này. Các mục “Bắt buộc” bên dưới chỉ nhằm xác nhận đối soát tiền thật và quy trình vận hành của chính chủ cửa hàng.
+
 ## Chuẩn bị
 
 Đăng nhập bằng tài khoản chủ cửa hàng. Nếu cần thử từ góc nhìn khách, mở **`/admin/test-customer`**, tạo một username và mật khẩu tạm, sau đó đăng xuất rồi đăng nhập bằng tài khoản khách đó.
