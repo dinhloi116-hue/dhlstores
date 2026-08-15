@@ -81,8 +81,8 @@
 - [x] Tăng cường hiệu ứng hover rõ ràng cho nút, danh mục và thẻ sản phẩm.
 - [x] Kiểm tra trực quan, kiểm thử và xuất bản cập nhật giao diện trang chủ.
 - [x] Thu gọn banner lớn còn lại ở trang danh mục sản phẩm và đồng bộ hover cho thẻ danh mục.
-- [ ] Kiểm thử desktop các luồng chính trên phiên bản mới nhất: sản phẩm, giỏ, checkout QR, tài khoản/email, tải tệp và quản trị; phần điện thoại không thuộc ưu tiên hiện tại.
-- [ ] Lưu checkpoint xác nhận trạng thái vận hành sau kiểm thử tổng thể.
+- [ ] Kiểm thử desktop các luồng chính trên phiên bản mới nhất: sản phẩm, giỏ, checkout QR, tài khoản/email, tải tệp và quản trị; phần điện thoại không thuộc ưu tiên hiện tại. Checklist hỗ trợ đã có tại `CHECKLIST_KIEM_THU_CHU_CUA_HANG.md`.
+- [ ] Lưu checkpoint xác nhận trạng thái vận hành sau kiểm thử tổng thể bằng phiên tài khoản thật.
 - [x] Rà soát quyền của dinhhoangloi, dữ liệu hiện hữu và phân tích tệp PDF tham chiếu cho tồn kho.
 - [x] Bổ sung dữ liệu thành viên phục vụ số dư nội bộ, trạng thái chặn và lịch sử thao tác quản trị.
 - [x] Xây dựng mã giảm giá có thời hạn, điều kiện sử dụng và kiểm tra áp dụng an toàn khi thanh toán.
@@ -98,7 +98,7 @@
 - [x] Khắc phục tuyến trang chi tiết sản phẩm hợp lệ đang hiển thị 404.
 - [ ] Kiểm tra trực quan desktop giỏ hàng, gồm cập nhật số lượng, thông báo tồn kho và trạng thái trống/đầy.
 - [ ] Kiểm tra trực quan luồng tải tệp trên desktop, gồm Tải ngay sau thanh toán và trạng thái hết hạn trong Tài khoản.
-- [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận trạng thái vận hành.
+- [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận trạng thái vận hành bằng phiên tài khoản thật.
 - [x] Rà soát và nhóm lại các tab quản trị để thao tác nhanh, dễ hiểu hơn.
 - [x] Liên kết mỗi dòng tồn kho tới sản phẩm/biến thể tương ứng và mở thẳng chỉnh sửa sản phẩm.
 - [x] Đồng bộ thao tác cập nhật tồn kho với tab Sản phẩm, hiển thị SKU, biến thể và trạng thái tồn rõ ràng.
@@ -130,7 +130,7 @@
 - [x] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
 - [x] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
 - [x] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
-- [ ] Kiểm thử desktop SKU, Tool, hồ sơ địa chỉ và checkout vật lý; sau đó lưu phiên bản cập nhật.
+- [ ] Kiểm thử desktop SKU, Tool, hồ sơ địa chỉ và checkout vật lý bằng phiên đăng nhập phù hợp; sau đó lưu phiên bản cập nhật.
 - [x] Đặt khối chọn SKU và điều chỉnh số lượng cùng hàng; chuyển bảng tồn kho xuống cuối trang sản phẩm.
 - [x] Thêm preview ảnh SKU thật sự khi hover/click, hiển thị ảnh phóng to ngoài ô thumbnail mà không bị cắt.
 - [x] Hỗ trợ chạm thumbnail trên điện thoại để mở/đóng ảnh SKU phóng to an toàn.
@@ -279,3 +279,4 @@
 - [x] Đồng bộ nhãn và thông báo checkout khi đơn đã được thanh toán ngay bằng số dư, không mô tả nhầm là QR ngân hàng.
 - [x] Giải thích quy trình bàn giao mã nguồn/quyền quản trị và vị trí theo dõi dữ liệu lưu trữ của website.
 - [x] Thêm thẻ thống kê dung lượng tệp đã đăng tải trong Trung tâm vận hành, gồm tổng số tệp và tổng dung lượng theo dữ liệu đã lưu.
+- [x] Tổng hợp checklist duy nhất cho các thao tác cần chủ cửa hàng kiểm thử bằng tài khoản thật sau khi hoàn thiện kỹ thuật.
