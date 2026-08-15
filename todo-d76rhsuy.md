@@ -81,8 +81,8 @@
 - [x] Tăng cường hiệu ứng hover rõ ràng cho nút, danh mục và thẻ sản phẩm.
 - [x] Kiểm tra trực quan, kiểm thử và xuất bản cập nhật giao diện trang chủ.
 - [x] Thu gọn banner lớn còn lại ở trang danh mục sản phẩm và đồng bộ hover cho thẻ danh mục.
-- [ ] Kiểm thử trực quan các luồng chính trên phiên bản mới nhất: sản phẩm, giỏ, checkout QR, tài khoản/email, tải tệp và quản trị.
-- [ ] Lưu checkpoint xác nhận website sẵn sàng vận hành sau kiểm thử tổng thể.
+- [ ] Kiểm thử desktop các luồng chính trên phiên bản mới nhất: sản phẩm, giỏ, checkout QR, tài khoản/email, tải tệp và quản trị; phần điện thoại không thuộc ưu tiên hiện tại.
+- [ ] Lưu checkpoint xác nhận trạng thái vận hành sau kiểm thử tổng thể.
 - [x] Rà soát quyền của dinhhoangloi, dữ liệu hiện hữu và phân tích tệp PDF tham chiếu cho tồn kho.
 - [x] Bổ sung dữ liệu thành viên phục vụ số dư nội bộ, trạng thái chặn và lịch sử thao tác quản trị.
 - [x] Xây dựng mã giảm giá có thời hạn, điều kiện sử dụng và kiểm tra áp dụng an toàn khi thanh toán.
@@ -94,11 +94,11 @@
 - [x] Hoàn thiện giao diện mã giảm giá với đơn tối thiểu, thời hạn bắt đầu-kết thúc và thao tác sửa.
 - [x] Thêm bộ lọc nhật ký theo từng tài khoản trong Trung tâm vận hành và kiểm thử API lọc theo thành viên.
 - [x] Kiểm thử phân quyền, ưu đãi, thao tác tồn kho hàng loạt và xuất bản quản trị nâng cao.
-- [ ] Kiểm thử trực quan đầy đủ trên bản mới nhất: sản phẩm, giỏ hàng, checkout QR, tài khoản/email, tải tệp và quản trị.
+- [ ] Kiểm thử trực quan desktop trên bản mới nhất: sản phẩm, giỏ hàng, checkout QR, tài khoản/email, tải tệp và quản trị.
 - [x] Khắc phục tuyến trang chi tiết sản phẩm hợp lệ đang hiển thị 404.
-- [ ] Kiểm tra trực quan giỏ hàng trên bản mới nhất, gồm cập nhật số lượng, thông báo tồn kho và trạng thái trống/đầy.
-- [ ] Kiểm tra trực quan luồng tải tệp trên bản mới nhất, gồm trạng thái Tải ngay sau thanh toán và trạng thái hết hạn trong Tài khoản.
-- [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận website sẵn sàng vận hành.
+- [ ] Kiểm tra trực quan desktop giỏ hàng, gồm cập nhật số lượng, thông báo tồn kho và trạng thái trống/đầy.
+- [ ] Kiểm tra trực quan luồng tải tệp trên desktop, gồm Tải ngay sau thanh toán và trạng thái hết hạn trong Tài khoản.
+- [ ] Sau kiểm thử trực quan tổng thể, lưu checkpoint xác nhận trạng thái vận hành.
 - [x] Rà soát và nhóm lại các tab quản trị để thao tác nhanh, dễ hiểu hơn.
 - [x] Liên kết mỗi dòng tồn kho tới sản phẩm/biến thể tương ứng và mở thẳng chỉnh sửa sản phẩm.
 - [x] Đồng bộ thao tác cập nhật tồn kho với tab Sản phẩm, hiển thị SKU, biến thể và trạng thái tồn rõ ràng.
@@ -130,15 +130,15 @@
 - [x] Mở rộng tài khoản khách hàng với địa chỉ giao hàng đã lưu cho đơn hàng vật lý.
 - [x] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
 - [x] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
-- [ ] Kiểm thử toàn bộ SKU, Tool, hồ sơ địa chỉ, checkout vật lý và xuất bản cập nhật.
+- [ ] Kiểm thử desktop SKU, Tool, hồ sơ địa chỉ và checkout vật lý; sau đó lưu phiên bản cập nhật.
 - [x] Đặt khối chọn SKU và điều chỉnh số lượng cùng hàng; chuyển bảng tồn kho xuống cuối trang sản phẩm.
 - [x] Thêm preview ảnh SKU thật sự khi hover/click, hiển thị ảnh phóng to ngoài ô thumbnail mà không bị cắt.
 - [x] Hỗ trợ chạm thumbnail trên điện thoại để mở/đóng ảnh SKU phóng to an toàn.
-- [ ] Kiểm thử trực quan preview ảnh SKU trên desktop và điện thoại.
-- [ ] Chụp bằng chứng preview ảnh SKU đang mở trên desktop và điện thoại; kiểm tra mở/đóng, vị trí không bị cắt và vẫn chọn SKU bình thường.
+- [x] Kiểm thử trực quan preview ảnh SKU trên desktop; phần điện thoại dừng theo yêu cầu ưu tiên của chủ cửa hàng.
+- [x] Đã có xác nhận desktop cho preview SKU; không chụp thêm bằng chứng điện thoại theo yêu cầu ưu tiên mới.
 - [x] Đã xác minh preview ảnh SKU trên desktop: mở ảnh lớn ngoài thumbnail, đóng an toàn và bảng SKU vẫn hoạt động.
-- [ ] Kiểm thử trực tiếp preview ảnh SKU trên viewport điện thoại: chạm thumbnail, xác nhận ảnh lớn mở ngoài ô thumbnail và đóng an toàn.
-- [ ] Chụp bằng chứng preview ảnh SKU đang mở trên điện thoại và xác nhận vẫn chọn SKU bình thường sau khi đóng.
+- [x] Đã dừng kiểm thử preview SKU trên viewport điện thoại theo yêu cầu ưu tiên mới của chủ cửa hàng.
+- [x] Không yêu cầu chụp bằng chứng preview SKU trên điện thoại theo yêu cầu ưu tiên mới của chủ cửa hàng.
 - [x] Việt hóa toàn bộ nhãn, hướng dẫn và biểu mẫu cấu hình QR/ngân hàng cho hàng vật lý.
 - [x] Kiểm thử trực quan nút Sửa trên dòng tồn kho cho cả sản phẩm và biến thể bằng tài khoản chủ cửa hàng, xác nhận mở đúng biểu mẫu chỉnh sửa.
 - [x] Gộp tồn kho hàng loạt vào Catalog · Sản phẩm và bỏ tab tồn kho riêng trong điều hướng quản trị.
@@ -265,3 +265,5 @@
 - [x] Tính phí SPX theo tổng khối lượng: đến 1 kg 20.000đ, đến 2 kg 30.000đ, đến 3 kg 40.000đ, sau đó tăng 10.000đ mỗi kg.
 - [x] Đồng bộ khối lượng và phí SPX vào trang sản phẩm, giỏ hàng, checkout, đơn hàng và quản trị.
 - [x] Kiểm thử các mốc phí SPX, đơn hỗn hợp và hiển thị desktop/mobile trước khi xuất bản.
+- [x] Theo yêu cầu mới của chủ cửa hàng, dừng kiểm thử giao diện điện thoại và chỉ ưu tiên kiểm thử desktop cùng các chức năng vận hành.
+- [x] Hiển thị rõ khối lượng thực tế và phí SPX đã tính trong quản trị đơn hàng, đồng thời nêu ước tính giao SPX ở trang sản phẩm vật lý trên desktop.

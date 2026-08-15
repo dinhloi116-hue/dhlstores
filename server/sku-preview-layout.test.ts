@@ -39,4 +39,14 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('md:group-hover:scale-[1.65]');
     expect(source).toContain('Rê chuột để phóng to');
   });
+
+  it("shows calculated SPX shipping and does not offer obsolete shipping methods", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const estimatedSpxFee");
+    expect(source).toContain("Giao hàng SPX ước tính");
+    expect(source).toContain("Giao hàng SPX tự tính");
+    expect(source).not.toContain("Nhận tại cửa hàng — 0 đ");
+    expect(source).not.toContain("Giao nhanh — 50.000 đ");
+  });
 });
