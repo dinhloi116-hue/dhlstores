@@ -254,3 +254,6 @@
 - [x] Thêm bộ chọn doanh thu theo Hôm nay, 7 ngày, 30 ngày, Tháng này và Năm nay trong quản trị.
 - [x] Tính doanh thu đã thanh toán theo mốc thời gian chọn, đồng bộ nhãn khoảng thời gian hiển thị.
 - [x] Kiểm thử bộ lọc doanh thu trên dữ liệu đơn hàng trước khi xuất bản.
+- [x] Tách doanh thu đã thanh toán theo sản phẩm số và sản phẩm vật lý trong từng khoảng thời gian.
+- [x] Hiển thị tổng doanh thu cùng hai khoản doanh thu số/vật lý rõ ràng trong quản trị.
+- [x] Kiểm thử số liệu doanh thu tách nhóm trước khi xuất bản.

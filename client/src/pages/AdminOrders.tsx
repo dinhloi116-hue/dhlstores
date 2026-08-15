@@ -510,7 +510,24 @@ export default function AdminOrders() {
   if (revenueRange === "30d") revenueStart.setDate(revenueStart.getDate() - 29);
   if (revenueRange === "month") revenueStart.setDate(1);
   if (revenueRange === "year") { revenueStart.setMonth(0, 1); }
-  const totalRevenue = orders.filter(order => order.paymentStatus === "paid" && new Date(order.createdAt).getTime() >= revenueStart.getTime()).reduce((sum, order) => sum + Number(order.totalAmount), 0);
+  const paidOrdersInRange = orders.filter(order => order.paymentStatus === "paid" && new Date(order.createdAt).getTime() >= revenueStart.getTime());
+  const totalRevenue = paidOrdersInRange.reduce((sum, order) => sum + Number(order.totalAmount), 0);
+  const revenueByType = paidOrdersInRange.reduce((totals, order) => {
+    const items = order.items || [];
+    const itemGross = items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+    const physicalGross = items.filter(item => products.find(product => product.id === item.productId)?.type === "physical").reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+    const shippingFee = Math.max(0, Number(order.shippingFee || 0));
+    const merchandiseRevenue = Math.max(0, Number(order.totalAmount) - shippingFee);
+    if (!itemGross) {
+      if (order.hasPhysicalItems) totals.physical += Number(order.totalAmount);
+      else totals.digital += Number(order.totalAmount);
+      return totals;
+    }
+    const physicalShare = physicalGross / itemGross;
+    totals.physical += merchandiseRevenue * physicalShare + (physicalGross > 0 ? shippingFee : 0);
+    totals.digital += merchandiseRevenue * (1 - physicalShare);
+    return totals;
+  }, { digital: 0, physical: 0 });
   const selectedCategoryName = (categoryId: number) => categories.find(category => category.id === categoryId)?.name || "Chưa phân loại";
   const selectedProductCategory = categories.find(category => category.id === productDraft.categoryId);
   const selectedProduct = products.find(product => product.id === editingProductId) || null;
@@ -525,7 +542,7 @@ export default function AdminOrders() {
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="dhl-hover-card flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-4"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600"><DollarSign className="h-5 w-5" /></div><div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Doanh thu đã thanh toán</p><p className="mt-1 text-xl font-black text-slate-900">{formatCurrency(totalRevenue)}</p></div></div></div><select aria-label="Khoảng thời gian doanh thu" value={revenueRange} onChange={event => setRevenueRange(event.target.value as typeof revenueRange)} className="h-9 w-full rounded-md border border-emerald-200 bg-emerald-50 px-2 text-xs font-black text-emerald-900 outline-none focus:ring-2 focus:ring-emerald-200"><option value="today">Hôm nay</option><option value="7d">7 ngày gần đây</option><option value="30d">30 ngày gần đây</option><option value="month">Tháng này</option><option value="year">Năm nay</option></select><p className="text-[10px] font-semibold text-emerald-700">Đang xem: {revenueRangeLabels[revenueRange]}</p></div>
+          <div className="dhl-hover-card flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-4"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600"><DollarSign className="h-5 w-5" /></div><div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Doanh thu đã thanh toán</p><p className="mt-1 text-xl font-black text-slate-900">{formatCurrency(totalRevenue)}</p></div></div></div><select aria-label="Khoảng thời gian doanh thu" value={revenueRange} onChange={event => setRevenueRange(event.target.value as typeof revenueRange)} className="h-9 w-full rounded-md border border-emerald-200 bg-emerald-50 px-2 text-xs font-black text-emerald-900 outline-none focus:ring-2 focus:ring-emerald-200"><option value="today">Hôm nay</option><option value="7d">7 ngày gần đây</option><option value="30d">30 ngày gần đây</option><option value="month">Tháng này</option><option value="year">Năm nay</option></select><div className="grid grid-cols-2 gap-2"><div className="rounded-lg border border-violet-100 bg-violet-50 px-2.5 py-2"><p className="text-[9px] font-black uppercase text-violet-700">Sản phẩm số</p><p className="mt-1 text-sm font-black text-violet-900">{formatCurrency(revenueByType.digital)}</p></div><div className="rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-2"><p className="text-[9px] font-black uppercase text-emerald-700">Hàng vật lý</p><p className="mt-1 text-sm font-black text-emerald-900">{formatCurrency(revenueByType.physical)}</p></div></div><p className="text-[10px] font-semibold text-emerald-700">Đang xem: {revenueRangeLabels[revenueRange]}</p></div>
           {[{ label: "Sản phẩm", value: products.length, icon: Package, tone: "text-blue-600 bg-blue-100" }, { label: "Danh mục", value: categories.length, icon: Archive, tone: "text-violet-600 bg-violet-100" }, { label: "Tệp đã tải", value: media.length, icon: FileArchive, tone: "text-amber-600 bg-amber-100" }].map(card => <div key={card.label} className="dhl-hover-card flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className={`flex h-11 w-11 items-center justify-center rounded-xl ${card.tone}`}><card.icon className="h-5 w-5" /></div><div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{card.label}</p><p className="mt-1 text-xl font-black text-slate-900">{card.value}</p></div></div>)}
         </section>
 
