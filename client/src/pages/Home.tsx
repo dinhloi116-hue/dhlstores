@@ -7,10 +7,11 @@ import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/category-icons";
-import { ArrowRight, CircleHelp, Download, FolderGit2, PackageCheck, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CircleHelp, Download, FolderGit2, PackageCheck, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 
 export default function Home() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -30,6 +31,11 @@ export default function Home() {
   const physicalProducts = allProducts.filter(product => product.type === "physical");
   const categories = categoriesQuery.data || [];
   const homeHeading = siteSettingsQuery.data?.homeHeading || (lang === "vi" ? "Tài nguyên thiết kế thể thao" : "Sports design resources");
+  const normalizedSearchTerm = searchTerm.trim().toLocaleLowerCase("vi");
+  const searchSuggestions = !normalizedSearchTerm ? [] : allProducts.filter(product => {
+    const category = categories.find(item => item.id === product.categoryId);
+    return `${product.name} ${product.description || ""} ${product.slug || ""} ${category?.name || ""}`.toLocaleLowerCase("vi").includes(normalizedSearchTerm);
+  }).slice(0, 6);
 
   const formatCurrency = (val: string | number) => {
     const num = Number(val);
@@ -45,6 +51,15 @@ export default function Home() {
         <div className="mb-4 flex items-end justify-between gap-4 border-b border-slate-200 pb-3">
           <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{homeHeading}</h1></div>
           <Link href="/products"><Button variant="outline" size="sm" className="shrink-0 border-slate-300 bg-white text-xs font-bold text-slate-800 hover:border-amber-400 hover:bg-amber-50">{t.exploreShop}<ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
+        </div>
+        <div className="relative z-20 mb-5 max-w-3xl">
+          <label htmlFor="home-product-search" className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Tìm nhanh sản phẩm</label>
+          <div className="mt-1 flex h-12 items-center rounded-xl border border-slate-300 bg-white px-3 shadow-sm transition focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-100">
+            <Search className="mr-2 h-5 w-5 shrink-0 text-amber-600" />
+            <input id="home-product-search" value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Tìm tên sản phẩm, loại tài nguyên hoặc danh mục..." className="h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400" autoComplete="off" />
+            {searchTerm && <button type="button" onClick={() => setSearchTerm("")} className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Xóa từ khóa tìm kiếm"><X className="h-4 w-4" /></button>}
+          </div>
+          {normalizedSearchTerm && <div className="absolute left-0 right-0 top-[4.45rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"><div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-[11px] font-black text-slate-600">{searchSuggestions.length ? `Gợi ý ${searchSuggestions.length} sản phẩm phù hợp` : "Không tìm thấy sản phẩm phù hợp"}</div>{searchSuggestions.length ? <div className="divide-y divide-slate-100">{searchSuggestions.map(product => { const category = categories.find(item => item.id === product.categoryId); return <Link key={product.id} href={`/product/${product.slug}`} onClick={() => setSearchTerm("")} className="group flex items-center gap-3 px-4 py-3 transition hover:bg-amber-50"><div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 text-[11px] font-black text-amber-700">{product.image ? <img src={product.image} alt="" className="h-full w-full object-cover" /> : product.name.slice(0, 2).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900 group-hover:text-amber-700">{product.name}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{category?.name || "Sản phẩm"} · {formatCurrency(product.price)}</p></div><ArrowRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-amber-600" /></Link>; })}</div> : <div className="px-4 py-5 text-center text-xs leading-relaxed text-slate-500">Thử tìm theo tên sản phẩm, loại tài nguyên hoặc danh mục khác.</div>}<Link href={`/products?search=${encodeURIComponent(searchTerm)}`} onClick={() => setSearchTerm("")} className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3 text-xs font-black text-amber-700 transition hover:bg-amber-50">Xem toàn bộ kết quả <ArrowRight className="h-3.5 w-3.5" /></Link></div>}
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
           {categoriesQuery.isLoading ? Array.from({ length: 10 }).map((_, index) => <div key={index} className="h-16 animate-pulse border border-slate-200 bg-slate-100" />) : categories.map(category => { const Icon = getCategoryIcon(category.iconKey); return (

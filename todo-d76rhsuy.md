@@ -248,3 +248,6 @@
 - [x] Kiểm thử trực quan luồng tìm, lọc, chọn và chỉnh sửa SKU thông minh trước khi xuất bản.
 - [x] Thêm phóng to ảnh sản phẩm lớn bên trái khi rê chuột trên trang chi tiết, không áp dụng cho thumbnail SKU.
 - [x] Kiểm thử zoom ảnh lớn trên desktop và trải nghiệm ảnh tĩnh an toàn trên điện thoại trước khi xuất bản.
+- [x] Thêm thanh tìm kiếm trên trang chủ với gợi ý sản phẩm theo tên, mô tả, SKU và danh mục khi khách nhập từ khóa.
+- [x] Cho phép mở trang sản phẩm trực tiếp từ từng gợi ý và có trạng thái không tìm thấy rõ ràng.
+- [x] Kiểm thử tìm kiếm gợi ý trên desktop/mobile trước khi xuất bản.
