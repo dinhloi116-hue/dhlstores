@@ -158,9 +158,12 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <nav className="hidden md:flex items-center gap-3 text-sm font-semibold">
             <Link href="/" className={`px-2 transition-colors hover:text-amber-600 ${location === '/' ? 'text-amber-600' : 'text-slate-700'}`}>{navHome}</Link>
             {navGroups.map(group => { const Icon = group.icon; return <div key={group.key} className="group relative">
-              <Link href={group.href} className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 font-black transition-colors hover:bg-slate-50 ${location.includes(group.key === 'print' ? 'categoryId=11070079' : group.key === 'digital' ? 'type=digital' : 'type=physical') ? group.accent : 'text-slate-700'}`}>
-                <Icon className={`h-4 w-4 ${group.accent}`} /> {group.label} <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform group-hover:rotate-180" />
-              </Link>
+              <div className="flex items-center gap-0.5 whitespace-nowrap rounded-lg px-1 py-1 font-black transition-colors hover:bg-slate-50">
+                <Link href={group.href} className={`flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm ${location.includes(group.key === 'print' ? 'categoryId=11070079' : group.key === 'digital' ? 'type=digital' : 'type=physical') ? group.accent : 'text-slate-700'}`}>
+                  <Icon className={`h-4 w-4 ${group.accent}`} /> <span>{group.label}</span>
+                </Link>
+                <button type="button" aria-label={`Mở danh mục ${group.label}`} className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700"><ChevronDown className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" /></button>
+              </div>
               <div className="pointer-events-none invisible absolute left-0 top-full z-[70] w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
                 <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
                   <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">DHL Stores · Preview</p><p className="mt-1 text-sm font-black text-slate-900">{group.label}</p></div>

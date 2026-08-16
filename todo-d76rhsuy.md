@@ -338,3 +338,7 @@
 - [x] Ví: thêm yêu cầu rút tiền, thông tin tài khoản nhận, trạng thái chờ duyệt/đã duyệt/từ chối và lịch sử đối soát.
 - [x] Ví: giới hạn rút không vượt số dư khả dụng, giữ tiền ở trạng thái tạm khóa khi chờ duyệt và không tự động chuyển tiền thật.
 - [x] Ví: viết/cập nhật Vitest cho thanh toán, rút tiền và định dạng tiền; 74/74 test chạy đạt, 1 test Sapo được skip có chủ đích.
+
+- [x] Sửa lỗi click trực tiếp vào ba tab lớn không chuyển trang.
+- [x] Giữ preview danh mục khi hover/mở mũi tên và bảo đảm menu mobile vẫn chạm được.
+- [x] Kiểm thử điều hướng desktop/mobile, cập nhật Vitest và lưu checkpoint sửa lỗi; 75/75 test chạy đạt, 1 test Sapo được skip có chủ đích.
