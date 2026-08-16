@@ -392,3 +392,9 @@
 - [x] Giá sỉ: tính tổng số lượng của mọi SKU thuộc cùng một sản phẩm để chọn mốc giá sỉ chung.
 - [x] Giá sỉ: hiển thị mốc/đơn giá đang áp dụng trong marketplace và giữ đúng tổng tiền ở giỏ, mua ngay, checkout.
 - [x] Kiểm thử action bar, ví dụ tổng 5+15=20, giới hạn tồn kho và hồi quy thanh toán.
+
+- [x] Marketplace: loại bỏ thanh kéo ngang; bảng SKU phải co giãn theo màn hình và chỉ cuộn dọc khi danh sách dài.
+- [x] Marketplace mobile: bổ sung thanh hành động cố định với nút Thêm vào giỏ và Mua ngay luôn dễ bấm.
+- [x] Marketplace: hiển thị tổng tiền tạm tính cập nhật ngay khi thay đổi số lượng SKU.
+- [x] Marketplace: hiển thị rõ mốc giá sỉ và đơn giá đang áp dụng theo tổng số lượng.
+- [x] Skill tái sử dụng: đánh giá và ghi lại quy trình triển khai giao diện mua nhiều SKU nếu phù hợp.
