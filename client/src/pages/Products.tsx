@@ -26,6 +26,7 @@ export default function Products() {
   const initialCategory = searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined;
   const initialType = searchParams.get("type");
   const isPhysicalCatalog = initialType === "physical";
+  const isPrintShop = initialCategory === 11070079;
 
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCategory);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -61,13 +62,13 @@ export default function Products() {
   return (
     <StoreLayout>
       <div className={`mx-auto flex max-w-[1600px] items-end justify-between gap-4 border-b px-4 py-5 sm:px-6 lg:px-8 2xl:px-10 ${isPhysicalCatalog ? 'border-orange-200 bg-[#f5f5f5]' : 'border-slate-200'}`}>
-        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {isPhysicalCatalog ? 'Shop hàng thể thao' : 'Resource Library'}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{isPhysicalCatalog ? (lang === 'vi' ? 'Hàng thể thao' : 'Sports shop') : (lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library')}</h1></div>
-        <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{isPhysicalCatalog ? (lang === 'vi' ? 'Chọn nhanh áo bóng đá, patch tay và nameset. Kiểm tra SKU, tồn kho và phí SPX trước khi mua.' : 'Shop jerseys, patches and namesets with live SKU stock and SPX estimates.') : (lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.')}</p>
+        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {isPrintShop ? 'Shop áo in' : isPhysicalCatalog ? 'Shop hàng thể thao' : 'Resource Library'}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{isPrintShop ? (lang === 'vi' ? 'Shop áo in' : 'Printed apparel shop') : isPhysicalCatalog ? (lang === 'vi' ? 'Hàng thể thao' : 'Sports shop') : (lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library')}</h1></div>
+        <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{isPrintShop ? (lang === 'vi' ? 'Khu vực áo in của cửa hàng. Chủ shop có thể thêm sản phẩm, ảnh, giá, SKU và tồn kho trong quản trị.' : 'Your printed apparel shop. Add products, images, prices, SKUs and stock from admin.') : isPhysicalCatalog ? (lang === 'vi' ? 'Chọn nhanh áo bóng đá, patch tay và nameset. Kiểm tra SKU, tồn kho và phí SPX trước khi mua.' : 'Shop jerseys, patches and namesets with live SKU stock and SPX estimates.') : (lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.')}</p>
       </div>
 
       <div className={`mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 2xl:px-10 ${isPhysicalCatalog ? 'bg-[#f5f5f5]' : ''}`}>
         {/* Toolbar */}
-        {isPhysicalCatalog && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-900 sm:hidden"><span className="font-bold">Mua hàng vật lý dễ hơn</span><span className="text-right text-[11px]">SPX · QR Techcombank</span></div>}
+        {isPhysicalCatalog && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-900 sm:hidden"><span className="font-bold">{isPrintShop ? 'Shop áo in của tôi' : 'Mua hàng vật lý dễ hơn'}</span><span className="text-right text-[11px]">SPX · QR Techcombank</span></div>}
         <div className={`bg-white border border-slate-200 p-3 sm:p-4 rounded-2xl mb-8 space-y-4 shadow-sm ${isPhysicalCatalog ? 'border-t-4 border-t-orange-500 sm:rounded-md' : ''}`}>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
             <div className="md:col-span-8 relative">

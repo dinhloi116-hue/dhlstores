@@ -141,8 +141,11 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Link href="/" className={`transition-colors hover:text-amber-600 ${location === '/' ? 'text-amber-600' : 'text-slate-700'}`}>
               {navHome}
             </Link>
-            <Link href="/products" className={`transition-colors hover:text-amber-600 ${location.startsWith('/products') ? 'text-amber-600' : 'text-slate-700'}`}>
+            <Link href="/products" className={`transition-colors hover:text-amber-600 ${location.startsWith('/products') && !location.includes('shop-ao-in') ? 'text-amber-600' : 'text-slate-700'}`}>
               {navProducts}
+            </Link>
+            <Link href="/products?type=physical&categoryId=11070079" className={`flex items-center gap-1 font-black transition-colors hover:text-[#ee4d2d] ${location.includes('categoryId=11070079') ? 'text-[#ee4d2d]' : 'text-[#ee4d2d]'}`}>
+              <Package className="h-4 w-4" /> Shop áo in
             </Link>
             <Link href="/products?type=digital" className="transition-colors hover:text-amber-600 text-slate-700 flex items-center gap-1">
               <Download className="w-4 h-4 text-purple-600" /> {navDigital}
@@ -331,6 +334,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </Link>
             <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
               {navProducts}
+            </Link>
+            <Link href="/products?type=physical&categoryId=11070079" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-1 text-sm font-black text-[#ee4d2d] hover:text-orange-700">
+              <Package className="h-4 w-4" /> Shop áo in
             </Link>
             <Link href="/products?type=digital" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
               <Download className="w-4 h-4 text-purple-600" /> {navDigital}

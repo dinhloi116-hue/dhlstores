@@ -307,3 +307,8 @@
 - [x] Desktop vật lý: làm nổi bật giá, nhãn khuyến mãi, tồn kho, danh mục và thao tác mua nhưng không sao chép nguyên mẫu 100%.
 - [x] Desktop vật lý: thiết kế lại trang chi tiết theo tầng thông tin sản phẩm, shop, vận chuyển, biến thể và mô tả.
 - [x] Desktop vật lý: kiểm thử desktop và hồi quy mobile/sản phẩm số, cập nhật Vitest và lưu checkpoint.
+
+- [x] Tạo tab lớn Shop áo in và liên kết với danh mục sản phẩm riêng.
+- [x] Tạo một sản phẩm áo in mẫu duy nhất để chủ cửa hàng kiểm thử.
+- [x] Bảo đảm chủ cửa hàng có thể thêm, sửa, ẩn và xuất bản sản phẩm Shop áo in từ quản trị; dùng quyền Catalog hiện có của chủ cửa hàng.
+- [x] Kiểm thử điều hướng, danh mục, sản phẩm mẫu và quyền quản trị; 21/21 test liên quan đạt và TypeScript sạch.
