@@ -382,3 +382,13 @@
 - [x] Hiển thị đúng giao diện đã chọn trên trang sản phẩm và giữ luồng giỏ hàng, mua ngay, Order, tồn kho tương thích.
 - [x] Sửa preview ảnh SKU: rê chuột vào đúng dòng/ảnh SKU phóng to ảnh của SKU đó, không bị che hoặc nhầm ảnh.
 - [x] Thêm quản trị lựa chọn giao diện khi tạo/sửa sản phẩm và kiểm thử desktop/mobile.
+
+- [x] Marketplace: mở rộng khối mua hàng và giảm cảm giác bí của bảng SKU, giữ thao tác rõ trên desktop/mobile.
+- [x] Marketplace: chỉ dùng vùng cuộn riêng khi danh sách SKU dài, tăng không gian cho ảnh và tên phiên bản.
+- [x] Quản trị sản phẩm: thêm nhãn rõ ràng cho trường Giá bán và Tồn kho tổng thay vì chỉ hiển thị giá trị 0.
+- [x] Kiểm thử hồi quy layout classic/marketplace, số lượng SKU, thêm giỏ và lưu sản phẩm.
+
+- [x] Marketplace: đưa nút Thêm vào giỏ và Mua ngay lên ngay dưới tổng số lượng/phí SPX, không để bị khuất sau vùng cuộn SKU.
+- [x] Giá sỉ: tính tổng số lượng của mọi SKU thuộc cùng một sản phẩm để chọn mốc giá sỉ chung.
+- [x] Giá sỉ: hiển thị mốc/đơn giá đang áp dụng trong marketplace và giữ đúng tổng tiền ở giỏ, mua ngay, checkout.
+- [x] Kiểm thử action bar, ví dụ tổng 5+15=20, giới hạn tồn kho và hồi quy thanh toán.
