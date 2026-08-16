@@ -82,6 +82,31 @@ describe("catalogAdmin", () => {
     expect(products.find(item => item.id === product!.id)).toMatchObject({ isActive: false, featured: true });
   });
 
+  it("saves the selected purchase layout for a physical product", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+    const suffix = Date.now().toString(36);
+    const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "quan-ao-bong-da");
+    const product = await caller.catalogAdmin.createProduct({
+      name: `Bố cục mua ${suffix}`,
+      slug: `bo-cuc-mua-${suffix}`,
+      description: "Kiểm thử hai giao diện mua hàng",
+      price: 211700,
+      categoryId: physicalCategory!.id,
+      image: "/manus-storage/catalog/layout-test.png",
+      stock: 0,
+      purchaseLayout: "marketplace",
+      featured: false,
+      isActive: true,
+    });
+    expect(product).toMatchObject({ type: "physical", purchaseLayout: "marketplace" });
+
+    await caller.catalogAdmin.updateProduct({
+      productId: product!.id,
+      data: { name: product!.name, slug: product!.slug, description: product!.description, price: 211700, categoryId: physicalCategory!.id, image: product!.image, stock: 0, purchaseLayout: "classic", featured: false, isActive: true },
+    });
+    expect((await caller.catalogAdmin.products()).find(item => item.id === product!.id)?.purchaseLayout).toBe("classic");
+  });
+
   it("does not expose catalog administration to regular users", async () => {
     const caller = appRouter.createCaller(createContext("user"));
     await expect(caller.catalogAdmin.products()).rejects.toMatchObject({ code: "FORBIDDEN" });

@@ -239,6 +239,7 @@ export const products = mysqlTable("products", {
   fileSize: varchar("fileSize", { length: 64 }), // VD: "45 MB", "Vector AI/SVG"
   stock: int("stock").default(100).notNull(), // Dành cho sản phẩm vật lý (áo bóng đá)
   weightGrams: int("weightGrams").default(0).notNull(), // Khối lượng mặc định để tính phí SPX
+  purchaseLayout: mysqlEnum("purchaseLayout", ["classic", "marketplace"]).default("classic").notNull(), // Bố cục mua hàng riêng cho sản phẩm vật lý
   specs: text("specs"), // Thông tin chi tiết (chất liệu, định dạng, kích thước...)
   featured: boolean("featured").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),

@@ -377,3 +377,8 @@
 - [x] Cho phép số lượng bằng 0 để khách chọn nhiều SKU trong cùng sản phẩm trước khi thêm giỏ.
 - [x] Thêm API giỏ hàng hỗ trợ nhận nhiều SKU cùng lúc, chỉ tạo dòng cho SKU có số lượng lớn hơn 0.
 - [x] Kiểm thử giới hạn tồn kho, thao tác tăng/giảm, thêm nhiều SKU và hiển thị desktop/mobile.
+
+- [x] Thêm lựa chọn kiểu giao diện mua hàng theo từng sản phẩm vật lý: giao diện cũ hoặc giao diện bảng thuộc tính kiểu marketplace.
+- [x] Hiển thị đúng giao diện đã chọn trên trang sản phẩm và giữ luồng giỏ hàng, mua ngay, Order, tồn kho tương thích.
+- [x] Sửa preview ảnh SKU: rê chuột vào đúng dòng/ảnh SKU phóng to ảnh của SKU đó, không bị che hoặc nhầm ảnh.
+- [x] Thêm quản trị lựa chọn giao diện khi tạo/sửa sản phẩm và kiểm thử desktop/mobile.

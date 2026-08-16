@@ -36,6 +36,7 @@ export interface ProductType {
   fileSize?: string;
   stock: number;
   weightGrams?: number;
+  purchaseLayout?: "classic" | "marketplace";
   specs?: string;
   featured: boolean;
   isActive?: boolean;
@@ -491,6 +492,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     fileSize: product.fileSize ?? undefined,
     stock: product.stock,
     weightGrams: product.weightGrams,
+    purchaseLayout: product.purchaseLayout ?? "classic",
     specs: product.specs ?? undefined,
     featured: product.featured,
     isActive: product.isActive,
@@ -1417,6 +1419,7 @@ export type CatalogProductInput = {
   specs?: string;
   stock: number;
   weightGrams?: number;
+  purchaseLayout?: "classic" | "marketplace";
   featured: boolean;
   isActive: boolean;
 };
@@ -1499,6 +1502,7 @@ export async function createProduct(input: CatalogProductInput) {
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
+      purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       specs: input.specs ?? null,
       featured: input.featured,
       isActive: input.isActive,
@@ -1522,6 +1526,7 @@ export async function createProduct(input: CatalogProductInput) {
     fileSize: input.fileSize,
     stock: productType === "physical" ? input.stock : 9999,
     weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
+    purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
     specs: input.specs,
     featured: input.featured,
     isActive: input.isActive,
@@ -1549,6 +1554,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
+      purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       specs: input.specs ?? null,
       featured: input.featured,
       isActive: input.isActive,

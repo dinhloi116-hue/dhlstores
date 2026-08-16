@@ -25,6 +25,7 @@ const productInput = z.object({
   specs: z.string().trim().max(5000).optional(),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
   weightGrams: z.coerce.number().int().min(0).max(100_000).default(0),
+  purchaseLayout: z.enum(["classic", "marketplace"]).default("classic"),
   featured: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });

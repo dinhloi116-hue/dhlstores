@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `purchaseLayout` enum('classic','marketplace') DEFAULT 'classic' NOT NULL;
