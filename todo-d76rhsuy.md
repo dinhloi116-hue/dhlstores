@@ -322,3 +322,7 @@
 - [x] Điều hướng: nhóm các danh mục nhỏ hiện có vào đúng tab lớn, không làm mất đường dẫn sản phẩm.
 - [x] Điều hướng: thêm preview khi di chuột vào tab/danh mục trên desktop và menu mở dễ chạm trên mobile.
 - [x] Điều hướng: kiểm thử desktop/mobile, hồi quy sản phẩm số và lưu checkpoint; 22/22 test liên quan đạt.
+
+- [x] Hàng vật lý: đưa lựa chọn Mua ngay và Order trước lên bước 1 trước chọn SKU/số lượng.
+- [x] Hàng vật lý: giữ đúng giá giảm 10%, tồn kho và phí SPX theo hình thức đã chọn.
+- [x] Hàng vật lý: kiểm thử mua ngay, Order trước, mobile/desktop và hồi quy sản phẩm số; 22/22 test liên quan đạt.
