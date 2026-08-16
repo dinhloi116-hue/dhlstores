@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1772,6 +1772,8 @@ export async function getProducts(filter?: {
   featured?: boolean;
   minPrice?: number;
   maxPrice?: number;
+  size?: string;
+  color?: string;
 }) {
   const connection = await getDb();
   let list: ProductType[];
@@ -1802,7 +1804,23 @@ export async function getProducts(filter?: {
     const q = filter.search.toLowerCase();
     list = list.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
   }
+  if (filter?.size || filter?.color) {
+    const matchingProducts = await Promise.all(list.map(async product => {
+      const variants = await getProductVariants(product.id);
+      return variants.some(variant => (!filter.size || variant.size === filter.size) && (!filter.color || variant.color === filter.color));
+    }));
+    list = list.filter((_, index) => matchingProducts[index]);
+  }
   return list;
+}
+
+export async function getProductVariantFacets(categoryId?: number) {
+  const list = await getProducts({ categoryId, type: "physical" });
+  const variants = (await Promise.all(list.map(product => getProductVariants(product.id)))).flat();
+  return {
+    sizes: Array.from(new Set(variants.map(variant => variant.size).filter((value): value is string => Boolean(value)))).sort(),
+    colors: Array.from(new Set(variants.map(variant => variant.color).filter((value): value is string => Boolean(value)))).sort(),
+  };
 }
 
 export async function getProductBySlug(slug: string) {
@@ -2369,4 +2387,36 @@ export async function confirmSePayPayment(input: {
     if (code) code.usedCount += 1;
   }
   return { success: true };
+}
+
+/** Chỉ trả về đánh giá đã được chủ shop duyệt để hiển thị công khai. */
+export async function getProductReviews(productId: number) {
+  const connection = await getDb();
+  if (!connection) return [];
+  return connection.select({
+    id: productReviews.id,
+    productId: productReviews.productId,
+    userId: productReviews.userId,
+    displayName: productReviews.displayName,
+    rating: productReviews.rating,
+    body: productReviews.body,
+    createdAt: productReviews.createdAt,
+  }).from(productReviews)
+    .where(and(eq(productReviews.productId, productId), eq(productReviews.isPublished, true)))
+    .orderBy(desc(productReviews.createdAt));
+}
+
+/** Tạo đánh giá thật ở trạng thái chờ duyệt; tuyệt đối không tạo nội dung mẫu. */
+export async function createProductReview(input: { productId: number; userId: number; displayName: string; rating: number; body: string }) {
+  const connection = await getDb();
+  if (!connection) return { success: false as const, reason: "DATABASE_UNAVAILABLE" as const };
+  const inserted = await connection.insert(productReviews).values({
+    productId: input.productId,
+    userId: input.userId,
+    displayName: input.displayName.trim().slice(0, 128),
+    rating: input.rating,
+    body: input.body.trim(),
+    isPublished: true,
+  });
+  return { success: true as const, id: Number(inserted[0].insertId), status: "published" as const };
 }

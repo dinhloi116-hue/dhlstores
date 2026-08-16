@@ -184,10 +184,16 @@ export const appRouter = router({
         featured: z.boolean().optional(),
         minPrice: z.number().optional(),
         maxPrice: z.number().optional(),
+        size: z.string().trim().max(64).optional(),
+        color: z.string().trim().max(64).optional(),
       }).optional())
       .query(async ({ input }) => {
         return await db.getProducts(input);
       }),
+
+    productVariantFacets: publicProcedure
+      .input(z.object({ categoryId: z.number().int().positive().optional() }).optional())
+      .query(({ input }) => db.getProductVariantFacets(input?.categoryId)),
 
     productBySlug: publicProcedure
       .input(z.object({ slug: z.string() }))
@@ -198,6 +204,14 @@ export const appRouter = router({
         }
         return product;
       }),
+
+    productReviews: publicProcedure
+      .input(z.object({ productId: z.number().int().positive() }))
+      .query(({ input }) => db.getProductReviews(input.productId)),
+
+    submitProductReview: protectedProcedure
+      .input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10, 'Nội dung đánh giá cần ít nhất 10 ký tự').max(2000) }))
+      .mutation(({ ctx, input }) => db.createProductReview({ productId: input.productId, userId: ctx.user.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body })),
 
     productVariants: publicProcedure
       .input(z.object({ productId: z.number().int().positive() }))

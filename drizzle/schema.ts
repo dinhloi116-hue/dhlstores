@@ -401,3 +401,19 @@ export const mediaAssets = mysqlTable("media_assets", {
 });
 
 export type MediaAsset = typeof mediaAssets.$inferSelect;
+
+/** Đánh giá thật của khách hàng; không seed hoặc hiển thị nội dung giả. */
+export const productReviews = mysqlTable("product_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  userId: int("userId").notNull(),
+  displayName: varchar("displayName", { length: 128 }).notNull(),
+  rating: int("rating").notNull(),
+  body: text("body").notNull(),
+  isPublished: boolean("isPublished").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProductReview = typeof productReviews.$inferSelect;
+export type InsertProductReview = typeof productReviews.$inferInsert;

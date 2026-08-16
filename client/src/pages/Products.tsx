@@ -31,12 +31,21 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCategory);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("default");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sizeFilter, setSizeFilter] = useState("");
+  const [colorFilter, setColorFilter] = useState("");
 
   const categoriesQuery = trpc.store.categories.useQuery();
+  const facetsQuery = trpc.store.productVariantFacets.useQuery(isPrintShop ? { categoryId: selectedCategory } : undefined, { enabled: isPrintShop });
   const productsQuery = trpc.store.products.useQuery({
     categoryId: selectedCategory,
     search: searchQuery || undefined,
     type: isPhysicalCatalog ? "physical" : undefined,
+    minPrice: isPrintShop && minPrice ? Number(minPrice) : undefined,
+    maxPrice: isPrintShop && maxPrice ? Number(maxPrice) : undefined,
+    size: isPrintShop ? (sizeFilter || undefined) : undefined,
+    color: isPrintShop ? (colorFilter || undefined) : undefined,
   });
 
   const categories = (categoriesQuery.data || []).filter(category => !isPhysicalCatalog || category.type === "physical");
@@ -116,6 +125,18 @@ export default function Products() {
               </button>
             ))}
           </div>
+          {isPrintShop && <div className="grid grid-cols-2 gap-2 border-t border-orange-100 pt-3 sm:grid-cols-4">
+            <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá từ' : 'Min price'} value={minPrice} onChange={(event) => setMinPrice(event.target.value)} className="h-9 rounded-lg bg-orange-50/40 text-xs" />
+            <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá đến' : 'Max price'} value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} className="h-9 rounded-lg bg-orange-50/40 text-xs" />
+            <Select value={sizeFilter || 'all'} onValueChange={(value) => setSizeFilter(value === 'all' ? '' : value)}>
+              <SelectTrigger className="h-9 rounded-lg bg-orange-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Kích thước' : 'Size'} /></SelectTrigger>
+              <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi kích thước' : 'All sizes'}</SelectItem>{(facetsQuery.data?.sizes || []).map(size => <SelectItem key={size} value={size}>{size}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={colorFilter || 'all'} onValueChange={(value) => setColorFilter(value === 'all' ? '' : value)}>
+              <SelectTrigger className="h-9 rounded-lg bg-orange-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Màu sắc' : 'Color'} /></SelectTrigger>
+              <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi màu sắc' : 'All colors'}</SelectItem>{(facetsQuery.data?.colors || []).map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>}
         </div>
 
         {/* Product Grid */}
@@ -133,7 +154,7 @@ export default function Products() {
               {lang === 'vi' ? 'Vui lòng thử lại với từ khóa hoặc danh mục khác.' : 'Please try another search or category.'}
             </p>
             <Button
-              onClick={() => { setSelectedCategory(undefined); setSearchQuery(""); }}
+              onClick={() => { setSelectedCategory(undefined); setSearchQuery(""); setMinPrice(""); setMaxPrice(""); setSizeFilter(""); setColorFilter(""); }}
               className="mt-5 bg-slate-900 text-white font-bold"
             >
               {lang === 'vi' ? 'Xóa bộ lọc' : 'Clear filters'}

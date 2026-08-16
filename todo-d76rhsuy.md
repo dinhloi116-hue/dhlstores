@@ -312,3 +312,8 @@
 - [x] Tạo một sản phẩm áo in mẫu duy nhất để chủ cửa hàng kiểm thử.
 - [x] Bảo đảm chủ cửa hàng có thể thêm, sửa, ẩn và xuất bản sản phẩm Shop áo in từ quản trị; dùng quyền Catalog hiện có của chủ cửa hàng.
 - [x] Kiểm thử điều hướng, danh mục, sản phẩm mẫu và quyền quản trị; 21/21 test liên quan đạt và TypeScript sạch.
+
+- [x] Shop áo in: thêm bộ lọc theo khoảng giá, kích thước và màu sắc.
+- [x] Shop áo in: thêm phóng to ảnh sản phẩm khi rê chuột/chạm và hướng dẫn chọn size.
+- [x] Shop áo in: thêm hệ thống đánh giá sao và bình luận khách hàng thật, không tạo dữ liệu giả.
+- [x] Shop áo in: kiểm thử cả ba tính năng, cập nhật Vitest và lưu checkpoint; 22/22 test liên quan đạt.

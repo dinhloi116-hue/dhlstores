@@ -319,6 +319,14 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(1);
   });
 
+  it("exposes physical size/color facets and keeps public reviews empty without seeded content", async () => {
+    const caller = appRouter.createCaller(createMockContext());
+    const facets = await caller.store.productVariantFacets({ categoryId: 11 });
+    expect(facets).toEqual({ sizes: expect.any(Array), colors: expect.any(Array) });
+    await expect(caller.store.productReviews({ productId: 1 })).resolves.toEqual([]);
+    await expect(caller.store.submitProductReview({ productId: 1, rating: 6, body: "Nội dung đánh giá không hợp lệ" })).rejects.toThrow();
+  });
+
   it("cancels an expired QR order and rejects a later matching payment", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);
