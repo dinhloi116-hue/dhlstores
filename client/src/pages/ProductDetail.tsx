@@ -270,12 +270,12 @@ export default function ProductDetail() {
 
   return (
     <StoreLayout>
-      <div className={`mx-auto max-w-[1600px] py-10 sm:px-6 lg:px-8 2xl:px-10 ${product.type === 'physical' ? 'px-0 pb-36 sm:px-6 sm:pb-10' : 'px-4'}`}>
+      <div className={`mx-auto max-w-[1600px] py-10 sm:px-6 lg:px-8 2xl:px-10 ${product.type === 'physical' ? 'bg-[#f5f5f5] px-0 pb-36 sm:px-6 sm:pb-10' : 'px-4'}`}>
         <Link href={product.type === 'physical' ? '/products?type=physical' : '/products'} className="mx-4 inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors mb-6 sm:mx-0">
           <ArrowLeft className="w-4 h-4" /> {lang === 'vi' ? 'Quay lại kho tài nguyên' : 'Back to library'}
         </Link>
 
-        <div className={`grid grid-cols-1 items-start gap-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:h-[calc(100vh-9rem)] lg:min-h-[44rem] lg:grid-cols-12 lg:overflow-hidden ${product.type === 'physical' ? 'rounded-none border-0 p-0 shadow-none sm:rounded-2xl sm:border sm:p-10 sm:shadow-sm' : ''}`}>
+        <div className={`grid grid-cols-1 items-start gap-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:h-[calc(100vh-9rem)] lg:min-h-[44rem] lg:grid-cols-12 lg:overflow-hidden ${product.type === 'physical' ? 'rounded-none border-0 p-0 shadow-none sm:rounded-2xl sm:border sm:p-10 sm:shadow-sm lg:rounded-md lg:border lg:p-6 lg:shadow-sm' : ''}`}>
           <div className="lg:col-span-5 lg:self-start">
             <div className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-inner md:cursor-zoom-in">
               {(selectedVariant?.image || product.image) ? <img src={selectedVariant?.image || product.image} alt={selectedVariant ? `${product.name} · ${formatVariantOptions(selectedVariant)}` : product.name} className="h-full w-full object-contain transition-transform duration-300 ease-out motion-reduce:transition-none md:group-hover:scale-[1.65]" /> : <AssetVisual categoryId={product.categoryId} title={product.name} fileSize={product.fileSize} />}
@@ -294,13 +294,15 @@ export default function ProductDetail() {
                 <span>{product.type === "physical" ? (isPreorder ? (lang === 'vi' ? 'Order trước · dự kiến 7–10 ngày' : 'Pre-order · estimated 7–10 days') : (lang === 'vi' ? `${availableStock > 0 ? `Còn ${availableStock}` : "Đã hết"} trong kho` : `${availableStock > 0 ? availableStock : "Out of"} stock`)) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{product.name}</h1>
-              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className="text-2xl font-black text-amber-600">{formatCurrency(unitPrice * (isPreorder ? 0.9 : 1))}</p>{applicableWholesaleTier && <Badge className="bg-emerald-100 text-emerald-800">Giá sỉ từ {applicableWholesaleTier.minQuantity} cái</Badge>}{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(unitPrice)}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
+              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className={`text-2xl font-black ${product.type === 'physical' ? 'text-[#ee4d2d]' : 'text-amber-600'}`}>{formatCurrency(unitPrice * (isPreorder ? 0.9 : 1))}</p>{applicableWholesaleTier && <Badge className="bg-emerald-100 text-emerald-800">Giá sỉ từ {applicableWholesaleTier.minQuantity} cái</Badge>}{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(unitPrice)}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
             </div>
+
+            {product.type === "physical" && <section className="rounded-md border border-orange-200 bg-orange-50/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-700">DHL Stores · Shop thể thao</p><p className="mt-1 text-sm font-black text-slate-900">Hàng thể thao chọn SKU, giao SPX</p></div><span className="rounded bg-white px-2 py-1 text-[10px] font-black text-orange-700 shadow-sm">Hỗ trợ Zalo 0963.898.871</span></div><p className="mt-2 text-[11px] leading-relaxed text-slate-600">Kiểm tra màu, size, tồn kho và phí giao hàng trước khi đặt. Đơn vật lý thanh toán qua QR Techcombank.</p></section>}
 
             {product.type === "physical" && wholesaleTiers.length > 0 && <section className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-emerald-900">Giá sỉ theo số lượng</p><p className="mt-1 text-[11px] leading-relaxed text-emerald-800">Mua càng nhiều, đơn giá mỗi sản phẩm càng tốt. Giá sẽ tự áp dụng khi đạt mốc.</p></div>{applicableWholesaleTier && <Badge className="bg-emerald-600 text-white">Đang áp dụng</Badge>}</div><div className="mt-3 grid grid-cols-3 gap-2">{wholesaleTiers.map(tier => <div key={tier.id} className={`rounded-lg border p-2 text-center ${applicableWholesaleTier?.id === tier.id ? "border-emerald-600 bg-white ring-2 ring-emerald-100" : "border-emerald-100 bg-white/70"}`}><p className="text-[10px] font-black text-emerald-800">Từ {tier.minQuantity} cái</p><p className="mt-1 text-xs font-black text-slate-900">{formatCurrency(Number(tier.unitPrice) + Number(selectedVariant?.priceAdjustment || 0))}</p></div>)}</div></section>}
 
             {product.type === "physical" && variants.length > 0 && (
-              <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+              <section className="space-y-4 rounded-md border border-orange-200 bg-orange-50/60 p-4">
                 <div>
                   <label className="text-xs font-black uppercase tracking-wide text-emerald-800">Chọn phiên bản & xem tồn kho</label>
                   <p className="mt-1 text-xs text-emerald-700">Thứ tự SKU được cửa hàng sắp xếp sẵn. Chọn theo thuộc tính hoặc chọn trực tiếp một dòng SKU có ảnh và số lượng còn lại.</p>
@@ -324,7 +326,7 @@ export default function ProductDetail() {
                 onClick={handleAddToCart}
                 disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}
                 variant="outline"
-                className="flex-1 border-amber-500 bg-white hover:bg-amber-50 text-amber-700 font-bold py-3.5 rounded-xl shadow-xs text-sm"
+                className={`flex-1 bg-white font-bold py-3.5 rounded-xl shadow-xs text-sm ${product.type === 'physical' ? 'border-[#ee4d2d] text-[#ee4d2d] hover:bg-orange-50' : 'border-amber-500 text-amber-700 hover:bg-amber-50'}`}
               >
                 <ShoppingBag className="w-4 h-4 mr-2" />
                 {adding ? "Adding..." : (isPreorder ? "Thêm Order vào giỏ" : t.addToCart)}
@@ -332,7 +334,7 @@ export default function ProductDetail() {
               <Button
                 onClick={handleBuyNow}
                 disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}
-                className={`flex-1 font-bold py-3.5 rounded-xl shadow-md text-sm ${isPreorder ? "bg-rose-500 text-white hover:bg-rose-600" : "bg-amber-500 text-slate-950 hover:bg-amber-600"}`}
+                className={`flex-1 font-bold py-3.5 rounded-xl shadow-md text-sm ${isPreorder ? "bg-rose-500 text-white hover:bg-rose-600" : product.type === 'physical' ? "bg-[#ee4d2d] text-white hover:bg-[#d94325]" : "bg-amber-500 text-slate-950 hover:bg-amber-600"}`}
               >
                 {isPreorder ? <Clock3 className="w-4 h-4 mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
                 {product.type === "physical" ? (isPreorder ? 'Order ngay · giảm 10%' : (lang === 'vi' ? 'Mua ngay & chọn giao hàng' : 'Buy now & choose delivery')) : (lang === 'vi' ? 'Tải ngay 1-Click (Mua ngay)' : 'Instant 1-Click Buy')}

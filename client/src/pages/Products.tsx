@@ -60,15 +60,15 @@ export default function Products() {
 
   return (
     <StoreLayout>
-      <div className="mx-auto flex max-w-[1600px] items-end justify-between gap-4 border-b border-slate-200 px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
+      <div className={`mx-auto flex max-w-[1600px] items-end justify-between gap-4 border-b px-4 py-5 sm:px-6 lg:px-8 2xl:px-10 ${isPhysicalCatalog ? 'border-orange-200 bg-[#f5f5f5]' : 'border-slate-200'}`}>
         <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {isPhysicalCatalog ? 'Shop hàng thể thao' : 'Resource Library'}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{isPhysicalCatalog ? (lang === 'vi' ? 'Hàng thể thao' : 'Sports shop') : (lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library')}</h1></div>
         <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{isPhysicalCatalog ? (lang === 'vi' ? 'Chọn nhanh áo bóng đá, patch tay và nameset. Kiểm tra SKU, tồn kho và phí SPX trước khi mua.' : 'Shop jerseys, patches and namesets with live SKU stock and SPX estimates.') : (lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.')}</p>
       </div>
 
-      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+      <div className={`mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 2xl:px-10 ${isPhysicalCatalog ? 'bg-[#f5f5f5]' : ''}`}>
         {/* Toolbar */}
         {isPhysicalCatalog && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-900 sm:hidden"><span className="font-bold">Mua hàng vật lý dễ hơn</span><span className="text-right text-[11px]">SPX · QR Techcombank</span></div>}
-        <div className={`bg-white border border-slate-200 p-3 sm:p-4 rounded-2xl mb-8 space-y-4 shadow-sm ${isPhysicalCatalog ? 'sm:rounded-2xl' : ''}`}>
+        <div className={`bg-white border border-slate-200 p-3 sm:p-4 rounded-2xl mb-8 space-y-4 shadow-sm ${isPhysicalCatalog ? 'border-t-4 border-t-orange-500 sm:rounded-md' : ''}`}>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
             <div className="md:col-span-8 relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -139,17 +139,17 @@ export default function Products() {
             </Button>
           </div>
         ) : (
-          <div className={`grid gap-3 sm:gap-6 ${isPhysicalCatalog ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+          <div className={`grid gap-3 sm:gap-6 ${isPhysicalCatalog ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
             {products.map(p => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
-                  <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-xl sm:rounded-none' : ''}`}>
+                  <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-md shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg' : ''}`}>
                   <div className="relative aspect-square overflow-hidden bg-slate-100">
-                    <img src={p.image} alt={p.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
+                    <img src={p.image} alt={p.name} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${isPhysicalCatalog ? 'object-cover' : 'object-contain'}`} />
                     {isPhysicalCatalog && <span className="absolute bottom-2 left-2 rounded bg-white/95 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 shadow-sm">{Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'}</span>}
                   </div>
                   <div className={`flex flex-1 flex-col justify-between space-y-2 ${isPhysicalCatalog ? 'p-2.5 sm:p-4' : 'p-4 space-y-3'}`}>
                     <div>
-                      <Badge className={`${p.type === 'physical' ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'} mb-2 text-[10px] font-bold px-2 py-0.5`}>{p.type === 'physical' ? (lang === 'vi' ? 'Hàng vật lý' : 'Physical item') : (lang === 'vi' ? 'Tài liệu số' : 'Digital asset')}</Badge>
+                      <Badge className={`${p.type === 'physical' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-800'} mb-2 text-[10px] font-bold px-2 py-0.5`}>{p.type === 'physical' ? (lang === 'vi' ? 'Hàng vật lý' : 'Physical item') : (lang === 'vi' ? 'Tài liệu số' : 'Digital asset')}</Badge>
                       <h3 className={`${isPhysicalCatalog ? 'text-[12px] sm:text-xs' : 'text-xs'} font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed`}> 
                         {p.name}
                       </h3>
@@ -158,7 +158,7 @@ export default function Products() {
                       </p>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <span className={`${isPhysicalCatalog ? 'text-[15px]' : 'text-sm'} font-black text-amber-600`}> 
+                      <span className={`${isPhysicalCatalog ? 'text-base text-[#ee4d2d]' : 'text-sm text-amber-600'} font-black`}> 
                         {formatCurrency(p.price)}
                       </span>
                       <span className={`${isPhysicalCatalog ? 'hidden sm:inline-flex' : 'inline-flex'} text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors`}> 

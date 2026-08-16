@@ -302,3 +302,8 @@
 - [x] Mobile vật lý: áp dụng trang chi tiết có ảnh lớn, biến thể ngang, vận chuyển và accordion thông tin.
 - [x] Mobile vật lý: thêm hành động cố định Chat / Thêm vào giỏ / Mua ngay theo luồng hàng vật lý.
 - [x] Mobile vật lý: kiểm thử riêng và hồi quy để bảo đảm trang sản phẩm số không bị thay đổi.
+
+- [x] Desktop vật lý: áp dụng ngôn ngữ marketplace kiểu Shopee cho catalog hàng vật lý, gồm nền xám nhạt, vùng trung tâm rộng, header màu cam và lưới thẻ sản phẩm dày.
+- [x] Desktop vật lý: làm nổi bật giá, nhãn khuyến mãi, tồn kho, danh mục và thao tác mua nhưng không sao chép nguyên mẫu 100%.
+- [x] Desktop vật lý: thiết kế lại trang chi tiết theo tầng thông tin sản phẩm, shop, vận chuyển, biến thể và mô tả.
+- [x] Desktop vật lý: kiểm thử desktop và hồi quy mobile/sản phẩm số, cập nhật Vitest và lưu checkpoint.
