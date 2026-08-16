@@ -191,9 +191,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </Button>
 
             {/* Cart Trigger */}
+            <div className="group/cart relative">
             <Sheet open={cartOpen} onOpenChange={setCartOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="relative bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-amber-600 shadow-sm">
+                <Button id="header-cart-trigger" variant="outline" size="sm" className="relative bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-amber-600 shadow-sm">
                   <ShoppingBag className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">{t.cart}</span>
                   {cartItemCount > 0 && (
@@ -292,6 +293,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 )}
               </SheetContent>
             </Sheet>
+            {isAuthenticated && cartItems.length > 0 && <div className="pointer-events-none invisible absolute right-0 top-full z-[70] hidden w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 md:block group-hover/cart:pointer-events-auto group-hover/cart:visible group-hover/cart:opacity-100 group-focus-within/cart:pointer-events-auto group-focus-within/cart:visible group-focus-within/cart:opacity-100"><div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"><div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2"><p className="text-xs font-black text-slate-900">Giỏ hàng đã chọn</p><span className="text-[10px] font-black text-amber-700">{cartItemCount} sản phẩm</span></div><div className="mt-2 space-y-1">{cartItems.slice(0, 3).map(item => item.product ? <div key={item.id} className="flex items-center gap-2 rounded-lg p-1.5"><img src={item.product.image} alt="" className="h-9 w-9 rounded-md border border-slate-200 object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold text-slate-800">{item.product.name}</p><p className="text-[10px] text-slate-500">× {item.quantity}</p></div></div> : null)}</div>{cartItems.length > 3 && <p className="mt-2 text-center text-[10px] font-semibold text-slate-500">và {cartItems.length - 3} sản phẩm khác</p>}<Link href="/cart" className="mt-3 block rounded-xl bg-slate-900 px-3 py-2.5 text-center text-xs font-black text-white transition-colors hover:bg-amber-500 hover:text-slate-950">Xem toàn bộ giỏ hàng</Link></div></div>}
+            </div>
 
             {/* Auth / Account */}
             {isAuthenticated && user ? (

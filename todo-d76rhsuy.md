@@ -406,3 +406,7 @@
 - [x] Marketplace: thêm thanh tóm tắt cố định hiển thị tổng số lượng và tổng tiền tạm tính.
 - [x] Marketplace: cho nhập số lượng trực tiếp bằng bàn phím và tự highlight dòng sau khi nhập.
 - [x] Marketplace: thêm nút Xem giỏ hàng trong toast thành công và tự ẩn thông báo sau 3 giây.
+
+- [x] Marketplace: thêm hiệu ứng ảnh sản phẩm bay vào biểu tượng giỏ sau khi thêm thành công.
+- [x] Marketplace: hiển thị số tiền tiết kiệm từ giá sỉ trên thanh tóm tắt cố định.
+- [x] Header: preview nhanh giỏ hàng khi rê chuột vào biểu tượng giỏ trên desktop.
