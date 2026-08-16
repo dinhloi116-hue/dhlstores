@@ -63,6 +63,25 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
   });
 
+  it("uses post-merger province and ward selectors for physical shipping", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+    const dataSource = readFileSync(new URL("../client/src/data/vietnam-admin-2025.json", import.meta.url), "utf8");
+
+    expect(source).toContain("Chọn tỉnh/thành phố mới");
+    expect(source).toContain("Chọn xã/phường mới");
+    expect(source).toContain("inlineDetailAddress");
+    expect(source).toContain("updateInlineAddress");
+    expect(dataSource).toContain("tentinhmoi");
+    expect(dataSource).toContain("phuongxa");
+  });
+
+  it("shows a compact SKU thumbnail beside the variant name", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('className="h-7 w-7 shrink-0 rounded border border-slate-200 bg-white object-contain"');
+    expect(source).toContain("formatVariantOptions(variant)");
+  });
+
   it("shows calculated SPX shipping and does not offer obsolete shipping methods", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 

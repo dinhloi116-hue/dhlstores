@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import vietnamAdminData from "@/data/vietnam-admin-2025.json";
 import StoreLayout from "@/components/StoreLayout";
 import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
@@ -28,6 +28,9 @@ function getVariantOptions(variant: { size?: string; color?: string; attributes?
   }
   return options;
 }
+
+type AdminProvince = { tentinhmoi: string; phuongxa: Array<{ maphuongxa: number; tenphuongxa: string }> };
+const adminProvinces = vietnamAdminData as AdminProvince[];
 
 type InlinePayment = {
   orderId: number;
@@ -81,6 +84,9 @@ export default function ProductDetail() {
   const [inlinePayment, setInlinePayment] = useState<InlinePayment | null>(null);
   const [inlinePaymentExpired, setInlinePaymentExpired] = useState(false);
   const [inlineShipping, setInlineShipping] = useState({ name: "", phone: "", address: "", note: "" });
+  const [inlineProvince, setInlineProvince] = useState("");
+  const [inlineWard, setInlineWard] = useState("");
+  const [inlineDetailAddress, setInlineDetailAddress] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewBody, setReviewBody] = useState("");
   const submitReviewMutation = trpc.store.submitProductReview.useMutation({ onSuccess: () => { setReviewBody(""); setReviewRating(5); toast.success("Đã gửi đánh giá thành công."); void utils.store.productReviews.invalidate(); }, onError: error => toast.error(error.message) });
@@ -101,6 +107,12 @@ export default function ProductDetail() {
   const walletQuery = trpc.store.walletSummary.useQuery(undefined, { enabled: isAuthenticated });
   const walletBalance = Number(walletQuery.data?.balance || 0);
   const savedAddresses = savedAddressesQuery.data || [];
+  const selectedAdminProvince = adminProvinces.find(item => item.tentinhmoi === inlineProvince);
+  const adminWards = selectedAdminProvince?.phuongxa || [];
+  const updateInlineAddress = (province: string, ward: string, detail: string) => {
+    const parts = [detail.trim(), ward, province].filter(Boolean);
+    setInlineShipping(current => ({ ...current, address: parts.join(", ") }));
+  };
   const inlinePaymentInput = useMemo(() => inlinePayment ? { orderId: inlinePayment.orderId } : undefined, [inlinePayment]);
   const inlinePaymentStatus = trpc.store.paymentStatus.useQuery(inlinePaymentInput!, { enabled: Boolean(inlinePaymentInput), refetchInterval: query => query.state.data?.paymentStatus === "paid" ? false : 3500 });
   const inlineDownloads = trpc.store.instantDownloads.useQuery(inlinePaymentInput!, { enabled: Boolean(inlinePaymentInput) && inlinePaymentStatus.data?.paymentStatus === "paid" && !inlinePayment?.hasPhysicalItems });
@@ -112,7 +124,10 @@ export default function ProductDetail() {
   useEffect(() => {
     if (product?.type !== "physical" || inlineShipping.name || savedAddresses.length === 0) return;
     const address = savedAddresses.find(item => item.isDefault) || savedAddresses[0];
-    if (address) setInlineShipping(current => ({ ...current, name: address.recipientName, phone: address.phone, address: address.address }));
+    if (address) {
+      setInlineShipping(current => ({ ...current, name: address.recipientName, phone: address.phone, address: address.address }));
+      setInlineDetailAddress(address.address);
+    }
   }, [product?.type, savedAddresses, inlineShipping.name]);
 
   useEffect(() => {
@@ -271,7 +286,7 @@ export default function ProductDetail() {
           const outOfStock = variant.stock <= 0;
           return <button key={variant.id} type="button" data-sku-preview-variant={variant.image ? variant.id : undefined} aria-disabled={outOfStock} onClick={() => { if (!outOfStock) setSelectedVariantId(variant.id); }} className={`grid w-full grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)] items-center gap-3 border-t border-slate-100 px-3 py-2 text-left text-xs transition-colors ${isSelected ? "bg-emerald-50" : "hover:bg-slate-50"} ${outOfStock ? "cursor-not-allowed opacity-55" : ""}`}>
             <span className="relative flex h-11 w-11 shrink-0 items-center justify-center" aria-label={variant.image ? `Xem ảnh lớn ${formatVariantOptions(variant)}` : undefined} onClick={event => { if (variant.image) { event.stopPropagation(); setPreviewVariantId(variant.id); } }}><span className={`block h-11 w-11 overflow-hidden rounded-md border border-slate-200 bg-slate-50 ${variant.image ? "cursor-zoom-in" : ""}`}>{variant.image ? <img src={variant.image} alt={formatVariantOptions(variant)} className="h-full w-full object-contain" /> : <span className="flex h-full items-center justify-center text-[9px] font-bold text-slate-400">SKU</span>}</span></span>
-            <span className="min-w-0"><span className="block truncate font-bold text-slate-800">{formatVariantOptions(variant)}</span>{isSelected && <span className="mt-0.5 block text-[10px] font-black text-emerald-700">Đang chọn</span>}</span>
+            <span className="min-w-0"><span className="flex min-w-0 items-center gap-1.5 truncate font-bold text-slate-800">{variant.image ? <img src={variant.image} alt="" aria-hidden="true" className="h-7 w-7 shrink-0 rounded border border-slate-200 bg-white object-contain" /> : <span className="grid h-7 w-7 shrink-0 place-items-center rounded border border-dashed border-slate-200 text-[8px] font-black text-slate-400">SKU</span>}<span className="truncate">{formatVariantOptions(variant)}</span></span>{isSelected && <span className="mt-0.5 block text-[10px] font-black text-emerald-700">Đang chọn</span>}</span>
             <span className="justify-self-end inline-flex max-w-full items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600"><span className="font-sans text-[8px] font-black uppercase text-slate-400">SKU</span><span className="max-w-[6rem] truncate" title={variant.sku || "Không có SKU"}>{variant.sku || "—"}</span><span className="h-3 w-px bg-slate-300" aria-hidden="true" /><span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${outOfStock ? "bg-rose-100 text-rose-700" : variant.stock <= 5 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}><span className="text-[8px] uppercase opacity-70">Tồn</span>{outOfStock ? "Hết" : variant.stock}</span></span>
           </button>;
         })}
@@ -389,7 +404,8 @@ export default function ProductDetail() {
               {savedAddresses.length > 0 && <div className="flex flex-wrap gap-2">{savedAddresses.map(address => <button key={address.id} type="button" onClick={() => setInlineShipping(current => ({ ...current, name: address.recipientName, phone: address.phone, address: address.address }))} className={`rounded-lg border px-3 py-2 text-left text-[11px] font-bold ${inlineShipping.address === address.address ? "border-emerald-500 bg-white text-emerald-800" : "border-emerald-100 bg-white text-slate-600"}`}>{address.recipientName} · {address.phone}</button>)}</div>}
               <input value={inlineShipping.name} onChange={event => setInlineShipping(current => ({ ...current, name: event.target.value }))} className="h-10 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm" placeholder="Họ tên người nhận" />
               <input value={inlineShipping.phone} onChange={event => setInlineShipping(current => ({ ...current, phone: event.target.value }))} className="h-10 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm" placeholder="Số điện thoại" inputMode="tel" />
-              <textarea value={inlineShipping.address} onChange={event => setInlineShipping(current => ({ ...current, address: event.target.value }))} className="min-h-20 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm" placeholder="Địa chỉ nhận hàng" />
+              <div className="grid gap-2 sm:grid-cols-2"><select value={inlineProvince} onChange={event => { const value = event.target.value; setInlineProvince(value); setInlineWard(""); updateInlineAddress(value, "", inlineDetailAddress); }} className="h-10 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm"><option value="">Chọn tỉnh/thành phố mới</option>{adminProvinces.map(item => <option key={item.tentinhmoi} value={item.tentinhmoi}>{item.tentinhmoi}</option>)}</select><select value={inlineWard} onChange={event => { const value = event.target.value; setInlineWard(value); updateInlineAddress(inlineProvince, value, inlineDetailAddress); }} disabled={!inlineProvince} className="h-10 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm disabled:cursor-not-allowed disabled:bg-slate-50"><option value="">Chọn xã/phường mới</option>{adminWards.map(item => <option key={item.maphuongxa} value={item.tenphuongxa}>{item.tenphuongxa}</option>)}</select></div>
+              <textarea value={inlineDetailAddress} onChange={event => { const value = event.target.value; setInlineDetailAddress(value); updateInlineAddress(inlineProvince, inlineWard, value); }} className="min-h-20 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm" placeholder="Số nhà, tên đường, thôn/tổ…" />
               <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-relaxed text-sky-900"><p className="font-black">Giao hàng SPX tự tính</p><p className="mt-1">Tổng khối lượng {shippingWeightGrams.toLocaleString("vi-VN")} g · phí giao {formatCurrency(estimatedSpxFee)}. Phí chính thức được máy chủ tính lại khi tạo đơn.</p></div>
             </div>}
             <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-violet-800">Phương thức thanh toán</p><p className="mt-1 text-[11px] text-violet-700">Chọn một phương án trước khi tạo đơn.</p></div><WalletCards className="h-5 w-5 text-violet-600" /></div><div className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setPaymentMethod("wallet_balance")} className={`rounded-xl border p-3 text-left transition ${paymentMethod === "wallet_balance" ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-white hover:border-emerald-300"}`}><span className="block text-xs font-black text-emerald-800">Thanh toán bằng số dư ví</span><span className="mt-1 block text-[11px] text-slate-600">Đang có: <strong>{formatCurrency(walletBalance)}</strong></span></button><button type="button" onClick={() => setPaymentMethod("qr")} className={`rounded-xl border p-3 text-left transition ${paymentMethod === "qr" ? "border-amber-500 bg-amber-50 ring-2 ring-amber-100" : "border-slate-200 bg-white hover:border-amber-300"}`}><span className="block text-xs font-black text-amber-800">{product.type === "physical" ? "QR Techcombank" : "QR VietinBank SePay"}</span><span className="mt-1 block text-[11px] text-slate-600">{product.type === "physical" ? "Chủ cửa hàng xác nhận tiền về." : "SePay tự đối soát giao dịch."}</span></button></div></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-black uppercase tracking-wide text-amber-800">Đơn đang tạo</p><p className="mt-1 text-sm font-bold text-slate-900">{product.name}{selectedVariant ? ` · ${formatVariantOptions(selectedVariant)}` : ""}</p><p className="mt-1 text-xs text-slate-600">Số lượng: {quantity}{isPreorder ? " · Order trước giảm 10%, dự kiến 7–10 ngày" : ""}</p></div>

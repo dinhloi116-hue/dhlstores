@@ -361,3 +361,7 @@
 - [x] Catalog vật lý: trạng thái Còn hàng/Hết hàng phải tính theo tổng tồn kho các SKU active, không chỉ tồn kho cấp sản phẩm.
 - [x] Catalog vật lý: bỏ mô tả dài khỏi thẻ hàng vật lý; khách mở tên/thẻ để xem trang chi tiết.
 - [x] Catalog vật lý: kiểm thử SKU còn hàng, thẻ hết hàng, mô tả mobile/desktop; 25/25 test mục tiêu đạt.
+
+- [x] Checkout vật lý: thêm chọn Tỉnh/Thành phố và Xã/Phường theo bộ địa danh sau sáp nhập, kèm địa chỉ chi tiết.
+- [x] Checkout vật lý: hiển thị thumbnail ảnh cạnh tên SKU/phiên bản trong luồng mua hàng.
+- [x] Checkout vật lý: kiểm thử bộ chọn địa chỉ, thumbnail SKU và hồi quy thanh toán; 80 test đạt, 1 test Sapo được skip có chủ đích, build production đạt.
