@@ -270,18 +270,21 @@ export default function ProductDetail() {
 
   return (
     <StoreLayout>
-      <div className="mx-auto max-w-[1600px] px-4 py-10 sm:px-6 lg:px-8 2xl:px-10">
-        <Link href="/products" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors mb-6">
+      <div className={`mx-auto max-w-[1600px] py-10 sm:px-6 lg:px-8 2xl:px-10 ${product.type === 'physical' ? 'px-0 pb-36 sm:px-6 sm:pb-10' : 'px-4'}`}>
+        <Link href={product.type === 'physical' ? '/products?type=physical' : '/products'} className="mx-4 inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors mb-6 sm:mx-0">
           <ArrowLeft className="w-4 h-4" /> {lang === 'vi' ? 'Quay lại kho tài nguyên' : 'Back to library'}
         </Link>
 
-        <div className="grid grid-cols-1 items-start gap-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:h-[calc(100vh-9rem)] lg:min-h-[44rem] lg:grid-cols-12 lg:overflow-hidden">
+        <div className={`grid grid-cols-1 items-start gap-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:h-[calc(100vh-9rem)] lg:min-h-[44rem] lg:grid-cols-12 lg:overflow-hidden ${product.type === 'physical' ? 'rounded-none border-0 p-0 shadow-none sm:rounded-2xl sm:border sm:p-10 sm:shadow-sm' : ''}`}>
           <div className="lg:col-span-5 lg:self-start">
             <div className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-inner md:cursor-zoom-in">
               {(selectedVariant?.image || product.image) ? <img src={selectedVariant?.image || product.image} alt={selectedVariant ? `${product.name} · ${formatVariantOptions(selectedVariant)}` : product.name} className="h-full w-full object-contain transition-transform duration-300 ease-out motion-reduce:transition-none md:group-hover:scale-[1.65]" /> : <AssetVisual categoryId={product.categoryId} title={product.name} fileSize={product.fileSize} />}
               <span className="pointer-events-none absolute bottom-3 right-3 hidden rounded-full bg-slate-950/80 px-3 py-1.5 text-[10px] font-black text-white shadow-lg md:block md:opacity-0 md:transition-opacity md:group-hover:opacity-100">Rê chuột để phóng to</span>
             </div>
-            {product.description && <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4"><div className="flex items-center justify-between gap-3"><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">{lang === 'vi' ? 'Mô tả sản phẩm' : 'Product description'}</h2>{product.description.length > 260 && <button type="button" onClick={() => setDescriptionExpanded(current => !current)} className="shrink-0 text-xs font-black text-amber-700 hover:text-amber-900">{descriptionExpanded ? (lang === 'vi' ? 'Thu gọn' : 'Show less') : (lang === 'vi' ? 'Xem thêm' : 'Read more')}</button>}</div><p className={`mt-2 text-xs leading-relaxed text-slate-600 sm:text-sm ${descriptionExpanded ? '' : 'line-clamp-5'}`}>{product.description}</p></section>}
+            {product.description && <>
+              {product.type === 'physical' && <details className="mt-3 border-y border-slate-200 bg-white px-4 py-3 sm:hidden"><summary className="cursor-pointer list-none text-base font-bold text-slate-800">Thông số & Mô tả <span className="float-right text-slate-400">⌄</span></summary><p className="mt-3 text-sm leading-relaxed text-slate-600">{product.description}</p></details>}
+              <section className={`${product.type === 'physical' ? 'hidden sm:block' : ''} mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4`}><div className="flex items-center justify-between gap-3"><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">{lang === 'vi' ? 'Mô tả sản phẩm' : 'Product description'}</h2>{product.description.length > 260 && <button type="button" onClick={() => setDescriptionExpanded(current => !current)} className="shrink-0 text-xs font-black text-amber-700 hover:text-amber-900">{descriptionExpanded ? (lang === 'vi' ? 'Thu gọn' : 'Show less') : (lang === 'vi' ? 'Xem thêm' : 'Read more')}</button>}</div><p className={`mt-2 text-xs leading-relaxed text-slate-600 sm:text-sm ${descriptionExpanded ? '' : 'line-clamp-5'}`}>{product.description}</p></section>
+            </>}
           </div>
 
           <div className="space-y-6 lg:col-span-7 lg:h-full lg:overflow-y-auto lg:pr-3">
@@ -316,7 +319,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            <div id="product-purchase-actions" className="sticky bottom-0 z-20 rounded-xl bg-emerald-50/95 p-2 pt-3 shadow-[0_-8px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:flex sm:flex-row sm:gap-4">
+            <div id="product-purchase-actions" className={`sticky bottom-0 z-20 rounded-xl bg-emerald-50/95 p-2 pt-3 shadow-[0_-8px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:flex sm:flex-row sm:gap-4 ${product.type === 'physical' ? 'fixed inset-x-0 bottom-0 rounded-none border-t border-slate-200 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:static sm:rounded-xl sm:border-0 sm:p-2' : ''}`}>
               <Button
                 onClick={handleAddToCart}
                 disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}

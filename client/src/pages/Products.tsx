@@ -24,6 +24,8 @@ export default function Products() {
 
   const searchParams = new URLSearchParams(window.location.search);
   const initialCategory = searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined;
+  const initialType = searchParams.get("type");
+  const isPhysicalCatalog = initialType === "physical";
 
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCategory);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -33,10 +35,11 @@ export default function Products() {
   const productsQuery = trpc.store.products.useQuery({
     categoryId: selectedCategory,
     search: searchQuery || undefined,
+    type: isPhysicalCatalog ? "physical" : undefined,
   });
 
-  const categories = categoriesQuery.data || [];
-  let products = productsQuery.data || [];
+  const categories = (categoriesQuery.data || []).filter(category => !isPhysicalCatalog || category.type === "physical");
+  let products = (productsQuery.data || []).filter(product => !isPhysicalCatalog || product.type === "physical");
   const isCatalogLoading = categoriesQuery.isLoading || productsQuery.isLoading;
 
   if (sortBy === "price-asc") {
@@ -58,13 +61,14 @@ export default function Products() {
   return (
     <StoreLayout>
       <div className="mx-auto flex max-w-[1600px] items-end justify-between gap-4 border-b border-slate-200 px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
-        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library'}</h1></div>
-        <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.'}</p>
+        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {isPhysicalCatalog ? 'Shop hàng thể thao' : 'Resource Library'}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{isPhysicalCatalog ? (lang === 'vi' ? 'Hàng thể thao' : 'Sports shop') : (lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library')}</h1></div>
+        <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{isPhysicalCatalog ? (lang === 'vi' ? 'Chọn nhanh áo bóng đá, patch tay và nameset. Kiểm tra SKU, tồn kho và phí SPX trước khi mua.' : 'Shop jerseys, patches and namesets with live SKU stock and SPX estimates.') : (lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.')}</p>
       </div>
 
       <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
         {/* Toolbar */}
-        <div className="bg-white border border-slate-200 p-4 rounded-2xl mb-8 space-y-4 shadow-sm">
+        {isPhysicalCatalog && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-900 sm:hidden"><span className="font-bold">Mua hàng vật lý dễ hơn</span><span className="text-right text-[11px]">SPX · QR Techcombank</span></div>}
+        <div className={`bg-white border border-slate-200 p-3 sm:p-4 rounded-2xl mb-8 space-y-4 shadow-sm ${isPhysicalCatalog ? 'sm:rounded-2xl' : ''}`}>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
             <div className="md:col-span-8 relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -135,28 +139,29 @@ export default function Products() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={`grid gap-3 sm:gap-6 ${isPhysicalCatalog ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
             {products.map(p => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
-                  <div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white">
-                  <div className="aspect-square overflow-hidden bg-slate-100">
+                  <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-xl sm:rounded-none' : ''}`}>
+                  <div className="relative aspect-square overflow-hidden bg-slate-100">
                     <img src={p.image} alt={p.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
+                    {isPhysicalCatalog && <span className="absolute bottom-2 left-2 rounded bg-white/95 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 shadow-sm">{Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'}</span>}
                   </div>
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className={`flex flex-1 flex-col justify-between space-y-2 ${isPhysicalCatalog ? 'p-2.5 sm:p-4' : 'p-4 space-y-3'}`}>
                     <div>
                       <Badge className={`${p.type === 'physical' ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'} mb-2 text-[10px] font-bold px-2 py-0.5`}>{p.type === 'physical' ? (lang === 'vi' ? 'Hàng vật lý' : 'Physical item') : (lang === 'vi' ? 'Tài liệu số' : 'Digital asset')}</Badge>
-                      <h3 className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed">
+                      <h3 className={`${isPhysicalCatalog ? 'text-[12px] sm:text-xs' : 'text-xs'} font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed`}> 
                         {p.name}
                       </h3>
-                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                      <p className={`${isPhysicalCatalog ? 'hidden sm:block' : ''} text-[11px] text-slate-500 mt-1 line-clamp-2`}> 
                         {p.description}
                       </p>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <span className="text-sm font-black text-amber-600">
+                      <span className={`${isPhysicalCatalog ? 'text-[15px]' : 'text-sm'} font-black text-amber-600`}> 
                         {formatCurrency(p.price)}
                       </span>
-                      <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+                      <span className={`${isPhysicalCatalog ? 'hidden sm:inline-flex' : 'inline-flex'} text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors`}> 
                         {t.details}
                       </span>
                     </div>

@@ -1768,6 +1768,7 @@ export async function saveProductDownloadLink(productId: number, driveUrl: strin
 export async function getProducts(filter?: {
   categoryId?: number;
   search?: string;
+  type?: "digital" | "physical";
   featured?: boolean;
   minPrice?: number;
   maxPrice?: number;
@@ -1782,6 +1783,9 @@ export async function getProducts(filter?: {
   }
   if (filter?.categoryId) {
     list = list.filter(p => p.categoryId === filter.categoryId);
+  }
+  if (filter?.type) {
+    list = list.filter(p => p.type === filter.type);
   }
   if (filter?.featured !== undefined) {
     list = list.filter(p => p.featured === filter.featured);

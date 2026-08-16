@@ -180,6 +180,7 @@ export const appRouter = router({
       .input(z.object({
         categoryId: z.number().optional(),
         search: z.string().optional(),
+        type: z.enum(["digital", "physical"]).optional(),
         featured: z.boolean().optional(),
         minPrice: z.number().optional(),
         maxPrice: z.number().optional(),

@@ -46,6 +46,13 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     ]));
   });
 
+  it("filters the physical catalog without leaking digital products", async () => {
+    const caller = appRouter.createCaller(createMockContext());
+    const products = await caller.store.products({ type: "physical" });
+    expect(products.every(product => product.type === "physical")).toBe(true);
+    expect(products.some(product => product.type === "digital")).toBe(false);
+  });
+
   it("handles cart and checkout successfully without physical shipping", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);

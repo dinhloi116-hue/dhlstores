@@ -289,3 +289,16 @@
 - [x] Đã xác minh không phải lỗi ứng dụng: lớp xem trước của môi trường chặn click nút Thêm vào giỏ; session replay cho thấy click bị nhận bởi `#manus-previewer-root` thay vì nút sản phẩm.
 - [x] Kiểm tra trực quan desktop giới hạn tồn kho trên bản đã xuất bản: SKU `10#MESSI` có tồn 20, điều khiển số lượng dừng tại 20 và nút tăng bị khóa; kiểm thử máy chủ cũng xác nhận từ chối thêm khi biến thể không đủ tồn kho.
 - [x] Ngăn thao tác tăng/giảm liên tiếp trong giỏ khi yêu cầu cập nhật số lượng đang xử lý, tránh gửi các yêu cầu lặp với dữ liệu tồn kho cũ; đã bổ sung hồi quy, chạy 67 kiểm thử, TypeScript và build thành công.
+
+- [ ] Mobile: chuyển trang chủ sang bố cục cửa hàng mobile-first kiểu Shopee với header tìm kiếm và khu vực shop gọn.
+- [ ] Mobile: hiển thị danh sách sản phẩm dạng lưới 2 cột, thẻ sản phẩm dễ chạm và thông tin giá/tồn kho rõ ràng.
+- [ ] Mobile: tối ưu trang chi tiết với ảnh lớn, biến thể ngang, accordion mô tả và khối vận chuyển.
+- [ ] Mobile: thêm thanh hành động cố định ở đáy cho chat, thêm giỏ hàng và mua ngay; không che nội dung khi cuộn.
+- [ ] Mobile: kiểm thử tại 375px/390px/430px và hồi quy giao diện desktop.
+- [ ] Mobile: viết/cập nhật Vitest và lưu checkpoint sau khi kiểm thử đạt.
+- [ ] Sapo: xác nhận kết nối Admin API trong môi trường production trước khi bật đồng bộ tồn kho hai chiều.
+
+- [x] Mobile vật lý: áp dụng bố cục kiểu Shopee cho danh sách sản phẩm vật lý, không áp dụng cho sản phẩm số hoặc Tool.
+- [x] Mobile vật lý: áp dụng trang chi tiết có ảnh lớn, biến thể ngang, vận chuyển và accordion thông tin.
+- [x] Mobile vật lý: thêm hành động cố định Chat / Thêm vào giỏ / Mua ngay theo luồng hàng vật lý.
+- [x] Mobile vật lý: kiểm thử riêng và hồi quy để bảo đảm trang sản phẩm số không bị thay đổi.

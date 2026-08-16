@@ -151,6 +151,52 @@ export const inventoryMovements = mysqlTable("inventory_movements", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+/** Cấu hình kho Sapo làm nguồn dữ liệu gốc cho hàng vật lý. */
+export const sapoSyncSettings = mysqlTable("sapo_sync_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: varchar("locationId", { length: 64 }),
+  locationName: varchar("locationName", { length: 255 }),
+  syncEnabled: boolean("syncEnabled").default(false).notNull(),
+  lastInboundSyncedAt: timestamp("lastInboundSyncedAt"),
+  lastOutboundSyncedAt: timestamp("lastOutboundSyncedAt"),
+  scheduleTaskUid: varchar("scheduleTaskUid", { length: 65 }),
+  lastError: text("lastError"),
+  updatedByUserId: int("updatedByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const sapoVariantMappings = mysqlTable("sapo_variant_mappings", {
+  id: int("id").autoincrement().primaryKey(),
+  localVariantId: int("localVariantId").notNull(),
+  localSku: varchar("localSku", { length: 128 }).notNull(),
+  sapoProductId: varchar("sapoProductId", { length: 64 }).notNull(),
+  sapoVariantId: varchar("sapoVariantId", { length: 64 }).notNull(),
+  sapoInventoryItemId: varchar("sapoInventoryItemId", { length: 64 }).notNull(),
+  sapoLocationId: varchar("sapoLocationId", { length: 64 }).notNull(),
+  sapoInventoryLevelId: varchar("sapoInventoryLevelId", { length: 64 }),
+  lastKnownAvailable: int("lastKnownAvailable"),
+  lastSapoUpdatedAt: timestamp("lastSapoUpdatedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const sapoSyncEvents = mysqlTable("sapo_sync_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventKey: varchar("eventKey", { length: 180 }).notNull().unique(),
+  direction: mysqlEnum("direction", ["inbound", "outbound"]).notNull(),
+  eventType: mysqlEnum("eventType", ["inventory_import", "manual_adjust", "order_reserve", "order_release"]).notNull(),
+  status: mysqlEnum("status", ["pending", "succeeded", "failed"]).default("pending").notNull(),
+  orderId: int("orderId"),
+  mappingId: int("mappingId"),
+  localVariantId: int("localVariantId"),
+  quantityBefore: int("quantityBefore"),
+  quantityAfter: int("quantityAfter"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  processedAt: timestamp("processedAt"),
+});
+
 export const siteSettings = mysqlTable("site_settings", {
   id: int("id").autoincrement().primaryKey(),
   settingKey: varchar("settingKey", { length: 128 }).notNull().unique(),
