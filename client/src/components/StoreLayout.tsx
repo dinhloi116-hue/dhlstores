@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles } from "lucide-react";
+import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import CustomerContactHub from "@/components/CustomerContactHub";
 
@@ -22,6 +22,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [authForm, setAuthForm] = useState({ name: '', username: '', password: '', confirmPassword: '' });
   const recordVisit = trpc.analytics.recordVisit.useMutation();
   const siteSettingsQuery = trpc.store.siteSettings.useQuery();
+  const categoriesQuery = trpc.store.categories.useQuery();
 
   const [lang, setLang] = useState<Language>(getClientLanguage());
 
@@ -43,6 +44,23 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const navHome = siteSettingsQuery.data?.navHome || t.home;
   const navProducts = siteSettingsQuery.data?.navProducts || t.allProducts;
   const navDigital = siteSettingsQuery.data?.navDigital || (lang === 'vi' ? 'Tài nguyên số' : 'Digital resources');
+  const catalogCategories = categoriesQuery.data || [];
+  const categoryBySlug = (slug: string, fallback: { id: number; name: string; type: 'physical' | 'digital' }) => {
+    const category = catalogCategories.find(item => item.slug === slug);
+    return { id: category?.id ?? fallback.id, name: category?.name ?? fallback.name, type: category?.type ?? fallback.type };
+  };
+  const footballCategories = [
+    categoryBySlug('quan-ao-bong-da', { id: 11, name: lang === 'vi' ? 'Quần Áo Bóng Đá' : 'Football jerseys', type: 'physical' }),
+    categoryBySlug('patch-tay', { id: 12, name: lang === 'vi' ? 'Patch Tay' : 'Sleeve patches', type: 'physical' }),
+    categoryBySlug('nameset-chong-nhiem', { id: 13, name: lang === 'vi' ? 'Nameset Chống Nhiễm' : 'Anti-dye namesets', type: 'physical' }),
+  ];
+  const printCategories = [categoryBySlug('shop-ao-in', { id: 11070079, name: lang === 'vi' ? 'Shop Áo Thun In Hình' : 'Printed T-shirt shop', type: 'physical' })];
+  const digitalCategories = catalogCategories.filter(category => category.type === 'digital').slice(0, 6);
+  const navGroups = [
+    { key: 'football', label: lang === 'vi' ? 'Quần Áo Bóng Đá' : 'Football apparel', href: '/products?type=physical', icon: Trophy, accent: 'text-emerald-600', children: footballCategories.map(category => ({ ...category, href: `/products?type=physical&categoryId=${category.id}` })) },
+    { key: 'print', label: lang === 'vi' ? 'Shop Áo Thun In Hình' : 'Printed T-shirt shop', href: '/products?type=physical&categoryId=11070079', icon: Shirt, accent: 'text-[#ee4d2d]', children: printCategories.map(category => ({ ...category, href: `/products?type=physical&categoryId=${category.id}` })) },
+    { key: 'digital', label: navDigital, href: '/products?type=digital', icon: Download, accent: 'text-purple-600', children: digitalCategories.map(category => ({ ...category, href: `/products?type=digital&categoryId=${category.id}` })) },
+  ];
 
   const toggleLanguage = () => {
     const nextLang = lang === 'vi' ? 'en' : 'vi';
@@ -137,31 +155,23 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </Link>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold">
-            <Link href="/" className={`transition-colors hover:text-amber-600 ${location === '/' ? 'text-amber-600' : 'text-slate-700'}`}>
-              {navHome}
-            </Link>
-            <Link href="/products" className={`transition-colors hover:text-amber-600 ${location.startsWith('/products') && !location.includes('shop-ao-in') ? 'text-amber-600' : 'text-slate-700'}`}>
-              {navProducts}
-            </Link>
-            <Link href="/products?type=physical&categoryId=11070079" className={`flex items-center gap-1 font-black transition-colors hover:text-[#ee4d2d] ${location.includes('categoryId=11070079') ? 'text-[#ee4d2d]' : 'text-[#ee4d2d]'}`}>
-              <Package className="h-4 w-4" /> Shop áo in
-            </Link>
-            <Link href="/products?type=digital" className="transition-colors hover:text-amber-600 text-slate-700 flex items-center gap-1">
-              <Download className="w-4 h-4 text-purple-600" /> {navDigital}
-            </Link>
-            <div className="group relative">
-              <Link href="/tools" className={`transition-colors hover:text-amber-600 flex items-center gap-1 ${location.startsWith('/tools') ? 'text-amber-600' : 'text-slate-700'}`}>
-                <WandSparkles className="w-4 h-4 text-cyan-600" /> Công cụ
+          <nav className="hidden md:flex items-center gap-3 text-sm font-semibold">
+            <Link href="/" className={`px-2 transition-colors hover:text-amber-600 ${location === '/' ? 'text-amber-600' : 'text-slate-700'}`}>{navHome}</Link>
+            {navGroups.map(group => { const Icon = group.icon; return <div key={group.key} className="group relative">
+              <Link href={group.href} className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 font-black transition-colors hover:bg-slate-50 ${location.includes(group.key === 'print' ? 'categoryId=11070079' : group.key === 'digital' ? 'type=digital' : 'type=physical') ? group.accent : 'text-slate-700'}`}>
+                <Icon className={`h-4 w-4 ${group.accent}`} /> {group.label} <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform group-hover:rotate-180" />
               </Link>
               <div className="pointer-events-none invisible absolute left-0 top-full z-[70] w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
-                <a href="/manus-storage/pet-tram-pro-x_89dce948.html" className="block rounded-xl border border-cyan-200 bg-slate-950 p-4 text-white shadow-2xl transition-transform hover:-translate-y-0.5">
-                  <div className="flex items-start justify-between gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400 text-slate-950"><WandSparkles className="h-5 w-5" /></div><span className="rounded-full bg-emerald-400 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-emerald-950">Đang hoạt động</span></div>
-                  <p className="mt-4 font-display text-xl font-black uppercase">PET TRAM PRO X</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-300">Xử lý ảnh, tạo tram, vector hóa và xuất file in ngay trong trình duyệt.</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-black text-cyan-300">Mở Tool ngay →</span>
-                </a>
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+                  <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">DHL Stores · Preview</p><p className="mt-1 text-sm font-black text-slate-900">{group.label}</p></div>
+                  <div className="space-y-1">{group.children.map(child => <Link key={child.id} href={child.href} className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-amber-50 hover:text-amber-700"><span>{child.name}</span><span className="text-[10px] text-slate-400">Xem →</span></Link>)}</div>
+                  <Link href={group.href} className="mt-2 block rounded-xl bg-slate-900 px-3 py-2.5 text-center text-xs font-black text-white transition-colors hover:bg-amber-500 hover:text-slate-950">Mở toàn bộ khu vực</Link>
+                </div>
               </div>
+            </div>; })}
+            <div className="group relative">
+              <Link href="/tools" className={`flex items-center gap-1 px-2 transition-colors hover:text-amber-600 ${location.startsWith('/tools') ? 'text-amber-600' : 'text-slate-700'}`}><WandSparkles className="h-4 w-4 text-cyan-600" /> Công cụ</Link>
+              <div className="pointer-events-none invisible absolute left-0 top-full z-[70] w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100"><a href="/manus-storage/pet-tram-pro-x_89dce948.html" className="block rounded-xl border border-cyan-200 bg-slate-950 p-4 text-white shadow-2xl"><p className="font-display text-xl font-black uppercase">PET TRAM PRO X</p><p className="mt-1 text-xs leading-relaxed text-slate-300">Xử lý ảnh, tạo tram, vector hóa và xuất file in ngay trong trình duyệt.</p></a></div>
             </div>
           </nav>
 
@@ -328,27 +338,11 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-4 py-5 space-y-3 shadow-lg">
-            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              {navHome}
-            </Link>
-            <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              {navProducts}
-            </Link>
-            <Link href="/products?type=physical&categoryId=11070079" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-1 text-sm font-black text-[#ee4d2d] hover:text-orange-700">
-              <Package className="h-4 w-4" /> Shop áo in
-            </Link>
-            <Link href="/products?type=digital" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              <Download className="w-4 h-4 text-purple-600" /> {navDigital}
-            </Link>
-            <Link href="/tools" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-amber-600 py-1">
-              <WandSparkles className="w-4 h-4 text-cyan-600" /> Thư viện công cụ
-            </Link>
-            {isAuthenticated && (
-              <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-amber-600 py-1 pt-2 border-t border-slate-100">
-                {t.account}
-              </Link>
-            )}
+          <div className="md:hidden max-h-[calc(100vh-5rem)] overflow-y-auto bg-white border-b border-slate-200 px-4 py-5 shadow-lg">
+            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="mb-3 block text-sm font-semibold text-slate-800 hover:text-amber-600">{navHome}</Link>
+            <div className="space-y-3">{navGroups.map(group => { const Icon = group.icon; return <section key={group.key} className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><Link href={group.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-3 text-sm font-black text-slate-900 shadow-sm"><span className="flex items-center gap-2"><Icon className={`h-4 w-4 ${group.accent}`} />{group.label}</span><span className="text-xs text-slate-400">Mở →</span></Link><div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">{group.children.map(child => <Link key={child.id} href={child.href} onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white hover:text-amber-700">{child.name}</Link>)}</div></section>; })}</div>
+            <Link href="/tools" onClick={() => setMobileMenuOpen(false)} className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-800 hover:text-amber-600"><WandSparkles className="w-4 h-4 text-cyan-600" /> Thư viện công cụ</Link>
+            {isAuthenticated && <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mt-3 block border-t border-slate-100 pt-3 text-sm font-semibold text-amber-600">{t.account}</Link>}
           </div>
         )}
       </header>

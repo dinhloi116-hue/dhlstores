@@ -317,3 +317,8 @@
 - [x] Shop áo in: thêm phóng to ảnh sản phẩm khi rê chuột/chạm và hướng dẫn chọn size.
 - [x] Shop áo in: thêm hệ thống đánh giá sao và bình luận khách hàng thật, không tạo dữ liệu giả.
 - [x] Shop áo in: kiểm thử cả ba tính năng, cập nhật Vitest và lưu checkpoint; 22/22 test liên quan đạt.
+
+- [x] Điều hướng: đổi thành ba tab lớn Quần Áo Bóng Đá, Shop Áo Thun In Hình và Tài Nguyên Số.
+- [x] Điều hướng: nhóm các danh mục nhỏ hiện có vào đúng tab lớn, không làm mất đường dẫn sản phẩm.
+- [x] Điều hướng: thêm preview khi di chuột vào tab/danh mục trên desktop và menu mở dễ chạm trên mobile.
+- [x] Điều hướng: kiểm thử desktop/mobile, hồi quy sản phẩm số và lưu checkpoint; 22/22 test liên quan đạt.
