@@ -344,6 +344,38 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(after).toMatchObject({ quantity: 1, fulfillmentMode: "preorder" });
   });
 
+  it("adds multiple physical SKUs to cart together and leaves cart unchanged when one SKU exceeds stock", async () => {
+    const caller = appRouter.createCaller(createMockContext());
+    const suffix = `batch-cart-${Date.now().toString(36)}`;
+    const product = await createProduct({ name: `Áo chọn nhiều SKU ${suffix}`, slug: `ao-chon-nhieu-sku-${suffix}`, description: "Kiểm thử giỏ đa SKU", price: "100000", categoryId: 11, image: "generated:batch-cart-cover", stock: 7, featured: false, isActive: true });
+    const black = await createProductVariant({ productId: product!.id, size: "M", color: "Đen", sku: `BATCH-BLACK-${suffix}`, priceAdjustment: "0", stock: 2, isActive: true });
+    const white = await createProductVariant({ productId: product!.id, size: "L", color: "Trắng", sku: `BATCH-WHITE-${suffix}`, priceAdjustment: "5000", stock: 5, isActive: true });
+
+    await expect(caller.store.addManyToCart({
+      productId: product!.id,
+      fulfillmentMode: "in_stock",
+      items: [{ variantId: black!.id, quantity: 2 }, { variantId: white!.id, quantity: 3 }],
+    })).resolves.toEqual({ success: true, addedCount: 2 });
+
+    const beforeRejectedBatch = (await caller.store.cart()).filter(item => item.productId === product!.id);
+    expect(beforeRejectedBatch).toEqual(expect.arrayContaining([
+      expect.objectContaining({ variantId: black!.id, quantity: 2, fulfillmentMode: "in_stock" }),
+      expect.objectContaining({ variantId: white!.id, quantity: 3, fulfillmentMode: "in_stock" }),
+    ]));
+
+    await expect(caller.store.addManyToCart({
+      productId: product!.id,
+      fulfillmentMode: "in_stock",
+      items: [{ variantId: black!.id, quantity: 1 }, { variantId: white!.id, quantity: 1 }],
+    })).rejects.toThrow("Biến thể đã chọn không đủ tồn kho");
+
+    const afterRejectedBatch = (await caller.store.cart()).filter(item => item.productId === product!.id);
+    expect(afterRejectedBatch).toEqual(expect.arrayContaining([
+      expect.objectContaining({ variantId: black!.id, quantity: 2 }),
+      expect.objectContaining({ variantId: white!.id, quantity: 3 }),
+    ]));
+  });
+
   it("locks wallet funds for withdrawal and refunds them when the owner rejects", async () => {
     const customer = appRouter.createCaller(createMockContext());
     const owner = appRouter.createCaller(createOwnerContext());

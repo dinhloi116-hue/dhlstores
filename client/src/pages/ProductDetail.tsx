@@ -66,14 +66,15 @@ export default function ProductDetail() {
 
   const productQuery = trpc.store.productBySlug.useQuery({ slug }, { enabled: !!slug, retry: false });
   const product = productQuery.data;
-  const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: product?.type === "physical" });
-  const wholesaleTiersQuery = trpc.store.productWholesaleTiers.useQuery({ productId: product?.id || 1 }, { enabled: product?.type === "physical" });
+  const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
+  const wholesaleTiersQuery = trpc.store.productWholesaleTiers.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
   const reviewsQuery = trpc.store.productReviews.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
   const variants = variantsQuery.data || [];
   const wholesaleTiers = wholesaleTiersQuery.data || [];
 
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [variantQuantities, setVariantQuantities] = useState<Record<number, number>>({});
   const [adding, setAdding] = useState<boolean>(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [fulfillmentMode, setFulfillmentMode] = useState<'in_stock' | 'preorder'>('in_stock');
@@ -91,9 +92,12 @@ export default function ProductDetail() {
   const [reviewBody, setReviewBody] = useState("");
   const submitReviewMutation = trpc.store.submitProductReview.useMutation({ onSuccess: () => { setReviewBody(""); setReviewRating(5); toast.success("Đã gửi đánh giá thành công."); void utils.store.productReviews.invalidate(); }, onError: error => toast.error(error.message) });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
-  const applicableWholesaleTier = [...wholesaleTiers].filter(tier => quantity >= tier.minQuantity).sort((a, b) => b.minQuantity - a.minQuantity)[0];
-  const unitPrice = Number(applicableWholesaleTier?.unitPrice ?? product?.price ?? 0) + Number(selectedVariant?.priceAdjustment || 0);
   const sortedVariants = variants;
+  const selectedSkuItems = sortedVariants.map(variant => ({ variant, quantity: variantQuantities[variant.id] ?? 0 })).filter(item => item.quantity > 0);
+  const selectedSkuTotal = selectedSkuItems.reduce((total, item) => total + item.quantity, 0);
+  const directPurchaseQuantity = product?.type === "physical" && variants.length > 0 ? (selectedVariantId ? variantQuantities[selectedVariantId] ?? 0 : 0) : quantity;
+  const applicableWholesaleTier = [...wholesaleTiers].filter(tier => directPurchaseQuantity >= tier.minQuantity).sort((a, b) => b.minQuantity - a.minQuantity)[0];
+  const unitPrice = Number(applicableWholesaleTier?.unitPrice ?? product?.price ?? 0) + Number(selectedVariant?.priceAdjustment || 0);
   const previewVariant = variants.find(variant => variant.id === previewVariantId);
   const hoveredVariant = variants.find(variant => variant.id === hoveredPreview?.variantId);
   const optionGroups = Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).map(option => option.name))).map(name => ({ name, values: Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).filter(option => option.name === name).map(option => option.value))) }));
@@ -101,8 +105,10 @@ export default function ProductDetail() {
   const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? Math.max(...variants.map(variant => variant.stock)) : product.stock) : Number.MAX_SAFE_INTEGER;
   const requiresVariant = product?.type === "physical" && variants.length > 0;
   const isPreorder = product?.type === "physical" && fulfillmentMode === 'preorder';
-  const shippingWeightGrams = product?.type === "physical" ? Math.max(0, Number(selectedVariant?.weightGrams ?? product.weightGrams ?? 0)) * quantity : 0;
-  const estimatedSpxFee = product?.type === "physical" ? 10_000 + Math.max(1, Math.ceil(shippingWeightGrams / 1000)) * 10_000 : 0;
+  const shippingWeightGrams = product?.type === "physical" ? Math.max(0, Number(selectedVariant?.weightGrams ?? product.weightGrams ?? 0)) * directPurchaseQuantity : 0;
+  const estimatedSpxFee = product?.type === "physical" && directPurchaseQuantity > 0 ? 10_000 + Math.max(1, Math.ceil(shippingWeightGrams / 1000)) * 10_000 : 0;
+  const selectedSkuWeightGrams = product?.type === "physical" ? selectedSkuItems.reduce((total, item) => total + Math.max(0, Number(item.variant.weightGrams ?? product.weightGrams ?? 0)) * item.quantity, 0) : 0;
+  const selectedSkuShippingFee = selectedSkuTotal > 0 ? 10_000 + Math.max(1, Math.ceil(selectedSkuWeightGrams / 1000)) * 10_000 : 0;
   const savedAddressesQuery = trpc.store.shippingAddresses.useQuery(undefined, { enabled: isAuthenticated && product?.type === "physical" });
   const walletQuery = trpc.store.walletSummary.useQuery(undefined, { enabled: isAuthenticated });
   const walletBalance = Number(walletQuery.data?.balance || 0);
@@ -171,6 +177,17 @@ export default function ProductDetail() {
       setAdding(false);
     }
   });
+  const addManyToCartMutation = trpc.store.addManyToCart.useMutation({
+    onSuccess: result => {
+      toast.success(`Đã thêm ${result.addedCount} SKU vào giỏ hàng.`);
+      utils.store.cart.invalidate();
+      setAdding(false);
+    },
+    onError: err => {
+      toast.error(err.message || "Không thể thêm các SKU vào giỏ hàng");
+      setAdding(false);
+    },
+  });
 
   const cancelInlineOrder = trpc.store.cancelPendingOrder.useMutation();
   const quickCheckoutMutation = trpc.store.quickCheckout.useMutation({
@@ -232,7 +249,16 @@ export default function ProductDetail() {
       return;
     }
 
-    if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
+    if (product.type === "physical" && variants.length > 0) {
+      if (selectedSkuItems.length === 0) return toast.error("Hãy tăng số lượng cho ít nhất một SKU");
+      setAdding(true);
+      addManyToCartMutation.mutate({
+        productId: product.id,
+        fulfillmentMode,
+        items: selectedSkuItems.map(item => ({ variantId: item.variant.id, quantity: item.quantity })),
+      });
+      return;
+    }
     if (product.type === "physical" && fulfillmentMode === 'in_stock' && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
     setAdding(true);
     addToCartMutation.mutate({
@@ -249,8 +275,8 @@ export default function ProductDetail() {
       startLogin();
       return;
     }
-    if (product.type === "physical" && variants.length > 0 && !selectedVariantId) return toast.error("Hãy chọn kích thước hoặc màu sắc");
-    if (product.type === "physical" && fulfillmentMode === 'in_stock' && availableStock < quantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
+    if (product.type === "physical" && variants.length > 0 && (!selectedVariantId || directPurchaseQuantity < 1)) return toast.error("Hãy chọn một SKU có số lượng từ 1 để mua ngay");
+    if (product.type === "physical" && fulfillmentMode === 'in_stock' && availableStock < directPurchaseQuantity) return toast.error("Số lượng yêu cầu vượt tồn kho hiện có");
     setInlinePayment(null);
     setInlinePaymentExpired(false);
     setPaymentDialogOpen(true);
@@ -258,9 +284,9 @@ export default function ProductDetail() {
 
   const createInlinePayment = () => {
     if (product.type === "physical" && (!inlineShipping.name || !inlineShipping.phone || !inlineShipping.address)) return toast.error("Vui lòng điền đủ thông tin nhận hàng trước khi thanh toán.");
-    if (paymentMethod === "wallet_balance" && walletBalance < (unitPrice * quantity * (isPreorder ? 0.9 : 1)) + estimatedSpxFee) return toast.error("Số dư ví không đủ cho đơn hàng này.");
+    if (paymentMethod === "wallet_balance" && walletBalance < (unitPrice * directPurchaseQuantity * (isPreorder ? 0.9 : 1)) + estimatedSpxFee) return toast.error("Số dư ví không đủ cho đơn hàng này.");
     quickCheckoutMutation.mutate({
-      item: { productId: product.id, quantity, variantId: selectedVariantId || undefined, fulfillmentMode: product.type === "physical" ? fulfillmentMode : undefined },
+      item: { productId: product.id, quantity: directPurchaseQuantity, variantId: selectedVariantId || undefined, fulfillmentMode: product.type === "physical" ? fulfillmentMode : undefined },
       shipping: product.type === "physical" ? inlineShipping : undefined,
       paymentMethod: paymentMethod === "wallet_balance" ? "wallet_balance" : undefined,
     });
@@ -276,8 +302,44 @@ export default function ProductDetail() {
     });
   };
 
+  const updateVariantQuantity = (variantId: number, requestedQuantity: number) => {
+    const variant = variants.find(item => item.id === variantId);
+    if (!variant || !Number.isFinite(requestedQuantity)) return;
+    const max = isPreorder ? 99 : Math.max(0, variant.stock);
+    const nextQuantity = Math.min(max, Math.max(0, Math.floor(requestedQuantity)));
+    setVariantQuantities(current => ({ ...current, [variantId]: nextQuantity }));
+    if (nextQuantity > 0) setSelectedVariantId(variantId);
+  };
+
+  const skuBatchSelector = product.type === "physical" && variants.length > 0 ? (
+    <section className="rounded-md border border-orange-200 bg-white p-3 shadow-sm sm:p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-orange-100 pb-3">
+        <div><p className="text-xs font-black uppercase tracking-wide text-slate-900">Chọn nhiều SKU, thêm giỏ một lần</p><p className="mt-1 text-[11px] leading-relaxed text-slate-600">Để số lượng <strong>0</strong> cho SKU không lấy. Mỗi dòng có giá, tồn kho và số lượng riêng; bấm Thêm vào giỏ sẽ thêm toàn bộ SKU đang có số lượng.</p></div>
+        <div className="rounded-lg bg-orange-50 px-3 py-2 text-right"><p className="text-[10px] font-black uppercase tracking-wide text-orange-700">Đang chọn</p><p className="text-sm font-black text-slate-900">{selectedSkuTotal} sản phẩm · {selectedSkuItems.length} SKU</p></div>
+      </div>
+      <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+        <div className="grid grid-cols-[3.4rem_minmax(8rem,1fr)_auto] gap-2 bg-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-600 sm:grid-cols-[3.4rem_minmax(10rem,1fr)_7rem_7rem_10rem]"><span>Ảnh</span><span>Phiên bản</span><span className="hidden text-right sm:block">Đơn giá</span><span className="hidden text-right sm:block">Tồn kho</span><span className="text-right">Số lượng</span></div>
+        <div className="max-h-[26rem] divide-y divide-slate-100 overflow-y-auto">
+          {sortedVariants.map(variant => {
+            const rowQuantity = variantQuantities[variant.id] ?? 0;
+            const outOfStock = !isPreorder && variant.stock <= 0;
+            const rowUnitPrice = Number(product.price) + Number(variant.priceAdjustment || 0);
+            return <div key={variant.id} data-sku-preview-variant={variant.image ? variant.id : undefined} onClick={() => setSelectedVariantId(variant.id)} className={`grid cursor-pointer grid-cols-[3.4rem_minmax(8rem,1fr)_auto] items-center gap-2 px-3 py-3 transition-colors sm:grid-cols-[3.4rem_minmax(10rem,1fr)_7rem_7rem_10rem] ${selectedVariantId === variant.id ? "bg-orange-50/70" : "bg-white hover:bg-slate-50"}`}>
+              <button type="button" aria-label={variant.image ? `Mở ảnh ${formatVariantOptions(variant)}` : "SKU không có ảnh"} onClick={event => { event.stopPropagation(); if (variant.image) setPreviewVariantId(variant.id); }} className={`h-11 w-11 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 ${variant.image ? "cursor-zoom-in" : "cursor-default"}`}>{variant.image ? <img src={variant.image} alt={formatVariantOptions(variant)} className="h-full w-full object-contain" /> : <span className="grid h-full place-items-center text-[9px] font-black text-slate-400">SKU</span>}</button>
+              <div className="min-w-0"><p className="truncate text-xs font-black text-slate-900">{formatVariantOptions(variant)}</p><p className="mt-1 truncate text-[10px] font-mono text-slate-500">{variant.sku || "Không có mã SKU"}</p><p className="mt-1 text-[11px] font-black text-[#ee4d2d] sm:hidden">{formatCurrency(rowUnitPrice * (isPreorder ? 0.9 : 1))} · {isPreorder ? "Order trước" : `Tồn ${variant.stock}`}</p></div>
+              <p className="hidden text-right text-xs font-black text-[#ee4d2d] sm:block">{formatCurrency(rowUnitPrice * (isPreorder ? 0.9 : 1))}</p>
+              <p className={`hidden text-right text-xs font-black sm:block ${outOfStock ? "text-rose-700" : "text-emerald-700"}`}>{isPreorder ? "Nhận order" : outOfStock ? "Hết hàng" : variant.stock}</p>
+              <div className="justify-self-end"><div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white"><button type="button" onClick={event => { event.stopPropagation(); updateVariantQuantity(variant.id, rowQuantity - 1); }} disabled={rowQuantity <= 0} className="grid h-8 w-8 place-items-center text-base font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300">−</button><input aria-label={`Số lượng ${formatVariantOptions(variant)}`} inputMode="numeric" value={rowQuantity} onClick={event => event.stopPropagation()} onChange={event => { const digits = event.target.value.replace(/\D/g, ""); updateVariantQuantity(variant.id, digits ? Number(digits) : 0); }} className="h-8 w-10 border-x border-slate-200 text-center text-xs font-black text-slate-900 outline-none focus:bg-orange-50" /><button type="button" onClick={event => { event.stopPropagation(); updateVariantQuantity(variant.id, rowQuantity + 1); }} disabled={outOfStock || (!isPreorder && rowQuantity >= variant.stock) || (isPreorder && rowQuantity >= 99)} className="grid h-8 w-8 place-items-center text-base font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300">+</button></div></div>
+            </div>;
+          })}
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sky-50 px-3 py-2 text-[11px] text-sky-900"><span><strong>Ước tính đơn trong giỏ:</strong> {selectedSkuTotal > 0 ? `${selectedSkuWeightGrams.toLocaleString("vi-VN")} g · phí SPX ${formatCurrency(selectedSkuShippingFee)}` : "chọn SKU để xem phí SPX"}</span><span className="font-black">{isPreorder ? "Order trước · 7–10 ngày" : "Hàng sẵn · giao 2–5 ngày"}</span></div>
+    </section>
+  ) : null;
+
   const skuInventoryPanel = product.type === "physical" && variants.length > 0 ? (
-    <aside id="sku-inventory-panel" className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4">
+    <aside id="sku-inventory-panel" className="hidden min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4">
       <div className="flex items-start justify-between gap-4"><div><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">Tồn kho theo SKU</h2><p className="mt-1 text-[11px] leading-relaxed text-slate-500">Rê chuột vào bất kỳ vùng nào của SKU có ảnh để xem ảnh lớn. SKU hết hàng vẫn xem được ảnh.</p></div><span className="shrink-0 rounded-full bg-slate-200 px-2 py-1 text-[10px] font-black text-slate-700">{variants.length} SKU</span></div>
       <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="max-h-72 overflow-y-auto">
         <div className="sticky top-0 z-10 grid grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)] gap-3 bg-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-600"><span>Ảnh</span><span>Phiên bản</span><span className="text-right">SKU + tồn kho</span></div>
@@ -337,7 +399,8 @@ export default function ProductDetail() {
                   <label className="text-xs font-black uppercase tracking-wide text-emerald-800">Bước 2 · Chọn phiên bản & xem tồn kho</label>
                   <p className="mt-1 text-xs text-emerald-700">Thứ tự SKU được cửa hàng sắp xếp sẵn. Chọn theo thuộc tính hoặc chọn trực tiếp một dòng SKU có ảnh và số lượng còn lại.</p>
                 </div>
-                <div className="space-y-4">{optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = sortedVariants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = sortedVariants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}<div className="rounded-xl border border-orange-200 bg-orange-50/70 p-3"><div className="flex items-center gap-2"><Ruler className="h-4 w-4 text-orange-700" /><p className="text-xs font-black uppercase tracking-wide text-orange-800">Hướng dẫn chọn size áo</p></div><p className="mt-1 text-[11px] leading-relaxed text-slate-600">Đo vòng ngực và chiều dài áo đang mặc, sau đó chọn size gần nhất. Nếu nằm giữa hai size, chọn size lớn hơn để mặc thoải mái. Size và màu có thể thay đổi theo từng sản phẩm.</p></div><div className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Bước 3 · Số lượng & giao hàng</p><p className="mt-1 text-[10px] font-black uppercase tracking-wide text-slate-500">SKU đang chọn</p><p className="mt-1 text-xs font-semibold text-emerald-900">{selectedVariant ? formatVariantOptions(selectedVariant) : 'Chọn một phiên bản ở phía trên'}</p></div><div><label className="text-[10px] font-black uppercase tracking-wide text-slate-500">Số lượng</label><div className="mt-1 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-8 w-8 font-black text-slate-700 hover:text-black">−</button><input aria-label="Số lượng sản phẩm" inputMode="numeric" value={quantity.toLocaleString("vi-VN")} onChange={event => { const next = Number(event.target.value.replace(/\D/g, "")); if (!Number.isFinite(next)) return; const max = product.type === "physical" && !isPreorder ? Math.max(1, availableStock) : 99; setQuantity(Math.min(max, Math.max(1, next || 1))); }} className="h-8 w-14 rounded-md border border-slate-300 bg-white px-1 text-center text-sm font-black text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" /><button type="button" onClick={() => setQuantity(quantity + 1)} disabled={product.type === "physical" && !isPreorder && quantity >= availableStock} className="h-8 w-8 font-black text-slate-700 hover:text-black disabled:cursor-not-allowed disabled:opacity-35">+</button></div></div></div><div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-2.5 text-xs text-sky-900"><p className="font-black">Giao hàng SPX ước tính</p><p className="mt-1">{shippingWeightGrams.toLocaleString("vi-VN")} g · {formatCurrency(estimatedSpxFee)} cho {quantity} sản phẩm. Dự kiến giao: {isPreorder ? '7–10 ngày' : selectedVariant ? '2–5 ngày' : '2–5 ngày sau khi chọn SKU'}. Đến 1 kg: 20.000đ; mỗi kg hoặc phần kg tiếp theo: +10.000đ.</p></div>{skuInventoryPanel}</div>
+                {skuBatchSelector}
+                <div className="space-y-4">{optionGroups.map(group => <div key={group.name} className="space-y-2"><p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.name}</p><div className="flex flex-wrap gap-2">{group.values.map(value => { const compatible = sortedVariants.some(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); const isSelected = selectedOptionValues.get(group.name) === value; return <button key={value} type="button" disabled={!compatible} onClick={() => { const candidate = sortedVariants.find(variant => { const options = new Map(getVariantOptions(variant).map(option => [option.name, option.value])); return options.get(group.name) === value && Array.from(selectedOptionValues.entries()).every(([selectedName, selectedValue]) => selectedName === group.name || options.get(selectedName) === selectedValue); }); setSelectedVariantId(candidate?.id ?? null); }} className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-500"} disabled:cursor-not-allowed disabled:opacity-35`}>{value}</button>; })}</div></div>)}<div className="rounded-xl border border-orange-200 bg-orange-50/70 p-3"><div className="flex items-center gap-2"><Ruler className="h-4 w-4 text-orange-700" /><p className="text-xs font-black uppercase tracking-wide text-orange-800">Hướng dẫn chọn size áo</p></div><p className="mt-1 text-[11px] leading-relaxed text-slate-600">Đo vòng ngực và chiều dài áo đang mặc, sau đó chọn size gần nhất. Nếu nằm giữa hai size, chọn size lớn hơn để mặc thoải mái. Size và màu có thể thay đổi theo từng sản phẩm.</p></div><div className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Mua ngay một SKU</p><p className="mt-1 text-xs font-semibold text-emerald-900">{selectedVariant ? formatVariantOptions(selectedVariant) : 'Chọn một dòng SKU trong bảng phía trên'}</p></div><div className="rounded-lg bg-emerald-50 px-3 py-2 text-right"><p className="text-[10px] font-black uppercase tracking-wide text-emerald-700">Số lượng SKU này</p><p className="text-lg font-black text-emerald-900">{directPurchaseQuantity}</p></div></div><div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-2.5 text-xs text-sky-900"><p className="font-black">Giao hàng SPX khi mua ngay</p><p className="mt-1">{directPurchaseQuantity > 0 ? `${shippingWeightGrams.toLocaleString("vi-VN")} g · ${formatCurrency(estimatedSpxFee)} cho ${directPurchaseQuantity} sản phẩm.` : 'Tăng số lượng ở dòng SKU muốn mua để xem phí giao hàng.'} Dự kiến giao: {isPreorder ? '7–10 ngày' : selectedVariant ? '2–5 ngày' : 'sau khi chọn SKU'}.</p></div>{skuInventoryPanel}</div>
               </section>
             )}
 
@@ -354,7 +417,7 @@ export default function ProductDetail() {
             <div id="product-purchase-actions" className={`sticky bottom-0 z-20 rounded-xl bg-emerald-50/95 p-2 pt-3 shadow-[0_-8px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:flex sm:flex-row sm:gap-4 ${product.type === 'physical' ? 'fixed inset-x-0 bottom-0 rounded-none border-t border-slate-200 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:static sm:rounded-xl sm:border-0 sm:p-2' : ''}`}>
               <Button
                 onClick={handleAddToCart}
-                disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}
+                disabled={adding || (product.type === "physical" && ((variants.length > 0 && selectedSkuTotal < 1) || (variants.length === 0 && fulfillmentMode === 'in_stock' && availableStock <= 0)))}
                 variant="outline"
                 className={`flex-1 bg-white font-bold py-3.5 rounded-xl shadow-xs text-sm ${product.type === 'physical' ? 'border-[#ee4d2d] text-[#ee4d2d] hover:bg-orange-50' : 'border-amber-500 text-amber-700 hover:bg-amber-50'}`}
               >
@@ -363,7 +426,7 @@ export default function ProductDetail() {
               </Button>
               <Button
                 onClick={handleBuyNow}
-                disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && !selectedVariantId)))}
+                disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && (!selectedVariantId || directPurchaseQuantity < 1))))}
                 className={`flex-1 font-bold py-3.5 rounded-xl shadow-md text-sm ${isPreorder ? "bg-rose-500 text-white hover:bg-rose-600" : product.type === 'physical' ? "bg-[#ee4d2d] text-white hover:bg-[#d94325]" : "bg-amber-500 text-slate-950 hover:bg-amber-600"}`}
               >
                 {isPreorder ? <Clock3 className="w-4 h-4 mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
@@ -408,8 +471,8 @@ export default function ProductDetail() {
               <textarea value={inlineDetailAddress} onChange={event => { const value = event.target.value; setInlineDetailAddress(value); updateInlineAddress(inlineProvince, inlineWard, value); }} className="min-h-20 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm" placeholder="Số nhà, tên đường, thôn/tổ…" />
               <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-relaxed text-sky-900"><p className="font-black">Giao hàng SPX tự tính</p><p className="mt-1">Tổng khối lượng {shippingWeightGrams.toLocaleString("vi-VN")} g · phí giao {formatCurrency(estimatedSpxFee)}. Phí chính thức được máy chủ tính lại khi tạo đơn.</p></div>
             </div>}
-            <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-violet-800">Phương thức thanh toán</p><p className="mt-1 text-[11px] text-violet-700">Chọn một phương án trước khi tạo đơn.</p></div><WalletCards className="h-5 w-5 text-violet-600" /></div><div className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setPaymentMethod("wallet_balance")} className={`rounded-xl border p-3 text-left transition ${paymentMethod === "wallet_balance" ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-white hover:border-emerald-300"}`}><span className="block text-xs font-black text-emerald-800">Thanh toán bằng số dư ví</span><span className="mt-1 block text-[11px] text-slate-600">Đang có: <strong>{formatCurrency(walletBalance)}</strong></span></button><button type="button" onClick={() => setPaymentMethod("qr")} className={`rounded-xl border p-3 text-left transition ${paymentMethod === "qr" ? "border-amber-500 bg-amber-50 ring-2 ring-amber-100" : "border-slate-200 bg-white hover:border-amber-300"}`}><span className="block text-xs font-black text-amber-800">{product.type === "physical" ? "QR Techcombank" : "QR VietinBank SePay"}</span><span className="mt-1 block text-[11px] text-slate-600">{product.type === "physical" ? "Chủ cửa hàng xác nhận tiền về." : "SePay tự đối soát giao dịch."}</span></button></div></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-black uppercase tracking-wide text-amber-800">Đơn đang tạo</p><p className="mt-1 text-sm font-bold text-slate-900">{product.name}{selectedVariant ? ` · ${formatVariantOptions(selectedVariant)}` : ""}</p><p className="mt-1 text-xs text-slate-600">Số lượng: {quantity}{isPreorder ? " · Order trước giảm 10%, dự kiến 7–10 ngày" : ""}</p></div>
-            <Button onClick={createInlinePayment} disabled={quickCheckoutMutation.isPending || (paymentMethod === "wallet_balance" && walletBalance < (unitPrice * quantity * (isPreorder ? 0.9 : 1)) + estimatedSpxFee)} className="w-full bg-amber-500 py-5 font-black text-slate-950 hover:bg-amber-600">{paymentMethod === "wallet_balance" ? <WalletCards className="mr-2 h-4 w-4" /> : <QrCode className="mr-2 h-4 w-4" />}{quickCheckoutMutation.isPending ? "ĐANG XỬ LÝ…" : paymentMethod === "wallet_balance" ? "THANH TOÁN BẰNG VÍ" : product.type === "physical" ? "HIỆN QR TECHCOMBANK" : "HIỆN QR VIETINBANK SEPAY"}</Button>
+            <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-violet-800">Phương thức thanh toán</p><p className="mt-1 text-[11px] text-violet-700">Chọn một phương án trước khi tạo đơn.</p></div><WalletCards className="h-5 w-5 text-violet-600" /></div><div className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setPaymentMethod("wallet_balance")} className={`rounded-xl border p-3 text-left transition ${paymentMethod === "wallet_balance" ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-white hover:border-emerald-300"}`}><span className="block text-xs font-black text-emerald-800">Thanh toán bằng số dư ví</span><span className="mt-1 block text-[11px] text-slate-600">Đang có: <strong>{formatCurrency(walletBalance)}</strong></span></button><button type="button" onClick={() => setPaymentMethod("qr")} className={`rounded-xl border p-3 text-left transition ${paymentMethod === "qr" ? "border-amber-500 bg-amber-50 ring-2 ring-amber-100" : "border-slate-200 bg-white hover:border-amber-300"}`}><span className="block text-xs font-black text-amber-800">{product.type === "physical" ? "QR Techcombank" : "QR VietinBank SePay"}</span><span className="mt-1 block text-[11px] text-slate-600">{product.type === "physical" ? "Chủ cửa hàng xác nhận tiền về." : "SePay tự đối soát giao dịch."}</span></button></div></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-black uppercase tracking-wide text-amber-800">Đơn đang tạo</p><p className="mt-1 text-sm font-bold text-slate-900">{product.name}{selectedVariant ? ` · ${formatVariantOptions(selectedVariant)}` : ""}</p><p className="mt-1 text-xs text-slate-600">Số lượng: {directPurchaseQuantity}{isPreorder ? " · Order trước giảm 10%, dự kiến 7–10 ngày" : ""}</p></div>
+            <Button onClick={createInlinePayment} disabled={quickCheckoutMutation.isPending || directPurchaseQuantity < 1 || (paymentMethod === "wallet_balance" && walletBalance < (unitPrice * directPurchaseQuantity * (isPreorder ? 0.9 : 1)) + estimatedSpxFee)} className="w-full bg-amber-500 py-5 font-black text-slate-950 hover:bg-amber-600">{paymentMethod === "wallet_balance" ? <WalletCards className="mr-2 h-4 w-4" /> : <QrCode className="mr-2 h-4 w-4" />}{quickCheckoutMutation.isPending ? "ĐANG XỬ LÝ…" : paymentMethod === "wallet_balance" ? "THANH TOÁN BẰNG VÍ" : product.type === "physical" ? "HIỆN QR TECHCOMBANK" : "HIỆN QR VIETINBANK SEPAY"}</Button>
           </div> : (inlinePayment.paymentStatus === "paid" || inlinePaymentStatus.data?.paymentStatus === "paid") ? <div className="space-y-4 py-4 text-center"><CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" /><p className="font-black text-slate-900">{inlinePayment.hasPhysicalItems ? "Thanh toán đã được chủ cửa hàng xác nhận." : "Thanh toán đã được SePay đối soát thành công."}</p>{inlinePayment.hasPhysicalItems ? <p className="text-sm text-slate-600">Đơn hàng đang được xử lý{inlinePayment.hasPreorderItems ? `, dự kiến ${inlinePayment.preorderEstimatedDays || "7–10 ngày"}` : ""}.</p> : inlineDownloads.data?.length ? <div className="space-y-2">{inlineDownloads.data.map(download => <a key={`${download.orderId}-${download.productId}`} href={download.driveUrl || "#"} target="_blank" rel="noreferrer" className="block rounded-xl bg-purple-600 px-4 py-3 text-sm font-black text-white">Tải ngay: {download.productName}</a>)}</div> : <p className="text-sm text-slate-600">Đang chuẩn bị liên kết tải tệp.</p>}</div> : inlinePaymentExpired ? <div className="space-y-3 py-4 text-center"><QrCode className="mx-auto h-12 w-12 text-rose-500" /><p className="font-black text-slate-900">Mã QR đã hết hạn sau 10 phút.</p><Button onClick={() => { setInlinePayment(null); setInlinePaymentExpired(false); }} className="bg-amber-500 font-black text-slate-950">Tạo QR mới</Button></div> : <div className="grid gap-5 sm:grid-cols-[1fr_190px] sm:items-center"><div className="space-y-3"><div><p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Số tiền cần chuyển</p><p className="mt-1 text-2xl font-black text-slate-900">{formatCurrency(inlinePayment.totalAmount)}</p></div>{inlinePayment.hasPhysicalItems ? <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-xs leading-relaxed text-cyan-900"><p className="font-black">Không cần nội dung chuyển khoản.</p><p className="mt-1">Sau khi bạn chuyển tiền, chủ cửa hàng sẽ kiểm tra giao dịch Techcombank và xác nhận đơn trực tiếp.</p></div> : <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs leading-relaxed text-violet-900"><p className="font-black">QR VietinBank đã kèm nội dung đối soát SePay.</p><p className="mt-1">Hãy chuyển đúng số tiền và giữ nguyên nội dung chuyển khoản. SePay sẽ tự xác nhận để mở nút tải ngay.</p></div>}<p className="text-[11px] text-slate-500">QR giữ chỗ trong 10 phút. Đơn: <span className="font-black text-slate-700">{inlinePayment.orderCode}</span></p></div><div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">{inlinePayment.qrUrl ? <img src={inlinePayment.qrUrl} alt={inlinePayment.hasPhysicalItems ? "Mã QR Techcombank DHL Stores" : "Mã QR VietinBank SePay DHL Stores"} className="w-full rounded-xl bg-white" /> : <QrCode className="mx-auto h-16 w-16 text-slate-400" />}<p className="mt-2 text-[10px] font-bold text-slate-500">Quét bằng ứng dụng ngân hàng</p></div></div>}
         </DialogContent>
       </Dialog>

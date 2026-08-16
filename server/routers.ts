@@ -245,6 +245,21 @@ export const appRouter = router({
         return await db.addToCart(ctx.user.id, input.productId, input.quantity, input.variantId, input.attributes, input.fulfillmentMode);
       }),
 
+    addManyToCart: protectedProcedure
+      .input(z.object({
+        productId: z.number().int().positive(),
+        items: z.array(z.object({
+          variantId: z.number().int().positive().optional(),
+          quantity: z.number().int().min(1).max(99),
+          attributes: z.string().optional(),
+        })).min(1).max(50),
+        fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return await db.addManyToCart(ctx.user.id, input.productId, input.items, input.fulfillmentMode);
+      }),
+
     updateCart: protectedProcedure
       .input(z.object({
         cartItemId: z.number(),

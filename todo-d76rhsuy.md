@@ -365,3 +365,15 @@
 - [x] Checkout vật lý: thêm chọn Tỉnh/Thành phố và Xã/Phường theo bộ địa danh sau sáp nhập, kèm địa chỉ chi tiết.
 - [x] Checkout vật lý: hiển thị thumbnail ảnh cạnh tên SKU/phiên bản trong luồng mua hàng.
 - [x] Checkout vật lý: kiểm thử bộ chọn địa chỉ, thumbnail SKU và hồi quy thanh toán; 80 test đạt, 1 test Sapo được skip có chủ đích, build production đạt.
+
+- [ ] Resend: xác minh test hiện tại không nhầm endpoint quản lý API key với quyền Sending access.
+- [ ] Resend: kiểm tra riêng quyền API key, địa chỉ người gửi và trạng thái domain trước khi bật mã xác minh email.
+- [ ] Resend: sửa test xác thực nhẹ và chỉ tiếp tục tích hợp auth email sau khi credentials được xác nhận hợp lệ.
+- [ ] Resend: thêm domain gửi dhlstores.com hoặc subdomain gửi riêng vào Dashboard.
+- [ ] Resend/Cloudflare: khai báo đầy đủ bản ghi DNS DKIM, SPF và MX/Return-Path theo giá trị Resend cung cấp.
+- [ ] Resend: chọn địa chỉ From thuộc domain đã xác minh, ví dụ verify@dhlstores.com.
+- [ ] Resend: kiểm tra lại domain và cập nhật luồng email verification sau khi DNS chuyển sang trạng thái Verified.
+- [x] Thiết kế lại bảng chọn SKU trang sản phẩm vật lý: ảnh, giá, tồn kho và bộ điều khiển trừ/số lượng/cộng trên từng SKU.
+- [x] Cho phép số lượng bằng 0 để khách chọn nhiều SKU trong cùng sản phẩm trước khi thêm giỏ.
+- [x] Thêm API giỏ hàng hỗ trợ nhận nhiều SKU cùng lúc, chỉ tạo dòng cho SKU có số lượng lớn hơn 0.
+- [x] Kiểm thử giới hạn tồn kho, thao tác tăng/giảm, thêm nhiều SKU và hiển thị desktop/mobile.

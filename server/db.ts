@@ -97,6 +97,12 @@ export interface CartItemType {
   variant?: ProductVariantType;
 }
 
+export interface CartBatchItemInput {
+  variantId?: number;
+  quantity: number;
+  attributes?: string;
+}
+
 export interface OrderItemType {
   id: number;
   orderId: number;
@@ -2000,6 +2006,64 @@ export async function addToCart(userId: number, productId: number, quantity: num
     });
   }
   return { success: true };
+}
+
+export async function addManyToCart(userId: number, productId: number, requestedItems: CartBatchItemInput[], fulfillmentMode: 'in_stock' | 'preorder' = 'in_stock') {
+  const normalized = new Map<string, CartBatchItemInput>();
+  for (const item of requestedItems) {
+    const quantity = Math.floor(Number(item.quantity));
+    if (!Number.isFinite(quantity) || quantity < 1) throw new Error("Số lượng mỗi SKU phải từ 1 trở lên");
+    const key = `${item.variantId ?? "product"}::${item.attributes ?? ""}`;
+    const current = normalized.get(key);
+    normalized.set(key, { variantId: item.variantId, attributes: item.attributes, quantity: (current?.quantity ?? 0) + quantity });
+  }
+  const items = Array.from(normalized.values());
+  if (items.length === 0) throw new Error("Hãy chọn ít nhất một SKU để thêm vào giỏ");
+
+  const product = await getProductById(productId);
+  if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
+  if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
+  const variants = product.type === "physical" ? await getProductVariants(productId) : [];
+  const variantsById = new Map(variants.map(variant => [variant.id, variant]));
+
+  for (const item of items) {
+    if (product.type !== "physical") continue;
+    if (variants.length > 0 && !item.variantId) throw new Error("Hãy chọn kích thước hoặc màu sắc trước khi thêm vào giỏ");
+    if (item.variantId && !variantsById.has(item.variantId)) throw new Error("SKU đã chọn không còn khả dụng");
+  }
+
+  const verifyStock = (currentItems: Array<{ productId: number; variantId?: number | null; quantity: number; attributes?: string | null; fulfillmentMode: 'in_stock' | 'preorder' }>) => {
+    for (const item of items) {
+      const existing = currentItems.find(row => row.productId === productId && (row.variantId ?? null) === (item.variantId ?? null) && (row.attributes ?? undefined) === item.attributes && row.fulfillmentMode === fulfillmentMode);
+      const nextQuantity = (existing?.quantity ?? 0) + item.quantity;
+      const variant = item.variantId ? variantsById.get(item.variantId) : undefined;
+      if (fulfillmentMode === 'in_stock' && variant && variant.stock < nextQuantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+      if (fulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < nextQuantity) throw new Error("Sản phẩm không đủ tồn kho");
+    }
+  };
+
+  const connection = await getDb();
+  if (connection) {
+    return connection.transaction(async transaction => {
+      const current = await transaction.select().from(cartItems).where(eq(cartItems.userId, userId));
+      verifyStock(current);
+      for (const item of items) {
+        const existing = current.find(row => row.productId === productId && (row.variantId ?? null) === (item.variantId ?? null) && (row.attributes ?? undefined) === item.attributes && row.fulfillmentMode === fulfillmentMode);
+        if (existing) await transaction.update(cartItems).set({ quantity: existing.quantity + item.quantity }).where(eq(cartItems.id, existing.id));
+        else await transaction.insert(cartItems).values({ userId, productId, variantId: item.variantId ?? null, quantity: item.quantity, fulfillmentMode, attributes: item.attributes ?? null });
+      }
+      return { success: true, addedCount: items.length };
+    });
+  }
+
+  const current = memoryCart.filter(item => item.userId === userId);
+  verifyStock(current);
+  for (const item of items) {
+    const existing = memoryCart.find(row => row.userId === userId && row.productId === productId && (row.variantId ?? null) === (item.variantId ?? null) && row.attributes === item.attributes && row.fulfillmentMode === fulfillmentMode);
+    if (existing) existing.quantity += item.quantity;
+    else memoryCart.push({ id: nextCartId++, userId, productId, variantId: item.variantId ?? null, quantity: item.quantity, fulfillmentMode, attributes: item.attributes });
+  }
+  return { success: true, addedCount: items.length };
 }
 
 export async function updateCartItem(userId: number, cartItemId: number, quantity: number, requestedFulfillmentMode?: 'in_stock' | 'preorder') {
