@@ -366,9 +366,9 @@
 - [x] Checkout vật lý: hiển thị thumbnail ảnh cạnh tên SKU/phiên bản trong luồng mua hàng.
 - [x] Checkout vật lý: kiểm thử bộ chọn địa chỉ, thumbnail SKU và hồi quy thanh toán; 80 test đạt, 1 test Sapo được skip có chủ đích, build production đạt.
 
-- [ ] Resend: xác minh test hiện tại không nhầm endpoint quản lý API key với quyền Sending access.
+- [x] Resend: xác minh test hiện tại không nhầm endpoint quản lý API key với quyền Sending access.
 - [ ] Resend: kiểm tra riêng quyền API key, địa chỉ người gửi và trạng thái domain trước khi bật mã xác minh email.
-- [ ] Resend: sửa test xác thực nhẹ và chỉ tiếp tục tích hợp auth email sau khi credentials được xác nhận hợp lệ.
+- [x] Resend: sửa test xác thực nhẹ và chỉ tiếp tục tích hợp auth email sau khi credentials được xác nhận hợp lệ.
 - [ ] Resend: thêm domain gửi dhlstores.com hoặc subdomain gửi riêng vào Dashboard.
 - [ ] Resend/Cloudflare: khai báo đầy đủ bản ghi DNS DKIM, SPF và MX/Return-Path theo giá trị Resend cung cấp.
 - [ ] Resend: chọn địa chỉ From thuộc domain đã xác minh, ví dụ verify@dhlstores.com.
@@ -398,3 +398,7 @@
 - [x] Marketplace: hiển thị tổng tiền tạm tính cập nhật ngay khi thay đổi số lượng SKU.
 - [x] Marketplace: hiển thị rõ mốc giá sỉ và đơn giá đang áp dụng theo tổng số lượng.
 - [x] Skill tái sử dụng: đánh giá và ghi lại quy trình triển khai giao diện mua nhiều SKU nếu phù hợp.
+
+- [x] Marketplace: hiện thông báo thành công sau khi thêm SKU vào giỏ.
+- [x] Marketplace: thêm nút Xóa tất cả để đưa toàn bộ số lượng SKU về 0.
+- [x] Marketplace: highlight rõ các dòng SKU có số lượng lớn hơn 0.

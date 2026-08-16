@@ -306,6 +306,11 @@ export default function ProductDetail() {
     });
   };
 
+  const clearAllVariantQuantities = () => {
+    setVariantQuantities({});
+    toast.success("Đã xóa toàn bộ số lượng SKU về 0.");
+  };
+
   const updateVariantQuantity = (variantId: number, requestedQuantity: number) => {
     const variant = variants.find(item => item.id === variantId);
     if (!variant || !Number.isFinite(requestedQuantity)) return;
@@ -319,7 +324,7 @@ export default function ProductDetail() {
     <section className="rounded-2xl border border-orange-200 bg-white p-4 shadow-sm sm:p-6 lg:p-7">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-orange-100 pb-3">
         <div><p className="text-xs font-black uppercase tracking-wide text-slate-900">Chọn nhiều SKU, thêm giỏ một lần</p><p className="mt-1 text-[11px] leading-relaxed text-slate-600">Để số lượng <strong>0</strong> cho SKU không lấy. Mỗi dòng có giá, tồn kho và số lượng riêng; bấm Thêm vào giỏ sẽ thêm toàn bộ SKU đang có số lượng.</p></div>
-        <div className="rounded-lg bg-orange-50 px-3 py-2 text-right"><p className="text-[10px] font-black uppercase tracking-wide text-orange-700">Đang chọn</p><p className="text-sm font-black text-slate-900">{selectedSkuTotal} sản phẩm · {selectedSkuItems.length} SKU</p>{applicableWholesaleTier && <p className="mt-1 text-[10px] font-black text-emerald-700">Giá sỉ mốc {applicableWholesaleTier.minQuantity} cái</p>}</div>
+        <div className="flex items-center gap-2"><div className="rounded-lg bg-orange-50 px-3 py-2 text-right"><p className="text-[10px] font-black uppercase tracking-wide text-orange-700">Đang chọn</p><p className="text-sm font-black text-slate-900">{selectedSkuTotal} sản phẩm · {selectedSkuItems.length} SKU</p>{applicableWholesaleTier && <p className="mt-1 text-[10px] font-black text-emerald-700">Giá sỉ mốc {applicableWholesaleTier.minQuantity} cái</p>}</div><button type="button" onClick={clearAllVariantQuantities} disabled={selectedSkuTotal === 0} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40">Xóa tất cả</button></div>
       </div>
       <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
         <div className="grid grid-cols-[4.25rem_minmax(0,1fr)_auto] gap-3 bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-600 sm:grid-cols-[3.75rem_minmax(0,1fr)_6rem_5rem_8.5rem] lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_8rem_11rem]"><span>Ảnh</span><span>Phiên bản / SKU</span><span className="hidden text-right sm:block">Đơn giá</span><span className="hidden text-right sm:block">Tồn kho</span><span className="text-right">Số lượng</span></div>
@@ -328,7 +333,7 @@ export default function ProductDetail() {
             const rowQuantity = variantQuantities[variant.id] ?? 0;
             const outOfStock = !isPreorder && variant.stock <= 0;
             const rowUnitPrice = Number(applicableWholesaleTier?.unitPrice ?? product.price) + Number(variant.priceAdjustment || 0);
-            return <div key={variant.id} data-sku-preview-variant={variant.image ? variant.id : undefined} onPointerEnter={event => { if (variant.image) updateHoveredPreview(variant.id, event.clientX, event.clientY); }} onPointerMove={event => { if (variant.image) updateHoveredPreview(variant.id, event.clientX, event.clientY); }} onPointerLeave={() => setHoveredPreview(null)} onClick={() => setSelectedVariantId(variant.id)} className={`grid cursor-pointer grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 transition-colors sm:grid-cols-[3.75rem_minmax(0,1fr)_6rem_5rem_8.5rem] lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_8rem_11rem] ${selectedVariantId === variant.id ? "bg-orange-50/70" : "bg-white hover:bg-slate-50"}`}>
+            return <div key={variant.id} data-sku-preview-variant={variant.image ? variant.id : undefined} onPointerEnter={event => { if (variant.image) updateHoveredPreview(variant.id, event.clientX, event.clientY); }} onPointerMove={event => { if (variant.image) updateHoveredPreview(variant.id, event.clientX, event.clientY); }} onPointerLeave={() => setHoveredPreview(null)} onClick={() => setSelectedVariantId(variant.id)} className={`grid cursor-pointer grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 transition-colors sm:grid-cols-[3.75rem_minmax(0,1fr)_6rem_5rem_8.5rem] lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_8rem_11rem] ${rowQuantity > 0 ? "bg-orange-50 ring-1 ring-inset ring-orange-200" : selectedVariantId === variant.id ? "bg-orange-50/70" : "bg-white hover:bg-slate-50"}`}>
               <button type="button" aria-label={variant.image ? `Mở ảnh ${formatVariantOptions(variant)}` : "SKU không có ảnh"} onClick={event => { event.stopPropagation(); if (variant.image) setPreviewVariantId(variant.id); }} className={`h-11 w-11 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 ${variant.image ? "cursor-zoom-in" : "cursor-default"}`}>{variant.image ? <img src={variant.image} alt={formatVariantOptions(variant)} className="h-full w-full object-contain" /> : <span className="grid h-full place-items-center text-[9px] font-black text-slate-400">SKU</span>}</button>
               <div className="min-w-0"><p className="line-clamp-2 break-words text-xs font-black leading-relaxed text-slate-900">{formatVariantOptions(variant)}</p><p className="mt-1 break-all text-[10px] font-mono text-slate-500">{variant.sku || "Không có mã SKU"}</p><p className="mt-1 text-[11px] font-black text-[#ee4d2d] sm:hidden">{formatCurrency(rowUnitPrice * (isPreorder ? 0.9 : 1))} · {isPreorder ? "Order trước" : `Tồn ${variant.stock}`}</p></div>
               <p className="hidden text-right text-xs font-black text-[#ee4d2d] sm:block">{formatCurrency(rowUnitPrice * (isPreorder ? 0.9 : 1))}</p>
