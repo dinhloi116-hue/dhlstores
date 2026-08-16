@@ -402,3 +402,7 @@
 - [x] Marketplace: hiện thông báo thành công sau khi thêm SKU vào giỏ.
 - [x] Marketplace: thêm nút Xóa tất cả để đưa toàn bộ số lượng SKU về 0.
 - [x] Marketplace: highlight rõ các dòng SKU có số lượng lớn hơn 0.
+
+- [x] Marketplace: thêm thanh tóm tắt cố định hiển thị tổng số lượng và tổng tiền tạm tính.
+- [x] Marketplace: cho nhập số lượng trực tiếp bằng bàn phím và tự highlight dòng sau khi nhập.
+- [x] Marketplace: thêm nút Xem giỏ hàng trong toast thành công và tự ẩn thông báo sau 3 giây.
