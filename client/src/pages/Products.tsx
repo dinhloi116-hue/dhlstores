@@ -167,7 +167,7 @@ export default function Products() {
                   <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-md shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg' : ''}`}>
                   <div className="relative aspect-square overflow-hidden bg-slate-100">
                     <img src={p.image} alt={p.name} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${isPhysicalCatalog ? 'object-cover' : 'object-contain'}`} />
-                    {isPhysicalCatalog && <span className="absolute bottom-2 left-2 rounded bg-white/95 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 shadow-sm">{Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'}</span>}
+                    {isPhysicalCatalog && <span className={`absolute bottom-2 left-2 rounded bg-white/95 px-1.5 py-0.5 text-[9px] font-black shadow-sm ${Number(p.stock) > 0 ? 'text-emerald-700' : 'text-red-600'}`}>{Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'}</span>}
                   </div>
                   <div className={`flex flex-1 flex-col justify-between space-y-2 ${isPhysicalCatalog ? 'p-2.5 sm:p-4' : 'p-4 space-y-3'}`}>
                     <div>
@@ -175,9 +175,9 @@ export default function Products() {
                       <h3 className={`${isPhysicalCatalog ? 'text-[12px] sm:text-xs' : 'text-xs'} font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed`}> 
                         {p.name}
                       </h3>
-                      <p className={`${isPhysicalCatalog ? 'hidden sm:block' : ''} text-[11px] text-slate-500 mt-1 line-clamp-2`}> 
+                      {!isPhysicalCatalog && <p className="mt-1 line-clamp-2 text-[11px] text-slate-500">
                         {p.description}
-                      </p>
+                      </p>}
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                       <span className={`${isPhysicalCatalog ? 'text-base text-[#ee4d2d]' : 'text-sm text-amber-600'} font-black`}> 

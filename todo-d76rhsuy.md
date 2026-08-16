@@ -346,3 +346,18 @@
 - [x] Hàng vật lý: trong hộp thanh toán cho chọn rõ Thanh toán bằng ví hoặc QR Techcombank trước khi tạo thanh toán.
 - [x] Hàng vật lý: thêm ô nhập trực tiếp số lượng cạnh nút cộng/trừ, chuẩn hóa số nguyên và giới hạn theo tồn kho.
 - [x] Hàng vật lý: kiểm thử hai phương thức thanh toán, số lượng nhập tay, giá/phí SPX và hồi quy sản phẩm số; 76/76 test chạy đạt, 1 test Sapo được skip có chủ đích.
+
+- [ ] Tài khoản: đăng ký yêu cầu số điện thoại hoặc email hợp lệ và gửi mã bảo mật để xác minh.
+- [ ] Tài khoản: đặt duy nhất cho username, email và số điện thoại; chặn tạo tài khoản thứ hai với cùng thông tin.
+- [ ] Quyền truy cập: yêu cầu đăng nhập cho giỏ hàng, mua hàng, checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ trang xem sản phẩm công khai.
+- [ ] Auth: kiểm thử mã xác minh, chống trùng, đăng nhập bắt buộc và hồi quy các luồng hiện có; cập nhật Vitest và lưu checkpoint.
+
+- [ ] Auth email: bỏ yêu cầu số điện thoại, đăng ký bắt buộc email duy nhất.
+- [ ] Auth email: gửi mã xác minh email với thời hạn, giới hạn thử lại và không cho dùng mã đã hết hạn.
+- [ ] Auth email: chống trùng email không phân biệt hoa thường và chặn tài khoản chưa xác minh dùng tính năng cần tài khoản.
+- [ ] Auth email: bảo vệ giỏ hàng, mua/checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ xem sản phẩm công khai.
+- [ ] Auth email: kiểm thử đăng ký/xác minh/đăng nhập và hồi quy các luồng mua; cập nhật Vitest và lưu checkpoint.
+
+- [x] Catalog vật lý: trạng thái Còn hàng/Hết hàng phải tính theo tổng tồn kho các SKU active, không chỉ tồn kho cấp sản phẩm.
+- [x] Catalog vật lý: bỏ mô tả dài khỏi thẻ hàng vật lý; khách mở tên/thẻ để xem trang chi tiết.
+- [x] Catalog vật lý: kiểm thử SKU còn hàng, thẻ hết hàng, mô tả mobile/desktop; 25/25 test mục tiêu đạt.

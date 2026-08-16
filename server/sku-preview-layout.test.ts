@@ -53,6 +53,16 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('paymentMethod: paymentMethod === "wallet_balance" ? "wallet_balance" : undefined');
   });
 
+  it("uses SKU aggregate stock and keeps physical cards free of long descriptions", () => {
+    const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+    const dbSource = readFileSync(new URL("./db.ts", import.meta.url), "utf8");
+
+    expect(dbSource).toContain("const stockByProduct = await Promise.all(list.map(async product =>");
+    expect(dbSource).toContain("variants.reduce((total, variant) => total + Math.max(0, Number(variant.stock) || 0), 0)");
+    expect(catalogSource).toContain("Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'");
+    expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
+  });
+
   it("shows calculated SPX shipping and does not offer obsolete shipping methods", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 

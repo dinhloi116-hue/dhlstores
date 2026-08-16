@@ -1906,6 +1906,17 @@ export async function getProducts(filter?: {
     }));
     list = list.filter((_, index) => matchingProducts[index]);
   }
+
+  // Với sản phẩm có SKU, tồn kho hiển thị trên catalog phải phản ánh tổng các SKU
+  // đang hoạt động. Chỉ dùng tồn kho cấp sản phẩm khi sản phẩm chưa có SKU.
+  const stockByProduct = await Promise.all(list.map(async product => {
+    const variants = await getProductVariants(product.id);
+    if (variants.length === 0) return [product.id, product.stock] as const;
+    return [product.id, variants.reduce((total, variant) => total + Math.max(0, Number(variant.stock) || 0), 0)] as const;
+  }));
+  const stockMap = new Map(stockByProduct);
+  list = list.map(product => ({ ...product, stock: stockMap.get(product.id) ?? product.stock }));
+
   return list;
 }
 
