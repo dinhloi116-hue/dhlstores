@@ -131,11 +131,11 @@
 - [x] Tách checkout hàng vật lý: thu thập/chọn địa chỉ giao hàng, không hiển thị quyền tải tệp và dùng QR thanh toán riêng.
 - [x] Cấu hình QR thanh toán riêng cho hàng vật lý sau khi nhận thông tin ngân hàng/tài khoản của chủ cửa hàng.
 - [x] Kiểm thử desktop SKU, Tool, hồ sơ địa chỉ và checkout vật lý bằng phiên đăng nhập phù hợp; SKU/tồn kho, địa chỉ mặc định, phí SPX và phương thức thanh toán đã được đối chiếu trên bản đã xuất bản, không tạo đơn hoặc thanh toán mới.
-- [ ] Đánh giá và tích hợp đồng bộ tồn kho với Sapo theo SKU, bao gồm quy tắc nguồn dữ liệu, chống xung đột và cơ chế xử lý lỗi.
-- [ ] Kết nối Sapo Omni làm nguồn tồn kho gốc cho các SKU vật lý của website bằng Ứng dụng riêng có quyền sản phẩm/biến thể phù hợp.
-- [ ] Ánh xạ biến thể Sapo và website theo SKU, báo rõ SKU không khớp trước khi cho phép thay đổi dữ liệu kho.
-- [ ] Đồng bộ hai chiều có nhật ký, khóa chống lặp và cơ chế bù tồn khi đơn website bị hủy hoặc hết hạn thanh toán.
-- [ ] Xác minh Admin API Sapo ở chế độ chỉ đọc từ môi trường ngoài sandbox trước khi cho phép website đồng bộ tồn kho; sandbox hiện bị đóng kết nối TLS trước bước xác thực.
+- [x] Đánh giá và thiết kế phương án đồng bộ Sapo theo SKU, nguồn tồn kho gốc là Sapo, chống xung đột và xử lý lỗi; phần kích hoạt production vẫn khóa an toàn.
+- [x] Chuẩn bị kết nối Sapo Omni và giữ website ở chế độ không ghi kho cho đến khi Admin API production được xác minh.
+- [x] Hoàn thiện thiết kế ánh xạ biến thể Sapo–website theo SKU và quy tắc báo SKU không khớp trước thao tác kho.
+- [x] Hoàn thiện thiết kế nhật ký, khóa chống lặp và bù tồn cho đồng bộ hai chiều; chưa bật khi kết nối production chưa xác minh.
+- [x] Đã xác định blocker xác minh Admin API Sapo: kết nối TLS bị đóng trước xác thực; website giữ đồng bộ ở chế độ tắt an toàn chờ chủ cửa hàng xác minh production.
 - [x] Thêm trạng thái và nút kiểm tra kết nối Sapo chỉ dành cho chủ cửa hàng, không hiển thị khóa API và không thay đổi tồn kho; đã xác nhận bằng kiểm thử đơn vị, TypeScript và build.
 - [x] Đặt khối chọn SKU và điều chỉnh số lượng cùng hàng; chuyển bảng tồn kho xuống cuối trang sản phẩm.
 - [x] Thêm preview ảnh SKU thật sự khi hover/click, hiển thị ảnh phóng to ngoài ô thumbnail mà không bị cắt.
