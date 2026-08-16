@@ -332,3 +332,9 @@
 - [x] Hàng vật lý: cho phép đổi hình thức Mua ngay hoặc Order trực tiếp trong giỏ hàng, giữ đúng giá/tồn kho ở server.
 - [x] Quy chuẩn: ghi lại quy trình trạng thái mua hàng vật lý thành skill dhl-physical-commerce; đã kiểm định hợp lệ.
 - [x] Hàng vật lý: kiểm thử desktop/mobile, giỏ hàng, checkout và hồi quy sản phẩm số; 23/23 test liên quan đạt.
+
+- [x] Tiền tệ: chuẩn hóa các ô nhập và hiển thị số tiền bằng dấu phân cách hàng nghìn, vẫn lưu giá trị số an toàn.
+- [x] Ví: thêm phương thức thanh toán bằng số dư ví và hiển thị số dư hiện tại ở checkout.
+- [x] Ví: thêm yêu cầu rút tiền, thông tin tài khoản nhận, trạng thái chờ duyệt/đã duyệt/từ chối và lịch sử đối soát.
+- [x] Ví: giới hạn rút không vượt số dư khả dụng, giữ tiền ở trạng thái tạm khóa khi chờ duyệt và không tự động chuyển tiền thật.
+- [x] Ví: viết/cập nhật Vitest cho thanh toán, rút tiền và định dạng tiền; 74/74 test chạy đạt, 1 test Sapo được skip có chủ đích.

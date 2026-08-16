@@ -4,6 +4,10 @@ import { appRouter } from "./routers";
 import { confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, getSpxShippingFee, isDownloadAccessActive, replaceProductWholesaleTiers, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
+function createOwnerContext(): TrpcContext {
+  return { ...createMockContext(), user: { ...createMockContext().user!, role: "owner" as const } };
+}
+
 function createMockContext(): TrpcContext {
   const user = {
     id: 1,
@@ -338,6 +342,19 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     await caller.store.updateCart({ cartItemId: before!.id, quantity: 1, fulfillmentMode: "preorder" });
     const after = (await caller.store.cart()).find(item => item.id === before!.id);
     expect(after).toMatchObject({ quantity: 1, fulfillmentMode: "preorder" });
+  });
+
+  it("locks wallet funds for withdrawal and refunds them when the owner rejects", async () => {
+    const customer = appRouter.createCaller(createMockContext());
+    const owner = appRouter.createCaller(createOwnerContext());
+    await owner.operations.adjustBalance({ userId: 1, amount: 50000, reason: "Test số dư ví rút tiền" });
+    const before = Number((await customer.store.walletSummary()).balance);
+    await expect(customer.store.createWalletWithdrawal({ amount: 10000, bankCode: "VCB", accountNumber: "0123456789", accountHolder: "TEST USER" })).resolves.toMatchObject({ status: "pending", netAmount: "10000.00" });
+    const pending = (await customer.store.walletWithdrawals())[0];
+    expect(Number((await customer.store.walletSummary()).balance)).toBe(before - 10000);
+    await expect(customer.store.createWalletWithdrawal({ amount: before + 1, bankCode: "VCB", accountNumber: "0123456789", accountHolder: "TEST USER" })).rejects.toThrow();
+    await owner.operations.reviewWalletWithdrawal({ withdrawalId: pending.id, action: "rejected" });
+    expect(Number((await customer.store.walletSummary()).balance)).toBe(before);
   });
 
   it("cancels an expired QR order and rejects a later matching payment", async () => {

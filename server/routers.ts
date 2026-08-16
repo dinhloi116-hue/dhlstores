@@ -144,6 +144,8 @@ export const appRouter = router({
       }),
     adminActivity: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getAdminActivity(input?.userId)),
     balanceLedger: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getBalanceLedger(input?.userId)),
+    walletWithdrawals: ownerProcedure.query(() => db.getWalletWithdrawals()),
+    reviewWalletWithdrawal: ownerProcedure.input(z.object({ withdrawalId: z.number().int().positive(), action: z.enum(["approved", "rejected", "paid"]), note: z.string().trim().max(500).optional() })).mutation(({ ctx, input }) => db.reviewWalletWithdrawal({ ...input, performedByUserId: ctx.user.id })),
     adjustBalance: ownerProcedure.input(z.object({ userId: z.number().int().positive(), amount: z.number().finite().min(-9_999_999).max(9_999_999).refine(value => value !== 0), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.adjustUserBalance({ ...input, performedByUserId: ctx.user.id })),
     discountCodes: ownerProcedure.query(() => db.getDiscountCodes()),
     createDiscountCode: ownerProcedure.input(z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() })).mutation(({ ctx, input }) => db.createDiscountCode({ ...input, createdByUserId: ctx.user.id })),
@@ -304,11 +306,20 @@ export const appRouter = router({
         return db.cancelPendingOrderForUser(ctx.user.id, input.orderId);
       }),
 
-    walletSummary: protectedProcedure.query(async ({ ctx }) => {
+        walletSummary: protectedProcedure.query(async ({ ctx }) => {
       await requireActiveAccount(ctx.user.id);
       return db.getWalletSummary(ctx.user.id);
     }),
-
+    walletWithdrawals: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getWalletWithdrawals(ctx.user.id);
+    }),
+    createWalletWithdrawal: protectedProcedure
+      .input(z.object({ amount: z.number().int().min(10_000).max(20_000_000), bankCode: z.string().trim().min(2).max(32), accountNumber: z.string().trim().regex(/^[0-9]{4,32}$/), accountHolder: z.string().trim().min(3).max(255), note: z.string().trim().max(500).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return db.createWalletWithdrawal(ctx.user.id, input);
+      }),
     createWalletTopup: protectedProcedure
       .input(z.object({ amount: z.number().int().min(1_000).max(20_000_000) }))
       .mutation(async ({ ctx, input }) => {

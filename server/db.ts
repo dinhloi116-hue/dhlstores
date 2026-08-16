@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -815,6 +815,7 @@ export type DiscountCodeInput = {
 type MemoryDiscountCode = DiscountCodeInput & { id: number; usedCount: number; createdByUserId: number; createdAt: Date };
 type MemoryBalanceMovement = { id: number; userId: number; amount: string; balanceAfter: string; reason: string; performedByUserId: number; createdAt: Date };
 type MemoryWalletTopup = { id: number; userId: number; topupCode: string; amount: string; status: "pending" | "paid" | "expired" | "cancelled"; provider: string; providerTransactionId: string | null; transferContent: string | null; gateway: string | null; paidAt: Date | null; createdAt: Date; updatedAt: Date };
+type MemoryWalletWithdrawal = { id: number; userId: number; amount: string; fee: string; netAmount: string; bankCode: string; accountNumber: string; accountHolder: string; status: "pending" | "approved" | "paid" | "rejected" | "cancelled"; note: string | null; reviewedByUserId: number | null; reviewedAt: Date | null; paidAt: Date | null; createdAt: Date; updatedAt: Date };
 type MemoryInventoryMovement = { id: number; productId: number; variantId: number | null; quantityBefore: number; quantityAfter: number; reason: string; performedByUserId: number; createdAt: Date };
 type MemoryFeedback = { id: number; userId: number | null; visitorKey: string; displayName: string | null; contact: string | null; topic: "suggestion" | "issue" | "other"; message: string; imageUrl: string | null; imageKey: string | null; status: "new" | "reviewed" | "resolved"; readAt: Date | null; createdAt: Date; updatedAt: Date };
 type MemoryConversation = { id: number; userId: number | null; visitorKey: string; displayName: string | null; lastMessagePreview: string | null; lastMessageAt: Date; customerReadAt: Date | null; ownerReadAt: Date | null; createdAt: Date; updatedAt: Date };
@@ -823,6 +824,7 @@ type MemorySupportMessage = { id: number; conversationId: number; senderType: "c
 const memoryDiscountCodes: MemoryDiscountCode[] = [];
 const memoryBalanceMovements: MemoryBalanceMovement[] = [];
 const memoryWalletTopups: MemoryWalletTopup[] = [];
+const memoryWalletWithdrawals: MemoryWalletWithdrawal[] = [];
 const memoryInventoryMovements: MemoryInventoryMovement[] = [];
 const memoryAdminActivity: Array<{ id: number; action: string; targetType: string; targetId: number; details: string | null; performedByUserId: number; createdAt: Date }> = [];
 const memorySiteSettings = new Map<string, string>();
@@ -833,6 +835,7 @@ const memorySupportMessages: MemorySupportMessage[] = [];
 let nextDiscountCodeId = 1;
 let nextBalanceMovementId = 1;
 let nextWalletTopupId = 1;
+let nextWalletWithdrawalId = 1;
 let nextInventoryMovementId = 1;
 let nextAdminActivityId = 1;
 let nextFeedbackId = 1;
@@ -1090,6 +1093,98 @@ export async function getWalletSummary(userId: number) {
   const user = memoryUsers.find(candidate => candidate.id === userId);
   if (!user) throw new Error("USER_NOT_FOUND");
   return { balance: user.balance, movements: await getBalanceLedger(userId), topups: await getWalletTopups(userId) };
+}
+
+const WALLET_WITHDRAWAL_MIN_AMOUNT = 10_000;
+
+function normalizeWithdrawalInput(input: { amount: number; bankCode: string; accountNumber: string; accountHolder: string; note?: string }) {
+  const amount = Math.round(input.amount);
+  if (!Number.isSafeInteger(amount) || amount < WALLET_WITHDRAWAL_MIN_AMOUNT) throw new Error(`Số tiền rút tối thiểu là ${WALLET_WITHDRAWAL_MIN_AMOUNT.toLocaleString("vi-VN")}đ`);
+  const bankCode = input.bankCode.trim().toUpperCase();
+  const accountNumber = input.accountNumber.trim();
+  const accountHolder = input.accountHolder.trim().toUpperCase();
+  if (!/^[A-Z0-9._-]{2,32}$/.test(bankCode)) throw new Error("Mã ngân hàng không hợp lệ");
+  if (!/^[0-9]{4,32}$/.test(accountNumber)) throw new Error("Số tài khoản không hợp lệ");
+  if (accountHolder.length < 3 || accountHolder.length > 255) throw new Error("Tên chủ tài khoản không hợp lệ");
+  return { amount, fee: 0, netAmount: amount, bankCode, accountNumber, accountHolder, note: input.note?.trim().slice(0, 500) || null };
+}
+
+export async function createWalletWithdrawal(userId: number, input: { amount: number; bankCode: string; accountNumber: string; accountHolder: string; note?: string }) {
+  const normalized = normalizeWithdrawalInput(input);
+  const connection = await getDb();
+  if (connection) {
+    return connection.transaction(async transaction => {
+      const user = (await transaction.select().from(users).where(eq(users.id, userId)).limit(1))[0];
+      if (!user) throw new Error("USER_NOT_FOUND");
+      const balanceAfter = Number(user.balance) - normalized.amount;
+      if (balanceAfter < 0) throw new Error("INSUFFICIENT_BALANCE");
+      await transaction.update(users).set({ balance: balanceAfter.toFixed(2) }).where(and(eq(users.id, userId), gte(users.balance, normalized.amount.toFixed(2))));
+      const inserted = await transaction.insert(walletWithdrawals).values({ userId, ...normalized, amount: normalized.amount.toFixed(2), fee: "0.00", netAmount: normalized.netAmount.toFixed(2), status: "pending" });
+      const withdrawalId = Number(inserted[0].insertId);
+      await transaction.insert(balanceLedger).values({ userId, amount: (-normalized.amount).toFixed(2), balanceAfter: balanceAfter.toFixed(2), reason: `Khóa tiền chờ rút #${withdrawalId}`, performedByUserId: userId });
+      const row = (await transaction.select().from(walletWithdrawals).where(eq(walletWithdrawals.id, withdrawalId)).limit(1))[0];
+      return { ...row, amount: String(row.amount), fee: String(row.fee), netAmount: String(row.netAmount), balanceAfter: balanceAfter.toFixed(2) };
+    });
+  }
+  const user = memoryUsers.find(candidate => candidate.id === userId);
+  if (!user) throw new Error("USER_NOT_FOUND");
+  const balanceAfter = Number(user.balance) - normalized.amount;
+  if (balanceAfter < 0) throw new Error("INSUFFICIENT_BALANCE");
+  user.balance = balanceAfter.toFixed(2);
+  const now = new Date();
+  const withdrawal: MemoryWalletWithdrawal = { id: nextWalletWithdrawalId++, userId, ...normalized, amount: normalized.amount.toFixed(2), fee: "0.00", netAmount: normalized.netAmount.toFixed(2), status: "pending", reviewedByUserId: null, reviewedAt: null, paidAt: null, createdAt: now, updatedAt: now };
+  memoryWalletWithdrawals.unshift(withdrawal);
+  memoryBalanceMovements.unshift({ id: nextBalanceMovementId++, userId, amount: (-normalized.amount).toFixed(2), balanceAfter: user.balance, reason: `Khóa tiền chờ rút #${withdrawal.id}`, performedByUserId: userId, createdAt: now });
+  return { ...withdrawal, balanceAfter: user.balance };
+}
+
+export async function getWalletWithdrawals(userId?: number) {
+  const connection = await getDb();
+  if (connection) {
+    const rows = userId ? await connection.select().from(walletWithdrawals).where(eq(walletWithdrawals.userId, userId)).orderBy(desc(walletWithdrawals.createdAt)).limit(50) : await connection.select().from(walletWithdrawals).orderBy(desc(walletWithdrawals.createdAt)).limit(100);
+    return rows.map(row => ({ ...row, amount: String(row.amount), fee: String(row.fee), netAmount: String(row.netAmount) }));
+  }
+  return memoryWalletWithdrawals.filter(row => !userId || row.userId === userId).slice(0, userId ? 50 : 100);
+}
+
+export async function reviewWalletWithdrawal(input: { withdrawalId: number; action: "approved" | "rejected" | "paid"; performedByUserId: number; note?: string }) {
+  const connection = await getDb();
+  if (connection) {
+    return connection.transaction(async transaction => {
+      const withdrawal = (await transaction.select().from(walletWithdrawals).where(eq(walletWithdrawals.id, input.withdrawalId)).limit(1))[0];
+      if (!withdrawal) throw new Error("WITHDRAWAL_NOT_FOUND");
+      if (input.action === "paid" && withdrawal.status !== "approved") throw new Error("WITHDRAWAL_MUST_BE_APPROVED");
+      if (input.action !== "paid" && withdrawal.status !== "pending") throw new Error("WITHDRAWAL_ALREADY_REVIEWED");
+      const now = new Date();
+      if (input.action === "rejected") {
+        const user = (await transaction.select().from(users).where(eq(users.id, withdrawal.userId)).limit(1))[0];
+        if (!user) throw new Error("USER_NOT_FOUND");
+        const balanceAfter = Number(user.balance) + Number(withdrawal.amount);
+        await transaction.update(users).set({ balance: balanceAfter.toFixed(2) }).where(eq(users.id, withdrawal.userId));
+        await transaction.insert(balanceLedger).values({ userId: withdrawal.userId, amount: String(withdrawal.amount), balanceAfter: balanceAfter.toFixed(2), reason: `Hoàn tiền yêu cầu rút #${withdrawal.id}`, performedByUserId: input.performedByUserId });
+      }
+      await transaction.update(walletWithdrawals).set({ status: input.action, note: input.note?.trim().slice(0, 500) || withdrawal.note, reviewedByUserId: input.performedByUserId, reviewedAt: now, paidAt: input.action === "paid" ? now : withdrawal.paidAt }).where(eq(walletWithdrawals.id, withdrawal.id));
+      return { success: true, status: input.action };
+    });
+  }
+  const withdrawal = memoryWalletWithdrawals.find(row => row.id === input.withdrawalId);
+  if (!withdrawal) throw new Error("WITHDRAWAL_NOT_FOUND");
+  if (input.action === "paid" && withdrawal.status !== "approved") throw new Error("WITHDRAWAL_MUST_BE_APPROVED");
+  if (input.action !== "paid" && withdrawal.status !== "pending") throw new Error("WITHDRAWAL_ALREADY_REVIEWED");
+  const now = new Date();
+  if (input.action === "rejected") {
+    const user = memoryUsers.find(candidate => candidate.id === withdrawal.userId);
+    if (!user) throw new Error("USER_NOT_FOUND");
+    user.balance = (Number(user.balance) + Number(withdrawal.amount)).toFixed(2);
+    memoryBalanceMovements.unshift({ id: nextBalanceMovementId++, userId: withdrawal.userId, amount: withdrawal.amount, balanceAfter: user.balance, reason: `Hoàn tiền yêu cầu rút #${withdrawal.id}`, performedByUserId: input.performedByUserId, createdAt: now });
+  }
+  withdrawal.status = input.action;
+  withdrawal.note = input.note?.trim().slice(0, 500) || withdrawal.note;
+  withdrawal.reviewedByUserId = input.performedByUserId;
+  withdrawal.reviewedAt = now;
+  withdrawal.paidAt = input.action === "paid" ? now : withdrawal.paidAt;
+  withdrawal.updatedAt = now;
+  return { success: true, status: input.action };
 }
 
 export async function payOrderWithWalletBalance(userId: number, orderId: number) {

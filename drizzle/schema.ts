@@ -417,3 +417,26 @@ export const productReviews = mysqlTable("product_reviews", {
 
 export type ProductReview = typeof productReviews.$inferSelect;
 export type InsertProductReview = typeof productReviews.$inferInsert;
+
+
+/** Yêu cầu rút số dư ví; tiền được khóa khi chờ duyệt và chỉ owner xác nhận chi trả. */
+export const walletWithdrawals = mysqlTable("wallet_withdrawals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  fee: decimal("fee", { precision: 12, scale: 2 }).default("0").notNull(),
+  netAmount: decimal("netAmount", { precision: 12, scale: 2 }).notNull(),
+  bankCode: varchar("bankCode", { length: 32 }).notNull(),
+  accountNumber: varchar("accountNumber", { length: 64 }).notNull(),
+  accountHolder: varchar("accountHolder", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "paid", "rejected", "cancelled"]).default("pending").notNull(),
+  note: varchar("note", { length: 500 }),
+  reviewedByUserId: int("reviewedByUserId"),
+  reviewedAt: timestamp("reviewedAt"),
+  paidAt: timestamp("paidAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WalletWithdrawal = typeof walletWithdrawals.$inferSelect;
+export type InsertWalletWithdrawal = typeof walletWithdrawals.$inferInsert;
