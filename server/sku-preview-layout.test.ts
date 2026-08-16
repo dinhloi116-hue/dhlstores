@@ -42,6 +42,17 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('Rê chuột để phóng to');
   });
 
+  it("offers wallet or QR payment and direct quantity entry", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('paymentMethod === "wallet_balance"');
+    expect(source).toContain('paymentMethod === "qr"');
+    expect(source).toContain('Thanh toán bằng số dư ví');
+    expect(source).toContain('aria-label="Số lượng sản phẩm"');
+    expect(source).toContain('value={quantity.toLocaleString("vi-VN")}');
+    expect(source).toContain('paymentMethod: paymentMethod === "wallet_balance" ? "wallet_balance" : undefined');
+  });
+
   it("shows calculated SPX shipping and does not offer obsolete shipping methods", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 

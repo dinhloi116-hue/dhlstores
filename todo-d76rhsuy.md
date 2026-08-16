@@ -342,3 +342,7 @@
 - [x] Sửa lỗi click trực tiếp vào ba tab lớn không chuyển trang.
 - [x] Giữ preview danh mục khi hover/mở mũi tên và bảo đảm menu mobile vẫn chạm được.
 - [x] Kiểm thử điều hướng desktop/mobile, cập nhật Vitest và lưu checkpoint sửa lỗi; 75/75 test chạy đạt, 1 test Sapo được skip có chủ đích.
+
+- [x] Hàng vật lý: trong hộp thanh toán cho chọn rõ Thanh toán bằng ví hoặc QR Techcombank trước khi tạo thanh toán.
+- [x] Hàng vật lý: thêm ô nhập trực tiếp số lượng cạnh nút cộng/trừ, chuẩn hóa số nguyên và giới hạn theo tồn kho.
+- [x] Hàng vật lý: kiểm thử hai phương thức thanh toán, số lượng nhập tay, giá/phí SPX và hồi quy sản phẩm số; 76/76 test chạy đạt, 1 test Sapo được skip có chủ đích.
