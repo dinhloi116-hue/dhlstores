@@ -410,3 +410,7 @@
 - [x] Marketplace: thêm hiệu ứng ảnh sản phẩm bay vào biểu tượng giỏ sau khi thêm thành công.
 - [x] Marketplace: hiển thị số tiền tiết kiệm từ giá sỉ trên thanh tóm tắt cố định.
 - [x] Header: preview nhanh giỏ hàng khi rê chuột vào biểu tượng giỏ trên desktop.
+
+- [x] Toast: xác nhận thêm giỏ có nút chuyển nhanh sang trang thanh toán.
+- [x] Header mobile: thêm preview giỏ gọn, dễ thao tác trên thiết bị cảm ứng.
+- [x] Marketplace: thêm tìm kiếm nhanh theo tên, thuộc tính hoặc mã SKU trong bảng chọn hàng loạt.

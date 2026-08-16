@@ -204,7 +204,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="bg-white border-slate-200 text-slate-900 w-full sm:max-w-md flex flex-col">
+              <SheetContent className="flex w-[min(100vw,26rem)] flex-col border-slate-200 bg-white text-slate-900 sm:max-w-md">
                 <SheetHeader className="border-b border-slate-100 pb-4">
                   <SheetTitle className="text-slate-900 flex items-center justify-between font-bold">
                     <span>{t.cartTitle}</span>
@@ -212,6 +212,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                       {cartItemCount} items
                     </Badge>
                   </SheetTitle>
+                  {isAuthenticated && <div className="mt-3 flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2 text-xs"><span className="font-bold text-slate-600">Xem nhanh trên điện thoại</span><span className="font-black text-amber-700">{formatCurrency(cartSubtotal)}</span></div>}
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto py-4 space-y-4">

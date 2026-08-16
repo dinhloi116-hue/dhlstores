@@ -75,6 +75,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [variantQuantities, setVariantQuantities] = useState<Record<number, number>>({});
+  const [skuSearch, setSkuSearch] = useState("");
   const [adding, setAdding] = useState<boolean>(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [fulfillmentMode, setFulfillmentMode] = useState<'in_stock' | 'preorder'>('in_stock');
@@ -94,6 +95,8 @@ export default function ProductDetail() {
   const submitReviewMutation = trpc.store.submitProductReview.useMutation({ onSuccess: () => { setReviewBody(""); setReviewRating(5); toast.success("Đã gửi đánh giá thành công."); void utils.store.productReviews.invalidate(); }, onError: error => toast.error(error.message) });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
   const sortedVariants = variants;
+  const normalizedSkuSearch = skuSearch.trim().toLocaleLowerCase("vi-VN");
+  const visibleVariants = normalizedSkuSearch ? sortedVariants.filter(variant => `${formatVariantOptions(variant)} ${variant.sku || ""}`.toLocaleLowerCase("vi-VN").includes(normalizedSkuSearch)) : sortedVariants;
   const selectedSkuItems = sortedVariants.map(variant => ({ variant, quantity: variantQuantities[variant.id] ?? 0 })).filter(item => item.quantity > 0);
   const selectedSkuTotal = selectedSkuItems.reduce((total, item) => total + item.quantity, 0);
   const directPurchaseQuantity = product?.type === "physical" && variants.length > 0 ? (selectedVariantId ? variantQuantities[selectedVariantId] ?? 0 : 0) : quantity;
@@ -190,7 +193,7 @@ export default function ProductDetail() {
   const addToCartMutation = trpc.store.addToCart.useMutation({
     onSuccess: () => {
       animateProductToCart();
-      toast.success(lang === 'vi' ? "Đã thêm tài nguyên vào giỏ hàng thành công!" : "Added resource to cart successfully!", { duration: 3000, action: { label: "Xem giỏ hàng", onClick: () => { window.location.href = "/cart"; } } });
+      toast.success(lang === 'vi' ? "Đã thêm tài nguyên vào giỏ hàng thành công!" : "Added resource to cart successfully!", { duration: 3000, action: { label: "Thanh toán", onClick: () => { window.location.href = "/checkout"; } } });
       utils.store.cart.invalidate();
       setAdding(false);
     },
@@ -202,7 +205,7 @@ export default function ProductDetail() {
   const addManyToCartMutation = trpc.store.addManyToCart.useMutation({
     onSuccess: result => {
       animateProductToCart();
-      toast.success(`Đã thêm ${result.addedCount} SKU vào giỏ hàng.`, { duration: 3000, action: { label: "Xem giỏ hàng", onClick: () => { window.location.href = "/cart"; } } });
+      toast.success(`Đã thêm ${result.addedCount} SKU vào giỏ hàng.`, { duration: 3000, action: { label: "Thanh toán", onClick: () => { window.location.href = "/checkout"; } } });
       utils.store.cart.invalidate();
       setAdding(false);
     },
@@ -345,10 +348,11 @@ export default function ProductDetail() {
         <div><p className="text-xs font-black uppercase tracking-wide text-slate-900">Chọn nhiều SKU, thêm giỏ một lần</p><p className="mt-1 text-[11px] leading-relaxed text-slate-600">Để số lượng <strong>0</strong> cho SKU không lấy. Mỗi dòng có giá, tồn kho và số lượng riêng; bấm Thêm vào giỏ sẽ thêm toàn bộ SKU đang có số lượng.</p></div>
         <div className="flex items-center gap-2"><div className="rounded-lg bg-orange-50 px-3 py-2 text-right"><p className="text-[10px] font-black uppercase tracking-wide text-orange-700">Đang chọn</p><p className="text-sm font-black text-slate-900">{selectedSkuTotal} sản phẩm · {selectedSkuItems.length} SKU</p>{applicableWholesaleTier && <p className="mt-1 text-[10px] font-black text-emerald-700">Giá sỉ mốc {applicableWholesaleTier.minQuantity} cái</p>}</div><button type="button" onClick={clearAllVariantQuantities} disabled={selectedSkuTotal === 0} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40">Xóa tất cả</button></div>
       </div>
-      <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+      <div className="mt-4 flex flex-wrap items-center gap-2"><label className="sr-only" htmlFor="sku-search">Tìm SKU</label><input id="sku-search" value={skuSearch} onChange={event => setSkuSearch(event.target.value)} placeholder="Tìm tên, thuộc tính hoặc mã SKU…" className="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100" />{skuSearch && <button type="button" onClick={() => setSkuSearch("")} className="rounded-lg px-2 py-2 text-xs font-black text-slate-500 hover:bg-slate-100 hover:text-slate-800">Xóa</button>}<span className="text-[10px] font-black text-slate-500">{visibleVariants.length}/{sortedVariants.length} SKU</span></div>
+      <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
         <div className="grid grid-cols-[4.25rem_minmax(0,1fr)_auto] gap-3 bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-600 sm:grid-cols-[3.75rem_minmax(0,1fr)_6rem_5rem_8.5rem] lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_8rem_11rem]"><span>Ảnh</span><span>Phiên bản / SKU</span><span className="hidden text-right sm:block">Đơn giá</span><span className="hidden text-right sm:block">Tồn kho</span><span className="text-right">Số lượng</span></div>
         <div className="max-h-[42rem] divide-y divide-slate-100 overflow-y-auto">
-          {sortedVariants.map(variant => {
+          {visibleVariants.map(variant => {
             const rowQuantity = variantQuantities[variant.id] ?? 0;
             const outOfStock = !isPreorder && variant.stock <= 0;
             const rowUnitPrice = Number(applicableWholesaleTier?.unitPrice ?? product.price) + Number(variant.priceAdjustment || 0);
@@ -360,6 +364,7 @@ export default function ProductDetail() {
               <div className="justify-self-end"><div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white"><button type="button" onClick={event => { event.stopPropagation(); updateVariantQuantity(variant.id, rowQuantity - 1); }} disabled={rowQuantity <= 0} className="grid h-8 w-8 place-items-center text-base font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300">−</button><input aria-label={`Số lượng ${formatVariantOptions(variant)}`} inputMode="numeric" value={rowQuantity} onClick={event => event.stopPropagation()} onChange={event => { const digits = event.target.value.replace(/\D/g, ""); updateVariantQuantity(variant.id, digits ? Number(digits) : 0); }} className="h-8 w-10 border-x border-slate-200 text-center text-xs font-black text-slate-900 outline-none focus:bg-orange-50" /><button type="button" onClick={event => { event.stopPropagation(); updateVariantQuantity(variant.id, rowQuantity + 1); }} disabled={outOfStock || (!isPreorder && rowQuantity >= variant.stock) || (isPreorder && rowQuantity >= 99)} className="grid h-8 w-8 place-items-center text-base font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300">+</button></div></div>
             </div>;
           })}
+          {visibleVariants.length === 0 && <div className="px-4 py-10 text-center text-xs font-semibold text-slate-500">Không tìm thấy SKU phù hợp. Hãy thử tên màu, size hoặc mã SKU khác.</div>}
         </div>
       </div>
       <div className="mt-3 grid min-w-0 gap-2 rounded-lg bg-sky-50 px-3 py-2 text-[11px] text-sky-900 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div className="min-w-0"><p className="truncate"><strong>Ước tính đơn trong giỏ:</strong> {selectedSkuTotal > 0 ? `${selectedSkuWeightGrams.toLocaleString("vi-VN")} g · phí SPX ${formatCurrency(selectedSkuShippingFee)}` : "chọn SKU để xem phí SPX"}</p>{selectedSkuTotal > 0 && <p className="mt-1 font-black text-slate-900">Tạm tính: {formatCurrency(selectedSkuEstimatedTotal)}</p>}</div><span className="font-black sm:text-right">{applicableWholesaleTier ? `Giá sỉ mốc ${applicableWholesaleTier.minQuantity} cái` : isPreorder ? "Order trước · 7–10 ngày" : "Hàng sẵn · giao 2–5 ngày"}</span></div>
