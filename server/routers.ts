@@ -247,10 +247,11 @@ export const appRouter = router({
       .input(z.object({
         cartItemId: z.number(),
         quantity: z.number(),
+        fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
-        return await db.updateCartItem(ctx.user.id, input.cartItemId, input.quantity);
+        return await db.updateCartItem(ctx.user.id, input.cartItemId, input.quantity, input.fulfillmentMode);
       }),
 
     removeFromCart: protectedProcedure

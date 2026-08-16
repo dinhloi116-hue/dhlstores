@@ -326,3 +326,9 @@
 - [x] Hàng vật lý: đưa lựa chọn Mua ngay và Order trước lên bước 1 trước chọn SKU/số lượng.
 - [x] Hàng vật lý: giữ đúng giá giảm 10%, tồn kho và phí SPX theo hình thức đã chọn.
 - [x] Hàng vật lý: kiểm thử mua ngay, Order trước, mobile/desktop và hồi quy sản phẩm số; 22/22 test liên quan đạt.
+
+- [x] Hàng vật lý: thêm nhãn Bước 1/Bước 2/Bước 3 rõ ràng trên desktop cho khu vực mua hàng.
+- [x] Hàng vật lý: hiển thị ngày giao dự kiến theo SKU đang chọn và hình thức Mua ngay/Order.
+- [x] Hàng vật lý: cho phép đổi hình thức Mua ngay hoặc Order trực tiếp trong giỏ hàng, giữ đúng giá/tồn kho ở server.
+- [x] Quy chuẩn: ghi lại quy trình trạng thái mua hàng vật lý thành skill dhl-physical-commerce; đã kiểm định hợp lệ.
+- [x] Hàng vật lý: kiểm thử desktop/mobile, giỏ hàng, checkout và hồi quy sản phẩm số; 23/23 test liên quan đạt.

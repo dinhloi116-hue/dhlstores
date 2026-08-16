@@ -327,6 +327,19 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     await expect(caller.store.submitProductReview({ productId: 1, rating: 6, body: "Nội dung đánh giá không hợp lệ" })).rejects.toThrow();
   });
 
+  it("switches a physical cart line between immediate and preorder without changing quantity", async () => {
+    const caller = appRouter.createCaller(createMockContext());
+    const suffix = `cart-mode-${Date.now().toString(36)}`;
+    const product = await createProduct({ name: `Áo đổi hình thức ${suffix}`, slug: `ao-doi-hinh-thuc-${suffix}`, description: "Kiểm thử đổi hình thức trong giỏ", price: "100000", categoryId: 11, image: "generated:cart-mode", stock: 3, featured: false, isActive: true });
+    const variant = await createProductVariant({ productId: product!.id, size: "M", color: "Đen", sku: `CART-MODE-${suffix}`, priceAdjustment: "0", stock: 3, isActive: true });
+    await caller.store.addToCart({ productId: product!.id, variantId: variant!.id, quantity: 1, fulfillmentMode: "in_stock" });
+    const before = (await caller.store.cart()).find(item => item.productId === product!.id);
+    expect(before).toMatchObject({ quantity: 1, fulfillmentMode: "in_stock" });
+    await caller.store.updateCart({ cartItemId: before!.id, quantity: 1, fulfillmentMode: "preorder" });
+    const after = (await caller.store.cart()).find(item => item.id === before!.id);
+    expect(after).toMatchObject({ quantity: 1, fulfillmentMode: "preorder" });
+  });
+
   it("cancels an expired QR order and rejects a later matching payment", async () => {
     const ctx = createMockContext();
     const caller = appRouter.createCaller(ctx);

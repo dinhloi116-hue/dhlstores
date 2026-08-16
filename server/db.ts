@@ -1896,7 +1896,7 @@ export async function addToCart(userId: number, productId: number, quantity: num
   return { success: true };
 }
 
-export async function updateCartItem(userId: number, cartItemId: number, quantity: number) {
+export async function updateCartItem(userId: number, cartItemId: number, quantity: number, requestedFulfillmentMode?: 'in_stock' | 'preorder') {
   const connection = await getDb();
   if (connection) {
     const current = await connection.select().from(cartItems).where(and(eq(cartItems.id, cartItemId), eq(cartItems.userId, userId))).limit(1);
@@ -1908,11 +1908,13 @@ export async function updateCartItem(userId: number, cartItemId: number, quantit
     }
     const product = await getProductById(item.productId);
     if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
+    const nextFulfillmentMode = requestedFulfillmentMode ?? item.fulfillmentMode;
+    if (nextFulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
     const variant = item.variantId ? (await getProductVariants(item.productId)).find(candidate => candidate.id === item.variantId) : undefined;
     if (product.type === "physical" && item.variantId && !variant) throw new Error("Biến thể sản phẩm hiện không khả dụng");
-    if (item.fulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
-    if (item.fulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
-    await connection.update(cartItems).set({ quantity }).where(and(eq(cartItems.id, cartItemId), eq(cartItems.userId, userId)));
+    if (nextFulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+    if (nextFulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
+    await connection.update(cartItems).set({ quantity, fulfillmentMode: nextFulfillmentMode }).where(and(eq(cartItems.id, cartItemId), eq(cartItems.userId, userId)));
     return { success: true };
   }
   const item = memoryCart.find(i => i.id === cartItemId && i.userId === userId);
@@ -1921,12 +1923,15 @@ export async function updateCartItem(userId: number, cartItemId: number, quantit
       memoryCart = memoryCart.filter(i => i.id !== cartItemId || i.userId !== userId);
     } else {
       const product = await getProductById(item.productId);
-      const variant = item.variantId ? (await getProductVariants(item.productId)).find(candidate => candidate.id === item.variantId) : undefined;
+      const nextFulfillmentMode = requestedFulfillmentMode ?? item.fulfillmentMode;
       if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
+      if (nextFulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
+      const variant = item.variantId ? (await getProductVariants(item.productId)).find(candidate => candidate.id === item.variantId) : undefined;
       if (product.type === "physical" && item.variantId && !variant) throw new Error("Biến thể sản phẩm hiện không khả dụng");
-      if (item.fulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
-      if (item.fulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
+      if (nextFulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
+      if (nextFulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < quantity) throw new Error("Sản phẩm không đủ tồn kho");
       item.quantity = quantity;
+      item.fulfillmentMode = nextFulfillmentMode;
     }
   }
   return { success: true };
