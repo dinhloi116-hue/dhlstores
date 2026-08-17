@@ -476,9 +476,9 @@
 
 - [x] Quyết định phạm vi: gác payout tự động; giữ rút tiền thủ công với QR và quy trình duyệt hiện tại.
 
-- [ ] Sửa lần hai action bar SKU: không bị cắt ở đáy viewport, không che dòng cuối và có chiều cao ổn định.
-- [ ] Làm rõ trạng thái chưa chọn SKU: nút disabled dễ đọc, không dùng màu quá nhạt và vẫn responsive.
-- [ ] Kiểm thử bằng screenshot đúng trang sản phẩm trên desktop/mobile và hồi quy thêm giỏ/mua ngay.
+- [x] Sửa lần hai action bar SKU: không bị cắt ở đáy viewport, không che dòng cuối và có chiều cao ổn định.
+- [x] Làm rõ trạng thái chưa chọn SKU: nút disabled dễ đọc, không dùng màu quá nhạt và vẫn responsive.
+- [x] Kiểm thử bằng screenshot đúng trang sản phẩm trên desktop/mobile và hồi quy thêm giỏ/mua ngay.
 
 - [x] Sửa action bar Marketplace khỏi trạng thái sticky gây che/cắt nội dung; thêm khoảng đệm tối thiểu, thông báo khi chưa chọn SKU và trạng thái disabled rõ ràng cho desktop/mobile.
 - [x] Kiểm tra TypeScript và chụp toàn trang sản phẩm vật lý sau thay đổi; xác nhận bố cục không còn lớp action bar đè lên bảng SKU.
