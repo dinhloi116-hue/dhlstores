@@ -451,3 +451,8 @@
 
 - [x] Địa chỉ giao hàng: thêm dropdown Tỉnh/Thành phố và Phường/Xã trong form lưu địa chỉ, giữ ô địa chỉ chi tiết.
 - [x] Ghép và lưu địa chỉ hoàn chỉnh tương thích với checkout, kiểm thử reset phường/xã khi đổi tỉnh và responsive.
+
+- [ ] Rút tiền tự động: nghiên cứu phương án API payout/ngân hàng, bổ sung hướng dẫn và chỉ triển khai sau khi có nhà cung cấp, quyền hạn và thông tin xác thực phù hợp.
+- [x] Rà soát và sửa các lỗi giao diện đang hiển thị trong các mục được người dùng phản ánh.
+- [x] Bổ sung lựa chọn sổ địa chỉ cho checkout đơn hàng số theo cách không bắt buộc địa chỉ giao hàng vật lý.
+- [x] Kiểm thử độc lập ba hạng mục và lưu phiên bản ổn định.

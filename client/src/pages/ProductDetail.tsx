@@ -10,7 +10,7 @@ import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Clock3, Sparkles, Tag, Zap, CheckCircle2, QrCode, MapPin, Star, Ruler, ZoomIn, WalletCards } from "lucide-react";
+import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Home, Clock3, Sparkles, Tag, Zap, CheckCircle2, QrCode, MapPin, Star, Ruler, ZoomIn, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 
 function formatVariantOptions(variant: { size?: string; color?: string; attributes?: string }) {
@@ -246,16 +246,7 @@ export default function ProductDetail() {
   if (productQuery.isError || !product) {
     return (
       <StoreLayout>
-        <div className="max-w-7xl mx-auto px-4 py-24 text-center">
-          <h2 className="text-2xl font-bold text-slate-800 mb-4">
-            {lang === 'vi' ? 'Không tìm thấy tài nguyên' : 'Resource not found'}
-          </h2>
-          <Link href="/products">
-            <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
-              {lang === 'vi' ? 'Quay lại danh sách' : 'Back to library'}
-            </Button>
-          </Link>
-        </div>
+        <div className="mx-auto max-w-2xl px-4 py-20 sm:py-28"><div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1220] p-8 text-center text-white shadow-xl sm:p-12"><div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:24px_24px]" /><div className="relative"><p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300">DHL Stores · Resource Library</p><div className="mx-auto mt-5 grid h-16 w-16 place-items-center rounded-2xl bg-white/10 text-3xl font-black text-amber-300">404</div><h2 className="mt-5 text-2xl font-black uppercase tracking-tight sm:text-3xl">{lang === 'vi' ? 'Không tìm thấy tài nguyên' : 'Resource not found'}</h2><p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">{lang === 'vi' ? 'Liên kết có thể đã thay đổi hoặc sản phẩm đã được gỡ khỏi kho. Hãy quay lại danh mục để chọn tài nguyên khác.' : 'This link may have changed or the resource may have been removed. Return to the library to choose another resource.'}</p><Link href="/products"><Button className="mt-7 bg-amber-500 px-5 font-black text-slate-950 hover:bg-amber-400"><Home className="mr-2 h-4 w-4" />{lang === 'vi' ? 'Quay lại kho tài nguyên' : 'Back to library'}</Button></Link></div></div></div>
       </StoreLayout>
     );
   }
