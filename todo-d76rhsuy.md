@@ -438,3 +438,6 @@
 - [x] Hiển thị và cho chỉnh giá vốn ngay trong khu vực quản trị sản phẩm/tồn kho theo từng SKU.
 - [x] Mở rộng báo cáo doanh thu: doanh thu gộp, giá vốn, lợi nhuận gộp và biên lợi nhuận; lọc theo hôm nay, 7 ngày, 30 ngày, tháng, năm.
 - [x] Tách báo cáo theo sản phẩm số/vật lý và kiểm thử phép tính lợi nhuận từ đơn hàng thực tế.
+
+- [x] Giao diện mua hàng: với SKU chọn Order, hiển thị giá gốc gạch ngang và giá Order giảm 10% ngay tại cột đơn giá.
+- [x] Kiểm thử giá Order ở Classic/Marketplace và xác nhận giá thanh toán server vẫn giảm 10%, không ảnh hưởng mua ngay/giá sỉ.
