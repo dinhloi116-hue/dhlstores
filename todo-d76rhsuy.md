@@ -467,3 +467,9 @@
 - [x] Header: menu tài khoản mở khi hover hoặc keyboard focus, vẫn có fallback click trên mobile.
 - [x] Menu tài khoản: thêm lối tắt ví/số dư, đơn hàng, địa chỉ, tải xuống, hồ sơ/email, quản trị và đăng xuất với trạng thái rõ ràng.
 - [x] Kiểm thử accessibility, hover/focus, mobile và hồi quy header.
+
+- [x] Tạo skill tái sử dụng cho quy trình marketplace DHL Stores theo hướng dẫn skill-creator.
+- [x] Tài khoản & Email: thêm ảnh đại diện và fallback chữ cái khi chưa có ảnh.
+- [x] Menu tài khoản: thêm loading transition khi chuyển mục, không gây dead-end khi điều hướng.
+- [x] Header: thêm chuông thông báo với badge số đơn cần chú ý, có trạng thái đã xem phù hợp.
+- [x] Kiểm thử bốn cải tiến trên desktop/mobile, accessibility và hồi quy header/account/order.

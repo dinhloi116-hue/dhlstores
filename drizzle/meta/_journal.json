@@ -183,6 +183,13 @@
       "when": 1786940308264,
       "tag": "0025_cold_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1786960228443,
+      "tag": "0026_large_gressill",
+      "breakpoints": true
     }
   ]
 }

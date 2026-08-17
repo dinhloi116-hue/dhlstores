@@ -8,7 +8,7 @@ import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Download, ExternalLink, Mail, MapPin, Pencil, Plus, Trash2, WalletCards, QrCode, ArrowDownToLine, History } from "lucide-react";
+import { Package, Download, ExternalLink, Mail, MapPin, Pencil, Plus, Trash2, WalletCards, QrCode, ArrowDownToLine, History, Camera } from "lucide-react";
 import { toast } from "sonner";
 
 type AdminProvince = { tentinhmoi: string; phuongxa: Array<{ maphuongxa: number; tenphuongxa: string }> };
@@ -45,6 +45,13 @@ export default function Account() {
   const walletWithdrawalsQuery = trpc.store.walletWithdrawals.useQuery(undefined, { enabled: isAuthenticated });
   const siteSettingsQuery = trpc.store.siteSettings.useQuery();
   const downloadWindowMs = 7 * 24 * 60 * 60 * 1_000;
+  const uploadAvatarMutation = trpc.auth.uploadAvatar.useMutation({
+    onSuccess: async () => {
+      await refresh();
+      toast.success(lang === "vi" ? "Đã cập nhật ảnh đại diện" : "Profile photo updated");
+    },
+    onError: error => toast.error(error.message),
+  });
   const linkEmailMutation = trpc.auth.linkEmail.useMutation({
     onSuccess: async () => {
       await refresh();
@@ -122,6 +129,25 @@ export default function Account() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
   };
 
+  const handleAvatarChange = (file?: File) => {
+    if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error(lang === "vi" ? "Chỉ hỗ trợ JPG, PNG, WEBP hoặc GIF" : "Only JPG, PNG, WEBP or GIF images are supported");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(lang === "vi" ? "Ảnh đại diện tối đa 5 MB" : "Profile photo must be 5 MB or smaller");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = String(reader.result || "");
+      uploadAvatarMutation.mutate({ fileName: file.name, mimeType: file.type as "image/jpeg" | "image/png" | "image/webp" | "image/gif", base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
@@ -138,12 +164,15 @@ export default function Account() {
       <div className="mx-auto max-w-[1600px] space-y-8 px-4 py-10 sm:px-6 lg:px-8 2xl:px-10">
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-amber-500 flex items-center justify-center text-white font-black text-2xl shadow-sm">
-              {user?.name?.[0] || "D"}
-            </div>
+            <label className="group relative block h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-tr from-blue-600 to-amber-500 text-white shadow-sm focus-within:ring-2 focus-within:ring-amber-400">
+              {user?.avatarUrl ? <img src={user.avatarUrl} alt="Ảnh đại diện" className="h-full w-full object-cover" onError={event => { event.currentTarget.style.display = "none"; }} /> : <span className="flex h-full w-full items-center justify-center text-2xl font-black">{user?.name?.[0]?.toUpperCase() || "D"}</span>}
+              <span className="absolute inset-0 grid place-items-center bg-slate-950/60 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"><Camera className="h-5 w-5" /></span>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" disabled={uploadAvatarMutation.isPending} onChange={event => { handleAvatarChange(event.target.files?.[0]); event.currentTarget.value = ""; }} />
+            </label>
             <div>
               <h1 className="text-2xl font-black text-slate-900">{user?.name || "Customer"}</h1>
               <p className={`mt-1 text-xs ${user?.email ? "text-slate-500" : "font-semibold text-amber-700"}`}>{user?.email || (lang === "vi" ? "Chưa liên kết email — thêm ở phần bên dưới" : "No email linked — add one below")}</p>
+              <p className="mt-2 text-[11px] font-semibold text-slate-500">{uploadAvatarMutation.isPending ? (lang === "vi" ? "Đang tải ảnh…" : "Uploading photo…") : (lang === "vi" ? "Chạm vào ảnh để thay đổi" : "Tap photo to change")}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">
                   {user?.role === 'owner' ? 'Chủ cửa hàng' : user?.role === 'admin' ? 'Admin' : 'VIP Member'}

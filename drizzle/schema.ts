@@ -6,6 +6,7 @@ export const users = mysqlTable("users", {
   username: varchar("username", { length: 32 }),
   passwordHash: varchar("passwordHash", { length: 255 }),
   name: text("name"),
+  avatarUrl: text("avatarUrl"),
   email: varchar("email", { length: 320 }),
   emailVerified: boolean("emailVerified").default(false).notNull(),
   loginMethod: varchar("loginMethod", { length: 64 }),

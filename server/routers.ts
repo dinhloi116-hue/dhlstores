@@ -79,6 +79,17 @@ export const appRouter = router({
         }
         return { user: await createLocalAuthSession(ctx, user) };
       }),
+    uploadAvatar: protectedProcedure
+      .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]), base64: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        const buffer = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+        if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Ảnh đại diện phải có dung lượng tối đa 5 MB" });
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "avatar";
+        const stored = await storagePut(`avatars/${ctx.user.id}/${Date.now()}-${safeName}`, buffer, input.mimeType);
+        await db.updateUserAvatar(ctx.user.id, stored.url);
+        return { avatarUrl: stored.url };
+      }),
     linkEmail: protectedProcedure
       .input(z.object({ email: z.string().trim().toLowerCase().email("Email không hợp lệ") }))
       .mutation(async ({ ctx, input }) => {

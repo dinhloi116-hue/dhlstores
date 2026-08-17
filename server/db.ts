@@ -157,6 +157,7 @@ export interface ExtendedUserType {
   openId: string;
   username: string | null;
   name: string | null;
+  avatarUrl: string | null;
   email: string | null;
   emailVerified: boolean;
   loginMethod: string | null;
@@ -385,6 +386,7 @@ let memoryUsers: LocalUserRecordType[] = [
     username: null,
     passwordHash: null,
     name: "Admin DHL Stores",
+    avatarUrl: null,
     email: "admin@dhlstores.vn",
     emailVerified: false,
     loginMethod: "manus",
@@ -401,6 +403,7 @@ let memoryUsers: LocalUserRecordType[] = [
     username: null,
     passwordHash: null,
     name: "Nguyễn Văn Khách",
+    avatarUrl: null,
     email: "khachhang@gmail.com",
     emailVerified: false,
     loginMethod: "manus",
@@ -561,6 +564,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       username: user.username ?? null,
       passwordHash: user.passwordHash ?? null,
       name: user.name || "Khách hàng DHL",
+      avatarUrl: user.avatarUrl ?? null,
       email: user.email || "user@dhlstores.vn",
       emailVerified: user.emailVerified ?? false,
       loginMethod: user.loginMethod || "manus",
@@ -584,6 +588,18 @@ export async function getUserByOpenId(openId: string) {
   return found;
 }
 
+export async function updateUserAvatar(userId: number, avatarUrl: string | null) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(users).set({ avatarUrl }).where(eq(users.id, userId));
+    return { success: true, avatarUrl };
+  }
+  const user = memoryUsers.find(item => item.id === userId);
+  if (!user) throw new Error("USER_NOT_FOUND");
+  user.avatarUrl = avatarUrl;
+  return { success: true, avatarUrl };
+}
+
 export async function getAllUsers() {
   const connection = await getDb();
   if (connection) return (await connection.select().from(users).orderBy(desc(users.createdAt))).map(toExtendedUserType);
@@ -596,6 +612,7 @@ function toExtendedUserType(user: LocalUserRecordType | typeof users.$inferSelec
     openId: user.openId,
     username: user.username ?? null,
     name: user.name ?? null,
+    avatarUrl: user.avatarUrl ?? null,
     email: user.email ?? null,
     emailVerified: user.emailVerified ?? false,
     loginMethod: user.loginMethod ?? null,
@@ -662,6 +679,7 @@ export async function createLocalUser(input: { username: string; passwordHash: s
     username: input.username,
     passwordHash: input.passwordHash,
     name: input.name?.trim() || input.username,
+    avatarUrl: null,
     email: null,
     emailVerified: false,
     loginMethod: "local",
