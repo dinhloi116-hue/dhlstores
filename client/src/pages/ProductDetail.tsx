@@ -94,7 +94,7 @@ export default function ProductDetail() {
   const [cartFly, setCartFly] = useState<{ id: number; image: string; startX: number; startY: number; endX: number; endY: number; active: boolean } | null>(null);
   const submitReviewMutation = trpc.store.submitProductReview.useMutation({ onSuccess: () => { setReviewBody(""); setReviewRating(5); toast.success("Đã gửi đánh giá thành công."); void utils.store.productReviews.invalidate(); }, onError: error => toast.error(error.message) });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
-  const sortedVariants = variants;
+  const sortedVariants = [...variants].sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
   const normalizedSkuSearch = skuSearch.trim().toLocaleLowerCase("vi-VN");
   const visibleVariants = normalizedSkuSearch ? sortedVariants.filter(variant => `${formatVariantOptions(variant)} ${variant.sku || ""}`.toLocaleLowerCase("vi-VN").includes(normalizedSkuSearch)) : sortedVariants;
   const selectedSkuItems = sortedVariants.map(variant => ({ variant, quantity: variantQuantities[variant.id] ?? 0 })).filter(item => item.quantity > 0);

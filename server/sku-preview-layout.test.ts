@@ -103,3 +103,9 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("isMarketplaceLayout && variants.length > 1");
     expect(source).toContain("!isMarketplaceLayout && variants.length > 1");
   });
+
+  it("prioritizes in-stock SKUs while preserving the existing order within each stock group", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const sortedVariants = [...variants].sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));");
+  });

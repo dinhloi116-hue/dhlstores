@@ -423,3 +423,6 @@
 - [x] Sản phẩm một SKU: đặt bộ điều khiển trừ/số lượng/cộng ngay cạnh tên SKU.
 - [x] Sản phẩm nhiều SKU: giữ nguyên bảng chọn hàng loạt và không ảnh hưởng giá sỉ theo tổng SKU.
 - [x] Kiểm thử một SKU, nhiều SKU, nhập số lượng, thêm giỏ và mua ngay.
+
+- [x] Marketplace: ưu tiên SKU còn hàng lên đầu bảng, giữ thứ tự hiện có trong từng nhóm.
+- [x] Kiểm thử SKU còn hàng/hết hàng, quantity và không ảnh hưởng giá sỉ tổng SKU.
