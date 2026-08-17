@@ -426,3 +426,10 @@
 
 - [x] Marketplace: ưu tiên SKU còn hàng lên đầu bảng, giữ thứ tự hiện có trong từng nhóm.
 - [x] Kiểm thử SKU còn hàng/hết hàng, quantity và không ảnh hưởng giá sỉ tổng SKU.
+
+- [x] Marketplace: mở rộng vùng hiển thị bảng SKU để xem nhiều biến thể hơn, giảm cuộn dọc nhưng vẫn giữ thanh hành động và khả năng dùng trên màn hình nhỏ.
+- [x] Kiểm thử chiều cao bảng SKU trên desktop/mobile và hồi quy các thao tác chọn số lượng, thêm giỏ, mua ngay.
+
+- [x] Cả Classic và Marketplace: chuyển danh sách SKU sang bố cục mở rộng theo chiều dọc kiểu marketplace, không giới hạn trong khung cuộn thấp.
+- [x] Cả Classic và Marketplace: hiển thị ảnh nhỏ, tên/mã SKU, giá, tồn kho và bộ trừ/số lượng/cộng trên cùng một hàng.
+- [x] Giữ thanh hành động mua dễ thấy, không che danh sách SKU; kiểm thử chọn nhiều SKU, mua ngay và thêm giỏ.

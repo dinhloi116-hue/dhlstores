@@ -100,8 +100,10 @@ describe("public SKU inventory presentation", () => {
 
     expect(source).toContain("const singleVariant = variants.length === 1 ? variants[0] : null");
     expect(source).toContain("SKU duy nhất · chọn số lượng");
-    expect(source).toContain("isMarketplaceLayout && variants.length > 1");
-    expect(source).toContain("!isMarketplaceLayout && variants.length > 1");
+    expect(source).toContain("product.type === \"physical\" && variants.length > 1");
+    expect(source).toContain("{variants.length > 1 ? <><div className=\"mt-4\">{skuBatchSelector}</div>");
+    expect(source).toContain("<div className=\"divide-y divide-slate-100\">");
+    expect(source).not.toContain("max-h-[42rem]");
   });
 
   it("prioritizes in-stock SKUs while preserving the existing order within each stock group", () => {
