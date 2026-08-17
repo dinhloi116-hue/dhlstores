@@ -463,3 +463,7 @@
 
 - [x] Giỏ hàng: thêm nút xóa từng dòng sản phẩm và nút xóa toàn bộ giỏ với xác nhận.
 - [x] Đồng bộ xóa giỏ với checkout, trạng thái rỗng và hồi quy thao tác số lượng/đặt hàng.
+
+- [x] Header: menu tài khoản mở khi hover hoặc keyboard focus, vẫn có fallback click trên mobile.
+- [x] Menu tài khoản: thêm lối tắt ví/số dư, đơn hàng, địa chỉ, tải xuống, hồ sơ/email, quản trị và đăng xuất với trạng thái rõ ràng.
+- [x] Kiểm thử accessibility, hover/focus, mobile và hồi quy header.

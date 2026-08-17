@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown } from "lucide-react";
+import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown, WalletCards, MapPin, History } from "lucide-react";
 import { toast } from "sonner";
 import CustomerContactHub from "@/components/CustomerContactHub";
 
@@ -307,30 +307,24 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
             {/* Auth / Account */}
             {isAuthenticated && user ? (
-              <div className="relative group">
-                <Button variant="outline" size="sm" className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-800 font-bold gap-1.5">
+              <div className="group relative" onKeyDown={event => { if (event.key === "Escape") (event.currentTarget.querySelector("button") as HTMLButtonElement | null)?.focus(); }}>
+                <Button variant="outline" size="sm" aria-haspopup="menu" className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-800 font-bold gap-1.5">
                   <UserIcon className="w-4 h-4 text-amber-600" />
                   <span className="hidden sm:inline">{user.name || "User"}</span>
                 </Button>
-                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 hidden group-hover:block group-focus-within:block z-50">
-                  <div className="px-4 py-2 border-b border-slate-100 mb-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold">Signed in as</p>
-                    <p className="text-xs font-bold truncate text-slate-800">{user.email || user.name}</p>
+                <div className="pointer-events-none invisible absolute right-0 top-full z-50 w-72 pt-2 opacity-0 translate-y-1 transition-all duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0">
+                  <div role="menu" className="overflow-hidden rounded-2xl border border-slate-200 bg-white py-2 shadow-2xl ring-1 ring-slate-950/5">
+                    <div className="border-b border-slate-100 px-4 pb-3 pt-2"><p className="text-[10px] uppercase font-black tracking-wide text-slate-400">{lang === 'vi' ? 'Đang đăng nhập' : 'Signed in as'}</p><p className="mt-1 truncate text-xs font-black text-slate-800">{user.email || user.name}</p><p className="mt-1 text-[10px] font-semibold text-emerald-700">{lang === 'vi' ? `Số dư ví: ${formatCurrency(Number(user.balance || 0))}` : `Wallet: ${formatCurrency(Number(user.balance || 0))}`}</p></div>
+                    <div className="grid grid-cols-2 gap-1 p-2">
+                      <Link role="menuitem" href="/account#wallet" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700"><WalletCards className="h-4 w-4 text-amber-600" />{lang === 'vi' ? 'Ví & số dư' : 'Wallet'}</Link>
+                      <Link role="menuitem" href="/account#orders" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700"><History className="h-4 w-4 text-blue-600" />{lang === 'vi' ? 'Đơn hàng' : 'Orders'}</Link>
+                      <Link role="menuitem" href="/account#addresses" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700"><MapPin className="h-4 w-4 text-cyan-600" />{lang === 'vi' ? 'Địa chỉ' : 'Addresses'}</Link>
+                      <Link role="menuitem" href="/account#downloads" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-violet-50 hover:text-violet-700"><Download className="h-4 w-4 text-violet-600" />{lang === 'vi' ? 'Tải xuống' : 'Downloads'}</Link>
+                      <Link role="menuitem" href="/account" className="col-span-2 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-950"><Package className="h-4 w-4 text-slate-600" />{lang === 'vi' ? 'Tài khoản & Email' : 'Account & Email'}</Link>
+                    </div>
+                    {(user.role === 'admin' || user.role === 'owner') && <Link role="menuitem" href="/admin" className="mx-2 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700"><ShieldCheck className="h-4 w-4 text-amber-600" />{t.admin}</Link>}
+                    <button onClick={() => logout()} className="mt-1 w-full border-t border-slate-100 px-4 pt-3 text-left flex items-center gap-2 text-xs font-bold text-rose-600 hover:text-rose-800"><LogOut className="w-4 h-4" />{t.logout}</button>
                   </div>
-                  <Link href="/account" className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-amber-600">
-                    <Package className="w-4 h-4 text-blue-600" /> {lang === 'vi' ? 'Tài khoản & Email' : 'Account & Email'}
-                  </Link>
-                  {(user.role === 'admin' || user.role === 'owner') && (
-                    <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-amber-600">
-                      <ShieldCheck className="w-4 h-4 text-amber-600" /> {t.admin}
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => logout()}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors mt-1 border-t border-slate-100"
-                  >
-                    <LogOut className="w-4 h-4" /> {t.logout}
-                  </button>
                 </div>
               </div>
             ) : (
