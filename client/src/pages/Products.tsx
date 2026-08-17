@@ -165,9 +165,11 @@ export default function Products() {
             {products.map(p => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                   <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-md shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg' : ''}`}>
-                  <div className="relative aspect-square overflow-hidden bg-slate-100">
-                    <img src={p.image} alt={p.name} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${isPhysicalCatalog ? 'object-cover' : 'object-contain'}`} />
-                    {isPhysicalCatalog && <span className={`absolute bottom-2 left-2 rounded bg-white/95 px-1.5 py-0.5 text-[9px] font-black shadow-sm ${Number(p.stock) > 0 ? 'text-emerald-700' : 'text-red-600'}`}>{Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'}</span>}
+                  <div className="group/media relative aspect-square overflow-hidden bg-[#0b1220] [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:22px_22px]">
+                    <div className="absolute inset-0 grid place-items-center p-6 text-center text-white/80"><div><p className="font-display text-2xl font-black uppercase leading-none text-white/90">DHL</p><p className="mt-1 text-[9px] font-black uppercase tracking-[0.22em] text-amber-300">{p.type === 'physical' ? 'Sports gear' : 'Resource file'}</p></div></div>
+                    <img src={p.image} alt={p.name} onError={event => { event.currentTarget.style.display = 'none'; }} className={`relative z-10 h-full w-full transition-transform duration-300 group-hover/media:scale-105 ${isPhysicalCatalog ? 'object-cover' : 'object-contain'}`} />
+                    <span className={`absolute left-2 top-2 z-20 rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm ${p.type === 'physical' ? 'bg-orange-400 text-slate-950' : 'bg-violet-500 text-white'}`}>{p.type === 'physical' ? 'Physical item' : 'Digital asset'}</span>
+                    {isPhysicalCatalog && <span className={`absolute bottom-2 left-2 z-20 rounded bg-white/95 px-1.5 py-0.5 text-[9px] font-black shadow-sm ${Number(p.stock) > 0 ? 'text-emerald-700' : 'text-red-600'}`}>{Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'}</span>}
                   </div>
                   <div className={`flex flex-1 flex-col justify-between space-y-2 ${isPhysicalCatalog ? 'p-2.5 sm:p-4' : 'p-4 space-y-3'}`}>
                     <div>

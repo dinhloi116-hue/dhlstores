@@ -441,3 +441,7 @@
 
 - [x] Giao diện mua hàng: với SKU chọn Order, hiển thị giá gốc gạch ngang và giá Order giảm 10% ngay tại cột đơn giá.
 - [x] Kiểm thử giá Order ở Classic/Marketplace và xác nhận giá thanh toán server vẫn giảm 10%, không ảnh hưởng mua ngay/giá sỉ.
+
+- [x] Audit giao diện: rà soát trang chủ, danh mục, chi tiết sản phẩm, giỏ/checkout và quản trị để xác định các điểm cần làm rõ, cân đối và đồng nhất.
+- [x] UI polish: cải thiện các điểm ưu tiên về phân cấp thị giác, khoảng cách, trạng thái tải/rỗng, nút hành động và responsive sau khi audit.
+- [x] Kiểm thử trực quan desktop/mobile, chạy hồi quy và xuất bản các tinh chỉnh UI không ảnh hưởng logic bán hàng.
