@@ -176,6 +176,13 @@
       "when": 1786871367711,
       "tag": "0024_early_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1786940308264,
+      "tag": "0025_cold_black_panther",
+      "breakpoints": true
     }
   ]
 }

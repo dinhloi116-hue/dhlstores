@@ -280,15 +280,15 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     const caller = appRouter.createCaller(ctx);
     const suffix = `multi-wholesale-${Date.now().toString(36)}`;
     const product = await createProduct({ name: `Patch nhiều SKU giá sỉ ${suffix}`, slug: `patch-nhieu-sku-gia-si-${suffix}`, description: "Kiểm thử tổng số lượng nhiều SKU", price: "100000", categoryId: 12, image: "generated:multi-wholesale-cover", stock: 0, featured: false, isActive: true });
-    const first = await createProductVariant({ productId: product!.id, size: "A", color: "Đen", sku: `MULTI-A-${suffix}`, priceAdjustment: "0", stock: 5, isActive: true });
-    const second = await createProductVariant({ productId: product!.id, size: "B", color: "Trắng", sku: `MULTI-B-${suffix}`, priceAdjustment: "0", stock: 15, isActive: true });
+    const first = await createProductVariant({ productId: product!.id, size: "A", color: "Đen", sku: `MULTI-A-${suffix}`, priceAdjustment: "0", costPrice: "30000", stock: 5, isActive: true });
+    const second = await createProductVariant({ productId: product!.id, size: "B", color: "Trắng", sku: `MULTI-B-${suffix}`, priceAdjustment: "0", costPrice: "25000", stock: 15, isActive: true });
     await replaceProductWholesaleTiers({ productId: product!.id, tiers: [{ minQuantity: 10, unitPrice: "90000" }, { minQuantity: 20, unitPrice: "80000" }] });
 
     const checkout = await caller.store.checkout({ totalAmount: 1, items: [{ productId: product!.id, variantId: first!.id, quantity: 5, price: 1 }, { productId: product!.id, variantId: second!.id, quantity: 15, price: 1 }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" } });
 
     expect(checkout.totalAmount).toBe(1_620_000);
     const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
-    expect(order?.items).toEqual(expect.arrayContaining([expect.objectContaining({ variantId: first!.id, quantity: 5, price: "80000" }), expect.objectContaining({ variantId: second!.id, quantity: 15, price: "80000" })]));
+    expect(order?.items).toEqual(expect.arrayContaining([expect.objectContaining({ variantId: first!.id, quantity: 5, price: "80000", costPrice: "30000" }), expect.objectContaining({ variantId: second!.id, quantity: 15, price: "80000", costPrice: "25000" })]));
   });
 
   it("applies 10% Order discount to a physical SKU without reserving or restoring in-stock inventory", async () => {

@@ -433,3 +433,8 @@
 - [x] Cả Classic và Marketplace: chuyển danh sách SKU sang bố cục mở rộng theo chiều dọc kiểu marketplace, không giới hạn trong khung cuộn thấp.
 - [x] Cả Classic và Marketplace: hiển thị ảnh nhỏ, tên/mã SKU, giá, tồn kho và bộ trừ/số lượng/cộng trên cùng một hàng.
 - [x] Giữ thanh hành động mua dễ thấy, không che danh sách SKU; kiểm thử chọn nhiều SKU, mua ngay và thêm giỏ.
+
+- [x] Thêm giá vốn riêng cho từng SKU/biến thể trong schema và API quản trị, mặc định an toàn khi chưa nhập.
+- [x] Hiển thị và cho chỉnh giá vốn ngay trong khu vực quản trị sản phẩm/tồn kho theo từng SKU.
+- [x] Mở rộng báo cáo doanh thu: doanh thu gộp, giá vốn, lợi nhuận gộp và biên lợi nhuận; lọc theo hôm nay, 7 ngày, 30 ngày, tháng, năm.
+- [x] Tách báo cáo theo sản phẩm số/vật lý và kiểm thử phép tính lợi nhuận từ đơn hàng thực tế.

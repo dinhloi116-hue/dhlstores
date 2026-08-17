@@ -38,6 +38,7 @@ const productVariantInput = z.object({
   sku: z.string().trim().max(128).optional(),
   image: z.string().trim().max(4096).optional(),
   priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).default(0),
+  costPrice: z.coerce.number().min(0).max(999_999_999).default(0),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
   weightGrams: z.coerce.number().int().min(0).max(100_000).optional(),
   isActive: z.boolean().default(true),
@@ -93,13 +94,13 @@ export const catalogAdminRouter = router({
     db.getAdminProductVariants(input?.productId),
   ),
   createProductVariant: adminProcedure.input(productVariantInput).mutation(({ input }) =>
-    db.createProductVariant({ ...input, priceAdjustment: String(input.priceAdjustment) }),
+    db.createProductVariant({ ...input, priceAdjustment: String(input.priceAdjustment), costPrice: String(input.costPrice) }),
   ),
   updateProductVariant: adminProcedure.input(z.object({
     variantId: z.number().int().positive(),
     data: productVariantInput.omit({ productId: true }),
   })).mutation(({ input }) =>
-    db.updateProductVariant(input.variantId, { ...input.data, priceAdjustment: String(input.data.priceAdjustment) }),
+    db.updateProductVariant(input.variantId, { ...input.data, priceAdjustment: String(input.data.priceAdjustment), costPrice: String(input.data.costPrice) }),
   ),
   bulkUpdateProductVariants: adminProcedure.input(z.object({
     productId: z.number().int().positive(),
@@ -107,10 +108,11 @@ export const catalogAdminRouter = router({
       variantId: z.number().int().positive(),
       stock: z.coerce.number().int().min(0).max(999_999).optional(),
       priceAdjustment: z.coerce.number().min(-999_999_999).max(999_999_999).optional(),
+      costPrice: z.coerce.number().min(0).max(999_999_999).optional(),
       isActive: z.boolean().optional(),
     })).min(1).max(1_000),
   })).mutation(({ input }) =>
-    db.bulkUpdateProductVariants({ productId: input.productId, changes: input.changes.map(change => ({ ...change, priceAdjustment: change.priceAdjustment === undefined ? undefined : String(change.priceAdjustment) })) }),
+    db.bulkUpdateProductVariants({ productId: input.productId, changes: input.changes.map(change => ({ ...change, priceAdjustment: change.priceAdjustment === undefined ? undefined : String(change.priceAdjustment), costPrice: change.costPrice === undefined ? undefined : String(change.costPrice) })) }),
   ),
   reorderProductVariants: adminProcedure.input(z.object({
     productId: z.number().int().positive(),

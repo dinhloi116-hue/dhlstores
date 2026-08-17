@@ -52,6 +52,7 @@ export interface ProductVariantType {
   sku?: string;
   image?: string;
   priceAdjustment: string;
+  costPrice: string;
   stock: number;
   weightGrams?: number;
   sortOrder: number;
@@ -112,6 +113,7 @@ export interface OrderItemType {
   variantLabel?: string | null;
   quantity: number;
   price: string;
+  costPrice: string;
   fulfillmentMode: 'in_stock' | 'preorder';
   attributes?: string;
   weightGrams?: number;
@@ -510,6 +512,7 @@ function toProductVariantType(variant: typeof productVariants.$inferSelect): Pro
     sku: variant.sku ?? undefined,
     image: variant.image ?? undefined,
     priceAdjustment: String(variant.priceAdjustment),
+    costPrice: String(variant.costPrice ?? "0"),
     stock: variant.stock,
     weightGrams: variant.weightGrams ?? undefined,
     sortOrder: variant.sortOrder,
@@ -1581,6 +1584,7 @@ export type CatalogVariantInput = {
   sku?: string;
   image?: string;
   priceAdjustment: string;
+  costPrice?: string;
   stock: number;
   weightGrams?: number;
   sortOrder?: number;
@@ -1657,6 +1661,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
       sku: input.sku || null,
       image: input.image?.trim() || null,
       priceAdjustment: input.priceAdjustment,
+      costPrice: input.costPrice ?? "0",
       stock: input.stock,
       weightGrams: input.weightGrams ?? null,
       sortOrder: nextSortOrder,
@@ -1674,6 +1679,7 @@ export async function createProductVariant(input: CatalogVariantInput) {
     sku: input.sku,
     image: input.image?.trim() || undefined,
     priceAdjustment: input.priceAdjustment,
+    costPrice: input.costPrice ?? "0",
     stock: input.stock,
     weightGrams: input.weightGrams,
     sortOrder: nextSortOrder,
@@ -1694,6 +1700,7 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
       sku: input.sku || null,
       image: input.image?.trim() || null,
       priceAdjustment: input.priceAdjustment,
+      costPrice: input.costPrice ?? "0",
       stock: input.stock,
       weightGrams: input.weightGrams ?? null,
       isActive: input.isActive,
@@ -1706,7 +1713,7 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
   return { success: true };
 }
 
-export async function bulkUpdateProductVariants(input: { productId: number; changes: Array<{ variantId: number; stock?: number; priceAdjustment?: string; isActive?: boolean }> }) {
+export async function bulkUpdateProductVariants(input: { productId: number; changes: Array<{ variantId: number; stock?: number; priceAdjustment?: string; costPrice?: string; isActive?: boolean }> }) {
   const variants = await getProductVariants(input.productId, true);
   if (!input.changes.length || input.changes.length > 1_000 || input.changes.some(change => !variants.some(variant => variant.id === change.variantId))) throw new Error("Danh sách SKU cần cập nhật không hợp lệ");
   const connection = await getDb();
@@ -1716,6 +1723,7 @@ export async function bulkUpdateProductVariants(input: { productId: number; chan
         const values: Partial<typeof productVariants.$inferInsert> = {};
         if (change.stock !== undefined) values.stock = change.stock;
         if (change.priceAdjustment !== undefined) values.priceAdjustment = change.priceAdjustment;
+        if (change.costPrice !== undefined) values.costPrice = change.costPrice;
         if (change.isActive !== undefined) values.isActive = change.isActive;
         await transaction.update(productVariants).set(values).where(and(eq(productVariants.id, change.variantId), eq(productVariants.productId, input.productId)));
       }
@@ -1726,6 +1734,7 @@ export async function bulkUpdateProductVariants(input: { productId: number; chan
       if (variant) {
         if (change.stock !== undefined) variant.stock = change.stock;
         if (change.priceAdjustment !== undefined) variant.priceAdjustment = change.priceAdjustment;
+        if (change.costPrice !== undefined) variant.costPrice = change.costPrice;
         if (change.isActive !== undefined) variant.isActive = change.isActive;
       }
     });
@@ -2166,6 +2175,7 @@ export async function createOrder(userId: number, data: {
       weightGrams: product.type === "physical" ? Math.max(0, variant?.weightGrams ?? product.weightGrams ?? 0) : 0,
       availableStock: variant?.stock ?? product.stock,
       attributes: item.attributes,
+      costPrice: Number(variant?.costPrice ?? 0),
     };
   }));
   const inventoryClaims = new Map<string, { productId: number; variantId: number | null; quantity: number; availableStock: number }>();
@@ -2202,7 +2212,7 @@ export async function createOrder(userId: number, data: {
         shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null,
       });
       const orderId = Number(inserted[0].insertId);
-      await transaction.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes ?? null, weightGrams: item.weightGrams })));
+      await transaction.insert(orderItemsTable).values(verifiedItems.map(item => ({ orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toFixed(2), costPrice: item.costPrice.toFixed(2), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes ?? null, weightGrams: item.weightGrams })));
       if (data.clearCart !== false) await transaction.delete(cartItems).where(eq(cartItems.userId, userId));
       return { success: true, orderId, orderCode, totalAmount: verifiedTotal, shippingFee: shipping.fee, shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
     });
@@ -2224,7 +2234,7 @@ export async function createOrder(userId: number, data: {
     shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
     shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, trackingStage: "ordered", trackingUrl: null, isDeleted: false, createdAt: new Date(),
   });
-  for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes, weightGrams: item.weightGrams });
+  for (const item of verifiedItems) memoryOrderItems.push({ id: nextOrderItemId++, orderId, productId: item.productId, variantId: item.variantId, variantLabel: item.variantLabel, quantity: item.quantity, price: item.price.toString(), costPrice: item.costPrice.toString(), fulfillmentMode: item.fulfillmentMode, attributes: item.attributes, weightGrams: item.weightGrams });
   if (data.clearCart !== false) await clearCart(userId);
   return { success: true, orderId, orderCode, totalAmount: verifiedTotal, shippingFee: shipping.fee, shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount, preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null };
 }
@@ -2292,6 +2302,7 @@ export async function getOrders(userId?: number, isAdmin?: boolean) {
         items: await Promise.all(itemRows.map(async item => ({
           ...item,
           price: String(item.price),
+          costPrice: String(item.costPrice ?? "0"),
           product: await getProductById(item.productId),
         }))),
       };

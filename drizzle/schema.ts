@@ -258,6 +258,7 @@ export const productVariants = mysqlTable("product_variants", {
   sku: varchar("sku", { length: 128 }),
   image: text("image"),
   priceAdjustment: decimal("priceAdjustment", { precision: 12, scale: 2 }).default("0").notNull(),
+  costPrice: decimal("costPrice", { precision: 12, scale: 2 }).default("0").notNull(), // Giá vốn một đơn vị của SKU
   stock: int("stock").default(0).notNull(),
   weightGrams: int("weightGrams"), // Ghi đè khối lượng sản phẩm nếu SKU khác nhau
   sortOrder: int("sortOrder").default(0).notNull(),
@@ -348,6 +349,7 @@ export const orderItems = mysqlTable("order_items", {
   variantLabel: varchar("variantLabel", { length: 255 }),
   quantity: int("quantity").notNull(),
   price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  costPrice: decimal("costPrice", { precision: 12, scale: 2 }).default("0").notNull(), // Snapshot giá vốn tại thời điểm tạo đơn
   fulfillmentMode: mysqlEnum("fulfillmentMode", ["in_stock", "preorder"]).default("in_stock").notNull(),
   attributes: varchar("attributes", { length: 255 }),
   weightGrams: int("weightGrams").default(0).notNull(),
