@@ -94,3 +94,12 @@ describe("public SKU inventory presentation", () => {
     expect(source).not.toContain("Giao nhanh — 50.000 đ");
   });
 });
+
+  it("uses an inline quantity control for one-SKU physical products and preserves the multi-SKU branch", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const singleVariant = variants.length === 1 ? variants[0] : null");
+    expect(source).toContain("SKU duy nhất · chọn số lượng");
+    expect(source).toContain("isMarketplaceLayout && variants.length > 1");
+    expect(source).toContain("!isMarketplaceLayout && variants.length > 1");
+  });
