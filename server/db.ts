@@ -2122,13 +2122,13 @@ export async function updateCartItem(userId: number, cartItemId: number, quantit
   return { success: true };
 }
 
-export async function removeFromCart(cartItemId: number) {
+export async function removeFromCart(userId: number, cartItemId: number) {
   const connection = await getDb();
   if (connection) {
-    await connection.delete(cartItems).where(eq(cartItems.id, cartItemId));
+    await connection.delete(cartItems).where(and(eq(cartItems.id, cartItemId), eq(cartItems.userId, userId)));
     return { success: true };
   }
-  memoryCart = memoryCart.filter(i => i.id !== cartItemId);
+  memoryCart = memoryCart.filter(i => i.id !== cartItemId || i.userId !== userId);
   return { success: true };
 }
 

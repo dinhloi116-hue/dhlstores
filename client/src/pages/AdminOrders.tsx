@@ -57,6 +57,7 @@ export default function AdminOrders() {
   const [location, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const uploadRef = useRef<HTMLInputElement>(null);
+  const withdrawalQrUploadRef = useRef<HTMLInputElement>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft>(emptyCategory);
   const [productDraft, setProductDraft] = useState<ProductDraft>(emptyProduct);
@@ -99,6 +100,7 @@ export default function AdminOrders() {
   const wholesaleTiersQuery = trpc.catalogAdmin.productWholesaleTiers.useQuery({ productId: selectedVariantProductId || 1 }, { enabled: isAdmin && Boolean(selectedVariantProductId) });
   const optionGroupsQuery = trpc.catalogAdmin.productOptionGroups.useQuery({ productId: selectedVariantProductId || 1 }, { enabled: isAdmin && Boolean(selectedVariantProductId) });
   const mediaQuery = trpc.catalogAdmin.media.useQuery(undefined, { enabled: isAdmin });
+  const siteSettingsQuery = trpc.operations.siteSettings.useQuery(undefined, { enabled: isAdmin });
   const ordersQuery = trpc.store.orders.useQuery(undefined, { enabled: isAdmin });
   const usersQuery = trpc.store.usersList.useQuery(undefined, { enabled: isAdmin });
   const inventoryQuery = trpc.operations.inventory.useQuery(undefined, { enabled: isAdmin });
@@ -332,6 +334,10 @@ export default function AdminOrders() {
     },
     onError: error => toast.error(error.message),
   });
+  const uploadWithdrawalQr = trpc.operations.uploadWithdrawalQr.useMutation({
+    onSuccess: () => { toast.success("Đã cập nhật mã QR rút tiền"); siteSettingsQuery.refetch(); },
+    onError: error => toast.error(error.message),
+  });
   const uploadMedia = trpc.catalogAdmin.uploadMedia.useMutation({
     onSuccess: asset => {
       toast.success(`Đã tải lên ${asset.fileName}`);
@@ -431,6 +437,22 @@ export default function AdminOrders() {
       const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : "";
       if (!base64) return toast.error("Không thể đọc tệp đã chọn");
       uploadMedia.mutate({ fileName: file.name, mimeType: file.type || "application/octet-stream", base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleWithdrawalQrChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return toast.error("Mã QR phải là PNG, JPEG hoặc WebP");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Mã QR tối đa 5 MB");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : "";
+      if (!base64) return toast.error("Không thể đọc ảnh mã QR");
+      uploadWithdrawalQr.mutate({ fileName: file.name, mimeType: file.type as "image/png" | "image/jpeg" | "image/webp", base64 });
     };
     reader.readAsDataURL(file);
   };
@@ -552,6 +574,7 @@ export default function AdminOrders() {
   return (
     <StoreLayout>
       <input ref={uploadRef} type="file" className="hidden" accept={uploadTarget === "image" ? "image/png,image/jpeg,image/webp,image/gif" : "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,application/pdf,application/zip,.zip"} onChange={handleFileChange} />
+      <input ref={withdrawalQrUploadRef} type="file" className="hidden" accept="image/png,image/jpeg,image/webp" onChange={handleWithdrawalQrChange} />
       {selectedProduct?.type === "physical" && skuSortMode === "manual" && hasPendingSkuOrder && <div className="fixed inset-x-4 bottom-5 z-[80] mx-auto flex max-w-xl flex-col gap-3 rounded-2xl border border-violet-300 bg-white p-3 shadow-2xl sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-black text-violet-950">Thứ tự SKU đã thay đổi</p><p className="mt-0.5 text-xs text-slate-600">Bấm lưu để cập nhật đúng thứ tự khách hàng nhìn thấy.</p></div><div className="flex shrink-0 gap-2"><Button type="button" variant="outline" className="border-slate-300 bg-white text-slate-700" onClick={() => setVariantOrderDraft(savedVariantOrder)}>Hoàn tác</Button><Button type="button" className="bg-violet-600 font-black text-white hover:bg-violet-700" disabled={reorderProductVariants.isPending} onClick={() => saveVariantOrder()}>{reorderProductVariants.isPending ? "Đang lưu…" : "Lưu thứ tự SKU"}</Button></div></div>}
       <div className="mx-auto max-w-[1600px] space-y-8 px-4 py-8 sm:px-6 lg:px-8 2xl:px-10">
         <section className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
@@ -640,6 +663,7 @@ export default function AdminOrders() {
 
           <TabsContent value="orders" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 p-5"><h2 className="font-display text-2xl font-black uppercase text-slate-900">Đơn hàng</h2><p className="mt-1 text-xs text-slate-500">Đơn hàng vật lý dùng QR Techcombank không cú pháp và cần xác nhận tiền về thủ công. Đơn digital dùng VietinBank SePay để tự đối soát và mở tải ngay.</p></div>
+            <div className="m-5 grid gap-5 rounded-2xl border border-rose-200 bg-rose-50/60 p-5 lg:grid-cols-[minmax(0,1fr)_13rem]"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-700">Rút số dư · Chuyển khoản thủ công</p><h3 className="mt-1 text-lg font-black text-slate-900">Mã QR để khách chuyển tiền nhận lại</h3><p className="mt-2 max-w-2xl text-xs leading-relaxed text-slate-600">Bạn tự kiểm tra và chuyển khoản cho khách. Tải mã QR tài khoản nhận tiền tại đây; ảnh mới sẽ thay ảnh cũ trên khu vực rút tiền của khách.</p><div className="mt-3 flex flex-wrap gap-2"><Button type="button" onClick={() => withdrawalQrUploadRef.current?.click()} disabled={uploadWithdrawalQr.isPending} className="bg-rose-600 font-black text-white hover:bg-rose-700"><CloudUpload className="mr-2 h-4 w-4" />{uploadWithdrawalQr.isPending ? "Đang tải lên…" : "Tải/cập nhật mã QR"}</Button>{siteSettingsQuery.data?.withdrawal_qr_url && <a href={siteSettingsQuery.data.withdrawal_qr_url} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md border border-rose-200 bg-white px-3 text-xs font-bold text-rose-700 hover:bg-rose-100">Mở ảnh QR</a>}</div><p className="mt-3 text-[11px] text-slate-500">Định dạng PNG, JPEG hoặc WebP · tối đa 5 MB.</p></div><div className="flex min-h-44 items-center justify-center rounded-xl border border-rose-200 bg-white p-3">{siteSettingsQuery.data?.withdrawal_qr_url ? <img src={siteSettingsQuery.data.withdrawal_qr_url} alt="Mã QR nhận tiền rút số dư" className="max-h-44 w-full object-contain" /> : <div className="text-center text-xs text-slate-400"><Image className="mx-auto mb-2 h-8 w-8" />Chưa tải mã QR</div>}</div></div>
             <div className="divide-y divide-slate-100">{orders.map(order => {
               const savedStage = order.trackingStage || "ordered";
               const trackingStage = orderTrackingStageDrafts[order.id] || savedStage;

@@ -456,3 +456,10 @@
 - [x] Rà soát và sửa các lỗi giao diện đang hiển thị trong các mục được người dùng phản ánh.
 - [x] Bổ sung lựa chọn sổ địa chỉ cho checkout đơn hàng số theo cách không bắt buộc địa chỉ giao hàng vật lý.
 - [x] Kiểm thử độc lập ba hạng mục và lưu phiên bản ổn định.
+
+- [x] Quản trị: thêm upload/cập nhật mã QR nhận tiền cho quy trình rút số dư thủ công, lưu URL tệp an toàn.
+- [x] Khách hàng: hiển thị mã QR, thông tin chuyển khoản và hướng dẫn sau khi gửi yêu cầu rút tiền.
+- [x] Kiểm thử quyền admin, upload/hiển thị ảnh QR và hồi quy luồng khóa/hoàn số dư.
+
+- [x] Giỏ hàng: thêm nút xóa từng dòng sản phẩm và nút xóa toàn bộ giỏ với xác nhận.
+- [x] Đồng bộ xóa giỏ với checkout, trạng thái rỗng và hồi quy thao tác số lượng/đặt hàng.

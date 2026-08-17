@@ -169,7 +169,15 @@ export const appRouter = router({
     inventoryMovements: adminProcedure.query(() => db.getInventoryMovements()),
     bulkSetInventory: adminProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),
     siteSettings: ownerProcedure.query(() => db.getSiteSettings()),
-    saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128), physical_qr_bank_code: z.string().trim().max(32).optional(), physical_qr_account_number: z.string().trim().max(64).optional(), physical_qr_account_holder: z.string().trim().max(255).optional() }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user.id)),
+    uploadWithdrawalQr: ownerProcedure.input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), base64: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+      const buffer = Buffer.from(input.base64, "base64");
+      if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Mã QR phải là ảnh tối đa 5 MB" });
+      const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-160) || "withdrawal-qr";
+      const stored = await storagePut(`settings/withdrawal-qr-${Date.now()}-${safeName}`, buffer, input.mimeType);
+      await db.saveSiteSettings({ withdrawal_qr_url: stored.url }, ctx.user.id);
+      return { url: stored.url };
+    }),
+    saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128), physical_qr_bank_code: z.string().trim().max(32).optional(), physical_qr_account_number: z.string().trim().max(64).optional(), physical_qr_account_holder: z.string().trim().max(255).optional(), withdrawal_qr_bank_code: z.string().trim().max(32).optional(), withdrawal_qr_account_number: z.string().trim().max(64).optional(), withdrawal_qr_account_holder: z.string().trim().max(255).optional() }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user.id)),
   }),
 
   store: router({
@@ -275,7 +283,13 @@ export const appRouter = router({
       .input(z.object({ cartItemId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
-        return await db.removeFromCart(input.cartItemId);
+        return await db.removeFromCart(ctx.user.id, input.cartItemId);
+      }),
+
+    clearCart: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        await requireActiveAccount(ctx.user.id);
+        return await db.clearCart(ctx.user.id);
       }),
 
     shippingAddresses: protectedProcedure.query(async ({ ctx }) => {

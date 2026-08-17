@@ -100,6 +100,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       utils.store.cart.invalidate();
     }
   });
+  const clearCartMutation = trpc.store.clearCart.useMutation({
+    onSuccess: () => {
+      toast.success(lang === 'vi' ? "Đã xóa toàn bộ giỏ hàng" : "Cart cleared");
+      utils.store.cart.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
 
   const cartItems = cartQuery.data || [];
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -277,10 +284,11 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
                 {isAuthenticated && cartItems.length > 0 && (
                   <div className="border-t border-slate-100 pt-4 space-y-4">
-                    <div className="flex justify-between items-center text-sm font-semibold">
+                    <div className="flex items-center justify-between gap-3 text-sm font-semibold">
                       <span className="text-slate-500">{t.subtotal}:</span>
                       <span className="text-lg font-black text-amber-600">{formatCurrency(cartSubtotal)}</span>
                     </div>
+                    <button type="button" disabled={clearCartMutation.isPending} onClick={() => { if (window.confirm(lang === 'vi' ? 'Xóa toàn bộ sản phẩm khỏi giỏ hàng?' : 'Remove all items from cart?')) clearCartMutation.mutate(); }} className="w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">{clearCartMutation.isPending ? (lang === 'vi' ? 'Đang xóa…' : 'Clearing…') : (lang === 'vi' ? 'Xóa toàn bộ giỏ hàng' : 'Clear cart')}</button>
                     <Button
                       onClick={() => {
                         setCartOpen(false);
