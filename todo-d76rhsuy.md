@@ -445,3 +445,9 @@
 - [x] Audit giao diện: rà soát trang chủ, danh mục, chi tiết sản phẩm, giỏ/checkout và quản trị để xác định các điểm cần làm rõ, cân đối và đồng nhất.
 - [x] UI polish: cải thiện các điểm ưu tiên về phân cấp thị giác, khoảng cách, trạng thái tải/rỗng, nút hành động và responsive sau khi audit.
 - [x] Kiểm thử trực quan desktop/mobile, chạy hồi quy và xuất bản các tinh chỉnh UI không ảnh hưởng logic bán hàng.
+
+- [x] Sửa lỗi thanh tóm tắt và thanh nút mua trong bảng SKU bị dính/che dòng cuối khi cuộn.
+- [x] Bổ sung vùng đệm an toàn và kiểm thử nút Thêm vào giỏ/Mua ngay trên desktop và mobile.
+
+- [x] Địa chỉ giao hàng: thêm dropdown Tỉnh/Thành phố và Phường/Xã trong form lưu địa chỉ, giữ ô địa chỉ chi tiết.
+- [x] Ghép và lưu địa chỉ hoàn chỉnh tương thích với checkout, kiểm thử reset phường/xã khi đổi tỉnh và responsive.
