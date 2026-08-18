@@ -530,3 +530,8 @@
 - [x] Viết kiểm thử, kiểm tra TypeScript và xác minh desktop/mobile cho năm cải tiến giao diện trước khi xuất bản.
 
 - [x] Yêu cầu đăng nhập cho gửi góp ý, nhắn tin và xem/đánh dấu hội thoại; ràng buộc hội thoại với đúng tài khoản để ngăn đọc hoặc chiếm phiên của khách khác.
+
+- [ ] Việt hóa đồng nhất các nhãn giao diện công khai còn hiển thị tiếng Anh trên trang chủ, catalog và trang sản phẩm; không dịch hoặc thay đổi dữ liệu sản phẩm thực tế.
+
+- [ ] Việt hóa đồng nhất các nhãn giao diện công khai còn hiển thị tiếng Anh trên trang chủ, catalog và trang sản phẩm; không dịch hoặc thay đổi dữ liệu sản phẩm thực tế.
+- [x] Trang Tài khoản: chia thành hai cột trên desktop, nhóm khối thông tin/ví/địa chỉ và khối danh sách yêu thích/đơn hàng hợp lý; giữ một cột trên điện thoại. Đã kiểm thử TypeScript, 2 hồi quy mục tiêu và xác minh desktop.
