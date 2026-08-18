@@ -543,3 +543,5 @@
 - [x] Trang Tài khoản: đưa đơn đang xử lý/giao và Order trước lên khu ưu tiên, đồng thời thu gọn đơn lịch sử thành một đến hai hàng thông tin để giảm chiều cao thẻ. Đã giữ liên kết tải/theo dõi, chạy 4 hồi quy mục tiêu và xác minh trực quan desktop.
 
 - [x] Trang Tài khoản: bổ sung bộ lọc nhanh theo trạng thái đơn để khách thu hẹp lịch sử mà không phải cuộn qua các đơn đã hoàn tất hoặc đã hủy. Có Tất cả, Chờ thanh toán, Hoàn tất và Đã hủy; đã kiểm thử hồi quy và xác minh desktop.
+
+- [x] Catalog: bổ sung bộ lọc nhanh Tất cả, Tài nguyên số, Hàng vật lý và Còn hàng để khách tìm sản phẩm phù hợp nhanh hơn, không thay đổi dữ liệu sản phẩm. Với tài nguyên số, trạng thái Có thể mua ngay vẫn hiển thị vì không phụ thuộc tồn kho vật lý.

@@ -36,6 +36,7 @@ export default function Products() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sizeFilter, setSizeFilter] = useState("");
   const [colorFilter, setColorFilter] = useState("");
+  const [catalogQuickFilter, setCatalogQuickFilter] = useState<"all" | "digital" | "physical" | "in-stock">("all");
 
   const categoriesQuery = trpc.store.categories.useQuery();
   const facetsQuery = trpc.store.productVariantFacets.useQuery(isPrintShop ? { categoryId: selectedCategory } : undefined, { enabled: isPrintShop });
@@ -51,6 +52,9 @@ export default function Products() {
 
   const categories = (categoriesQuery.data || []).filter(category => !isPhysicalCatalog || category.type === "physical");
   let products = (productsQuery.data || []).filter(product => !isPhysicalCatalog || product.type === "physical");
+  if (catalogQuickFilter === "digital") products = products.filter(product => product.type === "digital");
+  if (catalogQuickFilter === "physical") products = products.filter(product => product.type === "physical");
+  if (catalogQuickFilter === "in-stock") products = products.filter(product => product.type === "digital" || Number(product.stock) > 0);
   const isCatalogLoading = categoriesQuery.isLoading || productsQuery.isLoading;
   const [quickViewProduct, setQuickViewProduct] = useState<(typeof products)[number] | null>(null);
 
@@ -127,6 +131,10 @@ export default function Products() {
               </button>
             ))}
           </div>
+	          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+	            <span className="text-xs font-bold text-slate-500">Lọc nhanh:</span>
+	            {([['all', 'Tất cả'], ...(!isPhysicalCatalog ? [['digital', 'Tài nguyên số'], ['physical', 'Hàng vật lý']] : []), ['in-stock', 'Có thể mua ngay']] as Array<["all" | "digital" | "physical" | "in-stock", string]>).map(([value, label]) => <button key={value} type="button" onClick={() => setCatalogQuickFilter(value)} className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${catalogQuickFilter === value ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50'}`}>{label}</button>)}
+	          </div>
           {isPrintShop && <div className="grid grid-cols-2 gap-2 border-t border-orange-100 pt-3 sm:grid-cols-4">
             <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá từ' : 'Min price'} value={minPrice} onChange={(event) => setMinPrice(event.target.value)} className="h-9 rounded-lg bg-orange-50/40 text-xs" />
             <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá đến' : 'Max price'} value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} className="h-9 rounded-lg bg-orange-50/40 text-xs" />
@@ -156,7 +164,7 @@ export default function Products() {
               {lang === 'vi' ? 'Vui lòng thử lại với từ khóa hoặc danh mục khác.' : 'Please try another search or category.'}
             </p>
             <Button
-              onClick={() => { setSelectedCategory(undefined); setSearchQuery(""); setMinPrice(""); setMaxPrice(""); setSizeFilter(""); setColorFilter(""); }}
+	              onClick={() => { setSelectedCategory(undefined); setSearchQuery(""); setMinPrice(""); setMaxPrice(""); setSizeFilter(""); setColorFilter(""); setCatalogQuickFilter("all"); }}
               className="mt-5 bg-slate-900 text-white font-bold"
             >
               {lang === 'vi' ? 'Xóa bộ lọc' : 'Clear filters'}
