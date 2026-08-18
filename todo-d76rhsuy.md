@@ -488,3 +488,8 @@
 - [x] Cải tiến phản hồi chọn SKU, cảnh báo tồn kho thấp/hết hàng và phần tổng kết mua để thao tác hàng loạt rõ ràng hơn.
 - [x] Kiểm thử TypeScript, hồi quy giỏ hàng/batch SKU và xác minh trực quan trên desktop/mobile trước khi xuất bản.
 - [x] Xác minh storefront thật với sản phẩm nhiều SKU: tổng kho 120, 12/12 SKU còn hàng, cột Khả dụng và action bar hiển thị đúng sau khi tải dữ liệu.
+
+- [x] Thêm bộ lọc và sắp xếp danh sách sản phẩm theo tình trạng tồn kho để quản trị tìm hàng cần xử lý nhanh hơn.
+- [x] Bổ sung cảnh báo trực quan bằng màu sắc và biểu tượng cho sản phẩm sắp hết hoặc đã hết hàng trong danh sách.
+- [x] Cho phép chỉnh tồn kho nhanh ngay trên từng dòng danh sách sản phẩm, kèm xác nhận cập nhật và ghi nhận lịch sử kho.
+- [x] Viết kiểm thử, kiểm tra TypeScript và xác minh giao diện quản trị sau khi cải tiến danh sách sản phẩm.
