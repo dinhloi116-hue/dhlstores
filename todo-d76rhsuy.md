@@ -551,3 +551,5 @@
 - [x] PWA: thêm manifest, metadata cài đặt và biểu tượng DHL Stores dùng cho Android/iPhone.
 - [x] PWA: thêm service worker và lời mời cài đặt không ảnh hưởng luồng đăng nhập, giỏ hàng, checkout hoặc quản trị.
 - [x] PWA: kiểm thử khả năng cài đặt, mở lại ứng dụng và giao diện mobile trước khi xuất bản. Đã kiểm thử branding, build production, MIME manifest/service worker và xác minh desktop/mobile.
+
+- [x] Chat nội bộ: nút Nhắn cửa hàng trên trang sản phẩm mở CustomerContactHub trong website, lưu hội thoại trên máy chủ và gửi thông báo cho quản trị; không chuyển khách sang Zalo. Đã thay liên kết ngoài bằng sự kiện mở chat nội bộ, thêm hồi quy UI và kiểm thử 5 ca hỗ trợ/phân quyền.

@@ -44,6 +44,12 @@ export default function CustomerContactHub() {
 
   useEffect(() => setVisitorKey(getVisitorKey()), []);
 
+  useEffect(() => {
+    const openInternalChat = () => setChatOpen(true);
+    window.addEventListener("dhlstores-open-chat", openInternalChat);
+    return () => window.removeEventListener("dhlstores-open-chat", openInternalChat);
+  }, []);
+
   const conversationQuery = trpc.support.conversation.useQuery({ visitorKey }, {
     enabled: Boolean(visitorKey && user),
     refetchInterval: chatOpen ? 12_000 : false,
