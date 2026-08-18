@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import vietnamAdminData from "@/data/vietnam-admin-2025.json";
 import StoreLayout from "@/components/StoreLayout";
 import AssetVisual from "@/components/AssetVisual";
+import { CustomerHelpCard } from "@/components/CustomerHelpCard";
 import { trpc } from "@/lib/trpc";
+import { addRecentProduct, getComparedProductIds, toggleComparedProduct } from "@/lib/customer-tools";
 import { useRoute, Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
@@ -10,7 +12,7 @@ import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Home, Clock3, Sparkles, Tag, Zap, CheckCircle2, QrCode, MapPin, Star, Ruler, ZoomIn, WalletCards } from "lucide-react";
+import { ShoppingBag, Download, ShieldCheck, ArrowLeft, Home, Clock3, Sparkles, Tag, Zap, CheckCircle2, QrCode, MapPin, Star, Ruler, ZoomIn, WalletCards, Heart, Scale, BellRing } from "lucide-react";
 import { toast } from "sonner";
 
 function formatVariantOptions(variant: { size?: string; color?: string; attributes?: string }) {
@@ -69,6 +71,8 @@ export default function ProductDetail() {
   const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
   const wholesaleTiersQuery = trpc.store.productWholesaleTiers.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
   const reviewsQuery = trpc.store.productReviews.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
+  const favoritesQuery = trpc.store.favorites.useQuery(undefined, { enabled: isAuthenticated });
+  const restockSubscriptionsQuery = trpc.store.restockSubscriptions.useQuery(undefined, { enabled: isAuthenticated });
   const variants = variantsQuery.data || [];
   const wholesaleTiers = wholesaleTiersQuery.data || [];
 
@@ -92,8 +96,14 @@ export default function ProductDetail() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewBody, setReviewBody] = useState("");
   const [cartFly, setCartFly] = useState<{ id: number; image: string; startX: number; startY: number; endX: number; endY: number; active: boolean } | null>(null);
+  const [compareIds, setCompareIds] = useState<number[]>(getComparedProductIds);
   const submitReviewMutation = trpc.store.submitProductReview.useMutation({ onSuccess: () => { setReviewBody(""); setReviewRating(5); toast.success("Đã gửi đánh giá thành công."); void utils.store.productReviews.invalidate(); }, onError: error => toast.error(error.message) });
+  const toggleFavoriteMutation = trpc.store.toggleFavorite.useMutation({ onSuccess: result => { void utils.store.favorites.invalidate(); toast.success(result.isFavorite ? "Đã lưu vào Yêu thích" : "Đã bỏ khỏi Yêu thích"); }, onError: error => toast.error(error.message) });
+  const requestRestockMutation = trpc.store.requestRestock.useMutation({ onSuccess: () => { void utils.store.restockSubscriptions.invalidate(); toast.success("Đã đăng ký nhắc lại hàng. Khi kho được cập nhật, trạng thái sẽ hiện trong Tài khoản."); }, onError: error => toast.error(error.message) });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
+  const isFavorite = Boolean(product && (favoritesQuery.data || []).some(item => item.productId === product.id));
+  const restockVariantId = selectedVariant && Number(selectedVariant.stock || 0) <= 0 ? selectedVariant.id : undefined;
+  const restockSubscription = product ? (restockSubscriptionsQuery.data || []).find(item => item.productId === product.id && item.variantId === (restockVariantId || 0) && item.status !== "cancelled") : undefined;
   const sortedVariants = [...variants].sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
   const inStockSkuCount = variants.filter(variant => Number(variant.stock) > 0).length;
   const totalSkuStock = variants.reduce((total, variant) => total + Math.max(0, Number(variant.stock) || 0), 0);
@@ -110,6 +120,7 @@ export default function ProductDetail() {
   const optionGroups = Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).map(option => option.name))).map(name => ({ name, values: Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).filter(option => option.name === name).map(option => option.value))) }));
   const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
   const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? totalSkuStock : product.stock) : Number.MAX_SAFE_INTEGER;
+  const canRequestRestock = Boolean(product?.type === "physical" && ((!selectedVariant && Number(availableStock || 0) <= 0) || Number(selectedVariant?.stock || 0) <= 0));
   const requiresVariant = product?.type === "physical" && variants.length > 0;
   const isPreorder = product?.type === "physical" && fulfillmentMode === 'preorder';
   const isMarketplaceLayout = product?.type === "physical" && product.purchaseLayout === "marketplace";
@@ -139,6 +150,14 @@ export default function ProductDetail() {
   useEffect(() => {
     if (product?.type === "physical" && fulfillmentMode === 'in_stock' && availableStock > 0) setQuantity(current => Math.min(current, availableStock));
   }, [availableStock, product?.type, fulfillmentMode]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    addRecentProduct(product.id);
+    const refreshCompare = () => setCompareIds(getComparedProductIds());
+    window.addEventListener("dhlstores-customer-tools", refreshCompare);
+    return () => window.removeEventListener("dhlstores-customer-tools", refreshCompare);
+  }, [product?.id]);
 
   useEffect(() => {
     if (product?.type !== "physical" || inlineShipping.name || savedAddresses.length === 0) return;
@@ -415,9 +434,11 @@ export default function ProductDetail() {
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{product.name}</h1>
               <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className={`text-2xl font-black ${product.type === 'physical' ? 'text-[#ee4d2d]' : 'text-amber-600'}`}>{formatCurrency(unitPrice * (isPreorder ? 0.9 : 1))}</p>{applicableWholesaleTier && <Badge className="bg-emerald-100 text-emerald-800">Giá sỉ từ {applicableWholesaleTier.minQuantity} cái</Badge>}{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(unitPrice)}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
+              <div className="mt-4 flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" className={isFavorite ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100" : "border-slate-200 text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"} disabled={toggleFavoriteMutation.isPending} onClick={() => { if (!isAuthenticated) { toast.info("Đăng nhập để lưu sản phẩm yêu thích"); startLogin(); return; } toggleFavoriteMutation.mutate({ productId: product.id }); }}><Heart className={`mr-1.5 h-3.5 w-3.5 ${isFavorite ? "fill-current" : ""}`} />{isFavorite ? "Đã yêu thích" : "Yêu thích"}</Button><Button type="button" size="sm" variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" onClick={() => { const result = toggleComparedProduct(product.id); if (result.limitReached) { toast.error("Bạn chỉ có thể so sánh tối đa 4 sản phẩm."); return; } setCompareIds(getComparedProductIds()); toast.success(result.added ? "Đã thêm vào danh sách so sánh" : "Đã bỏ khỏi danh sách so sánh"); }}><Scale className="mr-1.5 h-3.5 w-3.5" />{compareIds.includes(product.id) ? "Đã chọn so sánh" : "So sánh"}</Button>{compareIds.length > 0 && <Link href="/compare" className="inline-flex items-center rounded-md border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-50">So sánh ({compareIds.length})</Link>}{canRequestRestock && <Button type="button" size="sm" variant="outline" disabled={requestRestockMutation.isPending || Boolean(restockSubscription?.status === "active")} className={restockSubscription?.status === "ready" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"} onClick={() => { if (!isAuthenticated) { toast.info("Đăng nhập để đăng ký nhắc lại hàng"); startLogin(); return; } requestRestockMutation.mutate({ productId: product.id, variantId: restockVariantId }); }}><BellRing className="mr-1.5 h-3.5 w-3.5" />{restockSubscription?.status === "ready" ? "SKU đã về hàng" : restockSubscription?.status === "active" ? "Đã đăng ký nhắc hàng" : "Nhắc lại khi có hàng"}</Button>}</div>
             </div>
 
             {product.type === "physical" && <section className="rounded-md border border-orange-200 bg-orange-50/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-700">DHL Stores · Shop thể thao</p><p className="mt-1 text-sm font-black text-slate-900">Hàng thể thao chọn SKU, giao SPX</p></div><span className="rounded bg-white px-2 py-1 text-[10px] font-black text-orange-700 shadow-sm">Hỗ trợ Zalo 0963.898.871</span></div><p className="mt-2 text-[11px] leading-relaxed text-slate-600">Kiểm tra màu, size, tồn kho và phí giao hàng trước khi đặt. Đơn vật lý thanh toán qua QR Techcombank.</p></section>}
+            <CustomerHelpCard context="product" />
 
             {product.type === "physical" && wholesaleTiers.length > 0 && <section className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-emerald-900">Giá sỉ theo số lượng</p><p className="mt-1 text-[11px] leading-relaxed text-emerald-800">Mua càng nhiều, đơn giá mỗi sản phẩm càng tốt. Giá sẽ tự áp dụng khi đạt mốc.</p></div>{applicableWholesaleTier && <Badge className="bg-emerald-600 text-white">Đang áp dụng</Badge>}</div><div className="mt-3 grid grid-cols-3 gap-2">{wholesaleTiers.map(tier => <div key={tier.id} className={`rounded-lg border p-2 text-center ${applicableWholesaleTier?.id === tier.id ? "border-emerald-600 bg-white ring-2 ring-emerald-100" : "border-emerald-100 bg-white/70"}`}><p className="text-[10px] font-black text-emerald-800">Từ {tier.minQuantity} cái</p><p className="mt-1 text-xs font-black text-slate-900">{formatCurrency(Number(tier.unitPrice) + Number(selectedVariant?.priceAdjustment || 0))}</p></div>)}</div></section>}
 

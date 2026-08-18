@@ -514,3 +514,10 @@
 - [x] Bổ sung xuất hóa đơn PDF hoặc in trực tiếp cho đơn vừa tạo, dùng dữ liệu đơn thực tế.
 - [x] Cập nhật skill vận hành tồn kho để bao gồm tạo đơn quản trị, trừ tồn và chứng từ hóa đơn.
 - [x] Viết kiểm thử, kiểm tra TypeScript và xác minh giao diện nâng cấp trước khi xuất bản.
+
+- [x] Thêm danh sách yêu thích để khách lưu sản phẩm và quay lại mua sau bằng dữ liệu tài khoản thật.
+- [x] Thêm so sánh sản phẩm/SKU để khách đối chiếu giá, tồn, thuộc tính và lựa chọn phù hợp trước khi mua.
+- [x] Thêm thông báo trở lại hàng cho SKU hết hàng, lưu yêu cầu của khách và tránh đăng ký trùng.
+- [x] Thêm danh sách sản phẩm đã xem gần đây theo thiết bị để khách quay lại so sánh hoặc mua nhanh.
+- [x] Thêm hộp trợ giúp mua hàng theo ngữ cảnh tại trang sản phẩm/giỏ/checkout, dẫn khách tới thông tin hoặc hỗ trợ thực có sẵn.
+- [x] Cập nhật schema/API/giao diện, viết kiểm thử và xác minh desktop/mobile cho cả năm tính năng trước khi xuất bản.

@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -423,6 +423,10 @@ let memoryProductVariants: ProductVariantType[] = [];
 let memoryProductOptionGroups: ProductOptionGroupType[] = [];
 let memoryProductWholesaleTiers: ProductWholesaleTierType[] = [];
 let memoryShippingAddresses: ShippingAddressType[] = [];
+type MemoryCustomerFavorite = { id: number; userId: number; productId: number; createdAt: Date };
+type MemoryRestockSubscription = { id: number; userId: number; productId: number; variantId: number; status: "active" | "ready" | "cancelled"; readyAt: Date | null; createdAt: Date; updatedAt: Date };
+let memoryCustomerFavorites: MemoryCustomerFavorite[] = [];
+let memoryRestockSubscriptions: MemoryRestockSubscription[] = [];
 const memoryProcessedTransactions = new Set<string>();
 const memoryDownloadLinks = new Map<number, string>();
 const memoryMediaAssets: Array<{ id: number; fileName: string; storageKey: string; url: string; mimeType: string; sizeBytes: number; createdAt: Date }> = [];
@@ -430,6 +434,8 @@ let nextCartId = 1;
 let nextOrderId = 1;
 let nextOrderItemId = 1;
 let nextMediaAssetId = 1;
+let nextCustomerFavoriteId = 1;
+let nextRestockSubscriptionId = 1;
 let nextProductVariantId = 1;
 let nextProductOptionGroupId = 1;
 let nextProductWholesaleTierId = 1;
@@ -1338,12 +1344,14 @@ export async function bulkSetInventory(input: { changes: Array<{ target: "produc
       if (!row) throw new Error("Không tìm thấy biến thể");
       await executor.update(productVariants).set({ stock: change.stock }).where(eq(productVariants.id, change.id));
       await executor.insert(inventoryMovements).values({ productId: row.productId, variantId: row.id, quantityBefore: row.stock, quantityAfter: change.stock, reason: input.reason.trim(), performedByUserId: input.performedByUserId });
+      if (row.stock <= 0 && change.stock > 0) await executor.update(restockSubscriptions).set({ status: "ready", readyAt: new Date() }).where(and(eq(restockSubscriptions.productId, row.productId), eq(restockSubscriptions.variantId, row.id), eq(restockSubscriptions.status, "active")));
       return;
     }
     const row = (await executor.select().from(products).where(eq(products.id, change.id)).limit(1))[0];
     if (!row) throw new Error("Không tìm thấy sản phẩm");
     await executor.update(products).set({ stock: change.stock }).where(eq(products.id, change.id));
     await executor.insert(inventoryMovements).values({ productId: row.id, variantId: null, quantityBefore: row.stock, quantityAfter: change.stock, reason: input.reason.trim(), performedByUserId: input.performedByUserId });
+    if (row.stock <= 0 && change.stock > 0) await executor.update(restockSubscriptions).set({ status: "ready", readyAt: new Date() }).where(and(eq(restockSubscriptions.productId, row.id), eq(restockSubscriptions.variantId, 0), eq(restockSubscriptions.status, "active")));
   };
   if (connection) {
     await connection.transaction(async transaction => { for (const change of input.changes) await applyChange(transaction as never, change); });
@@ -1355,6 +1363,11 @@ export async function bulkSetInventory(input: { changes: Array<{ target: "produc
     const before = row.stock;
     row.stock = change.stock;
     memoryInventoryMovements.unshift({ id: nextInventoryMovementId++, productId: change.target === "variant" ? (row as ProductVariantType).productId : row.id, variantId: change.target === "variant" ? row.id : null, quantityBefore: before, quantityAfter: change.stock, reason: input.reason.trim(), performedByUserId: input.performedByUserId, createdAt: new Date() });
+    if (before <= 0 && change.stock > 0) {
+      const productId = change.target === "variant" ? (row as ProductVariantType).productId : row.id;
+      const variantId = change.target === "variant" ? row.id : 0;
+      memoryRestockSubscriptions = memoryRestockSubscriptions.map(subscription => subscription.productId === productId && subscription.variantId === variantId && subscription.status === "active" ? { ...subscription, status: "ready", readyAt: new Date(), updatedAt: new Date() } : subscription);
+    }
   }
   return { success: true, updated: input.changes.length };
 }
@@ -2642,4 +2655,83 @@ export async function createProductReview(input: { productId: number; userId: nu
     isPublished: true,
   });
   return { success: true as const, id: Number(inserted[0].insertId), status: "published" as const };
+}
+
+export async function getCustomerFavorites(userId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const rows = await connection.select({ id: customerFavorites.id, productId: customerFavorites.productId, createdAt: customerFavorites.createdAt }).from(customerFavorites).where(eq(customerFavorites.userId, userId)).orderBy(desc(customerFavorites.createdAt));
+    return Promise.all(rows.map(async row => ({ ...row, product: await getProductById(row.productId) })));
+  }
+  return memoryCustomerFavorites.filter(row => row.userId === userId).sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime()).map(row => ({ ...row, product: memoryProducts.find(product => product.id === row.productId) }));
+}
+
+export async function toggleCustomerFavorite(input: { userId: number; productId: number }) {
+  if (!await getProductById(input.productId)) throw new Error("Không tìm thấy sản phẩm");
+  const connection = await getDb();
+  if (connection) {
+    const existing = (await connection.select().from(customerFavorites).where(and(eq(customerFavorites.userId, input.userId), eq(customerFavorites.productId, input.productId))).limit(1))[0];
+    if (existing) {
+      await connection.delete(customerFavorites).where(eq(customerFavorites.id, existing.id));
+      return { isFavorite: false };
+    }
+    await connection.insert(customerFavorites).values({ userId: input.userId, productId: input.productId });
+    return { isFavorite: true };
+  }
+  const existingIndex = memoryCustomerFavorites.findIndex(row => row.userId === input.userId && row.productId === input.productId);
+  if (existingIndex >= 0) {
+    memoryCustomerFavorites.splice(existingIndex, 1);
+    return { isFavorite: false };
+  }
+  memoryCustomerFavorites.push({ id: nextCustomerFavoriteId++, userId: input.userId, productId: input.productId, createdAt: new Date() });
+  return { isFavorite: true };
+}
+
+export async function getRestockSubscriptions(userId: number) {
+  const connection = await getDb();
+  const rows = connection ? await connection.select().from(restockSubscriptions).where(eq(restockSubscriptions.userId, userId)).orderBy(desc(restockSubscriptions.updatedAt)) : memoryRestockSubscriptions.filter(row => row.userId === userId).sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime());
+  return Promise.all(rows.map(async row => {
+    const product = await getProductById(row.productId);
+    const variant = row.variantId ? (await getProductVariants(row.productId)).find(item => item.id === row.variantId) : undefined;
+    return { ...row, product, variant };
+  }));
+}
+
+export async function requestRestockSubscription(input: { userId: number; productId: number; variantId?: number }) {
+  const product = await getProductById(input.productId);
+  if (!product || product.type !== "physical") throw new Error("Chỉ có thể nhắc lại hàng vật lý đang bán");
+  const variantId = input.variantId || 0;
+  const variant = variantId ? (await getProductVariants(input.productId)).find(item => item.id === variantId) : undefined;
+  const currentStock = variant ? variant.stock : product.stock;
+  if (currentStock > 0) throw new Error("SKU này đang còn hàng, bạn có thể thêm vào giỏ ngay");
+  const connection = await getDb();
+  if (connection) {
+    const existing = (await connection.select().from(restockSubscriptions).where(and(eq(restockSubscriptions.userId, input.userId), eq(restockSubscriptions.productId, input.productId), eq(restockSubscriptions.variantId, variantId))).limit(1))[0];
+    if (existing) {
+      await connection.update(restockSubscriptions).set({ status: "active", readyAt: null }).where(eq(restockSubscriptions.id, existing.id));
+      return { status: "active" as const, alreadySubscribed: true };
+    }
+    await connection.insert(restockSubscriptions).values({ userId: input.userId, productId: input.productId, variantId });
+    return { status: "active" as const, alreadySubscribed: false };
+  }
+  const existing = memoryRestockSubscriptions.find(row => row.userId === input.userId && row.productId === input.productId && row.variantId === variantId);
+  if (existing) {
+    existing.status = "active";
+    existing.readyAt = null;
+    existing.updatedAt = new Date();
+    return { status: "active" as const, alreadySubscribed: true };
+  }
+  memoryRestockSubscriptions.push({ id: nextRestockSubscriptionId++, userId: input.userId, productId: input.productId, variantId, status: "active", readyAt: null, createdAt: new Date(), updatedAt: new Date() });
+  return { status: "active" as const, alreadySubscribed: false };
+}
+
+export async function cancelRestockSubscription(input: { userId: number; id: number }) {
+  const connection = await getDb();
+  if (connection) {
+    await connection.update(restockSubscriptions).set({ status: "cancelled" }).where(and(eq(restockSubscriptions.id, input.id), eq(restockSubscriptions.userId, input.userId)));
+    return { success: true };
+  }
+  const row = memoryRestockSubscriptions.find(item => item.id === input.id && item.userId === input.userId);
+  if (row) { row.status = "cancelled"; row.updatedAt = new Date(); }
+  return { success: true };
 }

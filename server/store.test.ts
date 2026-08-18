@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import { appRouter } from "./routers";
-import { confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, getSpxShippingFee, isDownloadAccessActive, replaceProductWholesaleTiers, saveProductDownloadLink } from "./db";
+import { bulkSetInventory, confirmManualPayment, confirmSePayPayment, createProduct, createProductVariant, DOWNLOAD_ACCESS_WINDOW_MS, getInstantDownloadsForOrder, getPaidDownloadsForUser, getProductVariants, getSpxShippingFee, isDownloadAccessActive, replaceProductWholesaleTiers, saveProductDownloadLink } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 function createOwnerContext(): TrpcContext {
@@ -345,6 +345,19 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     expect(facets).toEqual({ sizes: expect.any(Array), colors: expect.any(Array) });
     await expect(caller.store.productReviews({ productId: 1 })).resolves.toEqual([]);
     await expect(caller.store.submitProductReview({ productId: 1, rating: 6, body: "Nội dung đánh giá không hợp lệ" })).rejects.toThrow();
+  });
+
+  it("lets a customer save favorites and receive a ready status after an out-of-stock SKU is replenished", async () => {
+    const caller = appRouter.createCaller(createMockContext());
+    const suffix = `customer-tools-${Date.now().toString(36)}`;
+    const product = await createProduct({ name: `Áo nhắc hàng ${suffix}`, slug: `ao-nhac-hang-${suffix}`, description: "Kiểm thử yêu thích và nhắc hàng", price: "100000", categoryId: 11, image: "generated:customer-tools", stock: 0, featured: false, isActive: true });
+    const variant = await createProductVariant({ productId: product!.id, size: "M", color: "Đen", sku: `RESTOCK-${suffix}`, priceAdjustment: "0", stock: 0, isActive: true });
+
+    await expect(caller.store.toggleFavorite({ productId: product!.id })).resolves.toEqual({ isFavorite: true });
+    await expect(caller.store.favorites()).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ productId: product!.id })]));
+    await expect(caller.store.requestRestock({ productId: product!.id, variantId: variant!.id })).resolves.toMatchObject({ status: "active" });
+    await bulkSetInventory({ changes: [{ target: "variant", id: variant!.id, stock: 3 }], reason: "Bổ sung kho kiểm thử", performedByUserId: 1 });
+    await expect(caller.store.restockSubscriptions()).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ productId: product!.id, variantId: variant!.id, status: "ready" })]));
   });
 
   it("switches a physical cart line between immediate and preorder without changing quantity", async () => {

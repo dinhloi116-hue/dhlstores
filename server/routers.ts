@@ -234,6 +234,37 @@ export const appRouter = router({
       .input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10, 'Nội dung đánh giá cần ít nhất 10 ký tự').max(2000) }))
       .mutation(({ ctx, input }) => db.createProductReview({ productId: input.productId, userId: ctx.user.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body })),
 
+    favorites: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getCustomerFavorites(ctx.user.id);
+    }),
+
+    toggleFavorite: protectedProcedure
+      .input(z.object({ productId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return db.toggleCustomerFavorite({ userId: ctx.user.id, productId: input.productId });
+      }),
+
+    restockSubscriptions: protectedProcedure.query(async ({ ctx }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getRestockSubscriptions(ctx.user.id);
+    }),
+
+    requestRestock: protectedProcedure
+      .input(z.object({ productId: z.number().int().positive(), variantId: z.number().int().positive().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return db.requestRestockSubscription({ userId: ctx.user.id, productId: input.productId, variantId: input.variantId });
+      }),
+
+    cancelRestock: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        return db.cancelRestockSubscription({ userId: ctx.user.id, id: input.id });
+      }),
+
     productVariants: publicProcedure
       .input(z.object({ productId: z.number().int().positive() }))
       .query(async ({ input }) => db.getProductVariants(input.productId)),

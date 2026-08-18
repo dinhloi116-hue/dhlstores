@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import StoreLayout from "@/components/StoreLayout";
 import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
+import { clearRecentProducts, getRecentProductIds } from "@/lib/customer-tools";
 import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/category-icons";
-import { ArrowRight, CircleHelp, Download, FolderGit2, PackageCheck, Search, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ArrowRight, CircleHelp, Download, FolderGit2, History, PackageCheck, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 
 export default function Home() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
   const [searchTerm, setSearchTerm] = useState("");
+  const [recentProductIds, setRecentProductIds] = useState<number[]>(getRecentProductIds);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -21,6 +23,12 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [lang]);
 
+  useEffect(() => {
+    const refresh = () => setRecentProductIds(getRecentProductIds());
+    window.addEventListener("dhlstores-customer-tools", refresh);
+    return () => window.removeEventListener("dhlstores-customer-tools", refresh);
+  }, []);
+
   const t = translations[lang];
 
   const productsQuery = trpc.store.products.useQuery({});
@@ -29,6 +37,7 @@ export default function Home() {
   const allProducts = productsQuery.data || [];
   const digitalProducts = allProducts.filter(product => product.type === "digital");
   const physicalProducts = allProducts.filter(product => product.type === "physical");
+  const recentProducts = recentProductIds.map(id => allProducts.find(product => product.id === id)).filter((product): product is typeof allProducts[number] => Boolean(product));
   const categories = categoriesQuery.data || [];
   const homeHeading = siteSettingsQuery.data?.homeHeading || (lang === "vi" ? "Tài nguyên thiết kế thể thao" : "Sports design resources");
   const normalizedSearchTerm = searchTerm.trim().toLocaleLowerCase("vi");
@@ -72,6 +81,7 @@ export default function Home() {
         </div>
       </div>
 
+      {recentProducts.length > 0 && <section className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8 2xl:px-10"><div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white"><History className="h-4 w-4" /></div><div><p className="text-xs font-black text-slate-900">Bạn đã xem gần đây</p><p className="mt-0.5 text-[10px] text-slate-500">Lịch sử chỉ lưu trên thiết bị này để bạn quay lại nhanh.</p></div></div><button type="button" onClick={() => { clearRecentProducts(); setRecentProductIds([]); }} className="text-[10px] font-black text-indigo-700 hover:text-indigo-900">Xóa lịch sử</button></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">{recentProducts.map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group flex min-w-0 items-center gap-2 rounded-xl border border-indigo-100 bg-white p-2 transition hover:border-indigo-300 hover:bg-indigo-50"><img src={product.image} alt="" className="h-10 w-10 rounded-lg border border-slate-200 bg-slate-50 object-contain" /><span className="min-w-0"><span className="block truncate text-[11px] font-black text-slate-900 group-hover:text-indigo-700">{product.name}</span><span className="mt-0.5 block text-[10px] font-bold text-amber-700">{formatCurrency(product.price)}</span></span></Link>)}</div></div></section>}
       <section className="border-y border-slate-200 bg-slate-50/70 py-8">
         <div className="mx-auto grid max-w-[1600px] gap-5 px-4 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:px-8 2xl:px-10">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">Chọn nhanh theo nhu cầu</p><h2 className="mt-1 font-display text-2xl font-black uppercase text-slate-900">Đúng tài nguyên, đúng mục đích</h2></div><Sparkles className="h-6 w-6 shrink-0 text-amber-500" /></div><div className="grid divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">{[{ title: "Thiết kế & in ấn", copy: "Font, vector, mockup và file in áo.", tone: "bg-violet-50 text-violet-700" }, { title: "Hoàn thiện áo đấu", copy: "Nameset, patch tay và phụ kiện ép nhiệt.", tone: "bg-emerald-50 text-emerald-700" }, { title: "Tìm theo danh mục", copy: "Mở toàn bộ thư viện để lọc nhanh.", tone: "bg-amber-50 text-amber-700" }].map((item, index) => <Link key={item.title} href={index === 2 ? "/products" : `/products?categoryId=${categories.find(category => index === 0 ? category.type === "digital" : category.slug === "nameset-chong-nhiem")?.id || ""}`} className="group p-4 transition-colors hover:bg-slate-50"><span className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-wide ${item.tone}`}>Lối tắt</span><p className="mt-3 text-sm font-black text-slate-900 group-hover:text-amber-600">{item.title}<ArrowRight className="ml-1 inline h-3.5 w-3.5" /></p><p className="mt-1 text-xs leading-relaxed text-slate-500">{item.copy}</p></Link>)}</div></div>

@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, decimal, uniqueIndex } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, decimal, uniqueIndex, index } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -38,6 +38,37 @@ export const shippingAddresses = mysqlTable("shipping_addresses", {
 
 export type ShippingAddress = typeof shippingAddresses.$inferSelect;
 export type InsertShippingAddress = typeof shippingAddresses.$inferInsert;
+
+/** Sản phẩm khách đã lưu để quay lại mua sau. */
+export const customerFavorites = mysqlTable("customer_favorites", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  productId: int("productId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  userProductUnique: uniqueIndex("customer_favorites_user_product_unique").on(table.userId, table.productId),
+  userIndex: index("customer_favorites_user_idx").on(table.userId),
+}));
+
+export type CustomerFavorite = typeof customerFavorites.$inferSelect;
+
+/** Yêu cầu nhắc hàng theo đúng SKU hoặc kho mặc định của sản phẩm (variantId = 0). */
+export const restockSubscriptions = mysqlTable("restock_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  productId: int("productId").notNull(),
+  variantId: int("variantId").default(0).notNull(),
+  status: mysqlEnum("status", ["active", "ready", "cancelled"]).default("active").notNull(),
+  readyAt: timestamp("readyAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => ({
+  userTargetUnique: uniqueIndex("restock_subscriptions_user_target_unique").on(table.userId, table.productId, table.variantId),
+  userIndex: index("restock_subscriptions_user_idx").on(table.userId),
+  targetIndex: index("restock_subscriptions_target_idx").on(table.productId, table.variantId),
+}));
+
+export type RestockSubscription = typeof restockSubscriptions.$inferSelect;
 
 /** Góp ý độc lập của khách, có thể gửi khi chưa đăng nhập thông qua visitorKey. */
 export const customerFeedback = mysqlTable("customer_feedback", {

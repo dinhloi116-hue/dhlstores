@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import Home from "@/pages/Home";
 import Products from "@/pages/Products";
 import ProductDetail from "@/pages/ProductDetail";
+import CompareProducts from "@/pages/CompareProducts";
 import Checkout from "@/pages/Checkout";
 import Account from "@/pages/Account";
 import AdminOrders from "@/pages/AdminOrders";
@@ -22,6 +23,7 @@ function Router() {
       <Route path={"/products/:slug"} component={ProductDetail} />
       <Route path={"/products"} component={Products} />
       <Route path={"/product/:slug"} component={ProductDetail} />
+      <Route path={"/compare"} component={CompareProducts} />
       <Route path={"/cart"} component={Checkout} />
       <Route path={"/checkout"} component={Checkout} />
       <Route path={"/tools"} component={ToolsLibrary} />
