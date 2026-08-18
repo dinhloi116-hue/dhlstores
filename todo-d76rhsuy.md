@@ -539,3 +539,5 @@
 - [x] Trang Tài khoản: hiển thị danh sách đơn hàng thành lưới hai cột trên desktop để giảm chiều cuộn, vẫn xếp một cột an toàn trên màn hình hẹp. Đã bổ sung hồi quy và xác minh trực quan desktop.
 
 - [x] Thanh toán công khai: thay tên ngân hàng cụ thể bằng nhãn QR/chuyển khoản trung tính, không thay đổi đối soát hay mã QR thực tế. Đã quét các trang khách và giữ nguyên luồng xử lý máy chủ.
+
+- [x] Trang Tài khoản: đưa đơn đang xử lý/giao và Order trước lên khu ưu tiên, đồng thời thu gọn đơn lịch sử thành một đến hai hàng thông tin để giảm chiều cao thẻ. Đã giữ liên kết tải/theo dõi, chạy 4 hồi quy mục tiêu và xác minh trực quan desktop.

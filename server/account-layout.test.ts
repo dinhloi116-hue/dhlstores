@@ -13,6 +13,9 @@ describe("account page layout", () => {
     expect(source).toContain('id="addresses"');
 	    expect(source).toContain('id="favorites"');
 	    expect(source).toContain('id="orders"');
-	    expect(source).toContain('grid gap-4 xl:grid-cols-2');
+	    expect(source).toContain('const priorityOrders = orders.filter');
+	    expect(source).toContain('Đơn đang xử lý & giao hàng');
+	    expect(source).toContain('Lịch sử đơn hàng');
+	    expect(source).toContain('px-3 py-2.5');
 	  });
 });

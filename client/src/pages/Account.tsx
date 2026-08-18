@@ -38,6 +38,8 @@ export default function Account() {
   const orders = ordersQuery.data || [];
   const downloadsQuery = trpc.store.downloads.useQuery(undefined, { enabled: isAuthenticated });
   const downloads = downloadsQuery.data || [];
+	  const priorityOrders = orders.filter(order => order.hasPhysicalItems && order.paymentStatus === "paid" && !["completed", "cancelled"].includes(order.status));
+	  const historyOrders = orders.filter(order => !priorityOrders.some(priorityOrder => priorityOrder.id === order.id));
   const addressesQuery = trpc.store.shippingAddresses.useQuery(undefined, { enabled: isAuthenticated });
   const addresses = addressesQuery.data || [];
   const walletQuery = trpc.store.walletSummary.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: activeTopup ? 3500 : false });
@@ -229,101 +231,12 @@ export default function Account() {
           <div id="restock" className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3 border-b border-amber-100 pb-4"><div className="flex items-start gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500 text-slate-950"><BellRing className="h-5 w-5" /></div><div><h2 className="font-black text-slate-900">Nhắc lại hàng</h2><p className="mt-1 text-xs leading-relaxed text-slate-500">Khi quản trị cập nhật SKU từ hết hàng sang còn hàng, trạng thái sẽ báo tại đây.</p></div></div><Badge className="bg-amber-100 text-amber-800">{(restockSubscriptionsQuery.data || []).filter(item => item.status !== "cancelled").length}</Badge></div><div className="mt-4 space-y-2">{restockSubscriptionsQuery.isLoading ? <p className="text-xs text-slate-500">Đang tải…</p> : !(restockSubscriptionsQuery.data || []).filter(item => item.status !== "cancelled").length ? <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center"><BellRing className="mx-auto h-6 w-6 text-slate-300" /><p className="mt-2 text-xs font-semibold text-slate-600">Chưa có SKU nào cần nhắc hàng.</p></div> : (restockSubscriptionsQuery.data || []).filter(item => item.status !== "cancelled").map(item => <div key={item.id} className={`rounded-xl border p-3 ${item.status === "ready" ? "border-emerald-200 bg-emerald-50" : "border-amber-100 bg-amber-50/50"}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-xs font-black text-slate-900">{item.product?.name || `Sản phẩm #${item.productId}`}</p><p className="mt-1 text-[10px] text-slate-600">{item.variant?.sku || item.variant?.color || item.variant?.size || "Kho mặc định"} · đăng ký {new Date(item.createdAt).toLocaleDateString("vi-VN")}</p></div><Badge className={item.status === "ready" ? "bg-emerald-600 text-white" : "bg-amber-100 text-amber-800"}>{item.status === "ready" ? "Đã về hàng" : "Đang chờ"}</Badge></div><div className="mt-3 flex flex-wrap gap-2">{item.product && <Link href={`/product/${item.product.slug}`} className="inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-black text-slate-700 hover:bg-slate-100">Mở sản phẩm</Link>}<Button type="button" size="sm" variant="ghost" disabled={cancelRestockMutation.isPending} onClick={() => cancelRestockMutation.mutate({ id: item.id })} className="h-7 px-2 text-[10px] text-rose-700 hover:bg-rose-100 hover:text-rose-800">Hủy nhắc hàng</Button></div></div>)}</div></div>
         </section>
 
-        <div id="orders" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <Package className="w-5 h-5 text-amber-600" /> {t.orderHistory}
-            </h2>
-	            <Badge variant="outline" className="border-slate-200 text-slate-700">{orders.length} {lang === 'vi' ? 'đơn hàng' : 'orders'}</Badge>
-          </div>
-
-          {orders.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-2xl border border-slate-200">
-              <Package className="w-16 h-16 mx-auto mb-3 text-slate-300" />
-              <h3 className="text-base font-bold text-slate-800">{lang === 'vi' ? 'Bạn chưa có đơn hàng nào' : 'No orders found'}</h3>
-              <p className="text-xs text-slate-500 mt-1">{t.emptyCartDesc}</p>
-              <Link href="/products" className="inline-block mt-5">
-                <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
-                  {t.exploreShop}
-                </Button>
-              </Link>
-            </div>
-	          ) : (
-	            <div className="grid gap-4 xl:grid-cols-2">
-	              {orders.map(order => (
-	                <div key={order.id} className="h-full bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-4">
-	                      <span className="font-bold text-slate-900 text-sm">{lang === 'vi' ? 'Đơn' : 'Order'} #{order.id}</span>
-                      {order.hasPreorderItems && <Badge className="bg-rose-100 text-rose-700 border border-rose-200">Order trước · {order.preorderEstimatedDays || "7–10 ngày"}</Badge>}
-	                      <span className="text-slate-500">{lang === 'vi' ? 'Ngày' : 'Date'}: {new Date(order.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge className={order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}>{order.paymentStatus === 'paid' ? (lang === 'vi' ? 'Đã thanh toán' : 'Paid') : (lang === 'vi' ? 'Chờ thanh toán' : 'Awaiting payment')}</Badge>
-                      {getStatusBadge(order.status)}
-                    </div>
-                  </div>
-
-                  <div className="p-6 divide-y divide-slate-100">
-                    {order.hasPhysicalItems && <section className="pb-5"><div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Theo dõi đơn hàng</p><p className="mt-1 text-sm font-black text-slate-900">{order.hasPreorderItems ? "Lộ trình Order trước 7–10 ngày" : "Vận chuyển đơn mua ngay"}</p></div>{order.trackingUrl && <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-700"><ExternalLink className="h-3.5 w-3.5" />Mở link theo dõi</a>}</div>{order.hasPreorderItems && <div className="mt-4 grid gap-2 sm:grid-cols-4">{[["ordered", "Đã đặt"], ["central_warehouse", "Hàng về kho trung"], ["ready_hanoi", "Hàng ở Hà Nội"], ["tracking", "Có link theo dõi"]].map(([stage, label], index) => { const completed = ["ordered", "central_warehouse", "ready_hanoi", "tracking"].indexOf(order.trackingStage || "ordered") >= index; return <div key={stage} className={`rounded-lg border px-3 py-2 text-center text-[11px] font-black ${completed ? "border-violet-300 bg-white text-violet-800" : "border-slate-200 bg-slate-100 text-slate-400"}`}>{completed ? "✓ " : ""}{label}</div>; })}</div>}{!order.trackingUrl && <p className="mt-3 text-xs leading-relaxed text-slate-600">{order.hasPreorderItems ? "Chủ cửa hàng sẽ cập nhật lần lượt các mốc thực tế và thêm link vận chuyển khi hàng sẵn sàng gửi." : "Link theo dõi vận chuyển sẽ xuất hiện tại đây sau khi chủ cửa hàng cập nhật."}</p>}</div></section>}
-                    {order.items?.map(item => {
-                      const p = item.product;
-                      const download = downloads.find(resource => resource.orderId === order.id && resource.productId === item.productId);
-                      const downloadExpired = order.paymentStatus === 'paid' && p?.type === 'digital' && (order.paymentConfirmedAt?.getTime() ?? 0) + downloadWindowMs <= Date.now();
-                      return (
-                        <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            {p && <img src={p.image} alt={p.name} className="w-14 h-14 object-cover rounded-xl border border-slate-200" />}
-                            <div>
-	                              <p className="text-sm font-bold text-slate-900">{p?.name || (lang === 'vi' ? 'Sản phẩm' : 'Product')}</p>
-                              {item.attributes && <p className="text-xs text-amber-600 font-semibold">{item.attributes}</p>}
-                              {item.fulfillmentMode === "preorder" && <p className="mt-1 text-[11px] font-black text-rose-700">Order trước · giảm 10% · dự kiến 7–10 ngày</p>}
-	                              <p className="text-xs text-slate-500 mt-0.5">{lang === 'vi' ? 'SL' : 'Qty'}: {item.quantity} x {formatCurrency(Number(item.price))}</p>
-                            </div>
-                          </div>
-
-                          <div>
-                            {p?.type !== "digital" ? (
-                              <Badge variant="outline" className={order.paymentStatus === "paid" ? "border-violet-300 text-violet-700" : "border-amber-300 text-amber-700"}>
-                                {order.paymentStatus === "paid" ? (lang === "vi" ? "Đang xử lý giao hàng" : "Delivery is being processed") : (lang === "vi" ? "Chờ xác nhận thanh toán" : "Awaiting payment confirmation")}
-                              </Badge>
-                            ) : order.paymentStatus === 'paid' && download?.driveUrl ? (
-                              <a
-                                href={download.driveUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all"
-                              >
-                                <Download className="w-4 h-4" /> {t.downloadFile} ({download.fileSize || '4K'})
-                                <ExternalLink className="w-3 h-3 ml-1" />
-                              </a>
-                            ) : downloadExpired ? (
-                              <Badge variant="outline" className="border-rose-300 text-rose-600">
-                                {lang === 'vi' ? 'Liên kết tải đã hết hạn sau 7 ngày' : 'Download link expired after 7 days'}
-                              </Badge>
-                            ) : order.paymentStatus === 'paid' ? (
-                              <Badge variant="outline" className="border-slate-300 text-slate-600">
-                                {lang === 'vi' ? 'File đang được chuẩn bị' : 'File is being prepared'}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-rose-300 text-rose-600">
-                                {lang === 'vi' ? 'Chờ thanh toán để tải file' : 'Payment required to download'}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between text-sm">
-	                    <span className="text-slate-500">{lang === 'vi' ? 'Tổng thanh toán:' : 'Total Amount:'}</span>
-                    <span className="text-lg font-black text-amber-600">{formatCurrency(Number(order.totalAmount))}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-	          )}
+	        <div id="orders" className="space-y-5">
+	          <div className="flex items-center justify-between"><h2 className="flex items-center gap-2 text-xl font-black text-slate-900"><Package className="h-5 w-5 text-amber-600" /> {t.orderHistory}</h2><Badge variant="outline" className="border-slate-200 text-slate-700">{orders.length} {lang === "vi" ? "đơn hàng" : "orders"}</Badge></div>
+	          {orders.length === 0 ? <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center"><Package className="mx-auto mb-3 h-12 w-12 text-slate-300" /><h3 className="text-base font-bold text-slate-800">{lang === "vi" ? "Bạn chưa có đơn hàng nào" : "No orders found"}</h3><Link href="/products" className="mt-4 inline-block"><Button className="bg-amber-500 font-bold text-slate-950 hover:bg-amber-600">{t.exploreShop}</Button></Link></div> : <>
+	            {priorityOrders.length > 0 && <section className="space-y-2 rounded-2xl border border-violet-200 bg-violet-50/70 p-3 shadow-sm"><div className="flex items-center justify-between gap-3"><p className="text-xs font-black uppercase tracking-wide text-violet-800">Đơn đang xử lý & giao hàng</p><Badge className="border border-violet-200 bg-white text-violet-800">{priorityOrders.length} đơn</Badge></div>{priorityOrders.map(order => { const firstItem = order.items?.[0]; const product = firstItem?.product; return <article key={order.id} className="rounded-xl border border-violet-100 bg-white px-3 py-2.5"><div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"><span className="font-black text-slate-900">Đơn #{order.id}</span>{order.hasPreorderItems && <Badge className="bg-rose-100 text-rose-700">Order trước</Badge>}{getStatusBadge(order.status)}<span className="ml-auto font-black text-amber-600">{formatCurrency(Number(order.totalAmount))}</span></div><div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-slate-600">{product && <img src={product.image} alt="" className="h-7 w-7 rounded-md border border-slate-200 object-cover" />}<span className="truncate">{product?.name || "Sản phẩm"}{(order.items?.length || 0) > 1 ? ` +${(order.items?.length || 1) - 1}` : ""}</span><span className="text-violet-700">{order.trackingUrl ? "· Có link theo dõi" : order.hasPreorderItems ? "· Đang cập nhật lộ trình" : "· Đang chuẩn bị giao"}</span>{order.trackingUrl && <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 font-bold text-violet-700 hover:underline"><ExternalLink className="h-3 w-3" />Theo dõi</a>}</div></article>; })}</section>}
+	            <section className="space-y-2"><div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-wide text-slate-500">{priorityOrders.length ? "Lịch sử đơn hàng" : "Tất cả đơn hàng"}</p><span className="text-xs text-slate-500">{historyOrders.length} đơn</span></div><div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">{historyOrders.map(order => { const firstItem = order.items?.[0]; const product = firstItem?.product; const orderDownloads = downloads.filter(resource => resource.orderId === order.id && resource.driveUrl); return <article key={order.id} className="border-b border-slate-100 px-3 py-2.5 last:border-b-0"><div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"><span className="font-black text-slate-900">#{order.id}</span><span className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</span>{order.paymentStatus === "paid" ? <Badge className="bg-emerald-100 text-emerald-800">Đã thanh toán</Badge> : <Badge className="bg-amber-100 text-amber-800">Chờ thanh toán</Badge>}{getStatusBadge(order.status)}<span className="ml-auto font-black text-amber-600">{formatCurrency(Number(order.totalAmount))}</span></div><div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-slate-600">{product && <img src={product.image} alt="" className="h-7 w-7 rounded-md border border-slate-200 object-cover" />}<span className="truncate">{product?.name || "Sản phẩm"}{(order.items?.length || 0) > 1 ? ` +${(order.items?.length || 1) - 1}` : ""}</span>{orderDownloads.length > 0 && <span className="ml-auto text-violet-700">{orderDownloads.map(download => <a key={`${download.orderId}-${download.productId}`} href={download.driveUrl || "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold hover:underline"><Download className="h-3 w-3" />Tải tệp</a>)}</span>}</div></article>; })}</div></section>
+	          </>}
 	        </div>
 	          </div>
 	        </div>
