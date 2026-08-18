@@ -482,3 +482,8 @@
 
 - [x] Sửa action bar Marketplace khỏi trạng thái sticky gây che/cắt nội dung; thêm khoảng đệm tối thiểu, thông báo khi chưa chọn SKU và trạng thái disabled rõ ràng cho desktop/mobile.
 - [x] Kiểm tra TypeScript và chụp toàn trang sản phẩm vật lý sau thay đổi; xác nhận bố cục không còn lớp action bar đè lên bảng SKU.
+
+- [x] Rà soát toàn diện desktop/mobile cho trang chi tiết sản phẩm, bảng SKU Marketplace và khu vực tồn kho hiện tại.
+- [x] Thiết kế lại phân cấp thông tin SKU/tồn kho để ảnh, thuộc tính, mã SKU, giá, tồn kho và số lượng dễ quét hơn.
+- [x] Cải tiến phản hồi chọn SKU, cảnh báo tồn kho thấp/hết hàng và phần tổng kết mua để thao tác hàng loạt rõ ràng hơn.
+- [x] Kiểm thử TypeScript, hồi quy giỏ hàng/batch SKU và xác minh trực quan trên desktop/mobile trước khi xuất bản.

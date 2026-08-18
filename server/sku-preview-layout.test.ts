@@ -111,3 +111,26 @@ describe("public SKU inventory presentation", () => {
 
     expect(source).toContain("const sortedVariants = [...variants].sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));");
   });
+
+  it("summarizes SKU-level inventory and labels low or depleted stock in the marketplace table", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const inStockSkuCount = variants.filter");
+    expect(source).toContain("const totalSkuStock = variants.reduce");
+    expect(source).toContain("Kho khả dụng: {totalSkuStock}");
+    expect(source).toContain("const lowStock = !outOfStock");
+    expect(source).toContain('lowStock ? `Sắp hết · ${variant.stock}`');
+    expect(source).toContain('outOfStock ? "Hết hàng"');
+  });
+
+  it("makes inventory editing safer with labeled bulk fields and unsaved-SKU indicators", () => {
+    const source = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const changedSkuCount = variants.filter");
+    expect(source).toContain("dòng chưa lưu");
+    expect(source).toContain("Tồn kho mới");
+    expect(source).toContain("Giá bán mới");
+    expect(source).toContain("Giá vốn mới");
+    expect(source).toContain("Lưu thay đổi");
+    expect(source).toContain("object-contain");
+  });
