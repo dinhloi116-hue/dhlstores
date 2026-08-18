@@ -553,3 +553,7 @@
 - [x] PWA: kiểm thử khả năng cài đặt, mở lại ứng dụng và giao diện mobile trước khi xuất bản. Đã kiểm thử branding, build production, MIME manifest/service worker và xác minh desktop/mobile.
 
 - [x] Chat nội bộ: nút Nhắn cửa hàng trên trang sản phẩm mở CustomerContactHub trong website, lưu hội thoại trên máy chủ và gửi thông báo cho quản trị; không chuyển khách sang Zalo. Đã thay liên kết ngoài bằng sự kiện mở chat nội bộ, thêm hồi quy UI và kiểm thử 5 ca hỗ trợ/phân quyền.
+
+- [ ] Sapo production: xác minh kết nối TLS/API, quyền ghi tồn kho và mapping SKU trước khi bật đồng bộ một chiều DHL Stores → Sapo; không cho Sapo ghi đè catalog DHL Stores.
+
+- [x] Hỗ trợ nội bộ: gom nút Góp ý và Nhắn tin về cùng cụm bên phải, giữa màn hình; giữ sheet chat/góp ý, quyền đăng nhập và không che nội dung mua hàng. Đã chạy 4 hồi quy hỗ trợ, TypeScript sạch và xác minh desktop/mobile.

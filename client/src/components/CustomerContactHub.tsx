@@ -112,7 +112,7 @@ export default function CustomerContactHub() {
 
   return (
     <>
-      <div className="fixed left-3 top-1/2 z-40 -translate-y-1/2 sm:left-4">
+      <div className="fixed right-3 top-1/2 z-40 -translate-y-1/2 sm:right-4">
         <Sheet open={feedbackOpen} onOpenChange={setFeedbackOpen}>
           <SheetTrigger asChild>
             <button className="group flex w-11 flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-white px-2 py-3 text-amber-700 shadow-lg transition hover:-translate-y-1 hover:border-amber-400 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-400 sm:w-12" aria-label="Gửi góp ý cho DHL Stores">
@@ -148,7 +148,7 @@ export default function CustomerContactHub() {
         </Sheet>
       </div>
 
-      <div className="fixed bottom-4 right-3 z-40 sm:bottom-6 sm:right-5">
+      <div className="fixed right-3 top-[calc(50%+4.25rem)] z-40 sm:right-4">
         <Sheet open={chatOpen} onOpenChange={setChatOpen}>
           <SheetTrigger asChild>
             <button className="group flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl transition hover:-translate-y-1 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-400">
