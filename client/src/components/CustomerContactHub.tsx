@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { ImagePlus, MessageCircleMore, Send, Sparkles, ThumbsUp, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { startLogin } from "@/const";
 
 function getVisitorKey() {
   const storageKey = "dhl_support_visitor_key";
@@ -44,7 +45,7 @@ export default function CustomerContactHub() {
   useEffect(() => setVisitorKey(getVisitorKey()), []);
 
   const conversationQuery = trpc.support.conversation.useQuery({ visitorKey }, {
-    enabled: Boolean(visitorKey),
+    enabled: Boolean(visitorKey && user),
     refetchInterval: chatOpen ? 12_000 : false,
   });
   const messages = conversationQuery.data?.messages ?? [];
@@ -70,13 +71,18 @@ export default function CustomerContactHub() {
   const markRead = trpc.support.markRead.useMutation();
 
   useEffect(() => {
-    if (chatOpen && conversationQuery.data?.conversation?.id) {
+    if (user && chatOpen && conversationQuery.data?.conversation?.id) {
       markRead.mutate({ conversationId: conversationQuery.data.conversation.id });
     }
   }, [chatOpen, conversationQuery.data?.conversation?.id]);
 
   const onFeedbackSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để gửi góp ý");
+      startLogin();
+      return;
+    }
     if (!visitorKey || (!feedback.message.trim() && !feedbackImage)) return;
     submitFeedback.mutate({
       visitorKey,
@@ -89,6 +95,11 @@ export default function CustomerContactHub() {
 
   const onChatSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để nhắn tin với cửa hàng");
+      startLogin();
+      return;
+    }
     if (!visitorKey || (!chatMessage.trim() && !chatImage)) return;
     sendMessage.mutate({ visitorKey, displayName: customerName, submission: { message: chatMessage, ...(chatImage ? { image: chatImage } : {}) } });
   };
@@ -111,6 +122,7 @@ export default function CustomerContactHub() {
               </SheetHeader>
             </div>
             <form onSubmit={onFeedbackSubmit} className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6 sm:p-8">
+              {!user && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900"><p className="font-black">Đăng nhập để gửi góp ý</p><p className="mt-1">Tài khoản giúp DHL Stores phản hồi đúng hội thoại và bảo vệ ảnh bạn đính kèm.</p><button type="button" onClick={() => startLogin()} className="mt-2 font-black underline underline-offset-4">Đăng nhập ngay</button></div>}
               <div className="grid grid-cols-2 gap-3">
                 <input value={feedback.displayName} onChange={event => setFeedback(current => ({ ...current, displayName: event.target.value }))} maxLength={128} placeholder="Tên của bạn (không bắt buộc)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
                 <input value={feedback.contact} onChange={event => setFeedback(current => ({ ...current, contact: event.target.value }))} maxLength={255} placeholder="Zalo hoặc email (tùy chọn)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
@@ -122,7 +134,7 @@ export default function CustomerContactHub() {
               </select>
               <textarea value={feedback.message} onChange={event => setFeedback(current => ({ ...current, message: event.target.value }))} maxLength={2000} placeholder="Viết góp ý của bạn tại đây…" className="min-h-52 w-full flex-1 resize-none rounded-xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
               <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 p-3"><label className="inline-flex cursor-pointer items-center gap-2 text-xs font-black text-amber-900"><ImagePlus className="h-4 w-4" />Đính kèm ảnh<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={event => selectImage(event.target.files?.[0], setFeedbackImage)} /></label>{feedbackImage && <div className="flex items-center gap-2"><img src={feedbackImage.base64} alt="Ảnh góp ý chuẩn bị gửi" className="h-10 w-10 rounded-lg border border-amber-200 object-cover" /><button type="button" aria-label="Bỏ ảnh đính kèm" onClick={() => setFeedbackImage(null)} className="text-amber-800 hover:text-rose-600"><X className="h-4 w-4" /></button></div>}</div>
-              <Button type="submit" disabled={!visitorKey || submitFeedback.isPending || (!feedback.message.trim() && !feedbackImage)} className="w-full bg-slate-900 font-black text-white hover:bg-slate-800">
+              <Button type="submit" disabled={!user || !visitorKey || submitFeedback.isPending || (!feedback.message.trim() && !feedbackImage)} className="w-full bg-slate-900 font-black text-white hover:bg-slate-800">
                 {submitFeedback.isPending ? "ĐANG GỬI…" : "GỬI GÓP Ý"}
               </Button>
             </form>
@@ -147,6 +159,7 @@ export default function CustomerContactHub() {
               <Sparkles className="h-5 w-5 text-amber-300" />
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
+              {!user && <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm leading-relaxed text-cyan-950"><p className="font-black">Đăng nhập để trao đổi với cửa hàng</p><p className="mt-1 text-xs">Lịch sử trò chuyện và ảnh đính kèm sẽ được liên kết an toàn với tài khoản của bạn.</p><button type="button" onClick={() => startLogin()} className="mt-3 rounded-lg bg-cyan-700 px-3 py-2 text-xs font-black text-white">Đăng nhập</button></div>}
               {!messages.length && <div className="rounded-2xl border border-cyan-100 bg-white p-4 text-sm leading-relaxed text-slate-600"><p className="font-black text-slate-900">Chào bạn!</p><p className="mt-1">Bạn cần tư vấn về sản phẩm, SKU, thanh toán hoặc đơn hàng? Hãy để lại tin nhắn tại đây.</p></div>}
               {messages.map(message => (
                 <div key={message.id} className={`flex ${message.senderType === "owner" ? "justify-start" : "justify-end"}`}>
@@ -155,12 +168,11 @@ export default function CustomerContactHub() {
               ))}
             </div>
             <form onSubmit={onChatSubmit} className="border-t border-slate-200 bg-white p-3">
-              {!user && !messages.length && <input value={chatName} onChange={event => setChatName(event.target.value)} maxLength={128} placeholder="Tên để xưng hô (tùy chọn)" className="mb-2 h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-cyan-500" />}
               {chatImage && <div className="mb-2 flex items-center justify-between rounded-lg border border-cyan-100 bg-cyan-50 p-2"><div className="flex items-center gap-2"><img src={chatImage.base64} alt="Ảnh tin nhắn chuẩn bị gửi" className="h-10 w-10 rounded-md object-cover" /><span className="max-w-48 truncate text-xs font-semibold text-cyan-900">{chatImage.fileName}</span></div><button type="button" aria-label="Bỏ ảnh đính kèm" onClick={() => setChatImage(null)} className="text-cyan-800 hover:text-rose-600"><X className="h-4 w-4" /></button></div>}
               <div className="flex gap-2">
                 <textarea value={chatMessage} onChange={event => setChatMessage(event.target.value)} maxLength={2000} placeholder="Nhập tin nhắn…" className="min-h-10 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
                 <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 text-cyan-800 hover:bg-cyan-100"><ImagePlus className="h-4 w-4" /><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={event => selectImage(event.target.files?.[0], setChatImage)} /></label>
-                <Button type="submit" size="icon" disabled={!visitorKey || sendMessage.isPending || (!chatMessage.trim() && !chatImage)} className="h-10 w-10 shrink-0 rounded-xl bg-cyan-700 text-white hover:bg-cyan-600"><Send className="h-4 w-4" /></Button>
+                <Button type="submit" size="icon" disabled={!user || !visitorKey || sendMessage.isPending || (!chatMessage.trim() && !chatImage)} className="h-10 w-10 shrink-0 rounded-xl bg-cyan-700 text-white hover:bg-cyan-600"><Send className="h-4 w-4" /></Button>
               </div>
             </form>
           </SheetContent>

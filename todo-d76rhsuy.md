@@ -528,3 +528,5 @@
 - [x] Thêm bảng size/hướng dẫn chọn nhanh theo ngữ cảnh cho hàng vật lý có biến thể Size, không tạo số đo giả.
 - [x] Thêm tiện ích quay lại đầu trang và điều hướng mục đang xem, có chuyển động nhẹ và hỗ trợ bàn phím.
 - [x] Viết kiểm thử, kiểm tra TypeScript và xác minh desktop/mobile cho năm cải tiến giao diện trước khi xuất bản.
+
+- [x] Yêu cầu đăng nhập cho gửi góp ý, nhắn tin và xem/đánh dấu hội thoại; ràng buộc hội thoại với đúng tài khoản để ngăn đọc hoặc chiếm phiên của khách khác.

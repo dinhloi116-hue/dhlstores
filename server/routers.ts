@@ -123,19 +123,37 @@ export const appRouter = router({
   }),
 
   feedback: router({
-    submit: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), contact: z.string().trim().max(255).optional(), topic: z.enum(["suggestion", "issue", "other"]), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
+    submit: protectedProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), contact: z.string().trim().max(255).optional(), topic: z.enum(["suggestion", "issue", "other"]), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
+      await requireActiveAccount(ctx.user.id);
       const image = await storeSupportImage(input.visitorKey, input.submission.image);
-      return db.createCustomerFeedback({ visitorKey: input.visitorKey, displayName: input.displayName, contact: input.contact, topic: input.topic, message: input.submission.message, ...image, userId: ctx.user?.id });
+      return db.createCustomerFeedback({ visitorKey: input.visitorKey, displayName: input.displayName || ctx.user.name || ctx.user.username || undefined, contact: input.contact || ctx.user.email || undefined, topic: input.topic, message: input.submission.message, ...image, userId: ctx.user.id });
     }),
   }),
 
   support: router({
-    conversation: publicProcedure.input(z.object({ visitorKey: visitorKeySchema })).query(({ input }) => db.getCustomerConversation(input.visitorKey)),
-    send: publicProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
-      const image = await storeSupportImage(input.visitorKey, input.submission.image);
-      return db.sendCustomerSupportMessage({ visitorKey: input.visitorKey, displayName: input.displayName, body: input.submission.message, ...image, userId: ctx.user?.id });
+    conversation: protectedProcedure.input(z.object({ visitorKey: visitorKeySchema })).query(async ({ ctx, input }) => {
+      await requireActiveAccount(ctx.user.id);
+      return db.getCustomerConversationForUser(input.visitorKey, ctx.user.id);
     }),
-    markRead: publicProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(({ input }) => db.markConversationRead(input.conversationId, "customer")),
+    send: protectedProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
+      await requireActiveAccount(ctx.user.id);
+      const image = await storeSupportImage(input.visitorKey, input.submission.image);
+      try {
+        return await db.sendCustomerSupportMessage({ visitorKey: input.visitorKey, displayName: input.displayName || ctx.user.name || ctx.user.username || undefined, body: input.submission.message, ...image, userId: ctx.user.id });
+      } catch (error) {
+        if (error instanceof Error && error.message === "CONVERSATION_FORBIDDEN") throw new TRPCError({ code: "FORBIDDEN", message: "Bạn không có quyền truy cập hội thoại này" });
+        throw error;
+      }
+    }),
+    markRead: protectedProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      await requireActiveAccount(ctx.user.id);
+      try {
+        return await db.markCustomerConversationRead(input.conversationId, ctx.user.id);
+      } catch (error) {
+        if (error instanceof Error && error.message === "CONVERSATION_FORBIDDEN") throw new TRPCError({ code: "FORBIDDEN", message: "Bạn không có quyền truy cập hội thoại này" });
+        throw error;
+      }
+    }),
   }),
 
   operations: router({

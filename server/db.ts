@@ -967,12 +967,19 @@ export async function getCustomerConversation(visitorKeyInput: string) {
   return { conversation, messages: conversation ? memorySupportMessages.filter(message => message.conversationId === conversation.id).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()) : [] };
 }
 
+export async function getCustomerConversationForUser(visitorKeyInput: string, userId: number) {
+  const result = await getCustomerConversation(visitorKeyInput);
+  if (result.conversation && result.conversation.userId !== userId) return { conversation: null, messages: [] };
+  return result;
+}
+
 export async function sendCustomerSupportMessage(input: CustomerMessageInput) {
   const visitorKey = normalizeVisitorKey(input.visitorKey);
   const body = input.body.trim();
   const connection = await getDb();
   if (connection) {
     let conversation = (await connection.select().from(supportConversations).where(eq(supportConversations.visitorKey, visitorKey)).limit(1))[0];
+    if (conversation?.userId && conversation.userId !== input.userId) throw new Error("CONVERSATION_FORBIDDEN");
     if (!conversation) {
       const inserted = await connection.insert(supportConversations).values({ visitorKey, userId: input.userId ?? null, displayName: input.displayName?.trim().slice(0, 128) || null, lastMessagePreview: previewMessage(body), lastMessageAt: new Date() });
       conversation = (await connection.select().from(supportConversations).where(eq(supportConversations.id, Number(inserted[0].insertId))).limit(1))[0]!;
@@ -983,6 +990,7 @@ export async function sendCustomerSupportMessage(input: CustomerMessageInput) {
     return { success: true, conversationId: conversation.id };
   }
   let conversation = memoryConversations.find(item => item.visitorKey === visitorKey);
+  if (conversation?.userId && conversation.userId !== input.userId) throw new Error("CONVERSATION_FORBIDDEN");
   if (!conversation) {
     conversation = { id: nextConversationId++, visitorKey, userId: input.userId ?? null, displayName: input.displayName?.trim().slice(0, 128) || null, lastMessagePreview: null, lastMessageAt: new Date(), customerReadAt: null, ownerReadAt: null, createdAt: new Date(), updatedAt: new Date() };
     memoryConversations.unshift(conversation);
@@ -1039,6 +1047,21 @@ export async function markConversationRead(conversationId: number, reader: "cust
   const conversation = memoryConversations.find(item => item.id === conversationId);
   if (!conversation) throw new Error("CONVERSATION_NOT_FOUND");
   conversation[field] = new Date();
+  conversation.updatedAt = new Date();
+  return { success: true };
+}
+
+export async function markCustomerConversationRead(conversationId: number, userId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const conversation = (await connection.select().from(supportConversations).where(eq(supportConversations.id, conversationId)).limit(1))[0];
+    if (!conversation || conversation.userId !== userId) throw new Error("CONVERSATION_FORBIDDEN");
+    await connection.update(supportConversations).set({ customerReadAt: new Date() }).where(eq(supportConversations.id, conversationId));
+    return { success: true };
+  }
+  const conversation = memoryConversations.find(item => item.id === conversationId);
+  if (!conversation || conversation.userId !== userId) throw new Error("CONVERSATION_FORBIDDEN");
+  conversation.customerReadAt = new Date();
   conversation.updatedAt = new Date();
   return { success: true };
 }
