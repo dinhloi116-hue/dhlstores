@@ -349,13 +349,13 @@
 
 - [ ] Tài khoản: đăng ký yêu cầu số điện thoại hoặc email hợp lệ và gửi mã bảo mật để xác minh.
 - [ ] Tài khoản: đặt duy nhất cho username, email và số điện thoại; chặn tạo tài khoản thứ hai với cùng thông tin.
-- [ ] Quyền truy cập: yêu cầu đăng nhập cho giỏ hàng, mua hàng, checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ trang xem sản phẩm công khai.
+- [x] Quyền truy cập: yêu cầu đăng nhập cho giỏ hàng, mua hàng, checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ trang xem sản phẩm công khai. Đã kiểm kê router, bổ sung kiểm tra tài khoản hoạt động cho đánh giá.
 - [ ] Auth: kiểm thử mã xác minh, chống trùng, đăng nhập bắt buộc và hồi quy các luồng hiện có; cập nhật Vitest và lưu checkpoint.
 
 - [x] Auth email: bỏ yêu cầu số điện thoại, đăng ký bắt buộc email duy nhất; chuẩn hóa email chữ thường và chặn trùng khi tạo tài khoản.
 - [ ] Auth email: gửi mã xác minh email với thời hạn, giới hạn thử lại và không cho dùng mã đã hết hạn.
 - [ ] Auth email: chống trùng email không phân biệt hoa thường và chặn tài khoản chưa xác minh dùng tính năng cần tài khoản.
-- [ ] Auth email: bảo vệ giỏ hàng, mua/checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ xem sản phẩm công khai.
+- [x] Auth email: bảo vệ giỏ hàng, mua/checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ xem sản phẩm công khai. Việc gửi mã xác minh vẫn chờ cấu hình email ngoài hệ thống.
 - [ ] Auth email: kiểm thử đăng ký/xác minh/đăng nhập và hồi quy các luồng mua; cập nhật Vitest và lưu checkpoint.
 
 - [x] Catalog vật lý: trạng thái Còn hàng/Hết hàng phải tính theo tổng tồn kho các SKU active, không chỉ tồn kho cấp sản phẩm.

@@ -31,11 +31,16 @@ describe("account access guard", () => {
     await expect(caller.store.addToCart({ productId: 1, quantity: 1 })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    await expect(caller.store.checkout({
-      totalAmount: 250000,
-      items: [{ productId: 1, quantity: 1, price: 250000 }],
-    })).rejects.toMatchObject({ code: "FORBIDDEN" });
+	    await expect(caller.store.checkout({
+	      totalAmount: 250000,
+	      items: [{ productId: 1, quantity: 1, price: 250000 }],
+	    })).rejects.toMatchObject({ code: "FORBIDDEN" });
+	    await expect(caller.store.submitProductReview({
+	      productId: 1,
+	      rating: 5,
+	      body: "Đánh giá này phải bị chặn khi tài khoản đã khóa.",
+	    })).rejects.toMatchObject({ code: "FORBIDDEN" });
 
-    await updateUserStatus(2, "active");
+	    await updateUserStatus(2, "active");
   });
 });

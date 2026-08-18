@@ -252,9 +252,12 @@ export const appRouter = router({
       .input(z.object({ productId: z.number().int().positive() }))
       .query(({ input }) => db.getProductReviews(input.productId)),
 
-    submitProductReview: protectedProcedure
-      .input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10, 'Nội dung đánh giá cần ít nhất 10 ký tự').max(2000) }))
-      .mutation(({ ctx, input }) => db.createProductReview({ productId: input.productId, userId: ctx.user.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body })),
+	    submitProductReview: protectedProcedure
+	      .input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10, 'Nội dung đánh giá cần ít nhất 10 ký tự').max(2000) }))
+	      .mutation(async ({ ctx, input }) => {
+	        await requireActiveAccount(ctx.user.id);
+	        return db.createProductReview({ productId: input.productId, userId: ctx.user.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body });
+	      }),
 
     favorites: protectedProcedure.query(async ({ ctx }) => {
       await requireActiveAccount(ctx.user.id);
