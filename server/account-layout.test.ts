@@ -17,5 +17,8 @@ describe("account page layout", () => {
 	    expect(source).toContain('Đơn đang xử lý & giao hàng');
 	    expect(source).toContain('Lịch sử đơn hàng');
 	    expect(source).toContain('px-3 py-2.5');
+	    expect(source).toContain('const [orderFilter, setOrderFilter]');
+	    expect(source).toContain('filteredHistoryOrders');
+	    expect(source).toContain('Lọc lịch sử đơn hàng');
 	  });
 });

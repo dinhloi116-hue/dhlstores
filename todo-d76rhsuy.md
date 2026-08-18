@@ -541,3 +541,5 @@
 - [x] Thanh toán công khai: thay tên ngân hàng cụ thể bằng nhãn QR/chuyển khoản trung tính, không thay đổi đối soát hay mã QR thực tế. Đã quét các trang khách và giữ nguyên luồng xử lý máy chủ.
 
 - [x] Trang Tài khoản: đưa đơn đang xử lý/giao và Order trước lên khu ưu tiên, đồng thời thu gọn đơn lịch sử thành một đến hai hàng thông tin để giảm chiều cao thẻ. Đã giữ liên kết tải/theo dõi, chạy 4 hồi quy mục tiêu và xác minh trực quan desktop.
+
+- [x] Trang Tài khoản: bổ sung bộ lọc nhanh theo trạng thái đơn để khách thu hẹp lịch sử mà không phải cuộn qua các đơn đã hoàn tất hoặc đã hủy. Có Tất cả, Chờ thanh toán, Hoàn tất và Đã hủy; đã kiểm thử hồi quy và xác minh desktop.
