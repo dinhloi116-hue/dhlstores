@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown, WalletCards, MapPin, History, Bell, LoaderCircle, ArrowUp, Scale } from "lucide-react";
 import { toast } from "sonner";
 import CustomerContactHub from "@/components/CustomerContactHub";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { getComparedProductIds } from "@/lib/customer-tools";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -176,6 +177,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
       <div aria-hidden="true" className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-1 origin-left bg-amber-500 transition-transform duration-200" style={{ transform: `scaleX(${pageProgress / 100})` }} />
       <div aria-hidden="true" className="pointer-events-none fixed bottom-0 left-0 z-[60] h-1 bg-indigo-500/80 transition-[width] duration-150" style={{ width: `${scrollProgress}%` }} />
+      <PwaInstallPrompt />
       {/* Top Banner / Announcement Bar (giống ảnh mẫu màu vàng cam) */}
       <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 text-slate-950 text-xs py-2 px-4 text-center font-bold tracking-wide shadow-sm flex items-center justify-center gap-2">
         <Sparkles className="w-4 h-4" />

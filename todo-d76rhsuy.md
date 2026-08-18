@@ -547,3 +547,7 @@
 - [x] Catalog: bổ sung bộ lọc nhanh Tất cả, Tài nguyên số, Hàng vật lý và Còn hàng để khách tìm sản phẩm phù hợp nhanh hơn, không thay đổi dữ liệu sản phẩm. Với tài nguyên số, trạng thái Có thể mua ngay vẫn hiển thị vì không phụ thuộc tồn kho vật lý.
 
 - [x] Catalog: hiển thị số sản phẩm khớp bộ lọc và nút xóa nhanh các điều kiện đang chọn để khách dễ quay lại danh sách đầy đủ. Đã kiểm thử hồi quy catalog, TypeScript và xác minh desktop.
+
+- [ ] PWA: thêm manifest, metadata cài đặt và biểu tượng DHL Stores dùng cho Android/iPhone.
+- [ ] PWA: thêm service worker và lời mời cài đặt không ảnh hưởng luồng đăng nhập, giỏ hàng, checkout hoặc quản trị.
+- [ ] PWA: kiểm thử khả năng cài đặt, mở lại ứng dụng và giao diện mobile trước khi xuất bản.

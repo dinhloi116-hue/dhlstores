@@ -1,0 +1,28 @@
+{
+  "name": "DHL Stores · Kho tài nguyên số",
+  "short_name": "DHL Stores",
+  "description": "Kho tài nguyên thiết kế thể thao và sản phẩm vật lý của DHL Stores.",
+  "lang": "vi-VN",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#f8fafc",
+  "theme_color": "#f5a400",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://files.manuscdn.com/user_upload_by_module/web_dev_logo/310519663887957752/nKVsxnSiWuKcjfpp.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://files.manuscdn.com/user_upload_by_module/web_dev_logo/310519663887957752/nKVsxnSiWuKcjfpp.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

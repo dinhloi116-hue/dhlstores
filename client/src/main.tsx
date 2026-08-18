@@ -8,6 +8,14 @@ import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
 
+if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(error => {
+      console.warn("[PWA] Không thể đăng ký service worker:", error);
+    });
+  });
+}
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
