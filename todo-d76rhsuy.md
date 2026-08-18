@@ -548,6 +548,6 @@
 
 - [x] Catalog: hiển thị số sản phẩm khớp bộ lọc và nút xóa nhanh các điều kiện đang chọn để khách dễ quay lại danh sách đầy đủ. Đã kiểm thử hồi quy catalog, TypeScript và xác minh desktop.
 
-- [ ] PWA: thêm manifest, metadata cài đặt và biểu tượng DHL Stores dùng cho Android/iPhone.
-- [ ] PWA: thêm service worker và lời mời cài đặt không ảnh hưởng luồng đăng nhập, giỏ hàng, checkout hoặc quản trị.
-- [ ] PWA: kiểm thử khả năng cài đặt, mở lại ứng dụng và giao diện mobile trước khi xuất bản.
+- [x] PWA: thêm manifest, metadata cài đặt và biểu tượng DHL Stores dùng cho Android/iPhone.
+- [x] PWA: thêm service worker và lời mời cài đặt không ảnh hưởng luồng đăng nhập, giỏ hàng, checkout hoặc quản trị.
+- [x] PWA: kiểm thử khả năng cài đặt, mở lại ứng dụng và giao diện mobile trước khi xuất bản. Đã kiểm thử branding, build production, MIME manifest/service worker và xác minh desktop/mobile.
