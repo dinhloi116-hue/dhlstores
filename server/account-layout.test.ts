@@ -11,7 +11,8 @@ describe("account page layout", () => {
     expect(source).toContain('grid items-start gap-6 xl:grid-cols-2');
     expect(source).toContain('id="wallet"');
     expect(source).toContain('id="addresses"');
-    expect(source).toContain('id="favorites"');
-    expect(source).toContain('id="orders"');
-  });
+	    expect(source).toContain('id="favorites"');
+	    expect(source).toContain('id="orders"');
+	    expect(source).toContain('grid gap-4 xl:grid-cols-2');
+	  });
 });

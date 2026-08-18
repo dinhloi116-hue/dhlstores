@@ -79,7 +79,7 @@ export default function Products() {
 
       <div className={`mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 2xl:px-10 ${isPhysicalCatalog ? 'bg-[#f5f5f5]' : ''}`}>
         {/* Toolbar */}
-        {isPhysicalCatalog && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-900 sm:hidden"><span className="font-bold">{isPrintShop ? 'Shop áo in của tôi' : 'Mua hàng vật lý dễ hơn'}</span><span className="text-right text-[11px]">SPX · QR Techcombank</span></div>}
+	        {isPhysicalCatalog && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-900 sm:hidden"><span className="font-bold">{isPrintShop ? 'Shop áo in của tôi' : 'Mua hàng vật lý dễ hơn'}</span><span className="text-right text-[11px]">SPX · QR thanh toán</span></div>}
         <div className={`bg-white border border-slate-200 p-3 sm:p-4 rounded-2xl mb-8 space-y-4 shadow-sm ${isPhysicalCatalog ? 'border-t-4 border-t-orange-500 sm:rounded-md' : ''}`}>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
             <div className="md:col-span-8 relative">

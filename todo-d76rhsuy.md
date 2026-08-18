@@ -535,3 +535,7 @@
 
 - [x] Việt hóa đồng nhất các nhãn giao diện công khai còn hiển thị tiếng Anh trên trang chủ, catalog và trang sản phẩm; không dịch hoặc thay đổi dữ liệu sản phẩm thực tế. Mặc định tiếng Việt, vẫn cho phép tự đổi sang tiếng Anh.
 - [x] Trang Tài khoản: chia thành hai cột trên desktop, nhóm khối thông tin/ví/địa chỉ và khối danh sách yêu thích/đơn hàng hợp lý; giữ một cột trên điện thoại. Đã kiểm thử TypeScript, 2 hồi quy mục tiêu và xác minh desktop.
+
+- [x] Trang Tài khoản: hiển thị danh sách đơn hàng thành lưới hai cột trên desktop để giảm chiều cuộn, vẫn xếp một cột an toàn trên màn hình hẹp. Đã bổ sung hồi quy và xác minh trực quan desktop.
+
+- [x] Thanh toán công khai: thay tên ngân hàng cụ thể bằng nhãn QR/chuyển khoản trung tính, không thay đổi đối soát hay mã QR thực tế. Đã quét các trang khách và giữ nguyên luồng xử lý máy chủ.
