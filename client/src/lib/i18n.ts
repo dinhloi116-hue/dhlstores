@@ -161,12 +161,7 @@ export function getClientLanguage(): Language {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
     return 'vi';
   }
-  const saved = localStorage.getItem('dhl_lang');
+  const saved = localStorage.getItem('dhl_lang_selected');
   if (saved === 'vi' || saved === 'en') return saved;
-
-  const lang = navigator.language || (navigator as any).userLanguage;
-  if (lang && lang.toLowerCase().startsWith('vi')) {
-    return 'vi';
-  }
-  return 'en';
+  return 'vi';
 }

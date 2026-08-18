@@ -11,8 +11,8 @@ describe("DHL Stores Bilingual i18n & Store Tests", () => {
     expect(translations.en.addToCart).toBe("Add to Cart");
   });
 
-  it("returns a valid default language ('vi' or 'en')", () => {
-    const lang = getClientLanguage();
-    expect(["vi", "en"]).toContain(lang);
-  });
+	  it("defaults to Vietnamese until the visitor explicitly selects a language", () => {
+	    const lang = getClientLanguage();
+	    expect(lang).toBe("vi");
+	  });
 });

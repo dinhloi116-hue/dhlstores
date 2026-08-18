@@ -39,7 +39,10 @@ export default function Home() {
   const physicalProducts = allProducts.filter(product => product.type === "physical");
   const recentProducts = recentProductIds.map(id => allProducts.find(product => product.id === id)).filter((product): product is typeof allProducts[number] => Boolean(product));
   const categories = categoriesQuery.data || [];
-  const homeHeading = siteSettingsQuery.data?.homeHeading || (lang === "vi" ? "Tài nguyên thiết kế thể thao" : "Sports design resources");
+	  const configuredHomeHeading = siteSettingsQuery.data?.homeHeading?.trim();
+	  const homeHeading = lang === "vi" && configuredHomeHeading?.toLocaleLowerCase("vi") === "sports design resources"
+	    ? "Tài nguyên thiết kế thể thao"
+	    : configuredHomeHeading || (lang === "vi" ? "Tài nguyên thiết kế thể thao" : "Sports design resources");
   const normalizedSearchTerm = searchTerm.trim().toLocaleLowerCase("vi");
   const searchSuggestions = !normalizedSearchTerm ? [] : allProducts.filter(product => {
     const category = categories.find(item => item.id === product.categoryId);
@@ -58,7 +61,7 @@ export default function Home() {
     <StoreLayout>
       <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
         <div className="mb-4 flex items-end justify-between gap-4 border-b border-slate-200 pb-3">
-          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · Resource Library</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{homeHeading}</h1></div>
+	          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {lang === "vi" ? "Thư viện tài nguyên" : "Resource Library"}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{homeHeading}</h1></div>
           <Link href="/products"><Button variant="outline" size="sm" className="shrink-0 border-slate-300 bg-white text-xs font-bold text-slate-800 hover:border-amber-400 hover:bg-amber-50">{t.exploreShop}<ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
         </div>
         <div className="relative z-20 mb-5 max-w-3xl">
@@ -119,7 +122,7 @@ export default function Home() {
                     <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-violet-700 text-white text-[10px] font-bold px-2 py-0.5">
-                        Digital Asset
+	                        {lang === "vi" ? "Tài nguyên số" : "Digital Asset"}
                       </Badge>
                     </div>
                   </div>

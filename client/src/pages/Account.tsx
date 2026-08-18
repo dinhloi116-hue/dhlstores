@@ -153,12 +153,12 @@ export default function Account() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-200">Completed / Unlocked</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-rose-100 text-rose-800 border border-rose-200">Cancelled</Badge>;
-      default:
-        return <Badge className="bg-slate-100 text-slate-700">Pending</Badge>;
+	      case 'completed':
+	        return <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-200">{lang === 'vi' ? 'Hoàn tất / Đã mở' : 'Completed / Unlocked'}</Badge>;
+	      case 'cancelled':
+	        return <Badge className="bg-rose-100 text-rose-800 border border-rose-200">{lang === 'vi' ? 'Đã hủy' : 'Cancelled'}</Badge>;
+	      default:
+	        return <Badge className="bg-slate-100 text-slate-700">{lang === 'vi' ? 'Đang chờ' : 'Pending'}</Badge>;
     }
   };
 
@@ -173,12 +173,12 @@ export default function Account() {
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" disabled={uploadAvatarMutation.isPending} onChange={event => { handleAvatarChange(event.target.files?.[0]); event.currentTarget.value = ""; }} />
             </label>
             <div>
-              <h1 className="text-2xl font-black text-slate-900">{user?.name || "Customer"}</h1>
+	              <h1 className="text-2xl font-black text-slate-900">{user?.name || (lang === 'vi' ? 'Khách hàng' : 'Customer')}</h1>
               <p className={`mt-1 text-xs ${user?.email ? "text-slate-500" : "font-semibold text-amber-700"}`}>{user?.email || (lang === "vi" ? "Chưa liên kết email — thêm ở phần bên dưới" : "No email linked — add one below")}</p>
               <p className="mt-2 text-[11px] font-semibold text-slate-500">{uploadAvatarMutation.isPending ? (lang === "vi" ? "Đang tải ảnh…" : "Uploading photo…") : (lang === "vi" ? "Chạm vào ảnh để thay đổi" : "Tap photo to change")}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">
-                  {user?.role === 'owner' ? 'Chủ cửa hàng' : user?.role === 'admin' ? 'Admin' : 'VIP Member'}
+	                  {user?.role === 'owner' ? 'Chủ cửa hàng' : user?.role === 'admin' ? (lang === 'vi' ? 'Quản trị' : 'Admin') : (lang === 'vi' ? 'Thành viên' : 'VIP Member')}
                 </Badge>
               </div>
             </div>
@@ -186,7 +186,7 @@ export default function Account() {
 	          {(user?.role === 'admin' || user?.role === 'owner') && (
 	            <Link href="/admin">
 	              <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
-	                {t.admin} Dashboard
+	                {lang === 'vi' ? 'Quản trị' : `${t.admin} Dashboard`}
 	              </Button>
 	            </Link>
 	          )}
@@ -234,7 +234,7 @@ export default function Account() {
             <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
               <Package className="w-5 h-5 text-amber-600" /> {t.orderHistory}
             </h2>
-            <Badge variant="outline" className="border-slate-200 text-slate-700">{orders.length} orders</Badge>
+	            <Badge variant="outline" className="border-slate-200 text-slate-700">{orders.length} {lang === 'vi' ? 'đơn hàng' : 'orders'}</Badge>
           </div>
 
           {orders.length === 0 ? (
@@ -254,9 +254,9 @@ export default function Account() {
                 <div key={order.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                   <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-slate-900 text-sm">Order #{order.id}</span>
+	                      <span className="font-bold text-slate-900 text-sm">{lang === 'vi' ? 'Đơn' : 'Order'} #{order.id}</span>
                       {order.hasPreorderItems && <Badge className="bg-rose-100 text-rose-700 border border-rose-200">Order trước · {order.preorderEstimatedDays || "7–10 ngày"}</Badge>}
-                      <span className="text-slate-500">Date: {new Date(order.createdAt).toLocaleDateString()}</span>
+	                      <span className="text-slate-500">{lang === 'vi' ? 'Ngày' : 'Date'}: {new Date(order.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge className={order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}>{order.paymentStatus === 'paid' ? (lang === 'vi' ? 'Đã thanh toán' : 'Paid') : (lang === 'vi' ? 'Chờ thanh toán' : 'Awaiting payment')}</Badge>
@@ -275,10 +275,10 @@ export default function Account() {
                           <div className="flex items-center gap-4">
                             {p && <img src={p.image} alt={p.name} className="w-14 h-14 object-cover rounded-xl border border-slate-200" />}
                             <div>
-                              <p className="text-sm font-bold text-slate-900">{p?.name || "Product"}</p>
+	                              <p className="text-sm font-bold text-slate-900">{p?.name || (lang === 'vi' ? 'Sản phẩm' : 'Product')}</p>
                               {item.attributes && <p className="text-xs text-amber-600 font-semibold">{item.attributes}</p>}
                               {item.fulfillmentMode === "preorder" && <p className="mt-1 text-[11px] font-black text-rose-700">Order trước · giảm 10% · dự kiến 7–10 ngày</p>}
-                              <p className="text-xs text-slate-500 mt-0.5">Qty: {item.quantity} x {formatCurrency(Number(item.price))}</p>
+	                              <p className="text-xs text-slate-500 mt-0.5">{lang === 'vi' ? 'SL' : 'Qty'}: {item.quantity} x {formatCurrency(Number(item.price))}</p>
                             </div>
                           </div>
 
@@ -317,7 +317,7 @@ export default function Account() {
                   </div>
 
                   <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Total Amount:</span>
+	                    <span className="text-slate-500">{lang === 'vi' ? 'Tổng thanh toán:' : 'Total Amount:'}</span>
                     <span className="text-lg font-black text-amber-600">{formatCurrency(Number(order.totalAmount))}</span>
                   </div>
                 </div>

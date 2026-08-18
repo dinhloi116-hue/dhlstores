@@ -31,11 +31,12 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const notificationOrdersQuery = trpc.store.myOrders.useQuery(undefined, { enabled: isAuthenticated, staleTime: 20_000, refetchInterval: isAuthenticated ? 30_000 : false });
   const attentionOrderCount = (notificationOrdersQuery.data || []).filter(order => order.paymentStatus === "pending" || order.status === "processing" || order.status === "shipping").length;
 
-  const [lang, setLang] = useState<Language>(getClientLanguage());
+	  const [lang, setLang] = useState<Language>(getClientLanguage());
 
-  useEffect(() => {
-    localStorage.setItem('dhl_lang', lang);
-  }, [lang]);
+	  useEffect(() => {
+	    localStorage.setItem('dhl_lang_selected', lang);
+	    localStorage.setItem('dhl_lang', lang);
+	  }, [lang]);
   useEffect(() => {
     setAccountNavPending(false);
   }, [location]);
@@ -210,7 +211,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               </div>
               <div className="pointer-events-none invisible absolute left-0 top-full z-[70] w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
                 <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
-                  <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">DHL Stores · Preview</p><p className="mt-1 text-sm font-black text-slate-900">{group.label}</p></div>
+	                  <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">DHL Stores · {lang === 'vi' ? 'Xem nhanh' : 'Preview'}</p><p className="mt-1 text-sm font-black text-slate-900">{group.label}</p></div>
                   <div className="space-y-1">{group.children.map(child => <Link key={child.id} href={child.href} className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-amber-50 hover:text-amber-700"><span>{child.name}</span><span className="text-[10px] text-slate-400">Xem →</span></Link>)}</div>
                   <Link href={group.href} className="mt-2 block rounded-xl bg-slate-900 px-3 py-2.5 text-center text-xs font-black text-white transition-colors hover:bg-amber-500 hover:text-slate-950">Mở toàn bộ khu vực</Link>
                 </div>
@@ -349,7 +350,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <div className="group relative" onKeyDown={event => { if (event.key === "Escape") (event.currentTarget.querySelector("button") as HTMLButtonElement | null)?.focus(); }}>
                 <Button variant="outline" size="sm" aria-haspopup="menu" className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-800 font-bold gap-1.5">
                   {user.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" /> : <UserIcon className="w-4 h-4 text-amber-600" />}
-                  <span className="hidden sm:inline">{user.name || "User"}</span>
+	                  <span className="hidden sm:inline">{user.name || (lang === 'vi' ? 'Khách hàng' : 'User')}</span>
                 </Button>
                 <div className="pointer-events-none invisible absolute right-0 top-full z-50 w-72 pt-2 opacity-0 translate-y-1 transition-all duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0">
                   <div role="menu" className="overflow-hidden rounded-2xl border border-slate-200 bg-white py-2 shadow-2xl ring-1 ring-slate-950/5">
