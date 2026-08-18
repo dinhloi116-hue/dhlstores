@@ -20,7 +20,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [cartOpen, setCartOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const [authForm, setAuthForm] = useState({ name: '', username: '', password: '', confirmPassword: '' });
+  const [authForm, setAuthForm] = useState({ name: '', username: '', email: '', password: '', confirmPassword: '' });
   const [accountNavPending, setAccountNavPending] = useState(false);
   const [comparedCount, setComparedCount] = useState(() => getComparedProductIds().length);
   const [pageProgress, setPageProgress] = useState(0);
@@ -108,7 +108,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     utils.auth.me.setData(undefined, result.user);
     await utils.auth.me.invalidate();
     setAuthDialogOpen(false);
-    setAuthForm({ name: '', username: '', password: '', confirmPassword: '' });
+    setAuthForm({ name: '', username: '', email: '', password: '', confirmPassword: '' });
     toast.success(lang === 'vi' ? 'Đăng nhập thành công' : 'Signed in successfully');
   };
   const localLoginMutation = trpc.auth.login.useMutation({
@@ -165,7 +165,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         toast.error(lang === 'vi' ? 'Xác nhận mật khẩu chưa khớp' : 'Password confirmation does not match');
         return;
       }
-      localRegisterMutation.mutate({ username: authForm.username, password: authForm.password, name: authForm.name || undefined });
+      localRegisterMutation.mutate({ username: authForm.username, password: authForm.password, email: authForm.email, name: authForm.name || undefined });
       return;
     }
     localLoginMutation.mutate({ username: authForm.username, password: authForm.password });
@@ -413,6 +413,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </div>
             <div className="space-y-3">
               {authMode === 'signup' && <input value={authForm.name} onChange={event => setAuthForm(value => ({ ...value, name: event.target.value }))} placeholder={lang === 'vi' ? 'Tên hiển thị (tùy chọn)' : 'Display name (optional)'} autoComplete="name" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />}
+              {authMode === 'signup' && <input value={authForm.email} onChange={event => setAuthForm(value => ({ ...value, email: event.target.value }))} type="email" placeholder={lang === 'vi' ? 'Email để xác minh tài khoản' : 'Email for account verification'} autoComplete="email" required maxLength={320} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />}
               <input value={authForm.username} onChange={event => setAuthForm(value => ({ ...value, username: event.target.value }))} placeholder={lang === 'vi' ? 'Tên đăng nhập' : 'Username'} autoComplete="username" required minLength={3} maxLength={32} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
               <input value={authForm.password} onChange={event => setAuthForm(value => ({ ...value, password: event.target.value }))} type="password" placeholder={lang === 'vi' ? 'Mật khẩu tối thiểu 10 ký tự' : 'Password, at least 10 characters'} autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} required minLength={10} maxLength={128} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
               {authMode === 'signup' && <input value={authForm.confirmPassword} onChange={event => setAuthForm(value => ({ ...value, confirmPassword: event.target.value }))} type="password" placeholder={lang === 'vi' ? 'Nhập lại mật khẩu' : 'Confirm password'} autoComplete="new-password" required minLength={10} maxLength={128} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />}

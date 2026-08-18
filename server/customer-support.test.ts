@@ -51,7 +51,8 @@ describe("customer feedback and support", () => {
   });
 
   it("chặn khách thường truy cập hộp thư quản trị", async () => {
-    const user = await appRouter.createCaller(createContext()).auth.register({ username: `support_user_${Date.now()}`, password: "CustomerSupport#2026", name: "Khách thường" });
+    const username = `support_user_${Date.now()}`;
+    const user = await appRouter.createCaller(createContext()).auth.register({ username, password: "CustomerSupport#2026", email: `${username}@example.com`, name: "Khách thường" });
     const caller = appRouter.createCaller(createContext(user.user as TrpcContext["user"]));
     await expect(caller.operations.supportConversations()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });

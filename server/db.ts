@@ -655,17 +655,22 @@ export async function getUserByUsername(username: string) {
   return memoryUsers.find(user => user.username === username);
 }
 
-export async function createLocalUser(input: { username: string; passwordHash: string; name?: string }) {
+export async function createLocalUser(input: { username: string; passwordHash: string; name?: string; email?: string }) {
+  const normalizedEmail = input.email?.trim().toLowerCase() || null;
   const connection = await getDb();
   if (connection) {
     const existing = await connection.select({ id: users.id }).from(users).where(eq(users.username, input.username)).limit(1);
     if (existing[0]) throw new Error("USERNAME_TAKEN");
+    if (normalizedEmail) {
+      const emailOwner = await connection.select({ id: users.id }).from(users).where(eq(users.email, normalizedEmail)).limit(1);
+      if (emailOwner[0]) throw new Error("EMAIL_TAKEN");
+    }
     const inserted = await connection.insert(users).values({
       openId: `local:${input.username}`,
       username: input.username,
       passwordHash: input.passwordHash,
       name: input.name?.trim() || input.username,
-      email: null,
+      email: normalizedEmail,
       emailVerified: false,
       loginMethod: "local",
       role: "user",
@@ -678,6 +683,7 @@ export async function createLocalUser(input: { username: string; passwordHash: s
   }
 
   if (memoryUsers.some(user => user.username === input.username)) throw new Error("USERNAME_TAKEN");
+  if (normalizedEmail && memoryUsers.some(user => user.email?.toLowerCase() === normalizedEmail)) throw new Error("EMAIL_TAKEN");
   const now = new Date();
   const user: LocalUserRecordType = {
     id: Math.max(0, ...memoryUsers.map(item => item.id)) + 1,
@@ -686,7 +692,7 @@ export async function createLocalUser(input: { username: string; passwordHash: s
     passwordHash: input.passwordHash,
     name: input.name?.trim() || input.username,
     avatarUrl: null,
-    email: null,
+    email: normalizedEmail,
     emailVerified: false,
     loginMethod: "local",
     role: "user",

@@ -14,6 +14,7 @@ import { checkSapoProductReadConnection } from "./sapo";
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
 const localPasswordSchema = z.string().min(10, "Mật khẩu cần có ít nhất 10 ký tự").max(128, "Mật khẩu quá dài");
+const localEmailSchema = z.string().trim().toLowerCase().email("Email không hợp lệ").max(320, "Email quá dài");
 const shippingAddressInputSchema = z.object({ recipientName: z.string().trim().min(2, "Vui lòng nhập họ tên người nhận").max(255), phone: z.string().trim().min(8, "Số điện thoại chưa hợp lệ").max(64), address: z.string().trim().min(5, "Vui lòng nhập địa chỉ cụ thể").max(2000), isDefault: z.boolean().optional() });
 const visitorKeySchema = z.string().trim().regex(/^[a-zA-Z0-9_-]{16,96}$/, "Phiên truy cập không hợp lệ");
 const supportMessageSchema = z.string().trim().min(1, "Vui lòng nhập nội dung").max(2000, "Tin nhắn tối đa 2.000 ký tự");
@@ -54,15 +55,18 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user ? publicUser(opts.ctx.user) : null),
     register: publicProcedure
-      .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, name: z.string().trim().min(2).max(120).optional() }))
+      .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, email: localEmailSchema, name: z.string().trim().min(2).max(120).optional() }))
       .mutation(async ({ ctx, input }) => {
         const username = input.username.toLowerCase();
         try {
-          const user = await db.createLocalUser({ username, passwordHash: db.hashLocalPassword(input.password), name: input.name });
+          const user = await db.createLocalUser({ username, passwordHash: db.hashLocalPassword(input.password), email: input.email, name: input.name });
           return { user: await createLocalAuthSession(ctx, user) };
         } catch (error) {
           if (error instanceof Error && error.message === "USERNAME_TAKEN") {
             throw new TRPCError({ code: "CONFLICT", message: "Tên đăng nhập này đã được sử dụng" });
+          }
+          if (error instanceof Error && error.message === "EMAIL_TAKEN") {
+            throw new TRPCError({ code: "CONFLICT", message: "Email này đã được sử dụng cho một tài khoản khác" });
           }
           throw error;
         }
