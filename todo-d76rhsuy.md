@@ -498,3 +498,8 @@
 - [x] Bổ sung lịch sử thay đổi tồn kho có thể xem/lọc theo từng sản phẩm hoặc SKU.
 - [x] Đóng gói quy trình thiết kế, cập nhật an toàn và kiểm thử quản trị tồn kho thành skill tái sử dụng.
 - [x] Viết kiểm thử hồi quy, kiểm tra TypeScript và xác minh trực quan các thao tác kho mở rộng trước khi xuất bản.
+
+- [x] Đặt DHL Stores làm nguồn dữ liệu chính cho sản phẩm, SKU, giá và tồn kho; cấm Sapo ghi đè Catalog website.
+- [x] Chuyển thiết kế Sapo thành kênh nhận đồng bộ tồn kho một chiều từ DHL Stores theo SKU, giữ ở chế độ an toàn khi API production chưa xác minh.
+- [x] Hiển thị rõ hướng đồng bộ và nguồn dữ liệu tại khu quản trị để tránh thao tác nhầm.
+- [x] Kiểm thử rào chắn đồng bộ và xác nhận mọi thay đổi Catalog/tồn kho vẫn do DHL Stores quyết định.

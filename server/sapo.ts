@@ -1,10 +1,20 @@
 export type SapoConnectionStatus = {
   configured: boolean;
   connected: boolean;
+  catalogAuthority: "dhlstores";
+  inventoryDirection: "dhlstores_to_sapo";
+  inventorySyncEnabled: false;
   host?: string;
   status?: number;
   productCount?: number;
   message: string;
+};
+
+export const SAPO_SYNC_POLICY = {
+  catalogAuthority: "dhlstores" as const,
+  inventoryDirection: "dhlstores_to_sapo" as const,
+  inventorySyncEnabled: false as const,
+  summary: "DHL Stores quản lý sản phẩm, SKU, giá và tồn kho. Sapo chỉ nhận đồng bộ tồn kho theo SKU khi quyền API ghi được xác minh.",
 };
 
 type SapoEnvironment = {
@@ -48,7 +58,7 @@ export async function checkSapoProductReadConnection(
 ): Promise<SapoConnectionStatus> {
   const configuration = getSapoConfiguration(env);
   if (!configuration.configured) {
-    return { configured: false, connected: false, message: configuration.message };
+    return { configured: false, connected: false, ...SAPO_SYNC_POLICY, message: configuration.message };
   }
 
   const controller = new AbortController();
@@ -70,7 +80,7 @@ export async function checkSapoProductReadConnection(
       const message = response.status === 401 || response.status === 403
         ? "Sapo từ chối xác thực hoặc quyền đọc sản phẩm."
         : `Sapo trả về trạng thái ${response.status} khi kiểm tra quyền đọc.`;
-      return { configured: true, connected: false, host: configuration.host, status: response.status, message };
+      return { configured: true, connected: false, ...SAPO_SYNC_POLICY, host: configuration.host, status: response.status, message };
     }
 
     let productCount: number | undefined;
@@ -78,21 +88,23 @@ export async function checkSapoProductReadConnection(
       const parsed = JSON.parse(body) as { products?: unknown[] };
       if (Array.isArray(parsed.products)) productCount = parsed.products.length;
     } catch {
-      return { configured: true, connected: false, host: configuration.host, status: response.status, message: "Sapo phản hồi dữ liệu sản phẩm không đúng định dạng JSON." };
+      return { configured: true, connected: false, ...SAPO_SYNC_POLICY, host: configuration.host, status: response.status, message: "Sapo phản hồi dữ liệu sản phẩm không đúng định dạng JSON." };
     }
 
     return {
       configured: true,
       connected: true,
+      ...SAPO_SYNC_POLICY,
       host: configuration.host,
       status: response.status,
       productCount,
-      message: "Kết nối Sapo và quyền đọc sản phẩm đã sẵn sàng.",
+      message: "Kết nối Sapo đã sẵn sàng để đối chiếu SKU; DHL Stores vẫn là kho chính và chưa bật ghi tồn sang Sapo.",
     };
   } catch {
     return {
       configured: true,
       connected: false,
+      ...SAPO_SYNC_POLICY,
       host: configuration.host,
       message: "Không thể thiết lập kết nối HTTPS đến Admin API Sapo từ máy chủ hiện tại.",
     };

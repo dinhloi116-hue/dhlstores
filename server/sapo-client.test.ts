@@ -24,7 +24,8 @@ describe("Sapo client", () => {
 
     expect(requestUrl).toBe("https://dhl-sport.mysapo.net/admin/products.json?limit=1");
     expect(authorization).toBe(`Basic ${Buffer.from("test-key:test-secret").toString("base64")}`);
-    expect(result).toEqual({ configured: true, connected: true, host: "dhl-sport.mysapo.net", status: 200, productCount: 0, message: "Kết nối Sapo và quyền đọc sản phẩm đã sẵn sàng." });
+    expect(result).toMatchObject({ configured: true, connected: true, catalogAuthority: "dhlstores", inventoryDirection: "dhlstores_to_sapo", inventorySyncEnabled: false, host: "dhl-sport.mysapo.net", status: 200, productCount: 0 });
+    expect(result.message).toContain("DHL Stores vẫn là kho chính");
     expect(JSON.stringify(result)).not.toContain("test-secret");
   });
 
