@@ -487,3 +487,4 @@
 - [x] Thiết kế lại phân cấp thông tin SKU/tồn kho để ảnh, thuộc tính, mã SKU, giá, tồn kho và số lượng dễ quét hơn.
 - [x] Cải tiến phản hồi chọn SKU, cảnh báo tồn kho thấp/hết hàng và phần tổng kết mua để thao tác hàng loạt rõ ràng hơn.
 - [x] Kiểm thử TypeScript, hồi quy giỏ hàng/batch SKU và xác minh trực quan trên desktop/mobile trước khi xuất bản.
+- [x] Xác minh storefront thật với sản phẩm nhiều SKU: tổng kho 120, 12/12 SKU còn hàng, cột Khả dụng và action bar hiển thị đúng sau khi tải dữ liệu.
