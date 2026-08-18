@@ -508,3 +508,9 @@
 - [x] Kiểm tra tồn khả dụng và trừ tồn kho nguyên tử theo SKU khi đơn quản trị được tạo.
 - [x] Ghi nhật ký biến động kho và liên kết đơn hàng để dễ tra cứu/xử lý hoàn tồn khi cần.
 - [x] Viết kiểm thử, kiểm tra TypeScript và xác minh giao diện tạo đơn quản trị trước khi xuất bản.
+
+- [x] Thêm tìm kiếm và gợi ý SKU nhanh trong biểu mẫu tạo đơn quản trị để chọn hàng thao tác ít bước hơn.
+- [x] Làm nổi bật cảnh báo khi số lượng nhập vượt tồn khả dụng, cả theo từng SKU và phần tổng kết đơn.
+- [x] Bổ sung xuất hóa đơn PDF hoặc in trực tiếp cho đơn vừa tạo, dùng dữ liệu đơn thực tế.
+- [x] Cập nhật skill vận hành tồn kho để bao gồm tạo đơn quản trị, trừ tồn và chứng từ hóa đơn.
+- [x] Viết kiểm thử, kiểm tra TypeScript và xác minh giao diện nâng cấp trước khi xuất bản.

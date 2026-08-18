@@ -36,4 +36,15 @@ describe("catalog quick inventory controls", () => {
     expect(source).toContain("quantityBefore");
     expect(source).toContain("quantityAfter");
   });
+
+  it("provides one-click SKU suggestions, visible overstock warnings, and printable invoices for admin orders", () => {
+    const source = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("adminOrderSuggestions");
+    expect(source).toContain("Chọn SKU nhanh");
+    expect(source).toContain("adminOrderOverstockItems");
+    expect(source).toContain("vượt tồn khả dụng");
+    expect(source).toContain("printOrderInvoice");
+    expect(source).toContain("Lưu dưới dạng PDF");
+  });
 });
