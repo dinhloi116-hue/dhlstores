@@ -13,5 +13,8 @@ describe("catalog quick filters", () => {
     expect(source).toContain('Tài nguyên số');
     expect(source).toContain('Hàng vật lý');
     expect(source).toContain('Có thể mua ngay');
+    expect(source).toContain('Hiển thị <span className="font-black text-slate-900">{products.length}</span> sản phẩm phù hợp');
+    expect(source).toContain('Xóa tất cả bộ lọc');
+    expect(source).toContain('const clearCatalogFilters = () =>');
   });
 });

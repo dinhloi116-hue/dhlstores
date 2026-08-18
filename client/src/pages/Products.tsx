@@ -37,6 +37,15 @@ export default function Products() {
   const [sizeFilter, setSizeFilter] = useState("");
   const [colorFilter, setColorFilter] = useState("");
   const [catalogQuickFilter, setCatalogQuickFilter] = useState<"all" | "digital" | "physical" | "in-stock">("all");
+  const clearCatalogFilters = () => {
+    setSelectedCategory(undefined);
+    setSearchQuery("");
+    setMinPrice("");
+    setMaxPrice("");
+    setSizeFilter("");
+    setColorFilter("");
+    setCatalogQuickFilter("all");
+  };
 
   const categoriesQuery = trpc.store.categories.useQuery();
   const facetsQuery = trpc.store.productVariantFacets.useQuery(isPrintShop ? { categoryId: selectedCategory } : undefined, { enabled: isPrintShop });
@@ -56,6 +65,7 @@ export default function Products() {
   if (catalogQuickFilter === "physical") products = products.filter(product => product.type === "physical");
   if (catalogQuickFilter === "in-stock") products = products.filter(product => product.type === "digital" || Number(product.stock) > 0);
   const isCatalogLoading = categoriesQuery.isLoading || productsQuery.isLoading;
+	  const hasActiveCatalogFilters = selectedCategory !== undefined || Boolean(searchQuery || minPrice || maxPrice || sizeFilter || colorFilter) || catalogQuickFilter !== "all";
   const [quickViewProduct, setQuickViewProduct] = useState<(typeof products)[number] | null>(null);
 
   if (sortBy === "price-asc") {
@@ -148,6 +158,7 @@ export default function Products() {
             </Select>
           </div>}
         </div>
+	        {!isCatalogLoading && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><p className="text-slate-600">Hiển thị <span className="font-black text-slate-900">{products.length}</span> sản phẩm phù hợp</p>{hasActiveCatalogFilters && <Button type="button" variant="ghost" size="sm" onClick={clearCatalogFilters} className="h-7 px-2.5 text-xs font-black text-amber-700 hover:bg-amber-100 hover:text-amber-800">Xóa tất cả bộ lọc</Button>}</div>}
 
         {/* Product Grid */}
         {isCatalogLoading ? (
@@ -164,7 +175,7 @@ export default function Products() {
               {lang === 'vi' ? 'Vui lòng thử lại với từ khóa hoặc danh mục khác.' : 'Please try another search or category.'}
             </p>
             <Button
-	              onClick={() => { setSelectedCategory(undefined); setSearchQuery(""); setMinPrice(""); setMaxPrice(""); setSizeFilter(""); setColorFilter(""); setCatalogQuickFilter("all"); }}
+	              onClick={clearCatalogFilters}
               className="mt-5 bg-slate-900 text-white font-bold"
             >
               {lang === 'vi' ? 'Xóa bộ lọc' : 'Clear filters'}

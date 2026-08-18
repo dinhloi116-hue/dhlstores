@@ -545,3 +545,5 @@
 - [x] Trang Tài khoản: bổ sung bộ lọc nhanh theo trạng thái đơn để khách thu hẹp lịch sử mà không phải cuộn qua các đơn đã hoàn tất hoặc đã hủy. Có Tất cả, Chờ thanh toán, Hoàn tất và Đã hủy; đã kiểm thử hồi quy và xác minh desktop.
 
 - [x] Catalog: bổ sung bộ lọc nhanh Tất cả, Tài nguyên số, Hàng vật lý và Còn hàng để khách tìm sản phẩm phù hợp nhanh hơn, không thay đổi dữ liệu sản phẩm. Với tài nguyên số, trạng thái Có thể mua ngay vẫn hiển thị vì không phụ thuộc tồn kho vật lý.
+
+- [x] Catalog: hiển thị số sản phẩm khớp bộ lọc và nút xóa nhanh các điều kiện đang chọn để khách dễ quay lại danh sách đầy đủ. Đã kiểm thử hồi quy catalog, TypeScript và xác minh desktop.
