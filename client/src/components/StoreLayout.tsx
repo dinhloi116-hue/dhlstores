@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown, WalletCards, MapPin, History, Bell, LoaderCircle } from "lucide-react";
+import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown, WalletCards, MapPin, History, Bell, LoaderCircle, ArrowUp, Scale } from "lucide-react";
 import { toast } from "sonner";
 import CustomerContactHub from "@/components/CustomerContactHub";
+import { getComparedProductIds } from "@/lib/customer-tools";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -21,6 +22,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authForm, setAuthForm] = useState({ name: '', username: '', password: '', confirmPassword: '' });
   const [accountNavPending, setAccountNavPending] = useState(false);
+  const [comparedCount, setComparedCount] = useState(() => getComparedProductIds().length);
+  const [pageProgress, setPageProgress] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const recordVisit = trpc.analytics.recordVisit.useMutation();
   const siteSettingsQuery = trpc.store.siteSettings.useQuery();
   const categoriesQuery = trpc.store.categories.useQuery();
@@ -34,6 +38,31 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   }, [lang]);
   useEffect(() => {
     setAccountNavPending(false);
+  }, [location]);
+
+  useEffect(() => {
+    setPageProgress(12);
+    const midpoint = window.setTimeout(() => setPageProgress(72), 40);
+    const finish = window.setTimeout(() => setPageProgress(100), 180);
+    const reset = window.setTimeout(() => setPageProgress(0), 420);
+    return () => { window.clearTimeout(midpoint); window.clearTimeout(finish); window.clearTimeout(reset); };
+  }, [location]);
+
+  useEffect(() => {
+    const refreshCompared = () => setComparedCount(getComparedProductIds().length);
+    window.addEventListener("dhlstores-customer-tools", refreshCompared);
+    return () => window.removeEventListener("dhlstores-customer-tools", refreshCompared);
+  }, []);
+
+  useEffect(() => {
+    const updateScroll = () => {
+      const limit = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(limit > 0 ? Math.min(100, Math.round(window.scrollY / limit * 100)) : 0);
+    };
+    updateScroll();
+    window.addEventListener("scroll", updateScroll, { passive: true });
+    window.addEventListener("resize", updateScroll);
+    return () => { window.removeEventListener("scroll", updateScroll); window.removeEventListener("resize", updateScroll); };
   }, [location]);
 
   useEffect(() => {
@@ -144,6 +173,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-1 origin-left bg-amber-500 transition-transform duration-200" style={{ transform: `scaleX(${pageProgress / 100})` }} />
+      <div aria-hidden="true" className="pointer-events-none fixed bottom-0 left-0 z-[60] h-1 bg-indigo-500/80 transition-[width] duration-150" style={{ width: `${scrollProgress}%` }} />
       {/* Top Banner / Announcement Bar (giống ảnh mẫu màu vàng cam) */}
       <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 text-slate-950 text-xs py-2 px-4 text-center font-bold tracking-wide shadow-sm flex items-center justify-center gap-2">
         <Sparkles className="w-4 h-4" />
@@ -396,9 +427,11 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       </Dialog>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main key={location} className="dhl-page-enter flex-1">
         {children}
       </main>
+      {comparedCount > 0 && <Link href="/compare" className="fixed bottom-5 left-4 z-40 inline-flex items-center gap-2 rounded-full border border-indigo-300 bg-slate-950 px-4 py-3 text-xs font-black text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-indigo-700 sm:left-6"><Scale className="h-4 w-4 text-indigo-200" />So sánh <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber-400 px-1 text-[10px] text-slate-950">{comparedCount}</span></Link>}
+      {scrollProgress > 18 && <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label={lang === "vi" ? "Quay lên đầu trang" : "Back to top"} className="fixed bottom-24 right-4 z-40 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:right-6"><ArrowUp className="h-5 w-5" /></button>}
       <CustomerContactHub />
 
       {/* Footer (Giống ảnh tham khảo: thông tin công ty / liên hệ rõ ràng ở chân trang nền tối) */}

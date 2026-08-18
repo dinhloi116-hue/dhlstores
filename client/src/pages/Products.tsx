@@ -5,9 +5,10 @@ import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Search, Filter } from "lucide-react";
+import { Download, Search, Filter, Eye } from "lucide-react";
 
 export default function Products() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
@@ -51,6 +52,7 @@ export default function Products() {
   const categories = (categoriesQuery.data || []).filter(category => !isPhysicalCatalog || category.type === "physical");
   let products = (productsQuery.data || []).filter(product => !isPhysicalCatalog || product.type === "physical");
   const isCatalogLoading = categoriesQuery.isLoading || productsQuery.isLoading;
+  const [quickViewProduct, setQuickViewProduct] = useState<(typeof products)[number] | null>(null);
 
   if (sortBy === "price-asc") {
     products = [...products].sort((a, b) => Number(a.price) - Number(b.price));
@@ -163,7 +165,8 @@ export default function Products() {
         ) : (
           <div className={`grid gap-3 sm:gap-6 ${isPhysicalCatalog ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
             {products.map(p => (
-              <Link key={p.id} href={`/product/${p.slug}`} className="group">
+              <div key={p.id} className="group relative">
+              <Link href={`/product/${p.slug}`} className="block h-full">
                   <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-md shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg' : ''}`}>
                   <div className="group/media relative aspect-square overflow-hidden bg-[#0b1220] [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:22px_22px]">
                     <div className="absolute inset-0 grid place-items-center p-6 text-center text-white/80"><div><p className="font-display text-2xl font-black uppercase leading-none text-white/90">DHL</p><p className="mt-1 text-[9px] font-black uppercase tracking-[0.22em] text-amber-300">{p.type === 'physical' ? 'Sports gear' : 'Resource file'}</p></div></div>
@@ -192,10 +195,17 @@ export default function Products() {
                   </div>
                 </div>
               </Link>
+              <button type="button" onClick={() => setQuickViewProduct(p)} aria-label={`Xem nhanh ${p.name}`} className="absolute right-2 top-2 z-30 inline-flex h-8 items-center gap-1 rounded-lg border border-white/80 bg-white/95 px-2 text-[10px] font-black text-slate-800 opacity-100 shadow-sm transition hover:bg-amber-400 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:opacity-0 sm:group-hover:opacity-100"><Eye className="h-3.5 w-3.5" /><span className="hidden sm:inline">Xem nhanh</span></button>
+              </div>
             ))}
           </div>
         )}
       </div>
+      <Dialog open={Boolean(quickViewProduct)} onOpenChange={open => { if (!open) setQuickViewProduct(null); }}>
+        <DialogContent className="max-w-2xl overflow-hidden border-slate-200 bg-white p-0 text-slate-900">
+          {quickViewProduct && <div className="grid sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"><div className="aspect-square bg-slate-50 p-4"><img src={quickViewProduct.image} alt={quickViewProduct.name} className="h-full w-full object-contain" /></div><div className="flex flex-col p-6"><DialogHeader><Badge className={`w-fit ${quickViewProduct.type === "physical" ? "bg-orange-100 text-orange-800" : "bg-violet-100 text-violet-800"}`}>{quickViewProduct.type === "physical" ? "Hàng vật lý" : "Tài nguyên số"}</Badge><DialogTitle className="mt-3 text-left font-display text-3xl font-black uppercase leading-none text-slate-900">{quickViewProduct.name}</DialogTitle><DialogDescription className="mt-3 text-left text-xs leading-relaxed text-slate-600">{quickViewProduct.description || "Mở chi tiết để xem toàn bộ thông tin sản phẩm."}</DialogDescription></DialogHeader><div className="mt-5 space-y-3"><p className="text-2xl font-black text-amber-700">{formatCurrency(quickViewProduct.price)}</p>{quickViewProduct.type === "physical" ? <div className={`rounded-xl border p-3 text-xs ${Number(quickViewProduct.stock) > 0 ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-rose-200 bg-rose-50 text-rose-800"}`}><p className="font-black">{Number(quickViewProduct.stock) > 0 ? `Tồn kho tóm tắt: ${quickViewProduct.stock}` : "Sản phẩm đang hết hàng"}</p><p className="mt-1 leading-relaxed">Mở chi tiết để kiểm tra tồn, màu, size và giá theo từng SKU thực tế.</p></div> : <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs leading-relaxed text-violet-900"><p className="font-black">Tài nguyên số</p><p className="mt-1">Liên kết tải được mở sau khi giao dịch được xác nhận.</p></div>}</div><Link href={`/product/${quickViewProduct.slug}`} onClick={() => setQuickViewProduct(null)} className="mt-auto inline-flex justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-black text-white transition hover:bg-amber-500 hover:text-slate-950">Xem chi tiết & chọn SKU</Link></div></div>}
+        </DialogContent>
+      </Dialog>
     </StoreLayout>
   );
 }

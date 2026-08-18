@@ -521,3 +521,10 @@
 - [x] Thêm danh sách sản phẩm đã xem gần đây theo thiết bị để khách quay lại so sánh hoặc mua nhanh.
 - [x] Thêm hộp trợ giúp mua hàng theo ngữ cảnh tại trang sản phẩm/giỏ/checkout, dẫn khách tới thông tin hoặc hỗ trợ thực có sẵn.
 - [x] Cập nhật schema/API/giao diện, viết kiểm thử và xác minh desktop/mobile cho cả năm tính năng trước khi xuất bản.
+
+- [x] Thêm thanh tiến trình đọc trang và chuyển cảnh nhẹ giữa các trang công khai, tôn trọng chế độ giảm chuyển động.
+- [x] Thêm dock so sánh cố định, chỉ hiện khi khách đã chọn sản phẩm và dẫn thẳng tới bảng so sánh mà không che nội dung.
+- [x] Thêm Quick View sản phẩm ở catalog để khách xem giá, tồn kho tóm tắt và mở chi tiết mà không mất vị trí đang duyệt.
+- [x] Thêm bảng size/hướng dẫn chọn nhanh theo ngữ cảnh cho hàng vật lý có biến thể Size, không tạo số đo giả.
+- [x] Thêm tiện ích quay lại đầu trang và điều hướng mục đang xem, có chuyển động nhẹ và hỗ trợ bàn phím.
+- [x] Viết kiểm thử, kiểm tra TypeScript và xác minh desktop/mobile cho năm cải tiến giao diện trước khi xuất bản.
