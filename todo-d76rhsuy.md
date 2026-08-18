@@ -493,3 +493,8 @@
 - [x] Bổ sung cảnh báo trực quan bằng màu sắc và biểu tượng cho sản phẩm sắp hết hoặc đã hết hàng trong danh sách.
 - [x] Cho phép chỉnh tồn kho nhanh ngay trên từng dòng danh sách sản phẩm, kèm xác nhận cập nhật và ghi nhận lịch sử kho.
 - [x] Viết kiểm thử, kiểm tra TypeScript và xác minh giao diện quản trị sau khi cải tiến danh sách sản phẩm.
+
+- [x] Cho phép chọn và chỉnh tồn kho hàng loạt cho SKU thuộc nhiều sản phẩm ngay từ danh sách quản trị.
+- [x] Bổ sung lịch sử thay đổi tồn kho có thể xem/lọc theo từng sản phẩm hoặc SKU.
+- [x] Đóng gói quy trình thiết kế, cập nhật an toàn và kiểm thử quản trị tồn kho thành skill tái sử dụng.
+- [x] Viết kiểm thử hồi quy, kiểm tra TypeScript và xác minh trực quan các thao tác kho mở rộng trước khi xuất bản.

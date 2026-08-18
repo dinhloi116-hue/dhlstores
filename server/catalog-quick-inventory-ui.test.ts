@@ -23,4 +23,17 @@ describe("catalog quick inventory controls", () => {
     expect(source).toContain("changes: [{ target: row.target, id: row.id, stock: numericDraftStock }]");
     expect(source).toContain("utils.operations.inventory.invalidate()");
   });
+
+  it("selects changed rows across products and exposes a product-filtered inventory history", () => {
+    const source = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("visibleCatalogInventoryRowKeys");
+    expect(source).toContain("selectedInventoryChangedCount");
+    expect(source).toContain("Lưu ${selectedInventoryChangedCount} dòng đã đổi");
+    expect(source).toContain("trpc.operations.inventoryMovements.useQuery");
+    expect(source).toContain("inventoryHistoryProductId");
+    expect(source).toContain("Lịch sử thay đổi tồn");
+    expect(source).toContain("quantityBefore");
+    expect(source).toContain("quantityAfter");
+  });
 });
