@@ -94,4 +94,16 @@ describe("advanced operations", () => {
     expect((await getInventoryBoard()).find(row => row.id === product.id)?.stock).toBe(21);
     expect((await getInventoryMovements()).some(row => row.productId === product.id && row.quantityBefore === 8 && row.quantityAfter === 21)).toBe(true);
   });
+
+  it("lets an admin create an order from warehouse SKU and records the inventory deduction", async () => {
+    const customer = await createLocalUser({ username: `admin_order_customer_${Date.now()}`, passwordHash: "scrypt$test$test", name: "Khách tạo đơn" });
+    const adminRecord = await createLocalUser({ username: `admin_order_operator_${Date.now()}`, passwordHash: "scrypt$test$test", name: "Quản trị tạo đơn" });
+    const product = await createProduct({ name: "Áo tạo đơn quản trị", slug: `admin-order-${Date.now()}`, price: "120000", categoryId: 12, image: "generated:catalog-cover", stock: 4, featured: false, isActive: true });
+    if (!product) throw new Error("Không tạo được sản phẩm kiểm thử");
+    const caller = appRouter.createCaller(createContext({ ...adminRecord, role: "admin" }));
+
+    await expect(caller.store.createAdminOrder({ customerId: customer.id, items: [{ productId: product.id, quantity: 2 }], shipping: { name: "Khách tạo đơn", phone: "0963888888", address: "Hà Nội" } })).resolves.toMatchObject({ success: true, hasPhysicalItems: true });
+    expect((await getInventoryBoard()).find(row => row.productId === product.id && row.target === "product")?.stock).toBe(2);
+    expect((await getInventoryMovements()).some(row => row.productId === product.id && row.quantityBefore === 4 && row.quantityAfter === 2 && row.performedByUserId === adminRecord.id && row.reason.includes("Tạo đơn quản trị"))).toBe(true);
+  });
 });

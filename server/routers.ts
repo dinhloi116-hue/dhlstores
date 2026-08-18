@@ -422,6 +422,25 @@ export const appRouter = router({
         return { ...order, qrUrl, paymentFlow: order.hasPhysicalItems ? "manual_techcombank" as const : "sepay_vietinbank" as const };
       }),
 
+    createAdminOrder: adminProcedure
+      .input(z.object({
+        customerId: z.number().int().positive(),
+        items: z.array(z.object({ productId: z.number().int().positive(), variantId: z.number().int().positive().optional(), quantity: z.number().int().positive().max(999) })).min(1).max(50),
+        shipping: z.object({ name: z.string().trim().min(2).max(255), phone: z.string().trim().min(8).max(64), address: z.string().trim().min(5).max(2000), note: z.string().trim().max(2000).optional() }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const customer = (await db.getAllUsers()).find(user => user.id === input.customerId);
+        if (!customer) throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy tài khoản khách hàng để tạo đơn" });
+        return db.createOrder(input.customerId, {
+          totalAmount: 0,
+          items: input.items.map(item => ({ ...item, price: 0, fulfillmentMode: "in_stock" as const })),
+          shipping: input.shipping,
+          clearCart: false,
+          inventoryPerformedByUserId: ctx.user.id,
+          inventoryReason: `Tạo đơn quản trị cho ${customer.username || customer.name || `khách #${customer.id}`}`,
+        });
+      }),
+
     orders: protectedProcedure.query(async ({ ctx }) => {
       await requireActiveAccount(ctx.user.id);
       const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'owner';

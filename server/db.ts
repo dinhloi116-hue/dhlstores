@@ -2166,8 +2166,12 @@ export async function createOrder(userId: number, data: {
   discountCode?: string;
   shipping?: { name: string; phone: string; address: string; note?: string };
   clearCart?: boolean;
+  inventoryPerformedByUserId?: number;
+  inventoryReason?: string;
 }) {
   const orderCode = `DHL${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const inventoryPerformedByUserId = data.inventoryPerformedByUserId ?? userId;
+  const inventoryReason = `${data.inventoryReason?.trim() || "Tạo đơn hàng"} #${orderCode}`;
   const quantityByProduct = new Map<number, number>();
   data.items.forEach(item => quantityByProduct.set(item.productId, (quantityByProduct.get(item.productId) ?? 0) + item.quantity));
   const verifiedItems = await Promise.all(data.items.map(async item => {
@@ -2222,6 +2226,11 @@ export async function createOrder(userId: number, data: {
           ? await transaction.update(productVariants).set({ stock: sql`${productVariants.stock} - ${claim.quantity}` }).where(and(eq(productVariants.id, claim.variantId), gte(productVariants.stock, claim.quantity)))
           : await transaction.update(products).set({ stock: sql`${products.stock} - ${claim.quantity}` }).where(and(eq(products.id, claim.productId), gte(products.stock, claim.quantity)));
         if (Number(updated[0]?.affectedRows ?? 0) !== 1) throw new Error("Sản phẩm hoặc biến thể vừa hết tồn kho. Vui lòng cập nhật giỏ hàng.");
+        const afterRow = claim.variantId
+          ? (await transaction.select().from(productVariants).where(eq(productVariants.id, claim.variantId)).limit(1))[0]
+          : (await transaction.select().from(products).where(eq(products.id, claim.productId)).limit(1))[0];
+        const quantityAfter = Number(afterRow?.stock ?? 0);
+        await transaction.insert(inventoryMovements).values({ productId: claim.productId, variantId: claim.variantId, quantityBefore: quantityAfter + claim.quantity, quantityAfter, reason: inventoryReason, performedByUserId: inventoryPerformedByUserId });
       }
       const inserted = await transaction.insert(ordersTable).values({
         userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr",
@@ -2239,11 +2248,15 @@ export async function createOrder(userId: number, data: {
     if (claim.variantId) {
       const variant = memoryProductVariants.find(item => item.id === claim.variantId);
       if (!variant || variant.stock < claim.quantity) throw new Error("Sản phẩm hoặc biến thể vừa hết tồn kho. Vui lòng cập nhật giỏ hàng.");
+      const quantityBefore = variant.stock;
       variant.stock -= claim.quantity;
+      memoryInventoryMovements.unshift({ id: nextInventoryMovementId++, productId: claim.productId, variantId: claim.variantId, quantityBefore, quantityAfter: variant.stock, reason: inventoryReason, performedByUserId: inventoryPerformedByUserId, createdAt: new Date() });
     } else {
       const product = memoryProducts.find(item => item.id === claim.productId);
       if (!product || product.stock < claim.quantity) throw new Error("Sản phẩm hoặc biến thể vừa hết tồn kho. Vui lòng cập nhật giỏ hàng.");
+      const quantityBefore = product.stock;
       product.stock -= claim.quantity;
+      memoryInventoryMovements.unshift({ id: nextInventoryMovementId++, productId: claim.productId, variantId: null, quantityBefore, quantityAfter: product.stock, reason: inventoryReason, performedByUserId: inventoryPerformedByUserId, createdAt: new Date() });
     }
   }
   const orderId = nextOrderId++;

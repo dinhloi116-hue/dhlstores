@@ -503,3 +503,8 @@
 - [x] Chuyển thiết kế Sapo thành kênh nhận đồng bộ tồn kho một chiều từ DHL Stores theo SKU, giữ ở chế độ an toàn khi API production chưa xác minh.
 - [x] Hiển thị rõ hướng đồng bộ và nguồn dữ liệu tại khu quản trị để tránh thao tác nhầm.
 - [x] Kiểm thử rào chắn đồng bộ và xác nhận mọi thay đổi Catalog/tồn kho vẫn do DHL Stores quyết định.
+
+- [x] Thêm biểu mẫu tạo đơn hàng mới cho quản trị, chọn sản phẩm/SKU từ tồn kho DHL Stores.
+- [x] Kiểm tra tồn khả dụng và trừ tồn kho nguyên tử theo SKU khi đơn quản trị được tạo.
+- [x] Ghi nhật ký biến động kho và liên kết đơn hàng để dễ tra cứu/xử lý hoàn tồn khi cần.
+- [x] Viết kiểm thử, kiểm tra TypeScript và xác minh giao diện tạo đơn quản trị trước khi xuất bản.
