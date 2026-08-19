@@ -611,3 +611,10 @@
 - [x] Bảo đảm chủ cửa hàng vẫn dùng được luồng khách hàng và xem/xử lý đơn của khách
 - [x] Viết hoặc cập nhật test phân quyền và kiểm thử đơn hàng khách
 - [x] Chạy TypeScript, Vitest và build; lưu checkpoint
+
+
+## Phiên cải tiến quản trị theo yêu cầu 2026-08-19
+- [x] Thêm tìm kiếm và lọc đơn hàng theo trạng thái hoặc tên khách hàng trong AdminOrders.
+- [x] Thêm nhãn Owner nổi bật trên giao diện quản trị để nhận diện quyền cao nhất.
+- [x] Thêm bảng tổng quan quản trị hiển thị tổng đơn hàng, đơn chờ xử lý và hoạt động gần đây của khách hàng.
+- [x] Viết/cập nhật test, kiểm tra giao diện và phát hành checkpoint cho ba cải tiến quản trị.
