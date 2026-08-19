@@ -563,3 +563,5 @@
 - [x] Sapo thử nghiệm: ghi một inventory level theo đúng số tồn hiện tại của DHL Stores, đọc lại Sapo và lưu kết quả đối chiếu trước khi đồng bộ theo lô. SKU `namearg-B-2026-6 nhỏ`, DHL Stores tồn `0`; Sapo PUT `/admin/inventory_levels/set.json` trả 200 và đọc lại `available=0` khớp.
 
 - [x] Sapo security: giữ nguyên tắc quyền tối thiểu; chỉ bật Đọc và ghi cho Sản phẩm/phiên bản/danh mục và Kho, không cấp quyền dư thừa cho đơn hàng, khách hàng hoặc khuyến mãi. PDF xác nhận Storefront API tắt và quyền Admin API đúng phạm vi.
+
+- [x] Sapo thử SKU `namearg-B-2026-10#MESSI`: đối chiếu tồn DHL Stores 15 với Sapo, ghi cùng giá trị và đọc lại; không tác động SKU khác.
