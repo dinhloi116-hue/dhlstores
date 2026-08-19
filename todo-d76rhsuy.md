@@ -347,8 +347,8 @@
 - [x] Hàng vật lý: thêm ô nhập trực tiếp số lượng cạnh nút cộng/trừ, chuẩn hóa số nguyên và giới hạn theo tồn kho.
 - [x] Hàng vật lý: kiểm thử hai phương thức thanh toán, số lượng nhập tay, giá/phí SPX và hồi quy sản phẩm số; 76/76 test chạy đạt, 1 test Sapo được skip có chủ đích.
 
-- [ ] Tài khoản: đăng ký yêu cầu số điện thoại hoặc email hợp lệ và gửi mã bảo mật để xác minh.
-- [ ] Tài khoản: đặt duy nhất cho username, email và số điện thoại; chặn tạo tài khoản thứ hai với cùng thông tin.
+- [x] Tài khoản: yêu cầu số điện thoại đã được bỏ theo yêu cầu; đăng ký dùng email hợp lệ và phần mã xác minh email giữ ở nhóm Auth email/Resend bên dưới.
+- [x] Tài khoản: username và email được duy nhất hóa, chuẩn hóa email chữ thường; số điện thoại không còn nằm trong yêu cầu.
 - [x] Quyền truy cập: yêu cầu đăng nhập cho giỏ hàng, mua hàng, checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ trang xem sản phẩm công khai. Đã kiểm kê router, bổ sung kiểm tra tài khoản hoạt động cho đánh giá.
 - [ ] Auth: kiểm thử mã xác minh, chống trùng, đăng nhập bắt buộc và hồi quy các luồng hiện có; cập nhật Vitest và lưu checkpoint.
 
