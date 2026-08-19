@@ -601,7 +601,7 @@
 - [x] Hiển thị QR riêng của khách trong Trung tâm vận hành và kiểm tra luồng duyệt/đã chuyển
 - [x] Viết hoặc cập nhật test hồi quy cho qrUrl của yêu cầu rút tiền
 - [x] Chạy kiểm tra TypeScript, Vitest và build sau thay đổi wallet withdrawal
-- [ ] Lưu checkpoint sau khi xác minh
+- [x] Lưu checkpoint sau khi xác minh (checkpoint `5f2db90e`)
 
 
 ## Phiên chuẩn hóa quyền chủ cửa hàng 2026-08-19
@@ -618,3 +618,10 @@
 - [x] Thêm nhãn Owner nổi bật trên giao diện quản trị để nhận diện quyền cao nhất.
 - [x] Thêm bảng tổng quan quản trị hiển thị tổng đơn hàng, đơn chờ xử lý và hoạt động gần đây của khách hàng.
 - [x] Viết/cập nhật test, kiểm tra giao diện và phát hành checkpoint cho ba cải tiến quản trị.
+
+
+## Phiên tối ưu phân loại trải nghiệm mua hàng 2026-08-19
+- [x] Đánh giá các điểm khách có thể nhầm giữa tài nguyên số và hàng vật lý trên trang chủ, catalog và trang sản phẩm.
+- [x] Thiết kế phân loại điều hướng rõ theo mục đích mua, loại sản phẩm và hình thức nhận hàng.
+- [x] Triển khai các cải tiến ưu tiên giúp khách tìm đúng sản phẩm và đi tới mua hàng ít bước hơn.
+- [x] Viết/cập nhật test, kiểm tra trực quan và phát hành checkpoint cho tối ưu phân loại.

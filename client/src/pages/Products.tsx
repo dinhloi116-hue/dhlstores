@@ -27,6 +27,8 @@ export default function Products() {
   const initialCategory = searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined;
   const initialType = searchParams.get("type");
   const isPhysicalCatalog = initialType === "physical";
+  const isDigitalCatalog = initialType === "digital";
+  const isTypeScoped = isPhysicalCatalog || isDigitalCatalog;
   const isPrintShop = initialCategory === 11070079;
 
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCategory);
@@ -52,15 +54,15 @@ export default function Products() {
   const productsQuery = trpc.store.products.useQuery({
     categoryId: selectedCategory,
     search: searchQuery || undefined,
-    type: isPhysicalCatalog ? "physical" : undefined,
+    type: isTypeScoped ? (isPhysicalCatalog ? "physical" : "digital") : undefined,
     minPrice: isPrintShop && minPrice ? Number(minPrice) : undefined,
     maxPrice: isPrintShop && maxPrice ? Number(maxPrice) : undefined,
     size: isPrintShop ? (sizeFilter || undefined) : undefined,
     color: isPrintShop ? (colorFilter || undefined) : undefined,
   });
 
-  const categories = (categoriesQuery.data || []).filter(category => !isPhysicalCatalog || category.type === "physical");
-  let products = (productsQuery.data || []).filter(product => !isPhysicalCatalog || product.type === "physical");
+  const categories = (categoriesQuery.data || []).filter(category => !isTypeScoped || category.type === (isPhysicalCatalog ? "physical" : "digital"));
+  let products = (productsQuery.data || []).filter(product => !isTypeScoped || product.type === (isPhysicalCatalog ? "physical" : "digital"));
   if (catalogQuickFilter === "digital") products = products.filter(product => product.type === "digital");
   if (catalogQuickFilter === "physical") products = products.filter(product => product.type === "physical");
   if (catalogQuickFilter === "in-stock") products = products.filter(product => product.type === "digital" || Number(product.stock) > 0);
@@ -87,8 +89,8 @@ export default function Products() {
   return (
     <StoreLayout>
       <div className={`mx-auto flex max-w-[1600px] items-end justify-between gap-4 border-b px-4 py-5 sm:px-6 lg:px-8 2xl:px-10 ${isPhysicalCatalog ? 'border-orange-200 bg-[#f5f5f5]' : 'border-slate-200'}`}>
-        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {isPrintShop ? 'Shop áo in' : isPhysicalCatalog ? 'Shop hàng thể thao' : 'Resource Library'}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{isPrintShop ? (lang === 'vi' ? 'Shop áo in' : 'Printed apparel shop') : isPhysicalCatalog ? (lang === 'vi' ? 'Hàng thể thao' : 'Sports shop') : (lang === 'vi' ? 'Kho tài nguyên số' : 'Digital resource library')}</h1></div>
-        <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{isPrintShop ? (lang === 'vi' ? 'Khu vực áo in của cửa hàng. Chủ shop có thể thêm sản phẩm, ảnh, giá, SKU và tồn kho trong quản trị.' : 'Your printed apparel shop. Add products, images, prices, SKUs and stock from admin.') : isPhysicalCatalog ? (lang === 'vi' ? 'Chọn nhanh áo bóng đá, patch tay và nameset. Kiểm tra SKU, tồn kho và phí SPX trước khi mua.' : 'Shop jerseys, patches and namesets with live SKU stock and SPX estimates.') : (lang === 'vi' ? 'Lọc font, vector, file in và mẫu thiết kế sẵn sàng sản xuất.' : 'Filter production-ready fonts, vectors, print files and templates.')}</p>
+        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {isPrintShop ? 'Shop áo in' : isPhysicalCatalog ? 'Shop hàng thể thao' : isDigitalCatalog ? 'Kho tải xuống' : 'Cửa hàng'}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{isPrintShop ? (lang === 'vi' ? 'Shop áo in' : 'Printed apparel shop') : isPhysicalCatalog ? (lang === 'vi' ? 'Hàng thể thao' : 'Sports shop') : isDigitalCatalog ? (lang === 'vi' ? 'Tài nguyên số' : 'Digital resources') : (lang === 'vi' ? 'Tất cả sản phẩm' : 'All products')}</h1></div>
+        <p className="hidden max-w-sm text-right text-xs leading-relaxed text-slate-500 md:block">{isPrintShop ? (lang === 'vi' ? 'Khu vực áo in của cửa hàng. Chủ shop có thể thêm sản phẩm, ảnh, giá, SKU và tồn kho trong quản trị.' : 'Your printed apparel shop. Add products, images, prices, SKUs and stock from admin.') : isPhysicalCatalog ? (lang === 'vi' ? 'Chọn áo bóng đá, patch tay và nameset. Kiểm tra SKU, tồn kho, địa chỉ và phí SPX trước khi mua.' : 'Shop jerseys, patches and namesets with live SKU stock and SPX estimates.') : isDigitalCatalog ? (lang === 'vi' ? 'Chọn font, vector, file in, mockup và tài nguyên tải xuống. Thanh toán xong nhận link trong 7 ngày.' : 'Choose fonts, vectors, print files and downloadable assets. Get the link for 7 days after payment.') : (lang === 'vi' ? 'Chọn trước loại sản phẩm để lọc đúng cách nhận hàng và phương thức thanh toán.' : 'Choose a product type first to match delivery and payment.')}</p>
       </div>
 
       <div className={`mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 2xl:px-10 ${isPhysicalCatalog ? 'bg-[#f5f5f5]' : ''}`}>
