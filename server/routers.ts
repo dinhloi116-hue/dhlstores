@@ -10,6 +10,7 @@ import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
 import { storagePut } from "./storage";
 import { checkSapoProductReadConnection, pullSapoInventoryBySku, syncSapoInventoryBySku } from "./sapo";
+import { invokeLLM } from "./_core/llm";
 
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
@@ -238,6 +239,60 @@ export const appRouter = router({
       }).optional())
       .query(async ({ input }) => {
         return await db.getProducts(input);
+      }),
+
+    imageSearch: publicProcedure
+      .input(z.object({ mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), base64: z.string().min(1).max(8_000_000) }))
+      .mutation(async ({ input }) => {
+        const bytes = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+        if (!bytes.length || bytes.length > 6 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Ảnh tìm kiếm phải có dung lượng tối đa 6 MB" });
+        const catalog = (await db.getProducts()).filter(product => product.isActive).slice(0, 60);
+        if (!catalog.length) return { matches: [], message: "Chưa có sản phẩm để đối chiếu" };
+        const candidates = catalog.map(product => ({ id: product.id, name: product.name, slug: product.slug, type: product.type, image: product.image || null, categoryId: product.categoryId }));
+        const content: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail?: "low" | "high" } }> = [
+          { type: "text", text: "Ảnh truy vấn của khách nằm ngay sau đây. Hãy đối chiếu với các ảnh sản phẩm trong danh mục bên dưới. Chỉ chọn sản phẩm thực sự phù hợp về kiểu dáng, màu sắc, chủ đề hoặc loại hàng; không tự bịa sản phẩm. Trả về tối đa 8 kết quả theo thứ tự phù hợp giảm dần." },
+          { type: "image_url", image_url: { url: `data:${input.mimeType};base64,${input.base64.replace(/^data:[^;]+;base64,/, "")}`, detail: "high" } },
+          { type: "text", text: candidates.map(candidate => `PRODUCT_ID=${candidate.id}; NAME=${candidate.name}; TYPE=${candidate.type}; CATEGORY_ID=${candidate.categoryId}; SLUG=${candidate.slug}`).join("\n") },
+          ...candidates.filter(candidate => candidate.image && /^https?:\/\//.test(candidate.image)).flatMap(candidate => [{ type: "text" as const, text: `Ảnh tham chiếu PRODUCT_ID=${candidate.id}` }, { type: "image_url" as const, image_url: { url: candidate.image as string, detail: "low" as const } }]),
+        ];
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Bạn là bộ máy tìm kiếm hình ảnh cho cửa hàng DHL Stores. Chỉ trả JSON hợp lệ theo schema." },
+            { role: "user", content },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "image_search_matches",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  matches: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        productId: { type: "integer" },
+                        confidence: { type: "number" },
+                        reason: { type: "string" },
+                      },
+                      required: ["productId", "confidence", "reason"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["matches"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const raw = response.choices?.[0]?.message?.content;
+        const parsed = typeof raw === "string" ? JSON.parse(raw) as { matches?: Array<{ productId: number; confidence: number; reason: string }> } : { matches: [] };
+        const allowed = new Map(catalog.map(product => [product.id, product]));
+        const matches = (parsed.matches || []).filter(match => allowed.has(match.productId) && match.confidence >= 0.35).slice(0, 8).map(match => ({ ...match, product: allowed.get(match.productId) }));
+        return { matches, message: matches.length ? "Đã tìm thấy sản phẩm tương đồng" : "Chưa tìm thấy sản phẩm đủ giống" };
       }),
 
     productVariantFacets: publicProcedure

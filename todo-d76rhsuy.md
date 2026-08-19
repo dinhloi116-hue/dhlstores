@@ -580,3 +580,5 @@
 - [x] Sapo vận hành: thêm nút Đồng bộ ngay trong Trung tâm vận hành. Nút outbound ghi lịch sử theo từng SKU sau khi chạy.
 - [x] Sapo vận hành: thêm lịch sử các lần đồng bộ để theo dõi kết quả. Có hướng inbound/outbound, trạng thái, tồn sau cùng và thời gian xử lý.
 - [x] Sapo vận hành: hiển thị thời gian cập nhật tồn gần nhất tại trang sản phẩm và khu quản trị. ProductDetail hiển thị mốc Sapo gần nhất theo các variant đã mapping.
+
+- [x] Tìm kiếm bằng hình ảnh: cho phép tải/chụp ảnh, nhận diện và trả về sản phẩm/SKU phù hợp, không lưu ảnh truy vấn lâu hơn cần thiết. Đã thêm LLM vision server-side, nút camera header, tải/chụp ảnh mobile, giới hạn 6 MB, kết quả link về sản phẩm; 119 test đạt, TypeScript và build sạch.

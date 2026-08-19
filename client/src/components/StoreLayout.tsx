@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown, WalletCards, MapPin, History, Bell, LoaderCircle, ArrowUp, Scale } from "lucide-react";
+import { ShoppingBag, User as UserIcon, ShieldCheck, Download, Package, Menu, X, LogOut, Globe, Sparkles, WandSparkles, Trophy, Shirt, ChevronDown, WalletCards, MapPin, History, Bell, LoaderCircle, ArrowUp, Scale, Camera, Upload, Search } from "lucide-react";
 import { toast } from "sonner";
 import CustomerContactHub from "@/components/CustomerContactHub";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
@@ -26,6 +26,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [comparedCount, setComparedCount] = useState(() => getComparedProductIds().length);
   const [pageProgress, setPageProgress] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [imageSearchOpen, setImageSearchOpen] = useState(false);
+  const [imageSearchPreview, setImageSearchPreview] = useState<string | null>(null);
+  const [imageSearchResults, setImageSearchResults] = useState<Array<{ productId: number; confidence: number; reason: string; product?: { id: number; name: string; slug: string; image?: string | null; price: string | number; type: string } }>>([]);
+  const imageSearchMutation = trpc.store.imageSearch.useMutation({ onSuccess: result => { setImageSearchResults(result.matches as typeof imageSearchResults); if (!result.matches.length) toast.info(result.message); }, onError: error => toast.error(error.message) });
   const recordVisit = trpc.analytics.recordVisit.useMutation();
   const siteSettingsQuery = trpc.store.siteSettings.useQuery();
   const categoriesQuery = trpc.store.categories.useQuery();
@@ -98,6 +102,15 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     { key: 'print', label: lang === 'vi' ? 'Shop Áo Thun In Hình' : 'Printed T-shirt shop', href: '/products?type=physical&categoryId=11070079', icon: Shirt, accent: 'text-[#ee4d2d]', children: printCategories.map(category => ({ ...category, href: `/products?type=physical&categoryId=${category.id}` })) },
     { key: 'digital', label: navDigital, href: '/products?type=digital', icon: Download, accent: 'text-purple-600', children: digitalCategories.map(category => ({ ...category, href: `/products?type=digital&categoryId=${category.id}` })) },
   ];
+
+  const handleImageSearchFile = (file: File | undefined) => {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { toast.error(lang === "vi" ? "Vui lòng chọn ảnh JPG, PNG hoặc WebP" : "Choose a JPG, PNG or WebP image"); return; }
+    if (file.size > 6 * 1024 * 1024) { toast.error(lang === "vi" ? "Ảnh tìm kiếm tối đa 6 MB" : "Image search supports up to 6 MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => { const dataUrl = String(reader.result || ""); setImageSearchPreview(dataUrl); setImageSearchResults([]); imageSearchMutation.mutate({ mimeType: file.type as "image/jpeg" | "image/png" | "image/webp", base64: dataUrl }); };
+    reader.readAsDataURL(file);
+  };
 
   const toggleLanguage = () => {
     const nextLang = lang === 'vi' ? 'en' : 'vi';
@@ -227,6 +240,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
           {/* Right Actions */}
           <div className="flex items-center gap-1.5 sm:gap-3">
+            <Button variant="outline" size="sm" onClick={() => setImageSearchOpen(true)} className="border-cyan-200 bg-cyan-50 text-xs font-bold text-cyan-800 hover:bg-cyan-100" aria-label={lang === "vi" ? "Tìm kiếm bằng hình ảnh" : "Search by image"}>
+              <Camera className="h-4 w-4 sm:mr-1" /><span className="hidden lg:inline">{lang === "vi" ? "Tìm bằng ảnh" : "Search by image"}</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -399,6 +415,24 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </div>
         )}
       </header>
+
+      <Dialog open={imageSearchOpen} onOpenChange={open => { setImageSearchOpen(open); if (!open) { setImageSearchPreview(null); setImageSearchResults([]); imageSearchMutation.reset(); } }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto border-slate-200 bg-white sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900"><Camera className="h-5 w-5 text-cyan-600" />{lang === "vi" ? "Tìm sản phẩm bằng hình ảnh" : "Search products by image"}</DialogTitle>
+            <DialogDescription>{lang === "vi" ? "Tải ảnh áo, patch, nameset hoặc tài nguyên tham khảo. Ảnh chỉ được dùng trong lần tìm kiếm này và không lưu vào tài khoản." : "Upload a jersey, patch, nameset or design reference. The query image is used for this search only and is not saved to your account."}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-cyan-200 bg-cyan-50/60 px-5 py-8 text-center transition hover:border-cyan-500 hover:bg-cyan-50">
+              <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="sr-only" onChange={event => handleImageSearchFile(event.target.files?.[0])} />
+              {imageSearchPreview ? <img src={imageSearchPreview} alt="Ảnh truy vấn" className="max-h-48 rounded-xl object-contain shadow-sm" /> : <><Upload className="h-8 w-8 text-cyan-600" /><span className="mt-2 text-sm font-black text-slate-900">{lang === "vi" ? "Chọn ảnh hoặc chụp ảnh" : "Choose or capture an image"}</span><span className="mt-1 text-xs text-slate-500">JPG, PNG, WebP · tối đa 6 MB</span></>}
+            </label>
+            {imageSearchMutation.isPending && <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"><Search className="h-4 w-4 animate-pulse text-cyan-600" />{lang === "vi" ? "Đang đối chiếu với catalog…" : "Comparing with the catalog…"}</div>}
+            {!imageSearchMutation.isPending && imageSearchPreview && !imageSearchResults.length && !imageSearchMutation.error && <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-600">{lang === "vi" ? "Chưa có kết quả phù hợp. Hãy thử ảnh rõ hơn hoặc chụp gần sản phẩm." : "No close matches yet. Try a clearer or closer image."}</p>}
+            {imageSearchResults.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{imageSearchResults.map(match => match.product ? <Link key={match.productId} href={`/product/${match.product.slug}`} onClick={() => setImageSearchOpen(false)} className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-cyan-400 hover:bg-cyan-50/40"><div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">{match.product.image ? <img src={match.product.image} alt={match.product.name} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-[10px] font-bold text-slate-400">DHL</div>}</div><div className="min-w-0"><p className="line-clamp-2 text-sm font-black text-slate-900">{match.product.name}</p><p className="mt-1 text-[11px] font-semibold text-cyan-700">{Math.round(match.confidence * 100)}% · {match.reason}</p></div></Link> : null)}</div>}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
         <DialogContent className="max-w-md bg-white border-slate-200 p-0 overflow-hidden">
