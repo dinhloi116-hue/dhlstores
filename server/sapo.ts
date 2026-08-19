@@ -112,3 +112,57 @@ export async function checkSapoProductReadConnection(
     clearTimeout(timeout);
   }
 }
+
+
+export type SapoInventorySetInput = {
+  locationId: string;
+  inventoryItemId: string;
+  available: number;
+};
+
+export type SapoInventorySetResult = {
+  ok: boolean;
+  status?: number;
+  inventoryLevelId?: string;
+  available?: number;
+  message: string;
+};
+
+export async function setSapoInventoryLevel(
+  input: SapoInventorySetInput,
+  env: SapoEnvironment = readSapoEnvironment(),
+  fetchImpl: FetchLike = fetch,
+): Promise<SapoInventorySetResult> {
+  const configuration = getSapoConfiguration(env);
+  if (!configuration.configured) return { ok: false, message: configuration.message };
+  if (!Number.isFinite(input.available) || input.available < 0) return { ok: false, message: "Số tồn Sapo không hợp lệ." };
+
+  const authorization = Buffer.from(`${configuration.apiKey}:${configuration.apiSecret}`).toString("base64");
+  try {
+    const response = await fetchImpl(`https://${configuration.host}/admin/inventory_levels/set.json`, {
+      method: "PUT",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Basic ${authorization}`,
+        "User-Agent": "DHL-Stores-Sapo-Sync/1.0",
+      },
+      body: JSON.stringify({ inventory_level: { location_id: input.locationId, inventory_item_id: input.inventoryItemId, available: Math.round(input.available) } }),
+    });
+    const body = await response.text();
+    if (!response.ok) {
+      const message = response.status === 401 || response.status === 403
+        ? "Sapo từ chối quyền ghi tồn kho."
+        : `Sapo trả về trạng thái ${response.status} khi ghi tồn kho.`;
+      return { ok: false, status: response.status, message };
+    }
+    try {
+      const parsed = JSON.parse(body) as { inventory_level?: { id?: number; available?: number } };
+      return { ok: true, status: response.status, inventoryLevelId: parsed.inventory_level?.id === undefined ? undefined : String(parsed.inventory_level.id), available: parsed.inventory_level?.available, message: "Đã cập nhật tồn kho Sapo." };
+    } catch {
+      return { ok: false, status: response.status, message: "Sapo phản hồi dữ liệu tồn kho không đúng định dạng JSON." };
+    }
+  } catch {
+    return { ok: false, message: "Không thể kết nối HTTPS đến API ghi tồn kho Sapo." };
+  }
+}
