@@ -246,7 +246,8 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const bytes = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
         if (!bytes.length || bytes.length > 6 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Ảnh tìm kiếm phải có dung lượng tối đa 6 MB" });
-        const catalog = (await db.getProducts()).filter(product => product.isActive).slice(0, 60);
+        // Keep the vision payload bounded: use the first 24 active catalog entries rather than sending the whole catalog and its images.
+        const catalog = (await db.getProducts()).filter(product => product.isActive).slice(0, 24);
         if (!catalog.length) return { matches: [], message: "Chưa có sản phẩm để đối chiếu" };
         const candidates = catalog.map(product => ({ id: product.id, name: product.name, slug: product.slug, type: product.type, image: product.image || null, categoryId: product.categoryId }));
         const content: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail?: "low" | "high" } }> = [

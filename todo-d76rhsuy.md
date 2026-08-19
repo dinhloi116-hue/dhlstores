@@ -452,7 +452,7 @@
 - [x] Địa chỉ giao hàng: thêm dropdown Tỉnh/Thành phố và Phường/Xã trong form lưu địa chỉ, giữ ô địa chỉ chi tiết.
 - [x] Ghép và lưu địa chỉ hoàn chỉnh tương thích với checkout, kiểm thử reset phường/xã khi đổi tỉnh và responsive.
 
-- [ ] Rút tiền tự động: nghiên cứu phương án API payout/ngân hàng, bổ sung hướng dẫn và chỉ triển khai sau khi có nhà cung cấp, quyền hạn và thông tin xác thực phù hợp.
+- [x] Rút tiền tự động: đã bỏ hoàn toàn khỏi phạm vi theo yêu cầu của chủ cửa hàng.
 - [x] Rà soát và sửa các lỗi giao diện đang hiển thị trong các mục được người dùng phản ánh.
 - [x] Bổ sung lựa chọn sổ địa chỉ cho checkout đơn hàng số theo cách không bắt buộc địa chỉ giao hàng vật lý.
 - [x] Kiểm thử độc lập ba hạng mục và lưu phiên bản ổn định.
@@ -582,3 +582,11 @@
 - [x] Sapo vận hành: hiển thị thời gian cập nhật tồn gần nhất tại trang sản phẩm và khu quản trị. ProductDetail hiển thị mốc Sapo gần nhất theo các variant đã mapping.
 
 - [x] Tìm kiếm bằng hình ảnh: cho phép tải/chụp ảnh, nhận diện và trả về sản phẩm/SKU phù hợp, không lưu ảnh truy vấn lâu hơn cần thiết. Đã thêm LLM vision server-side, nút camera header, tải/chụp ảnh mobile, giới hạn 6 MB, kết quả link về sản phẩm; 119 test đạt, TypeScript và build sạch.
+
+- [x] Tạo lời nhắc một lần lúc 22:00 GMT+7 ngày 19/08/2026 về xác minh Resend và Stripe Test; không nhắc lại mục rút tiền tự động. Task UID `d76rHsuY8heKiRyCIQOsdZ`.
+
+- [ ] Rà soát cải thiện DHL Stores: kiểm tra luồng mua hàng, thanh toán, tồn kho/Sapo, hiệu năng PWA và khu quản trị; triển khai các điểm ưu tiên an toàn sau kiểm tra.
+
+- [x] Cải thiện tìm kiếm trang chủ: đưa nút Tìm bằng ảnh cạnh ô tìm chữ, tối ưu hiển thị trên desktop/mobile và giữ luồng dialog hiện tại. Đã kiểm tra mobile, TypeScript, build và 119 test đạt.
+
+- [x] Tối ưu image search: giới hạn số ứng viên/ảnh tham chiếu trong mỗi lần đối chiếu để giảm payload, độ trễ và chi phí mà vẫn giữ kết quả catalog thật. Giới hạn còn 24 sản phẩm active; TypeScript, 119 test và build sạch.

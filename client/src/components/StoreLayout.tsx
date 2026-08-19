@@ -47,6 +47,12 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   }, [location]);
 
   useEffect(() => {
+    const openImageSearch = () => setImageSearchOpen(true);
+    window.addEventListener("dhlstores-open-image-search", openImageSearch);
+    return () => window.removeEventListener("dhlstores-open-image-search", openImageSearch);
+  }, []);
+
+  useEffect(() => {
     setPageProgress(12);
     const midpoint = window.setTimeout(() => setPageProgress(72), 40);
     const finish = window.setTimeout(() => setPageProgress(100), 180);
