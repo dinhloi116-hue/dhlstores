@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
-function createContext(role: "admin" | "user"): TrpcContext {
+function createContext(role: "owner" | "user"): TrpcContext {
   return {
     user: {
-      id: role === "admin" ? 901 : 902,
+      id: role === "owner" ? 901 : 902,
       openId: `catalog-${role}`,
       name: "Catalog tester",
       email: "catalog@example.com",
@@ -22,8 +22,8 @@ function createContext(role: "admin" | "user"): TrpcContext {
 }
 
 describe("catalogAdmin", () => {
-  it("shows the three empty physical product categories to an administrator", async () => {
-    const caller = appRouter.createCaller(createContext("admin"));
+  it("shows the three empty physical product categories to the owner", async () => {
+    const caller = appRouter.createCaller(createContext("owner"));
     const categories = await caller.catalogAdmin.categories();
 
     expect(categories.map(category => category.slug)).toEqual(expect.arrayContaining([
@@ -33,8 +33,8 @@ describe("catalogAdmin", () => {
     ]));
   });
 
-  it("lets an administrator create and hide a category and product", async () => {
-    const caller = appRouter.createCaller(createContext("admin"));
+  it("lets the owner create and hide a category and product", async () => {
+    const caller = appRouter.createCaller(createContext("owner"));
     const suffix = Date.now().toString(36);
     const category = await caller.catalogAdmin.createCategory({
       name: `Kiểm thử ${suffix}`,
@@ -83,7 +83,7 @@ describe("catalogAdmin", () => {
   });
 
   it("saves the selected purchase layout for a physical product", async () => {
-    const caller = appRouter.createCaller(createContext("admin"));
+    const caller = appRouter.createCaller(createContext("owner"));
     const suffix = Date.now().toString(36);
     const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "quan-ao-bong-da");
     const product = await caller.catalogAdmin.createProduct({
@@ -113,7 +113,7 @@ describe("catalogAdmin", () => {
   });
 
   it("stores flexible product options alongside SKU and stock for a physical variant", async () => {
-    const caller = appRouter.createCaller(createContext("admin"));
+    const caller = appRouter.createCaller(createContext("owner"));
     const suffix = Date.now().toString(36);
     const categories = await caller.catalogAdmin.categories();
     const physicalCategory = categories.find(category => category.slug === "quan-ao-bong-da");
@@ -149,7 +149,7 @@ describe("catalogAdmin", () => {
   });
 
   it("creates SKU combinations from saved product option groups", async () => {
-    const caller = appRouter.createCaller(createContext("admin"));
+    const caller = appRouter.createCaller(createContext("owner"));
     const suffix = Date.now().toString(36);
     const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "quan-ao-bong-da");
     const product = await caller.catalogAdmin.createProduct({
@@ -177,7 +177,7 @@ describe("catalogAdmin", () => {
   });
 
   it("updates selected SKU values in bulk and saves wholesale quantity tiers", async () => {
-    const caller = appRouter.createCaller(createContext("admin"));
+    const caller = appRouter.createCaller(createContext("owner"));
     const suffix = `bulk-${Date.now().toString(36)}`;
     const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "patch-tay");
     const product = await caller.catalogAdmin.createProduct({ name: `Patch hàng loạt ${suffix}`, slug: `patch-hang-loat-${suffix}`, description: "Kiểm thử cập nhật nhanh SKU", price: 100000, categoryId: physicalCategory!.id, image: "/manus-storage/catalog/test-patch.png", stock: 0, featured: false, isActive: true });

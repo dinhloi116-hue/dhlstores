@@ -602,3 +602,12 @@
 - [x] Viết hoặc cập nhật test hồi quy cho qrUrl của yêu cầu rút tiền
 - [x] Chạy kiểm tra TypeScript, Vitest và build sau thay đổi wallet withdrawal
 - [ ] Lưu checkpoint sau khi xác minh
+
+
+## Phiên chuẩn hóa quyền chủ cửa hàng 2026-08-19
+- [x] Xác minh tài khoản chủ duy nhất của người dùng và các role đang tồn tại trong backend
+- [x] Kiểm tra mọi adminProcedure/ownerProcedure, route quản trị và điều kiện hiển thị giao diện
+- [x] Siết để chỉ tài khoản chủ cửa hàng có quyền quản trị; tài khoản khác chỉ là khách hàng
+- [x] Bảo đảm chủ cửa hàng vẫn dùng được luồng khách hàng và xem/xử lý đơn của khách
+- [x] Viết hoặc cập nhật test phân quyền và kiểm thử đơn hàng khách
+- [x] Chạy TypeScript, Vitest và build; lưu checkpoint

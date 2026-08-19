@@ -201,12 +201,12 @@ export default function Account() {
               <p className="mt-2 text-[11px] font-semibold text-slate-500">{uploadAvatarMutation.isPending ? (lang === "vi" ? "Đang tải ảnh…" : "Uploading photo…") : (lang === "vi" ? "Chạm vào ảnh để thay đổi" : "Tap photo to change")}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">
-	                  {user?.role === 'owner' ? 'Chủ cửa hàng' : user?.role === 'admin' ? (lang === 'vi' ? 'Quản trị' : 'Admin') : (lang === 'vi' ? 'Thành viên' : 'VIP Member')}
+	                  {user?.role === 'owner' ? 'Chủ cửa hàng' : (lang === 'vi' ? 'Thành viên' : 'VIP Member')}
                 </Badge>
               </div>
             </div>
           </div>
-	          {(user?.role === 'admin' || user?.role === 'owner') && (
+	          {user?.role === 'owner' && (
 	            <Link href="/admin">
 	              <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
 	                {lang === 'vi' ? 'Quản trị' : `${t.admin} Dashboard`}

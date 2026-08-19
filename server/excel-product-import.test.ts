@@ -16,7 +16,7 @@ function makeWorkbook() {
 
 function adminContext(): TrpcContext {
   return {
-    user: { id: 880001, openId: "excel-admin", name: "Excel admin", email: "excel@example.com", loginMethod: "local", role: "admin", status: "active", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() },
+    user: { id: 880001, openId: "excel-admin", name: "Excel admin", email: "excel@example.com", loginMethod: "local", role: "owner", status: "active", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() },
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: () => {} } as TrpcContext["res"],
   };

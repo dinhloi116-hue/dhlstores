@@ -87,20 +87,20 @@ export const appRouter = router({
     uploadAvatar: protectedProcedure
       .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]), base64: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
+        await requireActiveAccount(ctx.user!.id);
         const buffer = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
         if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Ảnh đại diện phải có dung lượng tối đa 5 MB" });
         const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "avatar";
-        const stored = await storagePut(`avatars/${ctx.user.id}/${Date.now()}-${safeName}`, buffer, input.mimeType);
-        await db.updateUserAvatar(ctx.user.id, stored.url);
+        const stored = await storagePut(`avatars/${ctx.user!.id}/${Date.now()}-${safeName}`, buffer, input.mimeType);
+        await db.updateUserAvatar(ctx.user!.id, stored.url);
         return { avatarUrl: stored.url };
       }),
     linkEmail: protectedProcedure
       .input(z.object({ email: z.string().trim().toLowerCase().email("Email không hợp lệ") }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
+        await requireActiveAccount(ctx.user!.id);
         try {
-          return await db.linkEmailToUser(ctx.user.id, input.email);
+          return await db.linkEmailToUser(ctx.user!.id, input.email);
         } catch (error) {
           if (error instanceof Error && error.message === "EMAIL_TAKEN") {
             throw new TRPCError({ code: "CONFLICT", message: "Email này đã liên kết với một tài khoản khác" });
@@ -125,31 +125,31 @@ export const appRouter = router({
 
   feedback: router({
     submit: protectedProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), contact: z.string().trim().max(255).optional(), topic: z.enum(["suggestion", "issue", "other"]), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
-      await requireActiveAccount(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
       const image = await storeSupportImage(input.visitorKey, input.submission.image);
-      return db.createCustomerFeedback({ visitorKey: input.visitorKey, displayName: input.displayName || ctx.user.name || ctx.user.username || undefined, contact: input.contact || ctx.user.email || undefined, topic: input.topic, message: input.submission.message, ...image, userId: ctx.user.id });
+      return db.createCustomerFeedback({ visitorKey: input.visitorKey, displayName: input.displayName || ctx.user.name || ctx.user.username || undefined, contact: input.contact || ctx.user.email || undefined, topic: input.topic, message: input.submission.message, ...image, userId: ctx.user!.id });
     }),
   }),
 
   support: router({
     conversation: protectedProcedure.input(z.object({ visitorKey: visitorKeySchema })).query(async ({ ctx, input }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getCustomerConversationForUser(input.visitorKey, ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getCustomerConversationForUser(input.visitorKey, ctx.user!.id);
     }),
     send: protectedProcedure.input(z.object({ visitorKey: visitorKeySchema, displayName: z.string().trim().max(128).optional(), submission: supportSubmissionSchema })).mutation(async ({ ctx, input }) => {
-      await requireActiveAccount(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
       const image = await storeSupportImage(input.visitorKey, input.submission.image);
       try {
-        return await db.sendCustomerSupportMessage({ visitorKey: input.visitorKey, displayName: input.displayName || ctx.user.name || ctx.user.username || undefined, body: input.submission.message, ...image, userId: ctx.user.id });
+        return await db.sendCustomerSupportMessage({ visitorKey: input.visitorKey, displayName: input.displayName || ctx.user.name || ctx.user.username || undefined, body: input.submission.message, ...image, userId: ctx.user!.id });
       } catch (error) {
         if (error instanceof Error && error.message === "CONVERSATION_FORBIDDEN") throw new TRPCError({ code: "FORBIDDEN", message: "Bạn không có quyền truy cập hội thoại này" });
         throw error;
       }
     }),
     markRead: protectedProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
-      await requireActiveAccount(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
       try {
-        return await db.markCustomerConversationRead(input.conversationId, ctx.user.id);
+        return await db.markCustomerConversationRead(input.conversationId, ctx.user!.id);
       } catch (error) {
         if (error instanceof Error && error.message === "CONVERSATION_FORBIDDEN") throw new TRPCError({ code: "FORBIDDEN", message: "Bạn không có quyền truy cập hội thoại này" });
         throw error;
@@ -166,7 +166,7 @@ export const appRouter = router({
     sapoSyncPreview: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(({ input }) => syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: true, maxRows: 20 })),
     sapoSyncRun: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(async ({ input }) => { const result = await syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: false, maxRows: 20 }); const inventory = await db.getInventoryBoard(); const idsBySku = new Map(inventory.filter(row => row.target === "variant" && row.sku).map(row => [row.sku, row.id])); await db.recordSapoOutboundEvents(result.results.map(row => ({ ...row, localVariantId: idsBySku.get(row.sku) }))); return result; }),
     sapoInboundPull: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ localVariantId: z.number().int().positive(), sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(50) })).mutation(({ input }) => pullSapoInventoryBySku(input.rows, input.locationId)),
-    sapoInboundApply: ownerProcedure.input(z.object({ changes: z.array(z.object({ localVariantId: z.number().int().positive(), sku: z.string().trim().max(128), stock: z.number().int().min(0).max(999_999), sapoVariantId: z.string().optional(), inventoryItemId: z.string().optional() })).min(1).max(50), reason: z.string().trim().min(3).max(255).optional() })).mutation(({ ctx, input }) => db.applySapoInboundInventory({ ...input, performedByUserId: ctx.user.id })),
+    sapoInboundApply: ownerProcedure.input(z.object({ changes: z.array(z.object({ localVariantId: z.number().int().positive(), sku: z.string().trim().max(128), stock: z.number().int().min(0).max(999_999), sapoVariantId: z.string().optional(), inventoryItemId: z.string().optional() })).min(1).max(50), reason: z.string().trim().min(3).max(255).optional() })).mutation(({ ctx, input }) => db.applySapoInboundInventory({ ...input, performedByUserId: ctx.user!.id })),
     members: ownerProcedure.query(() => db.getAllUsers()),
     createTestCustomer: ownerProcedure
       .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, name: z.string().trim().min(2).max(120).optional() }))
@@ -185,21 +185,21 @@ export const appRouter = router({
     adminActivity: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getAdminActivity(input?.userId)),
     balanceLedger: ownerProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => db.getBalanceLedger(input?.userId)),
     walletWithdrawals: ownerProcedure.query(() => db.getWalletWithdrawals()),
-    reviewWalletWithdrawal: ownerProcedure.input(z.object({ withdrawalId: z.number().int().positive(), action: z.enum(["approved", "rejected", "paid"]), note: z.string().trim().max(500).optional() })).mutation(({ ctx, input }) => db.reviewWalletWithdrawal({ ...input, performedByUserId: ctx.user.id })),
-    adjustBalance: ownerProcedure.input(z.object({ userId: z.number().int().positive(), amount: z.number().finite().min(-9_999_999).max(9_999_999).refine(value => value !== 0), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.adjustUserBalance({ ...input, performedByUserId: ctx.user.id })),
+    reviewWalletWithdrawal: ownerProcedure.input(z.object({ withdrawalId: z.number().int().positive(), action: z.enum(["approved", "rejected", "paid"]), note: z.string().trim().max(500).optional() })).mutation(({ ctx, input }) => db.reviewWalletWithdrawal({ ...input, performedByUserId: ctx.user!.id })),
+    adjustBalance: ownerProcedure.input(z.object({ userId: z.number().int().positive(), amount: z.number().finite().min(-9_999_999).max(9_999_999).refine(value => value !== 0), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.adjustUserBalance({ ...input, performedByUserId: ctx.user!.id })),
     discountCodes: ownerProcedure.query(() => db.getDiscountCodes()),
-    createDiscountCode: ownerProcedure.input(z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() })).mutation(({ ctx, input }) => db.createDiscountCode({ ...input, createdByUserId: ctx.user.id })),
+    createDiscountCode: ownerProcedure.input(z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() })).mutation(({ ctx, input }) => db.createDiscountCode({ ...input, createdByUserId: ctx.user!.id })),
     updateDiscountCode: ownerProcedure.input(z.object({ id: z.number().int().positive(), data: z.object({ code: z.string().trim().min(3).max(64), type: z.enum(["percent", "fixed"]), value: z.number().finite().positive(), minOrderAmount: z.number().finite().min(0).optional(), maxUses: z.number().int().positive().nullable().optional(), startsAt: z.coerce.date().nullable().optional(), endsAt: z.coerce.date().nullable().optional(), isActive: z.boolean().optional() }) })).mutation(({ input }) => db.updateDiscountCode(input.id, input.data)),
     feedback: ownerProcedure.query(() => db.getAdminFeedback()),
     updateFeedback: ownerProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["new", "reviewed", "resolved"]) })).mutation(({ input }) => db.updateFeedbackStatus(input.id, input.status)),
     supportSummary: ownerProcedure.query(() => db.getOwnerSupportSummary()),
     supportConversations: ownerProcedure.query(() => db.getOwnerConversations()),
     supportMessages: ownerProcedure.input(z.object({ conversationId: z.number().int().positive() })).query(({ input }) => db.getOwnerConversationMessages(input.conversationId)),
-    sendSupportMessage: ownerProcedure.input(z.object({ conversationId: z.number().int().positive(), body: supportMessageSchema })).mutation(({ ctx, input }) => db.sendOwnerSupportMessage({ ...input, senderUserId: ctx.user.id })),
+    sendSupportMessage: ownerProcedure.input(z.object({ conversationId: z.number().int().positive(), body: supportMessageSchema })).mutation(({ ctx, input }) => db.sendOwnerSupportMessage({ ...input, senderUserId: ctx.user!.id })),
     markSupportRead: ownerProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(({ input }) => db.markConversationRead(input.conversationId, "owner")),
     confirmManualPayment: ownerProcedure.input(z.object({ orderId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       try {
-        return await db.confirmManualPayment(input.orderId, ctx.user.id);
+        return await db.confirmManualPayment(input.orderId, ctx.user!.id);
       } catch (error) {
         if (error instanceof Error && error.message === "ORDER_NOT_PENDING") throw new TRPCError({ code: "CONFLICT", message: "Đơn này không còn ở trạng thái chờ thanh toán" });
         throw error;
@@ -207,17 +207,17 @@ export const appRouter = router({
     }),
     inventory: adminProcedure.query(() => db.getInventoryBoard()),
     inventoryMovements: adminProcedure.query(() => db.getInventoryMovements()),
-    bulkSetInventory: adminProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user.id })),
+    bulkSetInventory: adminProcedure.input(z.object({ changes: z.array(z.object({ target: z.enum(["product", "variant"]), id: z.number().int().positive(), stock: z.number().int().min(0).max(999_999) })).min(1).max(100), reason: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => db.bulkSetInventory({ ...input, performedByUserId: ctx.user!.id })),
     siteSettings: ownerProcedure.query(() => db.getSiteSettings()),
     uploadWithdrawalQr: ownerProcedure.input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), base64: z.string().min(1) })).mutation(async ({ ctx, input }) => {
       const buffer = Buffer.from(input.base64, "base64");
       if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Mã QR phải là ảnh tối đa 5 MB" });
       const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-160) || "withdrawal-qr";
       const stored = await storagePut(`settings/withdrawal-qr-${Date.now()}-${safeName}`, buffer, input.mimeType);
-      await db.saveSiteSettings({ withdrawal_qr_url: stored.url }, ctx.user.id);
+      await db.saveSiteSettings({ withdrawal_qr_url: stored.url }, ctx.user!.id);
       return { url: stored.url };
     }),
-    saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128), physical_qr_bank_code: z.string().trim().max(32).optional(), physical_qr_account_number: z.string().trim().max(64).optional(), physical_qr_account_holder: z.string().trim().max(255).optional(), withdrawal_qr_bank_code: z.string().trim().max(32).optional(), withdrawal_qr_account_number: z.string().trim().max(64).optional(), withdrawal_qr_account_holder: z.string().trim().max(255).optional() }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user.id)),
+    saveSiteSettings: ownerProcedure.input(z.object({ entries: z.object({ navHome: z.string().trim().min(1).max(64), navProducts: z.string().trim().min(1).max(64), navDigital: z.string().trim().min(1).max(64), homeHeading: z.string().trim().min(1).max(128), physical_qr_bank_code: z.string().trim().max(32).optional(), physical_qr_account_number: z.string().trim().max(64).optional(), physical_qr_account_holder: z.string().trim().max(255).optional(), withdrawal_qr_bank_code: z.string().trim().max(32).optional(), withdrawal_qr_account_number: z.string().trim().max(64).optional(), withdrawal_qr_account_holder: z.string().trim().max(255).optional() }) })).mutation(({ ctx, input }) => db.saveSiteSettings(input.entries, ctx.user!.id)),
   }),
 
   store: router({
@@ -317,39 +317,39 @@ export const appRouter = router({
 	    submitProductReview: protectedProcedure
 	      .input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10, 'Nội dung đánh giá cần ít nhất 10 ký tự').max(2000) }))
 	      .mutation(async ({ ctx, input }) => {
-	        await requireActiveAccount(ctx.user.id);
-	        return db.createProductReview({ productId: input.productId, userId: ctx.user.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body });
+	        await requireActiveAccount(ctx.user!.id);
+	        return db.createProductReview({ productId: input.productId, userId: ctx.user!.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body });
 	      }),
 
     favorites: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getCustomerFavorites(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getCustomerFavorites(ctx.user!.id);
     }),
 
     toggleFavorite: protectedProcedure
       .input(z.object({ productId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return db.toggleCustomerFavorite({ userId: ctx.user.id, productId: input.productId });
+        await requireActiveAccount(ctx.user!.id);
+        return db.toggleCustomerFavorite({ userId: ctx.user!.id, productId: input.productId });
       }),
 
     restockSubscriptions: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getRestockSubscriptions(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getRestockSubscriptions(ctx.user!.id);
     }),
 
     requestRestock: protectedProcedure
       .input(z.object({ productId: z.number().int().positive(), variantId: z.number().int().positive().optional() }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return db.requestRestockSubscription({ userId: ctx.user.id, productId: input.productId, variantId: input.variantId });
+        await requireActiveAccount(ctx.user!.id);
+        return db.requestRestockSubscription({ userId: ctx.user!.id, productId: input.productId, variantId: input.variantId });
       }),
 
     cancelRestock: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return db.cancelRestockSubscription({ userId: ctx.user.id, id: input.id });
+        await requireActiveAccount(ctx.user!.id);
+        return db.cancelRestockSubscription({ userId: ctx.user!.id, id: input.id });
       }),
 
     productVariants: publicProcedure
@@ -365,8 +365,8 @@ export const appRouter = router({
       .query(async ({ input }) => db.getProductWholesaleTiersForProducts(input.productIds)),
 
     cart: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return await db.getCartItems(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return await db.getCartItems(ctx.user!.id);
     }),
 
     addToCart: protectedProcedure
@@ -378,8 +378,8 @@ export const appRouter = router({
         fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return await db.addToCart(ctx.user.id, input.productId, input.quantity, input.variantId, input.attributes, input.fulfillmentMode);
+        await requireActiveAccount(ctx.user!.id);
+        return await db.addToCart(ctx.user!.id, input.productId, input.quantity, input.variantId, input.attributes, input.fulfillmentMode);
       }),
 
     addManyToCart: protectedProcedure
@@ -393,8 +393,8 @@ export const appRouter = router({
         fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return await db.addManyToCart(ctx.user.id, input.productId, input.items, input.fulfillmentMode);
+        await requireActiveAccount(ctx.user!.id);
+        return await db.addManyToCart(ctx.user!.id, input.productId, input.items, input.fulfillmentMode);
       }),
 
     updateCart: protectedProcedure
@@ -404,41 +404,41 @@ export const appRouter = router({
         fulfillmentMode: z.enum(["in_stock", "preorder"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return await db.updateCartItem(ctx.user.id, input.cartItemId, input.quantity, input.fulfillmentMode);
+        await requireActiveAccount(ctx.user!.id);
+        return await db.updateCartItem(ctx.user!.id, input.cartItemId, input.quantity, input.fulfillmentMode);
       }),
 
     removeFromCart: protectedProcedure
       .input(z.object({ cartItemId: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return await db.removeFromCart(ctx.user.id, input.cartItemId);
+        await requireActiveAccount(ctx.user!.id);
+        return await db.removeFromCart(ctx.user!.id, input.cartItemId);
       }),
 
     clearCart: protectedProcedure
       .mutation(async ({ ctx }) => {
-        await requireActiveAccount(ctx.user.id);
-        return await db.clearCart(ctx.user.id);
+        await requireActiveAccount(ctx.user!.id);
+        return await db.clearCart(ctx.user!.id);
       }),
 
     shippingAddresses: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getShippingAddresses(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getShippingAddresses(ctx.user!.id);
     }),
 
     createShippingAddress: protectedProcedure
       .input(shippingAddressInputSchema)
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return db.createShippingAddress(ctx.user.id, input);
+        await requireActiveAccount(ctx.user!.id);
+        return db.createShippingAddress(ctx.user!.id, input);
       }),
 
     updateShippingAddress: protectedProcedure
       .input(z.object({ id: z.number().int().positive(), data: shippingAddressInputSchema }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
+        await requireActiveAccount(ctx.user!.id);
         try {
-          return await db.updateShippingAddress(ctx.user.id, input.id, input.data);
+          return await db.updateShippingAddress(ctx.user!.id, input.id, input.data);
         } catch (error) {
           if (error instanceof Error && error.message === "ADDRESS_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy địa chỉ cần cập nhật" });
           throw error;
@@ -448,9 +448,9 @@ export const appRouter = router({
     deleteShippingAddress: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
+        await requireActiveAccount(ctx.user!.id);
         try {
-          return await db.deleteShippingAddress(ctx.user.id, input.id);
+          return await db.deleteShippingAddress(ctx.user!.id, input.id);
         } catch (error) {
           if (error instanceof Error && error.message === "ADDRESS_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy địa chỉ cần xóa" });
           throw error;
@@ -460,39 +460,39 @@ export const appRouter = router({
     cancelPendingOrder: protectedProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return db.cancelPendingOrderForUser(ctx.user.id, input.orderId);
+        await requireActiveAccount(ctx.user!.id);
+        return db.cancelPendingOrderForUser(ctx.user!.id, input.orderId);
       }),
 
         walletSummary: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getWalletSummary(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getWalletSummary(ctx.user!.id);
     }),
     walletWithdrawals: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getWalletWithdrawals(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getWalletWithdrawals(ctx.user!.id);
     }),
     uploadWalletWithdrawalQr: protectedProcedure
       .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), base64: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
+        await requireActiveAccount(ctx.user!.id);
         const buffer = Buffer.from(input.base64, "base64");
         if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Mã QR phải là ảnh tối đa 5 MB" });
         const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-160) || "wallet-withdrawal-qr";
-        const stored = await storagePut(`users/${ctx.user.id}/withdrawal-qr-${Date.now()}-${safeName}`, buffer, input.mimeType);
+        const stored = await storagePut(`users/${ctx.user!.id}/withdrawal-qr-${Date.now()}-${safeName}`, buffer, input.mimeType);
         return { url: stored.url };
       }),
     createWalletWithdrawal: protectedProcedure
       .input(z.object({ amount: z.number().int().min(10_000).max(20_000_000), bankCode: z.string().trim().min(2).max(32), accountNumber: z.string().trim().regex(/^[0-9]{4,32}$/), accountHolder: z.string().trim().min(3).max(255), qrUrl: z.string().url().startsWith("https://"), note: z.string().trim().max(500).optional() }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return db.createWalletWithdrawal(ctx.user.id, input);
+        await requireActiveAccount(ctx.user!.id);
+        return db.createWalletWithdrawal(ctx.user!.id, input);
       }),
     createWalletTopup: protectedProcedure
       .input(z.object({ amount: z.number().int().min(1_000).max(20_000_000) }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        const topup = await db.createWalletTopup(ctx.user.id, input.amount);
+        await requireActiveAccount(ctx.user!.id);
+        const topup = await db.createWalletTopup(ctx.user!.id, input.amount);
         return { ...topup, qrUrl: buildSePayQrUrl(topup.topupCode, Number(topup.amount)) };
       }),
 
@@ -517,10 +517,10 @@ export const appRouter = router({
         }).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        const order = await db.createOrder(ctx.user.id, input);
+        await requireActiveAccount(ctx.user!.id);
+        const order = await db.createOrder(ctx.user!.id, input);
         if (input.paymentMethod === "wallet_balance") {
-          const payment = await db.payOrderWithWalletBalance(ctx.user.id, order.orderId);
+          const payment = await db.payOrderWithWalletBalance(ctx.user!.id, order.orderId);
           return { ...order, ...payment, qrUrl: null, paymentFlow: "wallet_balance" as const };
         }
         const siteSettings = await db.getSiteSettings();
@@ -537,10 +537,10 @@ export const appRouter = router({
         paymentMethod: z.enum(["sepay_vietqr", "wallet_balance"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        const order = await db.createOrder(ctx.user.id, { totalAmount: 0, items: [{ ...input.item, price: 0 }], shipping: input.shipping, clearCart: false });
+        await requireActiveAccount(ctx.user!.id);
+        const order = await db.createOrder(ctx.user!.id, { totalAmount: 0, items: [{ ...input.item, price: 0 }], shipping: input.shipping, clearCart: false });
         if (input.paymentMethod === "wallet_balance") {
-          const payment = await db.payOrderWithWalletBalance(ctx.user.id, order.orderId);
+          const payment = await db.payOrderWithWalletBalance(ctx.user!.id, order.orderId);
           return { ...order, ...payment, qrUrl: null, paymentFlow: "wallet_balance" as const };
         }
         const siteSettings = await db.getSiteSettings();
@@ -564,28 +564,28 @@ export const appRouter = router({
           items: input.items.map(item => ({ ...item, price: 0, fulfillmentMode: "in_stock" as const })),
           shipping: input.shipping,
           clearCart: false,
-          inventoryPerformedByUserId: ctx.user.id,
+          inventoryPerformedByUserId: ctx.user!.id,
           inventoryReason: `Tạo đơn quản trị cho ${customer.username || customer.name || `khách #${customer.id}`}`,
         });
       }),
 
     orders: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'owner';
-      return await db.getOrders(ctx.user.id, isAdmin);
+      await requireActiveAccount(ctx.user!.id);
+      const isOwner = ctx.user.role === 'owner';
+      return await db.getOrders(ctx.user!.id, isOwner);
     }),
 
     myOrders: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getOrders(ctx.user.id, false);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getOrders(ctx.user!.id, false);
     }),
 
     trackingEvents: protectedProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
       .query(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        const isAdmin = ctx.user.role === "admin" || ctx.user.role === "owner";
-        return db.getOrderTrackingEvents(input.orderId, ctx.user.id, isAdmin);
+        await requireActiveAccount(ctx.user!.id);
+        const isOwner = ctx.user.role === "owner";
+        return db.getOrderTrackingEvents(input.orderId, ctx.user!.id, isOwner);
       }),
 
     addTrackingEvent: adminProcedure
@@ -606,22 +606,22 @@ export const appRouter = router({
     paymentStatus: protectedProcedure
       .input(z.object({ orderId: z.number() }))
       .query(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        const order = await db.getOrderPaymentForUser(ctx.user.id, input.orderId);
+        await requireActiveAccount(ctx.user!.id);
+        const order = await db.getOrderPaymentForUser(ctx.user!.id, input.orderId);
         if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy đơn hàng" });
         return order;
       }),
 
     downloads: protectedProcedure.query(async ({ ctx }) => {
-      await requireActiveAccount(ctx.user.id);
-      return db.getPaidDownloadsForUser(ctx.user.id);
+      await requireActiveAccount(ctx.user!.id);
+      return db.getPaidDownloadsForUser(ctx.user!.id);
     }),
 
     instantDownloads: protectedProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
       .query(async ({ ctx, input }) => {
-        await requireActiveAccount(ctx.user.id);
-        return db.getInstantDownloadsForOrder(ctx.user.id, input.orderId);
+        await requireActiveAccount(ctx.user!.id);
+        return db.getInstantDownloadsForOrder(ctx.user!.id, input.orderId);
       }),
 
     updateOrderStatus: protectedProcedure
@@ -630,7 +630,7 @@ export const appRouter = router({
         status: z.enum(["pending", "processing", "shipping", "completed", "cancelled"]),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+        if (ctx.user.role !== 'owner') {
           throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật" });
         }
         return await db.updateOrderStatus(input.orderId, input.status);
@@ -648,10 +648,10 @@ export const appRouter = router({
 
     deleteOrder: adminProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
-      .mutation(({ ctx, input }) => db.deleteOrder(input.orderId, ctx.user.id)),
+      .mutation(({ ctx, input }) => db.deleteOrder(input.orderId, ctx.user!.id)),
 
     usersList: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+      if (ctx.user.role !== 'owner') {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
       return await db.getAllUsers();
@@ -663,29 +663,26 @@ export const appRouter = router({
         status: z.enum(["active", "blocked"]),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+        if (ctx.user.role !== 'owner') {
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
-        return await db.updateUserStatus(input.userId, input.status, ctx.user.id);
+        return await db.updateUserStatus(input.userId, input.status, ctx.user!.id);
       }),
 
-    updateUserRole: protectedProcedure
+    updateUserRole: ownerProcedure
       .input(z.object({
         userId: z.number().int().positive(),
-        role: z.enum(["user", "admin"]),
+        role: z.literal("user"),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ quản trị viên mới có quyền cập nhật vai trò" });
+        if (ctx.user!.id === input.userId) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Tài khoản chủ cửa hàng không thể hạ quyền" });
         }
-        if (ctx.user.id === input.userId && input.role !== "admin") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Bạn không thể tự gỡ quyền quản trị của chính mình" });
-        }
-        return await db.updateUserRole(input.userId, input.role, ctx.user.id);
+        return await db.updateUserRole(input.userId, input.role, ctx.user!.id);
       }),
 
     productDownloadLinks: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
+      if (ctx.user.role !== "owner") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
       return db.getAdminProductDownloadLinks();
@@ -700,7 +697,7 @@ export const appRouter = router({
         }, "Link phải thuộc Google Drive"),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
+        if (ctx.user.role !== "owner") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
         return db.saveProductDownloadLink(input.productId, input.driveUrl);

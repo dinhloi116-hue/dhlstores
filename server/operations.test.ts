@@ -45,12 +45,13 @@ describe("advanced operations", () => {
     await expect(appRouter.createCaller(createContext(member)).operations.createTestCustomer({ username: `${username}_x`, password: "customer-pass-123" })).rejects.toMatchObject({ message: "Chỉ chủ cửa hàng mới có quyền thực hiện thao tác này" });
   });
 
-  it("lets an administrator access the catalog inventory board without granting owner-only operations", async () => {
+  it("rejects legacy admin accounts from every management procedure", async () => {
     const member = await createLocalUser({ username: `inventory_admin_${Date.now()}`, passwordHash: "scrypt$test$test" });
     const admin = { ...member, role: "admin" as const };
     const caller = appRouter.createCaller(createContext(admin));
-    await expect(caller.operations.inventory()).resolves.toEqual(expect.any(Array));
-    await expect(caller.operations.overview()).rejects.toMatchObject({ message: "Chỉ chủ cửa hàng mới có quyền thực hiện thao tác này" });
+    await expect(caller.operations.inventory()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.store.usersList()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.store.orders()).resolves.toEqual(expect.any(Array));
   });
 
   it("creates a discount, validates it server-side, and records an owner balance adjustment", async () => {
@@ -95,15 +96,14 @@ describe("advanced operations", () => {
     expect((await getInventoryMovements()).some(row => row.productId === product.id && row.quantityBefore === 8 && row.quantityAfter === 21)).toBe(true);
   });
 
-  it("lets an admin create an order from warehouse SKU and records the inventory deduction", async () => {
+  it("lets only the owner create an order from warehouse SKU and records the inventory deduction", async () => {
     const customer = await createLocalUser({ username: `admin_order_customer_${Date.now()}`, passwordHash: "scrypt$test$test", name: "Khách tạo đơn" });
-    const adminRecord = await createLocalUser({ username: `admin_order_operator_${Date.now()}`, passwordHash: "scrypt$test$test", name: "Quản trị tạo đơn" });
     const product = await createProduct({ name: "Áo tạo đơn quản trị", slug: `admin-order-${Date.now()}`, price: "120000", categoryId: 12, image: "generated:catalog-cover", stock: 4, featured: false, isActive: true });
     if (!product) throw new Error("Không tạo được sản phẩm kiểm thử");
-    const caller = appRouter.createCaller(createContext({ ...adminRecord, role: "admin" }));
+    const caller = appRouter.createCaller(ownerContext());
 
     await expect(caller.store.createAdminOrder({ customerId: customer.id, items: [{ productId: product.id, quantity: 2 }], shipping: { name: "Khách tạo đơn", phone: "0963888888", address: "Hà Nội" } })).resolves.toMatchObject({ success: true, hasPhysicalItems: true });
     expect((await getInventoryBoard()).find(row => row.productId === product.id && row.target === "product")?.stock).toBe(2);
-    expect((await getInventoryMovements()).some(row => row.productId === product.id && row.quantityBefore === 4 && row.quantityAfter === 2 && row.performedByUserId === adminRecord.id && row.reason.includes("Tạo đơn quản trị"))).toBe(true);
+    expect((await getInventoryMovements()).some(row => row.productId === product.id && row.quantityBefore === 4 && row.quantityAfter === 2 && row.performedByUserId === 990001 && row.reason.includes("Tạo đơn quản trị"))).toBe(true);
   });
 });

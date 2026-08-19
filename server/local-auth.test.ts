@@ -48,10 +48,10 @@ describe("local account authentication", () => {
     await expect(appRouter.createCaller(authenticated.ctx).auth.linkEmail({ email: `${username}+linked@example.com` })).resolves.toEqual({ success: true });
     expect((await getUserByUsername(username))?.email).toBe(`${username}+linked@example.com`);
 
-    const adminContext = createContext({ ...registered.user, role: "admin" } as TrpcContext["user"]);
-    await expect(appRouter.createCaller(adminContext.ctx).store.updateUserRole({ userId: registered.user.id, role: "admin" })).resolves.toEqual({ success: true });
-    expect((await getUserByUsername(username))?.role).toBe("admin");
-    await expect(appRouter.createCaller(adminContext.ctx).store.updateUserRole({ userId: registered.user.id, role: "user" })).rejects.toMatchObject({ message: "Bạn không thể tự gỡ quyền quản trị của chính mình" });
+    const customerContext = createContext(registered.user as TrpcContext["user"]);
+    await expect(appRouter.createCaller(customerContext.ctx).store.updateUserRole({ userId: registered.user.id, role: "user" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect((await getUserByUsername(username))?.role).toBe("user");
+    await expect(appRouter.createCaller(customerContext.ctx).store.usersList()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("requires an email and rejects duplicate email addresses without case sensitivity", async () => {

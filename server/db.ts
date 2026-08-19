@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, ne, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, orderTrackingEvents as orderTrackingEventsTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, sapoSyncEvents, sapoVariantMappings, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
@@ -404,7 +404,7 @@ let memoryUsers: LocalUserRecordType[] = [
     email: "admin@dhlstores.vn",
     emailVerified: false,
     loginMethod: "manus",
-    role: "admin",
+    role: "owner",
     status: "active",
     balance: "0",
     createdAt: new Date(),
@@ -544,16 +544,32 @@ function toProductVariantType(variant: typeof productVariants.$inferSelect): Pro
   };
 }
 
+async function enforceOwnerOnlyRoles(connection: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
+  if (!ENV.ownerOpenId) return;
+  await connection.update(users).set({ role: "user" }).where(and(eq(users.role, "admin"), ne(users.openId, ENV.ownerOpenId)));
+  await connection.update(users).set({ role: "owner" }).where(eq(users.openId, ENV.ownerOpenId));
+}
+
+function enforceMemoryOwnerOnlyRoles() {
+  if (!ENV.ownerOpenId) return;
+  for (const account of memoryUsers) {
+    if (account.openId === ENV.ownerOpenId) account.role = "owner";
+    else if (account.role === "admin") account.role = "user";
+  }
+}
+
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required");
   const connection = await getDb();
   if (connection) {
+    await enforceOwnerOnlyRoles(connection);
     const current = await connection.select().from(users).where(eq(users.openId, user.openId)).limit(1);
     if (current[0]) {
       await connection.update(users).set({
         name: user.name ?? current[0].name,
         email: user.email ?? current[0].email,
         loginMethod: user.loginMethod ?? current[0].loginMethod,
+        role: user.openId === ENV.ownerOpenId ? "owner" : current[0].role === "admin" ? "user" : current[0].role,
         lastSignedIn: user.lastSignedIn ?? new Date(),
       }).where(eq(users.openId, user.openId));
       return;
@@ -566,12 +582,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       email: user.email ?? null,
       emailVerified: user.emailVerified ?? false,
       loginMethod: user.loginMethod ?? null,
-      role: user.openId === ENV.ownerOpenId ? "admin" : "user",
+      role: user.openId === ENV.ownerOpenId ? "owner" : "user",
       status: "active",
       lastSignedIn: user.lastSignedIn ?? new Date(),
     });
     return;
   }
+  enforceMemoryOwnerOnlyRoles();
   const existing = memoryUsers.find(u => u.openId === user.openId);
   if (existing) {
     if (user.name) existing.name = user.name;
@@ -588,7 +605,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       email: user.email || "user@dhlstores.vn",
       emailVerified: user.emailVerified ?? false,
       loginMethod: user.loginMethod || "manus",
-      role: user.openId === ENV.ownerOpenId ? "admin" : "user",
+      role: user.openId === ENV.ownerOpenId ? "owner" : "user",
       status: "active",
       balance: "0",
       createdAt: new Date(),
@@ -601,9 +618,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUserByOpenId(openId: string) {
   const connection = await getDb();
   if (connection) {
+    await enforceOwnerOnlyRoles(connection);
     const result = await connection.select().from(users).where(eq(users.openId, openId)).limit(1);
     return result[0];
   }
+  enforceMemoryOwnerOnlyRoles();
   const found = memoryUsers.find(u => u.openId === openId);
   return found;
 }
@@ -823,7 +842,7 @@ export async function updateUserStatus(userId: number, status: 'active' | 'block
   return { success: true };
 }
 
-export async function updateUserRole(userId: number, role: 'user' | 'admin', performedByUserId?: number) {
+export async function updateUserRole(userId: number, role: 'user', performedByUserId?: number) {
   const connection = await getDb();
   if (connection) {
     const before = (await connection.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1))[0];

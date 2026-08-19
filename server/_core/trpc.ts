@@ -2,6 +2,9 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import { ENV } from "./env";
+
+const isOwnerIdentity = (user: TrpcContext["user"]) => Boolean(user && user.role === "owner" && (process.env.NODE_ENV !== "production" || !ENV.ownerOpenId || user.openId === ENV.ownerOpenId));
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -31,7 +34,9 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || (ctx.user.role !== 'admin' && ctx.user.role !== 'owner')) {
+    // Legacy `admin` rows are intentionally no longer privileged. The owner account
+    // is the only management identity; every other account is a customer.
+    if (!isOwnerIdentity(ctx.user)) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
@@ -47,7 +52,7 @@ export const adminProcedure = t.procedure.use(
 export const ownerProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
-    if (!ctx.user || ctx.user.role !== 'owner') {
+    if (!isOwnerIdentity(ctx.user)) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Chỉ chủ cửa hàng mới có quyền thực hiện thao tác này" });
     }
     return next({ ctx: { ...ctx, user: ctx.user } });

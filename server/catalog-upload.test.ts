@@ -16,7 +16,7 @@ function adminContext(): TrpcContext {
       name: "Upload admin",
       email: "upload@example.com",
       loginMethod: "manus",
-      role: "admin",
+      role: "owner",
       status: "active",
       createdAt: new Date(),
       updatedAt: new Date(),
