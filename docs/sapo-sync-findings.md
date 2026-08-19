@@ -24,3 +24,8 @@ Với cấu hình này, bước tiếp theo là thử cập nhật một SKU th�
 ## Kết quả thử ghi một SKU
 
 SKU DHL Stores `namearg-B-2026-6 nhỏ` có `variant_id=1` và tồn `0`. SKU tương ứng trên Sapo có `variant_id=221821065`, `inventory_item_id=221821063`, `location_id=529110`, `inventory_level_id=170002732`. Phương thức `PUT https://dhl-sport.mysapo.net/admin/inventory_levels/set.json` với payload `inventory_level.location_id`, `inventory_level.inventory_item_id` và `inventory_level.available` trả HTTP 200. Đọc lại inventory level trả `available=0`, khớp DHL Stores. Phương thức PUT vào resource `/admin/inventory_levels/{id}.json` trả 403 và POST vào `/set.json` trả 405; không sử dụng hai dạng đó.
+
+
+## Quy tắc ghép biến thể
+
+DHL Stores đã có trường `product_variants.sku` tương ứng với trường Mã SKU trong Sapo. Đồng bộ tồn kho dùng SKU đã chuẩn hóa để ghép biến thể; sau khi ghép thành công mới dùng `inventory_item_id` và `location_id` của Sapo để gọi endpoint inventory level. Mã vạch và đơn vị tính không bắt buộc cho luồng cập nhật tồn. SKU phải không trùng và giống tuyệt đối giữa hai hệ thống.

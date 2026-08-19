@@ -166,3 +166,54 @@ export async function setSapoInventoryLevel(
     return { ok: false, message: "Không thể kết nối HTTPS đến API ghi tồn kho Sapo." };
   }
 }
+
+
+export type SapoInventorySyncRow = { sku: string; available: number };
+export type SapoInventorySyncRowResult = SapoInventorySyncRow & { status: "preview" | "synced" | "skipped" | "failed"; message: string; sapoVariantId?: string; inventoryItemId?: string };
+
+export async function syncSapoInventoryBySku(
+  rows: SapoInventorySyncRow[],
+  locationId: string,
+  options: { dryRun?: boolean; maxRows?: number } = {},
+  env: SapoEnvironment = readSapoEnvironment(),
+  fetchImpl: FetchLike = fetch,
+): Promise<{ dryRun: boolean; results: SapoInventorySyncRowResult[] }> {
+  const configuration = getSapoConfiguration(env);
+  const dryRun = options.dryRun !== false;
+  const maxRows = Math.min(Math.max(options.maxRows ?? 20, 1), 20);
+  if (!configuration.configured) return { dryRun, results: rows.slice(0, maxRows).map(row => ({ ...row, status: "failed", message: configuration.message })) };
+
+  const authorization = Buffer.from(`${configuration.apiKey}:${configuration.apiSecret}`).toString("base64");
+  const headers = { Accept: "application/json", "Content-Type": "application/json", Authorization: `Basic ${authorization}`, "User-Agent": "DHL-Stores-Sapo-Sync/1.0" };
+  const results: SapoInventorySyncRowResult[] = [];
+  for (const row of rows.slice(0, maxRows)) {
+    const sku = row.sku.trim();
+    if (!sku || !Number.isInteger(row.available) || row.available < 0) {
+      results.push({ ...row, status: "skipped", message: "SKU hoặc số tồn không hợp lệ." });
+      continue;
+    }
+    try {
+      const variantResponse = await fetchImpl(`https://${configuration.host}/admin/variants.json?sku=${encodeURIComponent(sku)}&limit=1`, { headers });
+      const variantBody = await variantResponse.text();
+      if (!variantResponse.ok) {
+        results.push({ ...row, status: "failed", message: `Không đọc được SKU trên Sapo (HTTP ${variantResponse.status}).` });
+        continue;
+      }
+      const parsed = JSON.parse(variantBody) as { variants?: Array<{ id?: number; inventory_item_id?: number }> };
+      const variant = parsed.variants?.[0];
+      if (!variant?.id || !variant.inventory_item_id) {
+        results.push({ ...row, status: "failed", message: "Không tìm thấy SKU tương ứng trên Sapo." });
+        continue;
+      }
+      if (dryRun) {
+        results.push({ ...row, status: "preview", message: "SKU khớp; sẵn sàng đồng bộ.", sapoVariantId: String(variant.id), inventoryItemId: String(variant.inventory_item_id) });
+        continue;
+      }
+      const update = await setSapoInventoryLevel({ locationId, inventoryItemId: String(variant.inventory_item_id), available: row.available }, env, fetchImpl);
+      results.push({ ...row, status: update.ok ? "synced" : "failed", message: update.message, sapoVariantId: String(variant.id), inventoryItemId: String(variant.inventory_item_id) });
+    } catch {
+      results.push({ ...row, status: "failed", message: "Không thể đọc hoặc đồng bộ SKU với Sapo." });
+    }
+  }
+  return { dryRun, results };
+}

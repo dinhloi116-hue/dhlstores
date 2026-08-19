@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkSapoProductReadConnection, getSapoConfiguration, setSapoInventoryLevel } from "./sapo";
+import { checkSapoProductReadConnection, getSapoConfiguration, setSapoInventoryLevel, syncSapoInventoryBySku } from "./sapo";
 
 const validEnvironment = {
   SAPO_STORE_DOMAIN: "https://dhl-sport.mysapo.net/",
@@ -49,6 +49,30 @@ describe("Sapo client", () => {
     const result = await setSapoInventoryLevel({ locationId: "529110", inventoryItemId: "221821063", available: 0 }, validEnvironment, async () => new Response("forbidden", { status: 403 }));
     expect(result).toMatchObject({ ok: false, status: 403, message: "Sapo từ chối quyền ghi tồn kho." });
     expect(JSON.stringify(result)).not.toContain("test-secret");
+  });
+
+  it("preview theo SKU không ghi Sapo và giới hạn tối đa 20 dòng", async () => {
+    const requests: string[] = [];
+    const result = await syncSapoInventoryBySku(Array.from({ length: 25 }, (_, index) => ({ sku: `SKU-${index}`, available: index })), "529110", { dryRun: true, maxRows: 25 }, validEnvironment, async (url) => {
+      requests.push(url);
+      return new Response(JSON.stringify({ variants: [{ id: 100 + requests.length, inventory_item_id: 200 + requests.length }] }), { status: 200 });
+    });
+    expect(result.dryRun).toBe(true);
+    expect(result.results).toHaveLength(20);
+    expect(result.results.every(row => row.status === "preview")).toBe(true);
+    expect(requests).toHaveLength(20);
+  });
+
+  it("đồng bộ theo SKU gọi đúng inventory endpoint khi preview đã tắt", async () => {
+    const requests: Array<{ url: string; method?: string }> = [];
+    const result = await syncSapoInventoryBySku([{ sku: "namearg-B-2026-6 nhỏ", available: 0 }], "529110", { dryRun: false }, validEnvironment, async (url, init) => {
+      requests.push({ url, method: init?.method });
+      if (url.includes("/admin/variants.json")) return new Response(JSON.stringify({ variants: [{ id: 221821065, inventory_item_id: 221821063 }] }), { status: 200 });
+      return new Response(JSON.stringify({ inventory_level: { id: 170002732, available: 0 } }), { status: 200 });
+    });
+    expect(result.results[0]).toMatchObject({ status: "synced", sapoVariantId: "221821065", inventoryItemId: "221821063" });
+    expect(requests.map(request => request.method)).toEqual([undefined, "PUT"]);
+    expect(requests[1]?.url).toContain("/admin/inventory_levels/set.json");
   });
 
   it("không lộ khóa API khi Sapo từ chối xác thực", async () => {
