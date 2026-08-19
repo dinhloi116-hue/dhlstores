@@ -40,3 +40,7 @@ DHL Stores đã có trường `product_variants.sku` tương ứng với trườ
 ## Heartbeat inbound tự động
 
 Đã đăng ký cron production project-level `sapo-inventory-inbound-hourly` với task UID `ZyM2BadmBCdbuKTu4WsExB`, callback `/api/scheduled/sapo-inventory`, biểu thức `0 0 * * * *` (UTC, chạy đầu mỗi giờ). Worker đọc tồn Sapo/Shopee và cập nhật kho chính DHL Stores; độ trễ lý thuyết tối đa khoảng 60 phút. Nút kéo thủ công vẫn giữ lại để xử lý khẩn cấp.
+
+## Rà soát webhook và sự kiện Sapo (2026-08-19)
+
+Tài liệu chính thức Sapo xác nhận đơn hàng Shopee được đồng bộ về Sapo Omni và có các trạng thái vận hành trên Sapo. Tuy nhiên các trang trợ giúp đã đọc mô tả luồng đồng bộ nội bộ giữa Shopee và Sapo, công cụ đồng bộ tồn và các lỗi/xung đột khi nhiều hệ thống cùng chỉnh kho; trong phần nội dung công khai đã đọc chưa thấy thông số callback webhook Admin API cho `inventory_levels` hoặc sự kiện riêng khi Shopee làm Sapo trừ kho. Vì vậy chưa được phép giả định Sapo có webhook tồn kho công khai. Phương án an toàn là giữ Heartbeat đối soát thưa; worker phải đọc tồn và chỉ ghi DHL Stores khi giá trị Sapo khác tồn local. Nếu Sapo cung cấp webhook cho tài khoản này, có thể bổ sung event endpoint và giảm polling hơn nữa.

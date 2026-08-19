@@ -573,3 +573,5 @@
 - [x] Tự động hóa inbound Sapo → DHL Stores: chạy Heartbeat mỗi 60 phút, đọc tồn các SKU đã mapping, cập nhật website không cần thao tác thủ công, có chống lặp và giới hạn lỗi. Callback `/api/scheduled/sapo-inventory`, task UID `ZyM2BadmBCdbuKTu4WsExB` đang bật.
 
 - [x] Đăng ký lịch Heartbeat inbound Sapo → DHL Stores mỗi 60 phút theo lựa chọn của chủ cửa hàng; xác minh cron production và độ trễ tối đa khoảng 1 giờ. Task `ZyM2BadmBCdbuKTu4WsExB` đang enable.
+
+- [x] Tối ưu đồng bộ theo biến động: tài liệu Sapo công khai chưa xác nhận webhook tồn kho cho biến động Shopee, nên giữ đối soát Heartbeat mỗi 60 phút; worker chỉ ghi DHL Stores khi tồn Sapo thực sự khác local, không gửi lệnh cập nhật khi không đổi và có audit/idempotence.
