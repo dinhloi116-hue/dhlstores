@@ -557,3 +557,9 @@
 - [ ] Sapo production: xác minh kết nối TLS/API, quyền ghi tồn kho và mapping SKU trước khi bật đồng bộ một chiều DHL Stores → Sapo; không cho Sapo ghi đè catalog DHL Stores.
 
 - [x] Hỗ trợ nội bộ: gom nút Góp ý và Nhắn tin về cùng cụm bên phải, giữa màn hình; giữ sheet chat/góp ý, quyền đăng nhập và không che nội dung mua hàng. Đã chạy 4 hồi quy hỗ trợ, TypeScript sạch và xác minh desktop/mobile.
+
+- [x] Sapo credential: xác nhận API Key/API Secret của Ứng dụng riêng có quyền đọc/ghi tồn kho; không dùng `SAPO_ACCESS_TOKEN` nếu không phải OAuth2. PDF và kiểm tra read-only xác nhận Basic Auth hoạt động.
+
+- [x] Sapo thử nghiệm: ghi một inventory level theo đúng số tồn hiện tại của DHL Stores, đọc lại Sapo và lưu kết quả đối chiếu trước khi đồng bộ theo lô. SKU `namearg-B-2026-6 nhỏ`, DHL Stores tồn `0`; Sapo PUT `/admin/inventory_levels/set.json` trả 200 và đọc lại `available=0` khớp.
+
+- [x] Sapo security: giữ nguyên tắc quyền tối thiểu; chỉ bật Đọc và ghi cho Sản phẩm/phiên bản/danh mục và Kho, không cấp quyền dư thừa cho đơn hàng, khách hàng hoặc khuyến mãi. PDF xác nhận Storefront API tắt và quyền Admin API đúng phạm vi.
