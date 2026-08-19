@@ -36,3 +36,7 @@ DHL Stores đã có trường `product_variants.sku` tương ứng với trườ
 - Tài liệu Sapo về **Công cụ đồng bộ tồn kho**: Sapo dùng tồn kho hệ thống để đồng bộ lên các sàn đã liên kết; thao tác đồng bộ một chiều từ Sapo lên sàn có thể không hoàn tác. Nguồn: https://help.sapo.vn/cong-cu-dong-bo-ton-kho-1
 - Tài liệu Sapo về lỗi đồng bộ đơn từ sàn cảnh báo xung đột khi dùng phần mềm quản lý kho khác song song hoặc chỉnh tồn trực tiếp trên Seller Center. Nguồn: https://help.sapo.vn/cac-van-de-thuong-gap-khi-dong-bo-don-hang-tu-san-tmdt
 - Quyết định kiến trúc: DHL Stores giữ quyền Catalog (sản phẩm, SKU, giá, ảnh); Sapo là nguồn biến động tồn từ Shopee/kênh bán. Inbound chỉ cập nhật `product_variants.stock` theo SKU đã mapping, ghi inventory movement và không cập nhật Catalog.
+
+## Heartbeat inbound tự động
+
+Đã đăng ký cron production project-level `sapo-inventory-inbound-hourly` với task UID `ZyM2BadmBCdbuKTu4WsExB`, callback `/api/scheduled/sapo-inventory`, biểu thức `0 0 * * * *` (UTC, chạy đầu mỗi giờ). Worker đọc tồn Sapo/Shopee và cập nhật kho chính DHL Stores; độ trễ lý thuyết tối đa khoảng 60 phút. Nút kéo thủ công vẫn giữ lại để xử lý khẩn cấp.
