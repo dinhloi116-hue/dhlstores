@@ -29,3 +29,10 @@ SKU DHL Stores `namearg-B-2026-6 nhỏ` có `variant_id=1` và tồn `0`. SKU t�
 ## Quy tắc ghép biến thể
 
 DHL Stores đã có trường `product_variants.sku` tương ứng với trường Mã SKU trong Sapo. Đồng bộ tồn kho dùng SKU đã chuẩn hóa để ghép biến thể; sau khi ghép thành công mới dùng `inventory_item_id` và `location_id` của Sapo để gọi endpoint inventory level. Mã vạch và đơn vị tính không bắt buộc cho luồng cập nhật tồn. SKU phải không trùng và giống tuyệt đối giữa hai hệ thống.
+
+## Căn cứ thiết kế inbound sync hai chiều (2026-08-19)
+
+- Tài liệu Sapo về **Đồng bộ đơn hàng Shopee - Sapo**: đơn Shopee được đồng bộ về Sapo với các trạng thái như chờ xác nhận, xuất kho, hoàn thành, hủy và trả hàng. Nguồn: https://help.sapo.vn/dong-bo-don-hang-shopee-sapo
+- Tài liệu Sapo về **Công cụ đồng bộ tồn kho**: Sapo dùng tồn kho hệ thống để đồng bộ lên các sàn đã liên kết; thao tác đồng bộ một chiều từ Sapo lên sàn có thể không hoàn tác. Nguồn: https://help.sapo.vn/cong-cu-dong-bo-ton-kho-1
+- Tài liệu Sapo về lỗi đồng bộ đơn từ sàn cảnh báo xung đột khi dùng phần mềm quản lý kho khác song song hoặc chỉnh tồn trực tiếp trên Seller Center. Nguồn: https://help.sapo.vn/cac-van-de-thuong-gap-khi-dong-bo-don-hang-tu-san-tmdt
+- Quyết định kiến trúc: DHL Stores giữ quyền Catalog (sản phẩm, SKU, giá, ảnh); Sapo là nguồn biến động tồn từ Shopee/kênh bán. Inbound chỉ cập nhật `product_variants.stock` theo SKU đã mapping, ghi inventory movement và không cập nhật Catalog.

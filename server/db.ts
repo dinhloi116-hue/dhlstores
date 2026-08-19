@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, sapoSyncEvents, sapoVariantMappings, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1399,6 +1399,35 @@ export async function bulkSetInventory(input: { changes: Array<{ target: "produc
     }
   }
   return { success: true, updated: input.changes.length };
+}
+
+export async function applySapoInboundInventory(input: { changes: Array<{ localVariantId: number; sku: string; stock: number; sapoVariantId?: string; inventoryItemId?: string }>; performedByUserId: number; reason?: string }) {
+  const reason = input.reason?.trim() || "Đồng bộ tồn từ Sapo/Shopee";
+  if (!input.changes.length) return { updated: 0, skipped: 0 };
+  const connection = await getDb();
+  let updated = 0;
+  let skipped = 0;
+  const apply = async (executor: NonNullable<Awaited<ReturnType<typeof getDb>>>, change: typeof input.changes[number]) => {
+    if (!Number.isInteger(change.stock) || change.stock < 0) throw new Error("Tồn Sapo phải là số nguyên không âm");
+    const row = (await executor.select().from(productVariants).where(eq(productVariants.id, change.localVariantId)).limit(1))[0];
+    if (!row || row.sku !== change.sku) { skipped += 1; return; }
+    if (row.stock === change.stock) return;
+    await executor.update(productVariants).set({ stock: change.stock }).where(eq(productVariants.id, row.id));
+    await executor.insert(inventoryMovements).values({ productId: row.productId, variantId: row.id, quantityBefore: row.stock, quantityAfter: change.stock, reason, performedByUserId: input.performedByUserId });
+    await executor.insert(sapoSyncEvents).values({ eventKey: `inbound:${row.id}:${change.stock}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`, direction: "inbound", eventType: "inventory_import", status: "succeeded", localVariantId: row.id, quantityBefore: row.stock, quantityAfter: change.stock, createdAt: new Date(), processedAt: new Date() });
+    updated += 1;
+  };
+  if (connection) await connection.transaction(async transaction => { for (const change of input.changes) await apply(transaction as never, change); });
+  else for (const change of input.changes) {
+    const row = memoryProductVariants.find(item => item.id === change.localVariantId);
+    if (!row || row.sku !== change.sku) { skipped += 1; continue; }
+    if (row.stock === change.stock) continue;
+    const before = row.stock;
+    row.stock = change.stock;
+    memoryInventoryMovements.unshift({ id: nextInventoryMovementId++, productId: row.productId, variantId: row.id, quantityBefore: before, quantityAfter: change.stock, reason, performedByUserId: input.performedByUserId, createdAt: new Date() });
+    updated += 1;
+  }
+  return { updated, skipped };
 }
 
 export async function getInventoryMovements() {

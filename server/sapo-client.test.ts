@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkSapoProductReadConnection, getSapoConfiguration, setSapoInventoryLevel, syncSapoInventoryBySku } from "./sapo";
+import { checkSapoProductReadConnection, getSapoConfiguration, pullSapoInventoryBySku, setSapoInventoryLevel, syncSapoInventoryBySku } from "./sapo";
 
 const validEnvironment = {
   SAPO_STORE_DOMAIN: "https://dhl-sport.mysapo.net/",
@@ -73,6 +73,19 @@ describe("Sapo client", () => {
     expect(result.results[0]).toMatchObject({ status: "synced", sapoVariantId: "221821065", inventoryItemId: "221821063" });
     expect(requests.map(request => request.method)).toEqual([undefined, "PUT"]);
     expect(requests[1]?.url).toContain("/admin/inventory_levels/set.json");
+  });
+
+  it("đọc tồn inbound từ Sapo theo inventory item và location mà không ghi Sapo", async () => {
+    const requests: Array<{ url: string; method?: string }> = [];
+    const result = await pullSapoInventoryBySku([{ localVariantId: 34, sku: "namearg-B-2026-10#MESSI", available: 15 }], "529110", validEnvironment, async (url, init) => {
+      requests.push({ url, method: init?.method });
+      if (url.includes("/admin/variants.json")) return new Response(JSON.stringify({ variants: [{ id: 221821098, inventory_item_id: 221821096 }] }), { status: 200 });
+      return new Response(JSON.stringify({ inventory_levels: [{ id: 170002732, inventory_item_id: 221821096, location_id: 529110, available: 20 }] }), { status: 200 });
+    });
+    expect(result[0]).toMatchObject({ localVariantId: 34, sku: "namearg-B-2026-10#MESSI", status: "pulled", sapoAvailable: 20 });
+    expect(requests.map(request => request.method)).toEqual([undefined, undefined]);
+    expect(requests[1]?.url).toContain("inventory_item_id=221821096");
+    expect(requests[1]?.url).toContain("location_id=529110");
   });
 
   it("không lộ khóa API khi Sapo từ chối xác thực", async () => {

@@ -171,6 +171,41 @@ export async function setSapoInventoryLevel(
 export type SapoInventorySyncRow = { sku: string; available: number };
 export type SapoInventorySyncRowResult = SapoInventorySyncRow & { status: "preview" | "synced" | "skipped" | "failed"; message: string; sapoVariantId?: string; inventoryItemId?: string };
 
+export type SapoInboundInventoryRow = SapoInventorySyncRow & { localVariantId: number; status: "pulled" | "failed" | "missing"; message: string; sapoVariantId?: string; inventoryItemId?: string; sapoAvailable?: number };
+
+export async function pullSapoInventoryBySku(
+  rows: Array<SapoInventorySyncRow & { localVariantId: number }>,
+  locationId: string,
+  env: SapoEnvironment = readSapoEnvironment(),
+  fetchImpl: FetchLike = fetch,
+): Promise<SapoInboundInventoryRow[]> {
+  const configuration = getSapoConfiguration(env);
+  if (!configuration.configured) return rows.map(row => ({ ...row, status: "failed", message: configuration.message }));
+  const authorization = Buffer.from(`${configuration.apiKey}:${configuration.apiSecret}`).toString("base64");
+  const headers = { Accept: "application/json", Authorization: `Basic ${authorization}`, "User-Agent": "DHL-Stores-Sapo-Sync/1.0" };
+  const results: SapoInboundInventoryRow[] = [];
+  for (const row of rows.slice(0, 50)) {
+    const sku = row.sku.trim();
+    if (!sku) { results.push({ ...row, status: "missing", message: "Biến thể DHL Stores chưa có SKU." }); continue; }
+    try {
+      const variantResponse = await fetchImpl(`https://${configuration.host}/admin/variants.json?sku=${encodeURIComponent(sku)}&limit=1`, { headers });
+      const variantBody = await variantResponse.text();
+      if (!variantResponse.ok) { results.push({ ...row, status: "failed", message: `Không đọc được SKU trên Sapo (HTTP ${variantResponse.status}).` }); continue; }
+      const parsed = JSON.parse(variantBody) as { variants?: Array<{ id?: number; inventory_item_id?: number }> };
+      const variant = parsed.variants?.[0];
+      if (!variant?.id || !variant.inventory_item_id) { results.push({ ...row, status: "missing", message: "Không tìm thấy SKU tương ứng trên Sapo." }); continue; }
+      const levelResponse = await fetchImpl(`https://${configuration.host}/admin/inventory_levels.json?inventory_item_id=${encodeURIComponent(String(variant.inventory_item_id))}&location_id=${encodeURIComponent(locationId)}`, { headers });
+      const levelBody = await levelResponse.text();
+      if (!levelResponse.ok) { results.push({ ...row, status: "failed", message: `Không đọc được tồn SKU trên Sapo (HTTP ${levelResponse.status}).`, sapoVariantId: String(variant.id), inventoryItemId: String(variant.inventory_item_id) }); continue; }
+      const levels = JSON.parse(levelBody) as { inventory_levels?: Array<{ id?: number; inventory_item_id?: number; location_id?: number | string; available?: number }> };
+      const level = levels.inventory_levels?.find(item => String(item.inventory_item_id) === String(variant.inventory_item_id) && String(item.location_id) === String(locationId));
+      if (!level || !Number.isFinite(Number(level.available))) { results.push({ ...row, status: "missing", message: "Sapo chưa có inventory level tại location đã chọn.", sapoVariantId: String(variant.id), inventoryItemId: String(variant.inventory_item_id) }); continue; }
+      results.push({ ...row, available: Math.max(0, Math.round(Number(level.available))), status: "pulled", message: "Đã đọc tồn từ Sapo; sẵn sàng cập nhật DHL Stores.", sapoVariantId: String(variant.id), inventoryItemId: String(variant.inventory_item_id), sapoAvailable: Math.max(0, Math.round(Number(level.available))) });
+    } catch { results.push({ ...row, status: "failed", message: "Không thể đọc tồn SKU từ Sapo." }); }
+  }
+  return results;
+}
+
 export async function syncSapoInventoryBySku(
   rows: SapoInventorySyncRow[],
   locationId: string,

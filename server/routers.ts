@@ -9,7 +9,7 @@ import { buildSePayQrUrl, buildStoreVietQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
 import { storagePut } from "./storage";
-import { checkSapoProductReadConnection, syncSapoInventoryBySku } from "./sapo";
+import { checkSapoProductReadConnection, pullSapoInventoryBySku, syncSapoInventoryBySku } from "./sapo";
 
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
@@ -162,6 +162,8 @@ export const appRouter = router({
     sapoConnection: ownerProcedure.query(() => checkSapoProductReadConnection()),
     sapoSyncPreview: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(({ input }) => syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: true, maxRows: 20 })),
     sapoSyncRun: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(({ input }) => syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: false, maxRows: 20 })),
+    sapoInboundPull: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ localVariantId: z.number().int().positive(), sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(50) })).mutation(({ input }) => pullSapoInventoryBySku(input.rows, input.locationId)),
+    sapoInboundApply: ownerProcedure.input(z.object({ changes: z.array(z.object({ localVariantId: z.number().int().positive(), sku: z.string().trim().max(128), stock: z.number().int().min(0).max(999_999), sapoVariantId: z.string().optional(), inventoryItemId: z.string().optional() })).min(1).max(50), reason: z.string().trim().min(3).max(255).optional() })).mutation(({ ctx, input }) => db.applySapoInboundInventory({ ...input, performedByUserId: ctx.user.id })),
     members: ownerProcedure.query(() => db.getAllUsers()),
     createTestCustomer: ownerProcedure
       .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, name: z.string().trim().min(2).max(120).optional() }))
