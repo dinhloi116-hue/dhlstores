@@ -592,3 +592,13 @@
 - [x] Tối ưu image search: giới hạn số ứng viên/ảnh tham chiếu trong mỗi lần đối chiếu để giảm payload, độ trễ và chi phí mà vẫn giữ kết quả catalog thật. Giới hạn còn 24 sản phẩm active; TypeScript, 119 test và build sạch.
 
 - [x] Tracking Order 1688: hỗ trợ nhiều mã/chặng vận chuyển YTO, J&T, kho trung chuyển và Việt Nam; quản trị nhập trạng thái/link, khách xem timeline theo từng chặng. Đã có bảng `order_tracking_events`, API protected/admin, form timeline trong quản trị, timeline khách hàng; 122 test đạt, TypeScript và build sạch.
+
+- [x] Sửa luồng rút số dư: khách tải QR tài khoản nhận tiền của chính họ; admin chỉ xem QR, chuyển khoản thủ công và cập nhật trạng thái; bỏ admin upload QR dùng chung cho khách.
+
+
+## Phiên wallet withdrawal 2026-08-19
+- [x] Hoàn tất chuyển QR tài khoản nhận tiền rút từ cấu hình admin sang form yêu cầu rút của khách
+- [x] Hiển thị QR riêng của khách trong Trung tâm vận hành và kiểm tra luồng duyệt/đã chuyển
+- [x] Viết hoặc cập nhật test hồi quy cho qrUrl của yêu cầu rút tiền
+- [x] Chạy kiểm tra TypeScript, Vitest và build sau thay đổi wallet withdrawal
+- [ ] Lưu checkpoint sau khi xác minh

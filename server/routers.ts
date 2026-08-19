@@ -472,8 +472,18 @@ export const appRouter = router({
       await requireActiveAccount(ctx.user.id);
       return db.getWalletWithdrawals(ctx.user.id);
     }),
+    uploadWalletWithdrawalQr: protectedProcedure
+      .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), base64: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        const buffer = Buffer.from(input.base64, "base64");
+        if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Mã QR phải là ảnh tối đa 5 MB" });
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-160) || "wallet-withdrawal-qr";
+        const stored = await storagePut(`users/${ctx.user.id}/withdrawal-qr-${Date.now()}-${safeName}`, buffer, input.mimeType);
+        return { url: stored.url };
+      }),
     createWalletWithdrawal: protectedProcedure
-      .input(z.object({ amount: z.number().int().min(10_000).max(20_000_000), bankCode: z.string().trim().min(2).max(32), accountNumber: z.string().trim().regex(/^[0-9]{4,32}$/), accountHolder: z.string().trim().min(3).max(255), note: z.string().trim().max(500).optional() }))
+      .input(z.object({ amount: z.number().int().min(10_000).max(20_000_000), bankCode: z.string().trim().min(2).max(32), accountNumber: z.string().trim().regex(/^[0-9]{4,32}$/), accountHolder: z.string().trim().min(3).max(255), qrUrl: z.string().url().startsWith("https://"), note: z.string().trim().max(500).optional() }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user.id);
         return db.createWalletWithdrawal(ctx.user.id, input);

@@ -410,10 +410,10 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     const owner = appRouter.createCaller(createOwnerContext());
     await owner.operations.adjustBalance({ userId: 1, amount: 50000, reason: "Test số dư ví rút tiền" });
     const before = Number((await customer.store.walletSummary()).balance);
-    await expect(customer.store.createWalletWithdrawal({ amount: 10000, bankCode: "VCB", accountNumber: "0123456789", accountHolder: "TEST USER" })).resolves.toMatchObject({ status: "pending", netAmount: "10000.00" });
+    await expect(customer.store.createWalletWithdrawal({ amount: 10000, bankCode: "VCB", accountNumber: "0123456789", accountHolder: "TEST USER", qrUrl: "https://files.example.com/customer-wallet-qr.png" })).resolves.toMatchObject({ status: "pending", netAmount: "10000.00", qrUrl: "https://files.example.com/customer-wallet-qr.png" });
     const pending = (await customer.store.walletWithdrawals())[0];
     expect(Number((await customer.store.walletSummary()).balance)).toBe(before - 10000);
-    await expect(customer.store.createWalletWithdrawal({ amount: before + 1, bankCode: "VCB", accountNumber: "0123456789", accountHolder: "TEST USER" })).rejects.toThrow();
+    await expect(customer.store.createWalletWithdrawal({ amount: before + 1, bankCode: "VCB", accountNumber: "0123456789", accountHolder: "TEST USER", qrUrl: "https://files.example.com/customer-wallet-qr.png" })).rejects.toThrow();
     await owner.operations.reviewWalletWithdrawal({ withdrawalId: pending.id, action: "rejected" });
     expect(Number((await customer.store.walletSummary()).balance)).toBe(before);
   });

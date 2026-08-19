@@ -870,7 +870,7 @@ export type DiscountCodeInput = {
 type MemoryDiscountCode = DiscountCodeInput & { id: number; usedCount: number; createdByUserId: number; createdAt: Date };
 type MemoryBalanceMovement = { id: number; userId: number; amount: string; balanceAfter: string; reason: string; performedByUserId: number; createdAt: Date };
 type MemoryWalletTopup = { id: number; userId: number; topupCode: string; amount: string; status: "pending" | "paid" | "expired" | "cancelled"; provider: string; providerTransactionId: string | null; transferContent: string | null; gateway: string | null; paidAt: Date | null; createdAt: Date; updatedAt: Date };
-type MemoryWalletWithdrawal = { id: number; userId: number; amount: string; fee: string; netAmount: string; bankCode: string; accountNumber: string; accountHolder: string; status: "pending" | "approved" | "paid" | "rejected" | "cancelled"; note: string | null; reviewedByUserId: number | null; reviewedAt: Date | null; paidAt: Date | null; createdAt: Date; updatedAt: Date };
+type MemoryWalletWithdrawal = { id: number; userId: number; amount: string; fee: string; netAmount: string; bankCode: string; accountNumber: string; accountHolder: string; qrUrl: string | null; status: "pending" | "approved" | "paid" | "rejected" | "cancelled"; note: string | null; reviewedByUserId: number | null; reviewedAt: Date | null; paidAt: Date | null; createdAt: Date; updatedAt: Date };
 type MemoryInventoryMovement = { id: number; productId: number; variantId: number | null; quantityBefore: number; quantityAfter: number; reason: string; performedByUserId: number; createdAt: Date };
 type MemoryFeedback = { id: number; userId: number | null; visitorKey: string; displayName: string | null; contact: string | null; topic: "suggestion" | "issue" | "other"; message: string; imageUrl: string | null; imageKey: string | null; status: "new" | "reviewed" | "resolved"; readAt: Date | null; createdAt: Date; updatedAt: Date };
 type MemoryConversation = { id: number; userId: number | null; visitorKey: string; displayName: string | null; lastMessagePreview: string | null; lastMessageAt: Date; customerReadAt: Date | null; ownerReadAt: Date | null; createdAt: Date; updatedAt: Date };
@@ -1175,7 +1175,7 @@ export async function getWalletSummary(userId: number) {
 
 const WALLET_WITHDRAWAL_MIN_AMOUNT = 10_000;
 
-function normalizeWithdrawalInput(input: { amount: number; bankCode: string; accountNumber: string; accountHolder: string; note?: string }) {
+function normalizeWithdrawalInput(input: { amount: number; bankCode: string; accountNumber: string; accountHolder: string; qrUrl?: string; note?: string }) {
   const amount = Math.round(input.amount);
   if (!Number.isSafeInteger(amount) || amount < WALLET_WITHDRAWAL_MIN_AMOUNT) throw new Error(`Số tiền rút tối thiểu là ${WALLET_WITHDRAWAL_MIN_AMOUNT.toLocaleString("vi-VN")}đ`);
   const bankCode = input.bankCode.trim().toUpperCase();
@@ -1184,10 +1184,12 @@ function normalizeWithdrawalInput(input: { amount: number; bankCode: string; acc
   if (!/^[A-Z0-9._-]{2,32}$/.test(bankCode)) throw new Error("Mã ngân hàng không hợp lệ");
   if (!/^[0-9]{4,32}$/.test(accountNumber)) throw new Error("Số tài khoản không hợp lệ");
   if (accountHolder.length < 3 || accountHolder.length > 255) throw new Error("Tên chủ tài khoản không hợp lệ");
-  return { amount, fee: 0, netAmount: amount, bankCode, accountNumber, accountHolder, note: input.note?.trim().slice(0, 500) || null };
+  const qrUrl = input.qrUrl?.trim() || null;
+  if (qrUrl && !/^https:\/\//i.test(qrUrl)) throw new Error("Mã QR không hợp lệ");
+  return { amount, fee: 0, netAmount: amount, bankCode, accountNumber, accountHolder, qrUrl, note: input.note?.trim().slice(0, 500) || null };
 }
 
-export async function createWalletWithdrawal(userId: number, input: { amount: number; bankCode: string; accountNumber: string; accountHolder: string; note?: string }) {
+export async function createWalletWithdrawal(userId: number, input: { amount: number; bankCode: string; accountNumber: string; accountHolder: string; qrUrl?: string; note?: string }) {
   const normalized = normalizeWithdrawalInput(input);
   const connection = await getDb();
   if (connection) {

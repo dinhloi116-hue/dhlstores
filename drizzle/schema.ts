@@ -481,6 +481,7 @@ export const walletWithdrawals = mysqlTable("wallet_withdrawals", {
   bankCode: varchar("bankCode", { length: 32 }).notNull(),
   accountNumber: varchar("accountNumber", { length: 64 }).notNull(),
   accountHolder: varchar("accountHolder", { length: 255 }).notNull(),
+  qrUrl: varchar("qrUrl", { length: 4096 }),
   status: mysqlEnum("status", ["pending", "approved", "paid", "rejected", "cancelled"]).default("pending").notNull(),
   note: varchar("note", { length: 500 }),
   reviewedByUserId: int("reviewedByUserId"),
