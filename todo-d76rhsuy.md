@@ -565,3 +565,5 @@
 - [x] Sapo security: giữ nguyên tắc quyền tối thiểu; chỉ bật Đọc và ghi cho Sản phẩm/phiên bản/danh mục và Kho, không cấp quyền dư thừa cho đơn hàng, khách hàng hoặc khuyến mãi. PDF xác nhận Storefront API tắt và quyền Admin API đúng phạm vi.
 
 - [x] Sapo thử SKU `namearg-B-2026-10#MESSI`: đối chiếu tồn DHL Stores 15 với Sapo, ghi cùng giá trị và đọc lại; không tác động SKU khác.
+
+- [x] Xây dựng Sapo Sync Preview trong Trung tâm vận hành: chọn tối đa 20 SKU, dry-run mapping, chạy đồng bộ thủ công có xác nhận và hiển thị kết quả từng dòng. Đã chạy 110 test đạt, TypeScript sạch; giao diện yêu cầu đăng nhập owner để xem tab Sapo.

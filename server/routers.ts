@@ -9,7 +9,7 @@ import { buildSePayQrUrl, buildStoreVietQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
 import { storagePut } from "./storage";
-import { checkSapoProductReadConnection } from "./sapo";
+import { checkSapoProductReadConnection, syncSapoInventoryBySku } from "./sapo";
 
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
@@ -160,6 +160,8 @@ export const appRouter = router({
     overview: ownerProcedure.query(() => db.getOperationsOverview()),
     storageSummary: ownerProcedure.query(() => db.getCatalogStorageSummary()),
     sapoConnection: ownerProcedure.query(() => checkSapoProductReadConnection()),
+    sapoSyncPreview: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(({ input }) => syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: true, maxRows: 20 })),
+    sapoSyncRun: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(({ input }) => syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: false, maxRows: 20 })),
     members: ownerProcedure.query(() => db.getAllUsers()),
     createTestCustomer: ownerProcedure
       .input(z.object({ username: localUsernameSchema, password: localPasswordSchema, name: z.string().trim().min(2).max(120).optional() }))
