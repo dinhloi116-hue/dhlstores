@@ -585,7 +585,7 @@
 
 - [x] Tạo lời nhắc một lần lúc 22:00 GMT+7 ngày 19/08/2026 về xác minh Resend và Stripe Test; không nhắc lại mục rút tiền tự động. Task UID `d76rHsuY8heKiRyCIQOsdZ`.
 
-- [ ] Rà soát cải thiện DHL Stores: kiểm tra luồng mua hàng, thanh toán, tồn kho/Sapo, hiệu năng PWA và khu quản trị; triển khai các điểm ưu tiên an toàn sau kiểm tra.
+- [x] Rà soát cải thiện DHL Stores: đã kiểm tra luồng mua hàng, thanh toán, tồn kho/Sapo, hiệu năng PWA và khu quản trị; triển khai nút Tìm bằng ảnh tại ô tìm kiếm trang chủ và giới hạn payload vision. Các thay đổi lớn về phong cách và các hạng mục cần Resend/Stripe giữ ở backlog.
 
 - [x] Cải thiện tìm kiếm trang chủ: đưa nút Tìm bằng ảnh cạnh ô tìm chữ, tối ưu hiển thị trên desktop/mobile và giữ luồng dialog hiện tại. Đã kiểm tra mobile, TypeScript, build và 119 test đạt.
 
