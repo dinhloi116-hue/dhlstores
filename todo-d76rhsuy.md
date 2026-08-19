@@ -590,3 +590,5 @@
 - [x] Cải thiện tìm kiếm trang chủ: đưa nút Tìm bằng ảnh cạnh ô tìm chữ, tối ưu hiển thị trên desktop/mobile và giữ luồng dialog hiện tại. Đã kiểm tra mobile, TypeScript, build và 119 test đạt.
 
 - [x] Tối ưu image search: giới hạn số ứng viên/ảnh tham chiếu trong mỗi lần đối chiếu để giảm payload, độ trễ và chi phí mà vẫn giữ kết quả catalog thật. Giới hạn còn 24 sản phẩm active; TypeScript, 119 test và build sạch.
+
+- [x] Tracking Order 1688: hỗ trợ nhiều mã/chặng vận chuyển YTO, J&T, kho trung chuyển và Việt Nam; quản trị nhập trạng thái/link, khách xem timeline theo từng chặng. Đã có bảng `order_tracking_events`, API protected/admin, form timeline trong quản trị, timeline khách hàng; 122 test đạt, TypeScript và build sạch.

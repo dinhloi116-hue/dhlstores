@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, sapoSyncEvents, sapoVariantMappings, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
+import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, orderTrackingEvents as orderTrackingEventsTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, sapoSyncEvents, sapoVariantMappings, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -150,6 +150,20 @@ export interface OrderType {
   isDeleted?: boolean;
   createdAt: Date;
   items?: OrderItemType[];
+}
+
+export interface OrderTrackingEventType {
+  id: number;
+  orderId: number;
+  stage: string;
+  carrier?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  status: string;
+  location?: string | null;
+  description?: string | null;
+  eventTime: Date;
+  createdAt: Date;
 }
 
 export interface ExtendedUserType {
@@ -2471,6 +2485,7 @@ export async function updateOrderTracking(orderId: number, stage: NonNullable<Or
   if (connection) {
     const updated = await connection.update(ordersTable).set({ trackingStage: stage, trackingUrl: normalizedTrackingUrl }).where(and(eq(ordersTable.id, orderId), eq(ordersTable.isDeleted, false)));
     if (Number(updated[0]?.affectedRows ?? 0) !== 1) throw new Error("Không tìm thấy đơn hàng");
+    await connection.insert(orderTrackingEventsTable).values({ orderId, stage, trackingUrl: normalizedTrackingUrl, status: "updated", description: "Cập nhật trạng thái giao hàng" });
     return { success: true };
   }
   const order = memoryOrders.find(item => item.id === orderId && !item.isDeleted);
@@ -2478,6 +2493,54 @@ export async function updateOrderTracking(orderId: number, stage: NonNullable<Or
   order.trackingStage = stage;
   order.trackingUrl = normalizedTrackingUrl;
   return { success: true };
+}
+
+export async function getOrderTrackingEvents(orderId: number, userId?: number, isAdmin = false): Promise<OrderTrackingEventType[]> {
+  const connection = await getDb();
+  if (connection) {
+    const order = await connection.select({ id: ordersTable.id, userId: ordersTable.userId }).from(ordersTable).where(and(eq(ordersTable.id, orderId), eq(ordersTable.isDeleted, false))).limit(1);
+    if (!order[0] || (!isAdmin && userId !== order[0].userId)) throw new Error("Không tìm thấy đơn hàng");
+    return await connection.select().from(orderTrackingEventsTable).where(eq(orderTrackingEventsTable.orderId, orderId)).orderBy(desc(orderTrackingEventsTable.eventTime), desc(orderTrackingEventsTable.id)) as OrderTrackingEventType[];
+  }
+  const order = memoryOrders.find(item => item.id === orderId && !item.isDeleted);
+  if (!order || (!isAdmin && userId !== order.userId)) throw new Error("Không tìm thấy đơn hàng");
+  return [];
+}
+
+export async function addOrderTrackingEvent(input: {
+  orderId: number;
+  stage: string;
+  carrier?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  status: string;
+  location?: string;
+  description?: string;
+  eventTime?: Date;
+  orderStage?: NonNullable<OrderType["trackingStage"]>;
+}) {
+  const connection = await getDb();
+  if (connection) {
+    const order = await connection.select({ id: ordersTable.id }).from(ordersTable).where(and(eq(ordersTable.id, input.orderId), eq(ordersTable.isDeleted, false))).limit(1);
+    if (!order[0]) throw new Error("Không tìm thấy đơn hàng");
+    if (input.orderStage) await connection.update(ordersTable).set({ trackingStage: input.orderStage, trackingUrl: input.trackingUrl?.trim() || null }).where(eq(ordersTable.id, input.orderId));
+    const inserted = await connection.insert(orderTrackingEventsTable).values({
+      orderId: input.orderId,
+      stage: input.stage.trim(),
+      carrier: input.carrier?.trim() || null,
+      trackingNumber: input.trackingNumber?.trim() || null,
+      trackingUrl: input.trackingUrl?.trim() || null,
+      status: input.status.trim(),
+      location: input.location?.trim() || null,
+      description: input.description?.trim() || null,
+      eventTime: input.eventTime ?? new Date(),
+    });
+    return { success: true, id: Number(inserted[0]?.insertId ?? 0) };
+  }
+  const order = memoryOrders.find(item => item.id === input.orderId && !item.isDeleted);
+  if (!order) throw new Error("Không tìm thấy đơn hàng");
+  if (input.orderStage) { order.trackingStage = input.orderStage; order.trackingUrl = input.trackingUrl?.trim() || null; }
+  return { success: true, id: 0 };
 }
 
 export async function deleteOrder(orderId: number, performedByUserId: number) {

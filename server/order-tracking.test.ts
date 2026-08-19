@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { appRouter } from "./routers";
 import { createProduct, createProductVariant, getProductVariants } from "./db";
 import type { TrpcContext } from "./_core/context";
@@ -85,5 +86,33 @@ describe("DHL Stores SKU order and customer tracking", () => {
     await expect(owner.store.deleteOrder({ orderId: checkout.orderId })).resolves.toEqual({ success: true });
     expect((await getProductVariants(product.id))[0]?.stock).toBe(1);
     expect((await customer.store.myOrders()).find(order => order.id === checkout.orderId)).toBeUndefined();
+  });
+});
+
+
+describe("Order 1688 multi-leg tracking contract", () => {
+  it("stores carrier, tracking number, location and event time without changing catalog fields", () => {
+    const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+    expect(schema).toContain('mysqlTable("order_tracking_events"');
+    expect(schema).toContain('trackingNumber: varchar("trackingNumber"');
+    expect(schema).toContain('eventTime: timestamp("eventTime")');
+  });
+
+  it("exposes customer timeline and admin event mutation", () => {
+    const router = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
+    const adminOrders = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+    expect(router).toContain("trackingEvents: protectedProcedure");
+    expect(router).toContain("addTrackingEvent: adminProcedure");
+    expect(adminOrders).toContain("J&T");
+    expect(adminOrders).toContain("YTO");
+  });
+
+  it("renders multi-leg timeline controls for admin and customers", () => {
+    const adminOrders = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+    const account = readFileSync(new URL("../client/src/pages/Account.tsx", import.meta.url), "utf8");
+    expect(adminOrders).toContain("OrderTrackingTimeline");
+    expect(adminOrders).toContain("Xem timeline & thêm chặng");
+    expect(account).toContain("Hành trình đơn Order 1688");
+    expect(account).toContain("Xem hành trình");
   });
 });

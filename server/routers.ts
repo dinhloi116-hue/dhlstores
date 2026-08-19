@@ -570,6 +570,29 @@ export const appRouter = router({
       return db.getOrders(ctx.user.id, false);
     }),
 
+    trackingEvents: protectedProcedure
+      .input(z.object({ orderId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user.id);
+        const isAdmin = ctx.user.role === "admin" || ctx.user.role === "owner";
+        return db.getOrderTrackingEvents(input.orderId, ctx.user.id, isAdmin);
+      }),
+
+    addTrackingEvent: adminProcedure
+      .input(z.object({
+        orderId: z.number().int().positive(),
+        stage: z.string().trim().min(2).max(64),
+        carrier: z.string().trim().max(64).optional(),
+        trackingNumber: z.string().trim().max(128).optional(),
+        trackingUrl: z.preprocess(value => typeof value === "string" && !value.trim() ? undefined : value, z.string().trim().url("Link tra cứu chưa hợp lệ").max(4096).optional()),
+        status: z.enum(["pending", "in_transit", "delivered", "exception", "updated"]),
+        location: z.string().trim().max(255).optional(),
+        description: z.string().trim().max(2000).optional(),
+        eventTime: z.coerce.date().optional(),
+        orderStage: z.enum(["ordered", "central_warehouse", "ready_hanoi", "tracking"]).optional(),
+      }))
+      .mutation(({ input }) => db.addOrderTrackingEvent(input)),
+
     paymentStatus: protectedProcedure
       .input(z.object({ orderId: z.number() }))
       .query(async ({ ctx, input }) => {

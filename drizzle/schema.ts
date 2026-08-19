@@ -373,6 +373,23 @@ export const orders = mysqlTable("orders", {
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
 
+export const orderTrackingEvents = mysqlTable("order_tracking_events", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  stage: varchar("stage", { length: 64 }).notNull(),
+  carrier: varchar("carrier", { length: 64 }),
+  trackingNumber: varchar("trackingNumber", { length: 128 }),
+  trackingUrl: text("trackingUrl"),
+  status: varchar("status", { length: 64 }).default("in_transit").notNull(),
+  location: varchar("location", { length: 255 }),
+  description: text("description"),
+  eventTime: timestamp("eventTime").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OrderTrackingEvent = typeof orderTrackingEvents.$inferSelect;
+export type InsertOrderTrackingEvent = typeof orderTrackingEvents.$inferInsert;
+
 export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),
   orderId: int("orderId").notNull(),
