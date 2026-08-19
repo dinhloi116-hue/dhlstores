@@ -1430,6 +1430,33 @@ export async function applySapoInboundInventory(input: { changes: Array<{ localV
   return { updated, skipped };
 }
 
+export async function getSapoSyncHistory(limit = 60) {
+  const safeLimit = Math.min(Math.max(Math.floor(limit), 1), 200);
+  const connection = await getDb();
+  if (connection) return await connection.select().from(sapoSyncEvents).orderBy(desc(sapoSyncEvents.createdAt)).limit(safeLimit);
+  return [];
+}
+
+export async function getLatestSapoSyncAtByVariantIds(variantIds: number[]) {
+  const ids = Array.from(new Set(variantIds.filter(Number.isInteger)));
+  const result = new Map<number, Date>();
+  if (!ids.length) return result;
+  const connection = await getDb();
+  if (!connection) return result;
+  const rows = await connection.select({ localVariantId: sapoSyncEvents.localVariantId, processedAt: sapoSyncEvents.processedAt, createdAt: sapoSyncEvents.createdAt }).from(sapoSyncEvents).where(and(eq(sapoSyncEvents.status, "succeeded"), sql`${sapoSyncEvents.localVariantId} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`)).orderBy(desc(sapoSyncEvents.createdAt));
+  for (const row of rows) if (row.localVariantId && !result.has(row.localVariantId)) result.set(row.localVariantId, row.processedAt || row.createdAt);
+  return result;
+}
+
+export async function recordSapoOutboundEvents(rows: Array<{ sku: string; status: "preview" | "synced" | "skipped" | "failed"; available: number; message: string; localVariantId?: number }>, performedAt = new Date()) {
+  const connection = await getDb();
+  if (!connection) return { recorded: 0 };
+  const values = rows.filter(row => row.status !== "preview").map(row => ({ eventKey: `outbound:${row.localVariantId || row.sku}:${row.available}:${performedAt.getTime()}:${Math.random().toString(36).slice(2, 8)}`, direction: "outbound" as const, eventType: "inventory_import" as const, status: row.status === "synced" ? "succeeded" as const : "failed" as const, localVariantId: row.localVariantId || null, quantityAfter: row.available, errorMessage: row.status === "synced" ? null : row.message, createdAt: performedAt, processedAt: performedAt }));
+  if (!values.length) return { recorded: 0 };
+  await connection.insert(sapoSyncEvents).values(values);
+  return { recorded: values.length };
+}
+
 export async function getInventoryMovements() {
   const connection = await getDb();
   if (connection) return await connection.select().from(inventoryMovements).orderBy(desc(inventoryMovements.createdAt)).limit(80);

@@ -575,3 +575,8 @@
 - [x] Đăng ký lịch Heartbeat inbound Sapo → DHL Stores mỗi 60 phút theo lựa chọn của chủ cửa hàng; xác minh cron production và độ trễ tối đa khoảng 1 giờ. Task `ZyM2BadmBCdbuKTu4WsExB` đang enable.
 
 - [x] Tối ưu đồng bộ theo biến động: tài liệu Sapo công khai chưa xác nhận webhook tồn kho cho biến động Shopee, nên giữ đối soát Heartbeat mỗi 60 phút; worker chỉ ghi DHL Stores khi tồn Sapo thực sự khác local, không gửi lệnh cập nhật khi không đổi và có audit/idempotence.
+
+- [x] Sapo vận hành: tạo skill tái sử dụng cho quy trình đồng bộ tồn. Skill `sapo-inventory-sync` đã validate thành công.
+- [x] Sapo vận hành: thêm nút Đồng bộ ngay trong Trung tâm vận hành. Nút outbound ghi lịch sử theo từng SKU sau khi chạy.
+- [x] Sapo vận hành: thêm lịch sử các lần đồng bộ để theo dõi kết quả. Có hướng inbound/outbound, trạng thái, tồn sau cùng và thời gian xử lý.
+- [x] Sapo vận hành: hiển thị thời gian cập nhật tồn gần nhất tại trang sản phẩm và khu quản trị. ProductDetail hiển thị mốc Sapo gần nhất theo các variant đã mapping.
