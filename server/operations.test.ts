@@ -96,6 +96,16 @@ describe("advanced operations", () => {
     expect((await getInventoryMovements()).some(row => row.productId === product.id && row.quantityBefore === 8 && row.quantityAfter === 21)).toBe(true);
   });
 
+  it("lets the owner manage a customer's address book without exposing it to another customer", async () => {
+    const customer = await createLocalUser({ username: `address_order_customer_${Date.now()}`, passwordHash: "scrypt$test$test", name: "Khách có sổ địa chỉ" });
+    const other = await createLocalUser({ username: `address_order_other_${Date.now()}`, passwordHash: "scrypt$test$test", name: "Khách khác" });
+    const owner = appRouter.createCaller(ownerContext());
+    const created = await owner.store.createCustomerShippingAddress({ customerId: customer.id, data: { recipientName: "Người nhận", phone: "0900000000", address: "12 Đường Mới, Phường Mới, Hà Nội", isDefault: true } });
+    await expect(owner.store.customerShippingAddresses({ customerId: customer.id })).resolves.toEqual([expect.objectContaining({ id: created.id, userId: customer.id, isDefault: true })]);
+    await expect(owner.store.customerShippingAddresses({ customerId: other.id })).resolves.toEqual([]);
+    await expect(appRouter.createCaller(createContext(customer)).store.customerShippingAddresses({ customerId: customer.id })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("lets only the owner create an order from warehouse SKU and records the inventory deduction", async () => {
     const customer = await createLocalUser({ username: `admin_order_customer_${Date.now()}`, passwordHash: "scrypt$test$test", name: "Khách tạo đơn" });
     const product = await createProduct({ name: "Áo tạo đơn quản trị", slug: `admin-order-${Date.now()}`, price: "120000", categoryId: 12, image: "generated:catalog-cover", stock: 4, featured: false, isActive: true });

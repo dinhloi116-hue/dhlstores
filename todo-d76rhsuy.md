@@ -625,3 +625,10 @@
 - [x] Thiết kế phân loại điều hướng rõ theo mục đích mua, loại sản phẩm và hình thức nhận hàng.
 - [x] Triển khai các cải tiến ưu tiên giúp khách tìm đúng sản phẩm và đi tới mua hàng ít bước hơn.
 - [x] Viết/cập nhật test, kiểm tra trực quan và phát hành checkpoint cho tối ưu phân loại.
+
+
+## Phiên sổ địa chỉ tạo đơn quản trị 2026-08-19
+- [x] Thêm chọn sổ địa chỉ đã lưu của khách trong form tạo đơn quản trị.
+- [x] Thêm tạo địa chỉ mới cho khách ngay trong form, gồm người nhận, số điện thoại và địa chỉ chi tiết; địa chỉ có thể chứa phường/xã, tỉnh/thành phố.
+- [x] Bảo đảm địa chỉ được truyền đúng vào đơn, giữ owner-only và không lộ địa chỉ giữa các khách.
+- [x] Viết/cập nhật test, kiểm tra trực quan và phát hành checkpoint cho sổ địa chỉ quản trị.

@@ -457,6 +457,14 @@ export const appRouter = router({
         }
       }),
 
+    customerShippingAddresses: adminProcedure
+      .input(z.object({ customerId: z.number().int().positive() }))
+      .query(async ({ input }) => db.getShippingAddresses(input.customerId)),
+
+    createCustomerShippingAddress: adminProcedure
+      .input(z.object({ customerId: z.number().int().positive(), data: shippingAddressInputSchema }))
+      .mutation(async ({ input }) => db.createShippingAddress(input.customerId, input.data)),
+
     cancelPendingOrder: protectedProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
