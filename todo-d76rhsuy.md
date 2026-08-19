@@ -569,3 +569,5 @@
 - [x] Xây dựng Sapo Sync Preview trong Trung tâm vận hành: chọn tối đa 20 SKU, dry-run mapping, chạy đồng bộ thủ công có xác nhận và hiển thị kết quả từng dòng. Đã chạy 110 test đạt, TypeScript sạch; giao diện yêu cầu đăng nhập owner để xem tab Sapo.
 
 - [ ] Đồng bộ tồn hai chiều: kéo tồn Sapo về DHL Stores cho biến động từ Shopee/kênh bán, giữ DHL Stores là nguồn Catalog và ngăn vòng lặp ghi tồn.
+
+- [ ] Tự động hóa inbound Sapo → DHL Stores: chạy Heartbeat mỗi 5 phút, đọc tồn các SKU đã mapping, cập nhật website không cần thao tác thủ công, có chống lặp và giới hạn lỗi.
