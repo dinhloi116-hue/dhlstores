@@ -632,3 +632,10 @@
 - [x] Thêm tạo địa chỉ mới cho khách ngay trong form, gồm người nhận, số điện thoại và địa chỉ chi tiết; địa chỉ có thể chứa phường/xã, tỉnh/thành phố.
 - [x] Bảo đảm địa chỉ được truyền đúng vào đơn, giữ owner-only và không lộ địa chỉ giữa các khách.
 - [x] Viết/cập nhật test, kiểm tra trực quan và phát hành checkpoint cho sổ địa chỉ quản trị.
+
+
+## Phiên mở rộng sổ địa chỉ quản trị 2026-08-19
+- [x] Cho phép owner sửa địa chỉ đã lưu của khách trong form tạo đơn.
+- [x] Cho phép owner xóa địa chỉ đã lưu an toàn, bảo đảm địa chỉ mặc định được thay thế đúng.
+- [x] Thêm tìm kiếm nhanh địa chỉ và gợi ý tỉnh/thành phố khi tạo địa chỉ mới; ô chi tiết vẫn cho nhập phường/xã, quận/huyện và số nhà.
+- [x] Viết/cập nhật test, kiểm tra trực quan và build cho mở rộng sổ địa chỉ.

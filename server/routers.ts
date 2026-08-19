@@ -465,6 +465,20 @@ export const appRouter = router({
       .input(z.object({ customerId: z.number().int().positive(), data: shippingAddressInputSchema }))
       .mutation(async ({ input }) => db.createShippingAddress(input.customerId, input.data)),
 
+    updateCustomerShippingAddress: adminProcedure
+      .input(z.object({ customerId: z.number().int().positive(), id: z.number().int().positive(), data: shippingAddressInputSchema }))
+      .mutation(async ({ input }) => {
+        try { return await db.updateShippingAddress(input.customerId, input.id, input.data); }
+        catch (error) { if (error instanceof Error && error.message === "ADDRESS_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy địa chỉ của khách để cập nhật" }); throw error; }
+      }),
+
+    deleteCustomerShippingAddress: adminProcedure
+      .input(z.object({ customerId: z.number().int().positive(), id: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        try { return await db.deleteShippingAddress(input.customerId, input.id); }
+        catch (error) { if (error instanceof Error && error.message === "ADDRESS_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy địa chỉ của khách để xóa" }); throw error; }
+      }),
+
     cancelPendingOrder: protectedProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
