@@ -639,3 +639,9 @@
 - [x] Cho phép owner xóa địa chỉ đã lưu an toàn, bảo đảm địa chỉ mặc định được thay thế đúng.
 - [x] Thêm tìm kiếm nhanh địa chỉ và gợi ý tỉnh/thành phố khi tạo địa chỉ mới; ô chi tiết vẫn cho nhập phường/xã, quận/huyện và số nhà.
 - [x] Viết/cập nhật test, kiểm tra trực quan và build cho mở rộng sổ địa chỉ.
+
+
+## Phiên cải tiến sổ địa chỉ lần 2 2026-08-20
+- [x] Thêm phân trang hoặc nút Tải thêm cho danh sách địa chỉ nhiều bản ghi.
+- [x] Thêm nút đặt nhanh một địa chỉ làm mặc định.
+- [x] Thêm loading state rõ ràng khi lưu, đặt mặc định hoặc xóa địa chỉ; viết test và phát hành.
