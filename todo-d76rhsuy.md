@@ -645,3 +645,10 @@
 - [x] Thêm phân trang hoặc nút Tải thêm cho danh sách địa chỉ nhiều bản ghi.
 - [x] Thêm nút đặt nhanh một địa chỉ làm mặc định.
 - [x] Thêm loading state rõ ràng khi lưu, đặt mặc định hoặc xóa địa chỉ; viết test và phát hành.
+
+
+## Phiên kiểm tra toàn diện 2026-08-20
+- [x] Chạy TypeScript, toàn bộ Vitest, build production và kiểm tra log runtime.
+- [x] Kiểm tra trực quan các route mua hàng, tài khoản, quản trị và sổ địa chỉ.
+- [x] Rà soát và xác nhận không có lỗi mới cần sửa trong phạm vi tự xử lý; log runtime sau restart sạch.
+- [x] Chạy lại toàn bộ kiểm tra sau sửa và phát hành checkpoint.
