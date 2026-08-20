@@ -660,3 +660,16 @@
 - [x] Hỗ trợ chọn nhiều mẫu, dàn trang nhiều nhãn và xuất PDF in được.
 - [x] Hỗ trợ nhập danh sách Excel/CSV để tạo nhãn hàng loạt.
 - [x] Thêm kiểm thử dữ liệu, xuất PDF, giới hạn tệp và kiểm tra giao diện trước khi phát hành.
+
+
+## Phiên sửa preview menu Công cụ 2026-08-20
+- [ ] Thay preview PET TRAM đơn lẻ bằng preview thư viện công cụ, ưu tiên Tạo Nhãn Vở Online.
+- [ ] Bảo đảm preview có lối vào rõ tới /tools và /tools/notebook-labels, không bị cắt trên desktop/mobile.
+- [ ] Viết/cập nhật test, kiểm tra trực quan hover và phát hành checkpoint.
+
+
+## Phiên nâng cấp hình minh họa Tạo Nhãn Vở 2026-08-20
+- [x] Bổ sung thư viện hình minh họa/chủ đề nguyên bản do hệ thống tạo, không dùng nhân vật/thương hiệu có bản quyền.
+- [x] Cho phép chọn/chèn hình minh họa vào mẫu nhãn và xem trước, đồng thời đưa hình vào PDF; có fallback khi asset chưa sẵn sàng.
+- [x] Đánh giá tích hợp AI tạo hoặc đề xuất hình qua hạ tầng AI phù hợp, không hardcode API ChatGPT; giữ AI ở bước tạo thư viện có kiểm soát thay vì gọi mỗi lần khách thao tác.
+- [x] Kiểm thử PDF, giới hạn dữ liệu, hiệu năng và phát hành cải tiến.
