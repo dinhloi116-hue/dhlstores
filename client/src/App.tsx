@@ -12,6 +12,7 @@ import OperationsCenter from "@/pages/OperationsCenter";
 import TestCustomerAccount from "@/pages/TestCustomerAccount";
 import PetTramTool from "@/pages/PetTramTool";
 import ToolsLibrary from "@/pages/ToolsLibrary";
+import NotebookLabelMaker from "@/pages/NotebookLabelMaker";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -28,6 +29,7 @@ function Router() {
       <Route path={"/checkout"} component={Checkout} />
       <Route path={"/tools"} component={ToolsLibrary} />
       <Route path={"/tools/pet-tram"} component={PetTramTool} />
+      <Route path={"/tools/notebook-labels"} component={NotebookLabelMaker} />
       <Route path={"/account"} component={Account} />
       <Route path={"/admin"} component={AdminOrders} />
       <Route path={"/admin/operations"} component={OperationsCenter} />

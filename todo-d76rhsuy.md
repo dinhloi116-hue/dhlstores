@@ -652,3 +652,11 @@
 - [x] Kiểm tra trực quan các route mua hàng, tài khoản, quản trị và sổ địa chỉ.
 - [x] Rà soát và xác nhận không có lỗi mới cần sửa trong phạm vi tự xử lý; log runtime sau restart sạch.
 - [x] Chạy lại toàn bộ kiểm tra sau sửa và phát hành checkpoint.
+
+
+## Phiên tiện ích Tạo Nhãn Vở Online 2026-08-20
+- [x] Thêm lối vào Tạo Nhãn Vở Online trong thư viện Tool của DHL Stores.
+- [x] Xây dựng nhập thông tin học sinh và xem trước nhãn theo mẫu.
+- [x] Hỗ trợ chọn nhiều mẫu, dàn trang nhiều nhãn và xuất PDF in được.
+- [x] Hỗ trợ nhập danh sách Excel/CSV để tạo nhãn hàng loạt.
+- [x] Thêm kiểm thử dữ liệu, xuất PDF, giới hạn tệp và kiểm tra giao diện trước khi phát hành.
