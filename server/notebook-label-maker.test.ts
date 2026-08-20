@@ -20,5 +20,11 @@ describe("notebook label maker", () => {
     expect(maker).toContain("pdf.save");
     expect(maker).toContain("Tối đa 240 nhãn");
     expect(maker).toContain("Dữ liệu chỉ được xử lý trong trình duyệt");
+    expect(maker).toContain("importCustomImage");
+    expect(maker).toContain("Ảnh cá nhân tối đa 4 MB");
+    expect(maker).toContain("fontFamily");
+    expect(maker).toContain("textColor");
+    expect(maker).toContain("downloadCurrentImage");
+    expect(maker).toContain("Tải PNG");
   });
 });
