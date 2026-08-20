@@ -354,7 +354,7 @@
 
 - [x] Auth email: bỏ yêu cầu số điện thoại, đăng ký bắt buộc email duy nhất; chuẩn hóa email chữ thường và chặn trùng khi tạo tài khoản.
 - [ ] Auth email: gửi mã xác minh email với thời hạn, giới hạn thử lại và không cho dùng mã đã hết hạn.
-- [ ] Auth email: chống trùng email không phân biệt hoa thường và chặn tài khoản chưa xác minh dùng tính năng cần tài khoản.
+- [x] Auth email: chống trùng email không phân biệt hoa thường đã được triển khai và test; việc chặn tài khoản chưa xác minh vẫn chờ hoàn tất mã xác minh email.
 - [x] Auth email: bảo vệ giỏ hàng, mua/checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ xem sản phẩm công khai. Việc gửi mã xác minh vẫn chờ cấu hình email ngoài hệ thống.
 - [ ] Auth email: kiểm thử đăng ký/xác minh/đăng nhập và hồi quy các luồng mua; cập nhật Vitest và lưu checkpoint.
 
