@@ -745,3 +745,8 @@
 - [x] Loại bỏ nút, endpoint và luồng tải video lên S3/máy chủ khỏi tiện ích.
 - [x] Bỏ giới hạn 20 MB và 300 MB; để trình duyệt xử lý theo khả năng thiết bị.
 - [x] Cập nhật thông báo quyền riêng tư, test hồi quy và phát hành bản sửa.
+
+## Phiên tham khảo công cụ ghép video HTML 2026-08-21
+- [x] Phân tích tệp HTML tham khảo, gồm thư viện, luồng xử lý và giới hạn quyền riêng tư.
+- [x] Đối chiếu với tiện ích hiện tại và chọn các cải tiến phù hợp cho xử lý cục bộ.
+- [x] Triển khai, kiểm thử và phát hành các cải tiến đã chọn.

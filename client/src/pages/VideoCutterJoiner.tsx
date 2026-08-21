@@ -33,11 +33,15 @@ export default function VideoCutterJoiner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const ffmpegLogs = useRef<string[]>([]);
+  const nativeStopRef = useRef(false);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
   const [compression, setCompression] = useState<"balanced" | "small" | "tiny">("balanced");
+  const [nativeFps, setNativeFps] = useState<25 | 30 | 60>(30);
+  const [nativeBitrate, setNativeBitrate] = useState<"4000000" | "8000000" | "12000000">("8000000");
+  const [nativeKeepAudio, setNativeKeepAudio] = useState(true);
   const [outputUrl, setOutputUrl] = useState("");
   const [outputName, setOutputName] = useState("dhl-video-result.mp4");
   const [busy, setBusy] = useState(false);
@@ -175,6 +179,92 @@ export default function VideoCutterJoiner() {
     } finally { setBusy(false); }
   };
 
+  const runNativeMerge = async () => {
+    if (videos.length < 2) return toast.error("Hãy thêm ít nhất 2 video để ghép.");
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return toast.error("Trình duyệt này chưa hỗ trợ ghép native. Hãy dùng Chrome hoặc Edge mới.");
+    const mimeCandidates = nativeKeepAudio
+      ? ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]
+      : ["video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+    const mimeType = mimeCandidates.find(candidate => MediaRecorder.isTypeSupported(candidate));
+    if (!mimeType) return toast.error("Trình duyệt chưa có định dạng xuất phù hợp. Hãy dùng Chrome hoặc Edge mới.");
+    const first = videos[0];
+    const width = Math.max(2, Math.floor((first.width || 1080) / 2) * 2);
+    const height = Math.max(2, Math.floor((first.height || 1920) / 2) * 2);
+    const totalDuration = videos.reduce((sum, item) => sum + (Number.isFinite(item.duration) && item.duration > 0 ? item.duration : 0), 0) || videos.length;
+    const canvas = document.createElement("canvas");
+    canvas.width = width; canvas.height = height;
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) return toast.error("Trình duyệt không tạo được vùng ghép video.");
+    const stream = canvas.captureStream(nativeFps);
+    const chunks: Blob[] = [];
+    let audioContext: AudioContext | null = null;
+    let audioDestination: MediaStreamAudioDestinationNode | null = null;
+    if (nativeKeepAudio) {
+      try {
+        audioContext = new AudioContext();
+        await audioContext.resume();
+        audioDestination = audioContext.createMediaStreamDestination();
+        audioDestination.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+      } catch { setStatus("Không bật được âm thanh; video sẽ tiếp tục ghép hình."); }
+    }
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: Number(nativeBitrate), audioBitsPerSecond: nativeKeepAudio ? 160000 : undefined });
+    } catch {
+      stream.getTracks().forEach(track => track.stop());
+      if (audioContext) await audioContext.close();
+      return toast.error("Không tạo được bộ ghi video native. Hãy thử giảm FPS hoặc tắt âm thanh.");
+    }
+    nativeStopRef.current = false;
+    setBusy(true); setProgress(0); setDiagnostic(""); setStatus("Đang ghép native theo thời gian thực…");
+    recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+    const stopped = new Promise<void>(resolve => recorder.onstop = () => resolve());
+    recorder.start(1000);
+    let completedDuration = 0;
+    try {
+      for (let index = 0; index < videos.length && !nativeStopRef.current; index += 1) {
+        const item = videos[index];
+        setStatus(`Đang ghép ${index + 1}/${videos.length}: ${item.file.name}`);
+        const video = document.createElement("video");
+        video.src = item.url; video.preload = "auto"; video.playsInline = true; video.muted = !nativeKeepAudio; video.volume = nativeKeepAudio ? 1 : 0;
+        await new Promise<void>((resolve, reject) => { video.onloadedmetadata = () => resolve(); video.onerror = () => reject(new Error("Không đọc được video")); });
+        let source: MediaElementAudioSourceNode | null = null;
+        if (audioContext && audioDestination && nativeKeepAudio) {
+          try { source = audioContext.createMediaElementSource(video); source.connect(audioDestination); } catch { source = null; }
+        }
+        const draw = () => {
+          context.fillStyle = "#000"; context.fillRect(0, 0, width, height);
+          const sourceWidth = video.videoWidth || width; const sourceHeight = video.videoHeight || height;
+          const scale = Math.min(width / sourceWidth, height / sourceHeight);
+          const drawWidth = sourceWidth * scale; const drawHeight = sourceHeight * scale;
+          context.drawImage(video, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+          const duration = item.duration || video.duration || 1;
+          setProgress(Math.min(99, Math.round(((completedDuration + Math.min(video.currentTime, duration)) / totalDuration) * 100)));
+          if (!video.ended && !nativeStopRef.current) requestAnimationFrame(draw);
+        };
+        await video.play(); draw();
+        await new Promise<void>(resolve => { video.onended = () => resolve(); video.onerror = () => resolve(); });
+        completedDuration += item.duration || video.duration || 0;
+        source?.disconnect(); video.pause(); video.removeAttribute("src"); video.load();
+      }
+    } catch (error) {
+      setDiagnostic(error instanceof Error ? error.message : String(error));
+      toast.error("Không thể ghép một video trong danh sách.");
+    } finally {
+      recorder.stop(); await stopped;
+      stream.getTracks().forEach(track => track.stop());
+      if (audioContext) await audioContext.close();
+      setBusy(false);
+    }
+    if (nativeStopRef.current || !chunks.length) {
+      setStatus(nativeStopRef.current ? "Đã dừng ghép native. Chưa tạo tệp hoàn chỉnh." : "Không thu được dữ liệu video để xuất.");
+      setProgress(0); return;
+    }
+    const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+    setOutput(new Blob(chunks, { type: mimeType }), `dhl-video-native-merged.${extension}`, `Đã ghép ${videos.length} video bằng native ${extension.toUpperCase()}.`);
+    setProgress(100); toast.success("Đã ghép video local, bạn có thể tải kết quả.");
+  };
+
   const selectionDuration = active ? Math.max(0, (end || active.duration) - start) : 0;
 
   return <StoreLayout><main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -186,6 +276,8 @@ export default function VideoCutterJoiner() {
         <Button onClick={() => inputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Thêm video</Button>
         <Button variant="outline" onClick={() => browserProcess("trim")} disabled={busy || !active}><Scissors className="mr-2 h-4 w-4" />Cắt đoạn đang chọn</Button>
         <Button variant="outline" onClick={() => browserProcess("join")} disabled={busy || videos.length < 2}><WandSparkles className="mr-2 h-4 w-4" />Nối {videos.length} video</Button>
+        <Button onClick={runNativeMerge} disabled={busy || videos.length < 2} className="bg-violet-600 text-white hover:bg-violet-700"><WandSparkles className="mr-2 h-4 w-4" />Ghép native (khuyên dùng)</Button>
+        {busy && <Button variant="outline" onClick={() => { nativeStopRef.current = true; setStatus("Đang dừng sau video hiện tại…"); }}>Dừng</Button>}
         <Button variant="outline" onClick={() => browserProcess("compress")} disabled={busy || !active}><SlidersHorizontal className="mr-2 h-4 w-4" />Nén video</Button>
         <Button variant="outline" onClick={() => browserProcess("normalize")} disabled={busy || !active}><Film className="mr-2 h-4 w-4" />Chuyển đổi tương thích</Button>
         <Button onClick={() => { if (!outputUrl) return; const link = document.createElement("a"); link.href = outputUrl; link.download = outputName; link.click(); }} disabled={!outputUrl || busy} className={outputUrl ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""}><ArrowDown className="mr-2 h-4 w-4" />{outputUrl ? "Tải video kết quả" : "Tải video sau khi xử lý"}</Button>

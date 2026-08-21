@@ -26,5 +26,8 @@ describe("video cutter and joiner", () => {
     expect(tool).toContain("Đang nén video");
     expect(tool).toContain("Chuyển đổi tương thích");
     expect(tool).toContain("không áp dụng giới hạn dung lượng cố định");
+    expect(tool).toContain("Ghép native (khuyên dùng)");
+    expect(tool).toContain("canvas.captureStream(nativeFps)");
+    expect(tool).toContain("new MediaRecorder(stream");
   });
 });
