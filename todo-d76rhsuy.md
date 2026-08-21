@@ -750,3 +750,8 @@
 - [x] Phân tích tệp HTML tham khảo, gồm thư viện, luồng xử lý và giới hạn quyền riêng tư.
 - [x] Đối chiếu với tiện ích hiện tại và chọn các cải tiến phù hợp cho xử lý cục bộ.
 - [x] Triển khai, kiểm thử và phát hành các cải tiến đã chọn.
+
+## Phiên cắt video native 2026-08-21
+- [x] Bổ sung cắt native Canvas/MediaRecorder dựa trên hai mốc timeline đã chọn.
+- [x] Đặt lối vào cắt native rõ ràng, có tiến trình, dừng và tải kết quả local.
+- [x] Viết test hồi quy, kiểm tra giao diện và phát hành bản sửa.
