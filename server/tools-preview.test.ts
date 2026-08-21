@@ -8,7 +8,7 @@ describe("tools menu preview", () => {
     expect(layout).toContain("Chọn tiện ích nhanh");
     expect(layout).toContain("/tools/notebook-labels");
     expect(layout).toContain("Tạo Nhãn Vở Online");
-    expect(layout).toContain("Xem thư viện");
+    expect(layout).toContain("Xem tất cả");
     expect(layout).toContain("PET TRAM PRO X");
   });
 });

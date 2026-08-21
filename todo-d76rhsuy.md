@@ -691,10 +691,10 @@
 
 
 ## Phiên mở rộng preview thư viện Công cụ 2026-08-21
-- [ ] Thiết kế preview menu Công cụ có thể hiển thị nhiều tiện ích mà không bị chật.
-- [ ] Thêm tìm kiếm/lọc nhanh và nhóm tiện ích trong preview.
-- [ ] Bổ sung lối vào rõ tới thư viện đầy đủ và cập nhật các tiện ích hiện có.
-- [ ] Kiểm tra hover, responsive và phát hành checkpoint.
+- [x] Thiết kế preview menu Công cụ có thể hiển thị nhiều tiện ích mà không bị chật.
+- [x] Thêm tìm kiếm/lọc nhanh và nhóm tiện ích trong preview.
+- [x] Bổ sung lối vào rõ tới thư viện đầy đủ và cập nhật các tiện ích hiện có.
+- [x] Kiểm tra hover, responsive và phát hành checkpoint.
 
 
 ## Phiên mở rộng nén và timeline video 2026-08-21
