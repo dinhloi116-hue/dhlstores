@@ -24,15 +24,6 @@ function formatTime(value: number) {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Không thể đọc tệp video."));
-    reader.onload = () => resolve(String(reader.result));
-    reader.readAsDataURL(file);
-  });
-}
-
 function explainVideoError(action: string, error: unknown, logs: string[]) {
   const detail = `${String(error ?? "")} ${logs.join(" ")}`.toLowerCase();
   if (detail.includes("decoder") || detail.includes("unsupported codec")) return `Không thể ${action}: trình duyệt không có decoder cho codec của video này. Hãy dùng Xử lý trên máy chủ.`;
@@ -56,6 +47,7 @@ export default function VideoCutterJoiner() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Sẵn sàng xử lý trong trình duyệt");
   const [diagnostic, setDiagnostic] = useState("");
+  const prepareServerUpload = trpc.videoTools.prepareServerUpload.useMutation();
   const serverTranscode = trpc.videoTools.transcodeServer.useMutation();
   const active = videos.find(item => item.id === activeId) ?? videos[0];
 
@@ -183,9 +175,15 @@ export default function VideoCutterJoiner() {
   const runServerTranscode = async () => {
     if (!active) return toast.error("Hãy chọn một video trước.");
     if (active.file.size > SERVER_TRANSCODE_MAX_BYTES) return toast.error("Xử lý máy chủ hiện hỗ trợ video tối đa 20 MB.");
-    setBusy(true); setProgress(0); setDiagnostic(""); setStatus("Đang gửi video tới máy chủ để chuyển đổi…");
+    setBusy(true); setProgress(0); setDiagnostic(""); setStatus("Đang chuẩn bị tải video trực tiếp…");
     try {
-      const result = await serverTranscode.mutateAsync({ fileName: active.file.name, mimeType: active.file.type || "video/mp4", base64: await readFileAsDataUrl(active.file) });
+      const mimeType = active.file.type || "video/mp4";
+      const upload = await prepareServerUpload.mutateAsync({ fileName: active.file.name, mimeType, size: active.file.size });
+      setStatus("Đang tải trực tiếp video lên kho tạm…");
+      const uploadResponse = await fetch(upload.uploadUrl, { method: "PUT", headers: { "Content-Type": mimeType }, body: active.file });
+      if (!uploadResponse.ok) throw new Error("Không thể tải video lên kho tạm. Vui lòng thử lại.");
+      setStatus("Đã tải video, đang chuyển đổi trên máy chủ…");
+      const result = await serverTranscode.mutateAsync({ fileName: active.file.name, mimeType, key: upload.key });
       discardOutput();
       setOutputUrl(result.url);
       setOutputName(result.fileName);
@@ -210,7 +208,7 @@ export default function VideoCutterJoiner() {
         <Button variant="outline" onClick={() => browserProcess("trim")} disabled={busy || !active}><Scissors className="mr-2 h-4 w-4" />Cắt đoạn đang chọn</Button>
         <Button variant="outline" onClick={() => browserProcess("join")} disabled={busy || videos.length < 2}><WandSparkles className="mr-2 h-4 w-4" />Nối {videos.length} video</Button>
         <Button variant="outline" onClick={() => browserProcess("compress")} disabled={busy || !active}><SlidersHorizontal className="mr-2 h-4 w-4" />Nén video</Button>
-        <Button variant="outline" onClick={runServerTranscode} disabled={busy || !serverEligible || serverTranscode.isPending}><Film className="mr-2 h-4 w-4" />Xử lý máy chủ (≤20 MB)</Button>
+        <Button variant="outline" onClick={runServerTranscode} disabled={busy || !serverEligible || prepareServerUpload.isPending || serverTranscode.isPending}><Film className="mr-2 h-4 w-4" />Xử lý máy chủ (≤20 MB)</Button>
         <Button onClick={() => { if (!outputUrl) return; const link = document.createElement("a"); link.href = outputUrl; link.download = outputName; link.click(); }} disabled={!outputUrl || busy} className={outputUrl ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""}><ArrowDown className="mr-2 h-4 w-4" />{outputUrl ? "Tải video kết quả" : "Tải video sau khi xử lý"}</Button>
         <input ref={inputRef} type="file" hidden multiple accept="video/*" onChange={event => { addFiles(event.target.files); event.currentTarget.value = ""; }} />
       </div>

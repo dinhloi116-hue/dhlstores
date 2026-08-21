@@ -8,7 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { buildSePayQrUrl, buildStoreVietQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
-import { storagePut } from "./storage";
+import { storageCreateUploadUrl, storageGetSignedUrl, storagePut } from "./storage";
 import { checkSapoProductReadConnection, pullSapoInventoryBySku, syncSapoInventoryBySku } from "./sapo";
 import { invokeLLM } from "./_core/llm";
 import { spawn } from "node:child_process";
@@ -28,8 +28,13 @@ const supportSubmissionSchema = z.object({ message: z.string().trim().max(2000, 
 const SERVER_VIDEO_MAX_BYTES = 20 * 1024 * 1024;
 let serverVideoTranscodeRunning = false;
 
-async function transcodeVideoOnServer(userId: number, input: { fileName: string; mimeType: string; base64: string }) {
-  const source = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+async function transcodeVideoOnServer(userId: number, input: { fileName: string; mimeType: string; key: string }) {
+  if (!input.key.startsWith(`video-tools-input/${userId}/`)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Tệp video không thuộc tài khoản hiện tại." });
+  }
+  const sourceResponse = await fetch(await storageGetSignedUrl(input.key));
+  if (!sourceResponse.ok) throw new Error(`Không tải được video nguồn (${sourceResponse.status})`);
+  const source = Buffer.from(await sourceResponse.arrayBuffer());
   if (!source.length || source.length > SERVER_VIDEO_MAX_BYTES) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Chuyển đổi trên máy chủ hỗ trợ video tối đa 20 MB để bảo đảm xử lý ổn định." });
   }
@@ -62,6 +67,15 @@ async function transcodeVideoOnServer(userId: number, input: { fileName: string;
     serverVideoTranscodeRunning = false;
     await rm(tempDir, { recursive: true, force: true });
   }
+}
+
+async function prepareVideoUpload(userId: number, input: { fileName: string; mimeType: string; size: number }) {
+  if (!input.mimeType.startsWith("video/")) throw new TRPCError({ code: "BAD_REQUEST", message: "Chỉ hỗ trợ tệp video." });
+  if (!Number.isFinite(input.size) || input.size <= 0 || input.size > SERVER_VIDEO_MAX_BYTES) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Xử lý máy chủ hỗ trợ video tối đa 20 MB để bảo đảm xử lý ổn định." });
+  }
+  const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "video.mp4";
+  return storageCreateUploadUrl(`video-tools-input/${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${safeName}`);
 }
 
 async function storeSupportImage(visitorKey: string, image?: z.infer<typeof supportImageSchema>) {
@@ -162,8 +176,14 @@ export const appRouter = router({
   catalogAdmin: catalogAdminRouter,
 
   videoTools: router({
+    prepareServerUpload: protectedProcedure
+      .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.string().trim().max(128), size: z.number().finite() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user!.id);
+        return prepareVideoUpload(ctx.user!.id, input);
+      }),
     transcodeServer: protectedProcedure
-      .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.string().trim().max(128), base64: z.string().min(1) }))
+      .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.string().trim().max(128), key: z.string().trim().min(1).max(512) }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user!.id);
         if (!input.mimeType.startsWith("video/")) {

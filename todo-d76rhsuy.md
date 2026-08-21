@@ -729,3 +729,14 @@
 - [x] Bổ sung FFmpeg vào runtime triển khai và endpoint chuyển đổi MP4 H.264/AAC có kiểm tra quyền truy cập.
 - [x] Kết nối nút chuyển đổi dự phòng từ giao diện, hiển thị tiến trình và tải kết quả.
 - [x] Viết test, kiểm tra tệp mẫu thực tế và phát hành bản sửa.
+
+## Phiên sửa lỗi 503 xử lý video 2026-08-21
+- [x] Kiểm tra log production/Docker để xác định nguyên nhân endpoint FFmpeg trả 503.
+- [x] Sửa runtime hoặc route tRPC để endpoint trả JSON hợp lệ thay vì Service Unavailable.
+- [ ] Kiểm thử endpoint thực tế và phát hành bản sửa.
+
+## Phiên sửa 503 bằng tải S3 trực tiếp 2026-08-21
+- [x] Thêm presigned PUT cho video tạm có giới hạn quyền và dung lượng.
+- [x] Chuyển endpoint FFmpeg sang nhận khóa S3, tải nguồn trực tiếp từ S3 và trả JSON tRPC nhỏ.
+- [x] Cập nhật giao diện tải trực tiếp lên S3, hiển thị tiến trình và nhận kết quả.
+- [ ] Viết test hồi quy, kiểm tra production và phát hành bản sửa.
