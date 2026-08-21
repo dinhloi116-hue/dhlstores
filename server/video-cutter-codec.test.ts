@@ -8,11 +8,11 @@ describe("video codec fallback", () => {
     expect(page).toContain('"-c:v", "libx264"');
     expect(page).toContain('"-pix_fmt", "yuv420p"');
     expect(page).toContain('"-c:a", "aac"');
+    expect(page).toContain('normalize-${active.id}.${extension}');
   });
 
-  it("explains incompatible codec errors with a conversion hint", () => {
-    expect(page).toContain("codec không tương thích");
+  it("explains incompatible codec errors with a decoder diagnosis", () => {
+    expect(page).toContain("không có decoder cho codec");
     expect(page).toContain("MP4 H.264/AAC");
   });
 });
-

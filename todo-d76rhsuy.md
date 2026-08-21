@@ -717,3 +717,9 @@
 - [x] Chẩn đoán sớm khả năng đọc metadata video và hiển thị trạng thái codec cho người dùng.
 - [x] Thêm nút chuyển đổi riêng về MP4 H.264/AAC trước khi cắt khi tệp đầu vào không tương thích.
 - [x] Viết test hồi quy, kiểm tra luồng lỗi/thành công và phát hành bản sửa.
+
+## Phiên chẩn đoán FFmpeg chi tiết 2026-08-21
+- [x] Ghi nhận nhật ký FFmpeg ngắn gọn theo từng lần xử lý để xác định lỗi codec, audio, bộ nhớ hay tải lõi.
+- [x] Sửa tham số lệnh nén và hiển thị chẩn đoán có thể hành động cho người dùng.
+- [x] Đánh giá phương án xử lý phía máy chủ khi codec đầu vào không có decoder trong trình duyệt.
+- [ ] Viết test hồi quy, kiểm tra thực tế và phát hành bản sửa.

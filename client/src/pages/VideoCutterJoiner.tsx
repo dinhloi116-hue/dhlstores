@@ -22,17 +22,27 @@ function formatTime(value: number) {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-function explainVideoError(action: string, error: unknown) {
-  const detail = String(error ?? "").toLowerCase();
-  if (detail.includes("codec") || detail.includes("decoder") || detail.includes("invalid data") || detail.includes("unsupported")) {
-    return `Không thể ${action}: codec không tương thích. Hãy đổi video sang MP4 H.264/AAC rồi thử lại.`;
+function explainVideoError(action: string, error: unknown, logs: string[]) {
+  const detail = `${String(error ?? "")} ${logs.join(" ")}`.toLowerCase();
+  if (detail.includes("unknown decoder") || detail.includes("decoder") || detail.includes("unsupported codec")) {
+    return `Không thể ${action}: lõi xử lý trên trình duyệt không có decoder cho codec của video này.`;
   }
-  return `Không thể ${action} video trên trình duyệt. Hãy thử tệp MP4 H.264/AAC hoặc tệp nhỏ hơn.`;
+  if (detail.includes("unknown encoder") || detail.includes("libx264")) {
+    return `Không thể ${action}: trình duyệt không tải được bộ mã hóa H.264 cần thiết.`;
+  }
+  if (detail.includes("memory") || detail.includes("allocation") || detail.includes("abort")) {
+    return `Không thể ${action}: trình duyệt thiếu bộ nhớ cho tệp video này.`;
+  }
+  if (detail.includes("failed to fetch") || detail.includes("network") || detail.includes("wasm")) {
+    return `Không thể ${action}: không tải được lõi xử lý video trong trình duyệt.`;
+  }
+  return `Không thể ${action} video trên trình duyệt. Xem “Chi tiết chẩn đoán” bên dưới để biết nguyên nhân.`;
 }
 
 export default function VideoCutterJoiner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
+  const ffmpegLogRef = useRef<string[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [start, setStart] = useState(0);
@@ -43,6 +53,7 @@ export default function VideoCutterJoiner() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Sẵn sàng xử lý trong trình duyệt");
+  const [diagnostic, setDiagnostic] = useState("");
 
   const active = videos.find((item) => item.id === activeId) ?? videos[0];
 
@@ -97,6 +108,11 @@ export default function VideoCutterJoiner() {
     if (ffmpegRef.current?.loaded) return ffmpegRef.current;
     const ffmpeg = new FFmpeg();
     ffmpeg.on("progress", ({ progress: value }) => setProgress(Math.round(value * 100)));
+    ffmpeg.on("log", ({ message }) => {
+      if (/error|invalid|unknown|decoder|encoder|failed|memory|unsupported/i.test(message)) {
+        ffmpegLogRef.current = [...ffmpegLogRef.current, message].slice(-5);
+      }
+    });
     setStatus("Đang tải bộ xử lý video lần đầu…");
     await ffmpeg.load({ coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, "text/javascript"), wasmURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, "application/wasm") });
     ffmpegRef.current = ffmpeg;
@@ -106,10 +122,11 @@ export default function VideoCutterJoiner() {
   const runNormalize = async () => {
     if (!active) return toast.error("Hãy chọn một video trước.");
     if (active.duration <= 0) return toast.error("Video chưa đọc được metadata. Hãy thử MP4 H.264/AAC.");
-    setBusy(true); setProgress(0); setStatus("Đang chuyển đổi sang MP4 H.264/AAC…");
+    ffmpegLogRef.current = []; setDiagnostic(""); setBusy(true); setProgress(0); setStatus("Đang chuyển đổi sang MP4 H.264/AAC…");
     try {
       const ffmpeg = await loadFFmpeg();
-      const input = `normalize-${active.id}.input`;
+      const extension = active.file.name.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "mp4";
+      const input = `normalize-${active.id}.${extension}`;
       const output = "normalized.mp4";
       await ffmpeg.writeFile(input, await fetchFile(active.file));
       await ffmpeg.exec(["-i", input, "-map", "0:v:0", "-map", "0:a:0?", "-sn", "-dn", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", output]);
@@ -127,7 +144,7 @@ export default function VideoCutterJoiner() {
       setOutputName(normalizedFile.name);
       setStatus("Đã chuyển đổi MP4 H.264/AAC. Bạn có thể cắt hoặc tải video này.");
       toast.success("Đã chuyển đổi video tương thích.");
-    } catch (error) { const message = explainVideoError("chuyển đổi", error); setStatus(message); toast.error(message); }
+    } catch (error) { const message = explainVideoError("chuyển đổi", error, ffmpegLogRef.current); setDiagnostic(ffmpegLogRef.current.join("\n") || String(error)); setStatus(message); toast.error(message); }
     finally { setBusy(false); }
   };
 
@@ -136,7 +153,7 @@ export default function VideoCutterJoiner() {
     if (active.duration <= 0) return toast.error("Video chưa đọc được thời lượng.");
     const safeStart = Math.max(0, Math.min(start, active.duration - 0.05));
     const safeEnd = Math.max(safeStart + 0.05, Math.min(end || active.duration, active.duration));
-    setBusy(true); setProgress(0);
+    ffmpegLogRef.current = []; setDiagnostic(""); setBusy(true); setProgress(0);
     try {
       const ffmpeg = await loadFFmpeg();
       const input = `input-${active.id}.mp4`;
@@ -152,22 +169,22 @@ export default function VideoCutterJoiner() {
       setOutputName("dhl-video-trimmed.mp4");
       setStatus(`Đã cắt ${formatTime(safeStart)} – ${formatTime(safeEnd)}`);
       toast.success("Đã cắt video, bạn có thể xem và tải xuống.");
-    } catch (error) { const message = explainVideoError("cắt", error); setStatus(message); toast.error(message); }
+    } catch (error) { const message = explainVideoError("cắt", error, ffmpegLogRef.current); setDiagnostic(ffmpegLogRef.current.join("\n") || String(error)); setStatus(message); toast.error(message); }
     finally { setBusy(false); }
   };
 
   const runCompress = async () => {
     if (!active) return toast.error("Hãy chọn một video trước.");
     if (active.duration <= 0) return toast.error("Video chưa đọc được thời lượng.");
-    setBusy(true); setProgress(0);
+    ffmpegLogRef.current = []; setDiagnostic(""); setBusy(true); setProgress(0);
     try {
       const ffmpeg = await loadFFmpeg();
       const input = `compress-${active.id}.mp4`;
       const output = "compressed.mp4";
-      const profile = compression === "tiny" ? ["-crf", "32", "-preset", "veryfast", "-b:a", "96k"] : compression === "small" ? ["-crf", "28", "-preset", "fast", "-b:a", "128k"] : ["-crf", "24", "-preset", "fast", "-b:a", "160k"];
+      const profile = compression === "tiny" ? { crf: "32", preset: "veryfast", audioBitrate: "96k" } : compression === "small" ? { crf: "28", preset: "fast", audioBitrate: "128k" } : { crf: "24", preset: "fast", audioBitrate: "160k" };
       await ffmpeg.writeFile(input, await fetchFile(active.file));
       setStatus("Đang nén video…");
-      await ffmpeg.exec(["-i", input, "-c:v", "libx264", ...profile.slice(0, 4), "-c:a", "aac", profile[5], "-movflags", "+faststart", output]);
+      await ffmpeg.exec(["-i", input, "-c:v", "libx264", "-crf", profile.crf, "-preset", profile.preset, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", profile.audioBitrate, "-movflags", "+faststart", output]);
       const data = await ffmpeg.readFile(output);
       const bytes = new Uint8Array(data as Uint8Array);
       const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "video/mp4" });
@@ -176,13 +193,13 @@ export default function VideoCutterJoiner() {
       setOutputName("dhl-video-compressed.mp4");
       setStatus(`Đã nén video · ${compression === "tiny" ? "nhẹ nhất" : compression === "small" ? "nhẹ" : "cân bằng"}`);
       toast.success("Đã nén video, bạn có thể xem và tải xuống.");
-    } catch (error) { const message = explainVideoError("nén", error); setStatus(message); toast.error(message); }
+    } catch (error) { const message = explainVideoError("nén", error, ffmpegLogRef.current); setDiagnostic(ffmpegLogRef.current.join("\n") || String(error)); setStatus(message); toast.error(message); }
     finally { setBusy(false); }
   };
 
   const runJoin = async () => {
     if (videos.length < 2) return toast.error("Hãy thêm ít nhất 2 video để nối.");
-    setBusy(true); setProgress(0);
+    ffmpegLogRef.current = []; setDiagnostic(""); setBusy(true); setProgress(0);
     try {
       const ffmpeg = await loadFFmpeg();
       const entries: string[] = [];
@@ -202,7 +219,7 @@ export default function VideoCutterJoiner() {
       setOutputName("dhl-video-joined.mp4");
       setStatus(`Đã nối ${videos.length} video`);
       toast.success("Đã nối video thành công.");
-    } catch (error) { const message = explainVideoError("nối", error); setStatus(message); toast.error(message); }
+    } catch (error) { const message = explainVideoError("nối", error, ffmpegLogRef.current); setDiagnostic(ffmpegLogRef.current.join("\n") || String(error)); setStatus(message); toast.error(message); }
     finally { setBusy(false); }
   };
 
