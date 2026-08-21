@@ -702,3 +702,8 @@
 - [x] Hiển thị thời lượng đoạn chọn và đồng bộ với các ô nhập giây hiện có.
 - [x] Thêm nén video bằng ba mức chất lượng, xử lý cục bộ bằng FFmpeg.
 - [x] Viết test, kiểm tra responsive và phát hành cập nhật.
+
+## Phiên sửa nút tải video 2026-08-21
+- [x] Hiển thị nút Tải video kết quả rõ ràng sau khi cắt, nối hoặc nén thành công.
+- [x] Ẩn nút tải khi chưa có kết quả và giữ tên tệp tải đúng với kết quả đang xem.
+- [x] Viết test hồi quy, kiểm tra giao diện và phát hành bản sửa lỗi.
