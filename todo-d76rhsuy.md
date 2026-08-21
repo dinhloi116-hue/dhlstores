@@ -755,3 +755,9 @@
 - [x] Bổ sung cắt native Canvas/MediaRecorder dựa trên hai mốc timeline đã chọn.
 - [x] Đặt lối vào cắt native rõ ràng, có tiến trình, dừng và tải kết quả local.
 - [x] Viết test hồi quy, kiểm tra giao diện và phát hành bản sửa.
+
+## Phiên sửa cắt native và tên tệp 2026-08-21
+- [x] Sửa cắt native để ghi đủ từ mốc bắt đầu đến mốc kết thúc đã chọn.
+- [x] Bỏ nút cắt FFmpeg không tương thích và giữ một lối vào cắt native rõ ràng.
+- [x] Giữ tên video gốc khi xuất kết quả, chỉ thêm hậu tố xử lý.
+- [x] Viết test hồi quy, kiểm tra giao diện và phát hành bản sửa.

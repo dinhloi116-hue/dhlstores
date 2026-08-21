@@ -21,6 +21,11 @@ function formatTime(value: number) {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
+function outputNameFromSource(fileName: string, suffix: string, extension: string) {
+  const baseName = fileName.replace(/\.[^.]+$/, "").trim() || "video";
+  return `${baseName}-${suffix}.${extension}`;
+}
+
 function explainVideoError(action: string, error: unknown, logs: string[]) {
   const detail = `${String(error ?? "")} ${logs.join(" ")}`.toLowerCase();
   if (detail.includes("decoder") || detail.includes("unsupported codec")) return `Không thể ${action}: trình duyệt không có decoder cho codec của video này. Hãy dùng Xử lý trên máy chủ.`;
@@ -135,7 +140,7 @@ export default function VideoCutterJoiner() {
         setStatus("Đang cắt video…");
         await ffmpeg.exec(["-ss", safeStart.toFixed(3), "-i", input, "-t", (safeEnd - safeStart).toFixed(3), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", "trimmed.mp4"]);
         const data = await ffmpeg.readFile("trimmed.mp4");
-        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), "dhl-video-trimmed.mp4", `Đã cắt ${formatTime(safeStart)} – ${formatTime(safeEnd)}`);
+        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), outputNameFromSource(active.file.name, "cut", "mp4"), `Đã cắt ${formatTime(safeStart)} – ${formatTime(safeEnd)}`);
       }
       if (action === "compress" && active) {
         const settings = compression === "tiny" ? { crf: "32", preset: "veryfast", audio: "96k" } : compression === "small" ? { crf: "28", preset: "fast", audio: "128k" } : { crf: "24", preset: "fast", audio: "160k" };
@@ -145,7 +150,7 @@ export default function VideoCutterJoiner() {
         setStatus("Đang nén video…");
         await ffmpeg.exec(["-i", input, "-c:v", "libx264", "-crf", settings.crf, "-preset", settings.preset, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", settings.audio, "-movflags", "+faststart", "compressed.mp4"]);
         const data = await ffmpeg.readFile("compressed.mp4");
-        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), "dhl-video-compressed.mp4", "Đã nén video.");
+        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), outputNameFromSource(active.file.name, "compressed", "mp4"), "Đã nén video.");
       }
       if (action === "normalize" && active) {
         const extension = active.file.name.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "mp4";
@@ -154,7 +159,7 @@ export default function VideoCutterJoiner() {
         setStatus("Đang chuyển đổi MP4 H.264/AAC trên thiết bị…");
         await ffmpeg.exec(["-i", input, "-map", "0:v:0", "-map", "0:a:0?", "-sn", "-dn", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "normalized.mp4"]);
         const data = await ffmpeg.readFile("normalized.mp4");
-        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), "dhl-video-converted.mp4", "Đã chuyển đổi MP4 H.264/AAC trên thiết bị.");
+        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), outputNameFromSource(active.file.name, "converted", "mp4"), "Đã chuyển đổi MP4 H.264/AAC trên thiết bị.");
       }
       if (action === "join") {
         const entries: string[] = [];
@@ -168,7 +173,7 @@ export default function VideoCutterJoiner() {
         setStatus("Đang nối các video…");
         await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", "concat.txt", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", "joined.mp4"]);
         const data = await ffmpeg.readFile("joined.mp4");
-        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), "dhl-video-joined.mp4", `Đã nối ${videos.length} video.`);
+        setOutput(new Blob([new Uint8Array(data as Uint8Array).buffer as ArrayBuffer], { type: "video/mp4" }), outputNameFromSource(videos[0].file.name, "merged", "mp4"), `Đã nối ${videos.length} video.`);
       }
       toast.success("Đã xử lý video, bạn có thể tải kết quả.");
     } catch (error) {
@@ -261,7 +266,7 @@ export default function VideoCutterJoiner() {
       setProgress(0); return;
     }
     const extension = mimeType.includes("mp4") ? "mp4" : "webm";
-    setOutput(new Blob(chunks, { type: mimeType }), `dhl-video-native-merged.${extension}`, `Đã ghép ${videos.length} video bằng native ${extension.toUpperCase()}.`);
+    setOutput(new Blob(chunks, { type: mimeType }), outputNameFromSource(videos[0].file.name, "merged", extension), `Đã ghép ${videos.length} video bằng native ${extension.toUpperCase()}.`);
     setProgress(100); toast.success("Đã ghép video local, bạn có thể tải kết quả.");
   };
 
@@ -324,9 +329,12 @@ export default function VideoCutterJoiner() {
       await video.play(); draw();
       await new Promise<void>(resolve => {
         const timer = window.setInterval(() => {
-          if (nativeStopRef.current || video.ended || video.currentTime >= safeEnd) { window.clearInterval(timer); resolve(); }
+          if (nativeStopRef.current || video.ended || video.currentTime >= safeEnd - 0.02) { window.clearInterval(timer); resolve(); }
         }, 80);
       });
+      context.drawImage(video, 0, 0, width, height);
+      recorder.requestData();
+      await new Promise<void>(resolve => window.setTimeout(resolve, 180));
       video.pause(); source?.disconnect();
     } catch (error) {
       setDiagnostic(error instanceof Error ? error.message : String(error));
@@ -341,7 +349,7 @@ export default function VideoCutterJoiner() {
       setProgress(0); return;
     }
     const extension = mimeType.includes("mp4") ? "mp4" : "webm";
-    setOutput(new Blob(chunks, { type: mimeType }), `dhl-video-native-trim.${extension}`, `Đã cắt native ${formatTime(safeStart)} – ${formatTime(safeEnd)}.`);
+    setOutput(new Blob(chunks, { type: mimeType }), outputNameFromSource(active.file.name, "cut", extension), `Đã cắt native ${formatTime(safeStart)} – ${formatTime(safeEnd)}.`);
     setProgress(100); toast.success("Đã cắt video local, bạn có thể tải kết quả.");
   };
 
@@ -354,8 +362,7 @@ export default function VideoCutterJoiner() {
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">Cắt, nối, nén và chuyển đổi video hoàn toàn trên thiết bị của bạn. Video không được tải lên máy chủ; không áp dụng giới hạn dung lượng cố định.</p>
       <div className="mt-6 flex flex-wrap gap-2">
         <Button onClick={() => inputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Thêm video</Button>
-        <Button variant="outline" onClick={() => browserProcess("trim")} disabled={busy || !active}><Scissors className="mr-2 h-4 w-4" />Cắt đoạn đang chọn</Button>
-        <Button onClick={runNativeTrim} disabled={busy || !active} className="bg-violet-600 text-white hover:bg-violet-700"><Scissors className="mr-2 h-4 w-4" />Cắt native (khuyên dùng)</Button>
+        <Button onClick={runNativeTrim} disabled={busy || !active} className="bg-violet-600 text-white hover:bg-violet-700"><Scissors className="mr-2 h-4 w-4" />Cắt native theo timeline</Button>
         <Button variant="outline" onClick={() => browserProcess("join")} disabled={busy || videos.length < 2}><WandSparkles className="mr-2 h-4 w-4" />Nối {videos.length} video</Button>
         <Button onClick={runNativeMerge} disabled={busy || videos.length < 2} className="bg-violet-600 text-white hover:bg-violet-700"><WandSparkles className="mr-2 h-4 w-4" />Ghép native (khuyên dùng)</Button>
         {busy && <Button variant="outline" onClick={() => { nativeStopRef.current = true; setStatus("Đang dừng sau video hiện tại…"); }}>Dừng</Button>}
