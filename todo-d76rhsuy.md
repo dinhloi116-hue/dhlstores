@@ -707,3 +707,8 @@
 - [x] Hiển thị nút Tải video kết quả rõ ràng sau khi cắt, nối hoặc nén thành công.
 - [x] Ẩn nút tải khi chưa có kết quả và giữ tên tệp tải đúng với kết quả đang xem.
 - [x] Viết test hồi quy, kiểm tra giao diện và phát hành bản sửa lỗi.
+
+## Phiên xử lý lỗi codec video 2026-08-21
+- [x] Bổ sung fallback chuyển mã video về MP4 H.264/AAC trước khi cắt, nối hoặc nén khi codec đầu vào không tương thích.
+- [x] Hiển thị thông báo lỗi codec rõ ràng, kèm hướng dẫn định dạng MP4 H.264/AAC và trạng thái xử lý.
+- [x] Viết test hồi quy, kiểm tra giao diện lỗi/thành công và phát hành bản sửa.

@@ -22,6 +22,14 @@ function formatTime(value: number) {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
+function explainVideoError(action: string, error: unknown) {
+  const detail = String(error ?? "").toLowerCase();
+  if (detail.includes("codec") || detail.includes("decoder") || detail.includes("invalid data") || detail.includes("unsupported")) {
+    return `Không thể ${action}: codec không tương thích. Hãy đổi video sang MP4 H.264/AAC rồi thử lại.`;
+  }
+  return `Không thể ${action} video trên trình duyệt. Hãy thử tệp MP4 H.264/AAC hoặc tệp nhỏ hơn.`;
+}
+
 export default function VideoCutterJoiner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
@@ -107,7 +115,7 @@ export default function VideoCutterJoiner() {
       const output = "trimmed.mp4";
       await ffmpeg.writeFile(input, await fetchFile(active.file));
       setStatus("Đang cắt video…");
-      await ffmpeg.exec(["-ss", safeStart.toFixed(3), "-i", input, "-t", (safeEnd - safeStart).toFixed(3), "-c", "copy", output]);
+      await ffmpeg.exec(["-ss", safeStart.toFixed(3), "-i", input, "-t", (safeEnd - safeStart).toFixed(3), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", output]);
       const data = await ffmpeg.readFile(output);
       const bytes = new Uint8Array(data as Uint8Array);
       const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "video/mp4" });
@@ -116,7 +124,7 @@ export default function VideoCutterJoiner() {
       setOutputName("dhl-video-trimmed.mp4");
       setStatus(`Đã cắt ${formatTime(safeStart)} – ${formatTime(safeEnd)}`);
       toast.success("Đã cắt video, bạn có thể xem và tải xuống.");
-    } catch { setStatus("Không thể xử lý video này trên trình duyệt"); toast.error("Video có codec không tương thích hoặc trình duyệt thiếu bộ nhớ."); }
+    } catch (error) { const message = explainVideoError("cắt", error); setStatus(message); toast.error(message); }
     finally { setBusy(false); }
   };
 
@@ -140,7 +148,7 @@ export default function VideoCutterJoiner() {
       setOutputName("dhl-video-compressed.mp4");
       setStatus(`Đã nén video · ${compression === "tiny" ? "nhẹ nhất" : compression === "small" ? "nhẹ" : "cân bằng"}`);
       toast.success("Đã nén video, bạn có thể xem và tải xuống.");
-    } catch { setStatus("Không thể nén video này trên trình duyệt"); toast.error("Không thể nén video. Hãy thử tệp MP4 có codec phổ biến."); }
+    } catch (error) { const message = explainVideoError("nén", error); setStatus(message); toast.error(message); }
     finally { setBusy(false); }
   };
 
@@ -166,7 +174,7 @@ export default function VideoCutterJoiner() {
       setOutputName("dhl-video-joined.mp4");
       setStatus(`Đã nối ${videos.length} video`);
       toast.success("Đã nối video thành công.");
-    } catch { setStatus("Không thể nối video trên trình duyệt"); toast.error("Không thể nối các video này. Hãy thử tệp MP4 cùng định dạng."); }
+    } catch (error) { const message = explainVideoError("nối", error); setStatus(message); toast.error(message); }
     finally { setBusy(false); }
   };
 
