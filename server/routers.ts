@@ -11,6 +11,10 @@ import { sdk } from "./_core/sdk";
 import { storagePut } from "./storage";
 import { checkSapoProductReadConnection, pullSapoInventoryBySku, syncSapoInventoryBySku } from "./sapo";
 import { invokeLLM } from "./_core/llm";
+import { spawn } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
@@ -21,6 +25,44 @@ const visitorKeySchema = z.string().trim().regex(/^[a-zA-Z0-9_-]{16,96}$/, "Phi�
 const supportMessageSchema = z.string().trim().min(1, "Vui lòng nhập nội dung").max(2000, "Tin nhắn tối đa 2.000 ký tự");
 const supportImageSchema = z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]), base64: z.string().min(1) });
 const supportSubmissionSchema = z.object({ message: z.string().trim().max(2000, "Nội dung tối đa 2.000 ký tự"), image: supportImageSchema.optional() }).refine(value => Boolean(value.message || value.image), "Vui lòng nhập nội dung hoặc chọn một ảnh");
+const SERVER_VIDEO_MAX_BYTES = 20 * 1024 * 1024;
+let serverVideoTranscodeRunning = false;
+
+async function transcodeVideoOnServer(userId: number, input: { fileName: string; mimeType: string; base64: string }) {
+  const source = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+  if (!source.length || source.length > SERVER_VIDEO_MAX_BYTES) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Chuyển đổi trên máy chủ hỗ trợ video tối đa 20 MB để bảo đảm xử lý ổn định." });
+  }
+  if (serverVideoTranscodeRunning) {
+    throw new TRPCError({ code: "CONFLICT", message: "Máy chủ đang xử lý một video khác. Vui lòng thử lại sau ít phút." });
+  }
+  const extension = input.fileName.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "mp4";
+  const safeStem = input.fileName.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80) || "video";
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "dhl-video-"));
+  const inputPath = path.join(tempDir, `input.${extension}`);
+  const outputPath = path.join(tempDir, `${safeStem}-converted.mp4`);
+  serverVideoTranscodeRunning = true;
+  try {
+    await writeFile(inputPath, source);
+    await new Promise<void>((resolve, reject) => {
+      const process = spawn("ffmpeg", ["-y", "-i", inputPath, "-map", "0:v:0", "-map", "0:a:0?", "-sn", "-dn", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", outputPath], { stdio: ["ignore", "ignore", "pipe"] });
+      let errorLog = "";
+      process.stderr.on("data", (chunk: Buffer) => { errorLog = `${errorLog}${chunk.toString()}`.slice(-1600); });
+      process.on("error", reject);
+      process.on("close", code => code === 0 ? resolve() : reject(new Error(errorLog || `ffmpeg exited with code ${code}`)));
+    });
+    const output = await readFile(outputPath);
+    if (!output.length) throw new Error("FFmpeg did not create an output video");
+    const stored = await storagePut(`video-tools/${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${safeStem}.mp4`, output, "video/mp4");
+    return { url: stored.url, fileName: `${safeStem}-converted.mp4`, size: output.length };
+  } catch (error) {
+    console.error("[video-transcode]", error);
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Máy chủ không thể chuyển đổi video này. Hãy kiểm tra tệp có bị hỏng hoặc thử tệp tối đa 20 MB." });
+  } finally {
+    serverVideoTranscodeRunning = false;
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
 
 async function storeSupportImage(visitorKey: string, image?: z.infer<typeof supportImageSchema>) {
   if (!image) return {};
@@ -118,6 +160,18 @@ export const appRouter = router({
   }),
 
   catalogAdmin: catalogAdminRouter,
+
+  videoTools: router({
+    transcodeServer: protectedProcedure
+      .input(z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.string().trim().max(128), base64: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await requireActiveAccount(ctx.user!.id);
+        if (!input.mimeType.startsWith("video/")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Chỉ hỗ trợ tệp video." });
+        }
+        return transcodeVideoOnServer(ctx.user!.id, input);
+      }),
+  }),
 
   analytics: router({
     recordVisit: publicProcedure.input(z.object({ visitorId: z.string().min(8).max(128), path: z.string().min(1).max(512) })).mutation(({ input }) => db.recordVisitorEvent(input.visitorId, input.path)),

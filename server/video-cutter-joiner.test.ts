@@ -13,7 +13,7 @@ describe("video cutter and joiner", () => {
     expect(library).toContain("/tools/video-cutter");
   });
 
-  it("keeps processing local with trim, concat, download and safe limits", () => {
+  it("keeps browser tools plus a bounded server fallback with trim, concat and download", () => {
     expect(tool).toContain("@ffmpeg/ffmpeg");
     expect(tool).toContain("MAX_FILE_SIZE = 300 * 1024 * 1024");
     expect(tool).toContain("MAX_FILES = 8");
@@ -25,6 +25,7 @@ describe("video cutter and joiner", () => {
     expect(tool).toContain("compression");
     expect(tool).toContain("libx264");
     expect(tool).toContain("Đang nén video");
-    expect(tool).toContain("Tệp không tự tải lên máy chủ");
+    expect(tool).toContain("Xử lý máy chủ (≤20 MB)");
+    expect(tool).toContain("SERVER_TRANSCODE_MAX_BYTES = 20 * 1024 * 1024");
   });
 });

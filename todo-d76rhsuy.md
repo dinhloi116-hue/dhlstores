@@ -722,4 +722,10 @@
 - [x] Ghi nhận nhật ký FFmpeg ngắn gọn theo từng lần xử lý để xác định lỗi codec, audio, bộ nhớ hay tải lõi.
 - [x] Sửa tham số lệnh nén và hiển thị chẩn đoán có thể hành động cho người dùng.
 - [x] Đánh giá phương án xử lý phía máy chủ khi codec đầu vào không có decoder trong trình duyệt.
-- [ ] Viết test hồi quy, kiểm tra thực tế và phát hành bản sửa.
+- [x] Viết test hồi quy, kiểm tra thực tế và phát hành bản sửa.
+
+## Phiên xử lý video phía máy chủ 2026-08-21
+- [x] Giới hạn tệp chuyển mã phía máy chủ để phù hợp bộ nhớ/thời gian xử lý và bảo vệ hệ thống.
+- [x] Bổ sung FFmpeg vào runtime triển khai và endpoint chuyển đổi MP4 H.264/AAC có kiểm tra quyền truy cập.
+- [x] Kết nối nút chuyển đổi dự phòng từ giao diện, hiển thị tiến trình và tải kết quả.
+- [x] Viết test, kiểm tra tệp mẫu thực tế và phát hành bản sửa.
