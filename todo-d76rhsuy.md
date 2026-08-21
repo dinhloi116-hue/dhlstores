@@ -688,3 +688,17 @@
 - [x] Cho phép thêm nhiều video, sắp xếp và nối thành một tệp kết quả.
 - [x] Cho phép tải video đã cắt/nối, giữ dữ liệu cục bộ và giới hạn tệp hợp lý.
 - [x] Viết test, kiểm tra responsive desktop, build và phát hành checkpoint.
+
+
+## Phiên mở rộng preview thư viện Công cụ 2026-08-21
+- [ ] Thiết kế preview menu Công cụ có thể hiển thị nhiều tiện ích mà không bị chật.
+- [ ] Thêm tìm kiếm/lọc nhanh và nhóm tiện ích trong preview.
+- [ ] Bổ sung lối vào rõ tới thư viện đầy đủ và cập nhật các tiện ích hiện có.
+- [ ] Kiểm tra hover, responsive và phát hành checkpoint.
+
+
+## Phiên mở rộng nén và timeline video 2026-08-21
+- [x] Thêm timeline hai tay kéo để chọn thời điểm bắt đầu/kết thúc khi cắt video.
+- [x] Hiển thị thời lượng đoạn chọn và đồng bộ với các ô nhập giây hiện có.
+- [x] Thêm nén video bằng ba mức chất lượng, xử lý cục bộ bằng FFmpeg.
+- [x] Viết test, kiểm tra responsive và phát hành cập nhật.

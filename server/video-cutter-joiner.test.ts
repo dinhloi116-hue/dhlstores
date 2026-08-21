@@ -20,6 +20,11 @@ describe("video cutter and joiner", () => {
     expect(tool).toContain("-ss");
     expect(tool).toContain("concat.txt");
     expect(tool).toContain("download={outputName}");
+    expect(tool).toContain("aria-label=\"Thời điểm bắt đầu\"");
+    expect(tool).toContain("aria-label=\"Thời điểm kết thúc\"");
+    expect(tool).toContain("compression");
+    expect(tool).toContain("libx264");
+    expect(tool).toContain("Đang nén video");
     expect(tool).toContain("Tệp không tự tải lên máy chủ");
   });
 });
