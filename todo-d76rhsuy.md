@@ -712,3 +712,8 @@
 - [x] Bổ sung fallback chuyển mã video về MP4 H.264/AAC trước khi cắt, nối hoặc nén khi codec đầu vào không tương thích.
 - [x] Hiển thị thông báo lỗi codec rõ ràng, kèm hướng dẫn định dạng MP4 H.264/AAC và trạng thái xử lý.
 - [x] Viết test hồi quy, kiểm tra giao diện lỗi/thành công và phát hành bản sửa.
+
+## Phiên chẩn đoán codec đầu vào 2026-08-21
+- [x] Chẩn đoán sớm khả năng đọc metadata video và hiển thị trạng thái codec cho người dùng.
+- [x] Thêm nút chuyển đổi riêng về MP4 H.264/AAC trước khi cắt khi tệp đầu vào không tương thích.
+- [x] Viết test hồi quy, kiểm tra luồng lỗi/thành công và phát hành bản sửa.
