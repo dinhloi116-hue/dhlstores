@@ -13,6 +13,7 @@ import TestCustomerAccount from "@/pages/TestCustomerAccount";
 import PetTramTool from "@/pages/PetTramTool";
 import ToolsLibrary from "@/pages/ToolsLibrary";
 import NotebookLabelMaker from "@/pages/NotebookLabelMaker";
+import VideoCutterJoiner from "@/pages/VideoCutterJoiner";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -30,6 +31,7 @@ function Router() {
       <Route path={"/tools"} component={ToolsLibrary} />
       <Route path={"/tools/pet-tram"} component={PetTramTool} />
       <Route path={"/tools/notebook-labels"} component={NotebookLabelMaker} />
+      <Route path={"/tools/video-cutter"} component={VideoCutterJoiner} />
       <Route path={"/account"} component={Account} />
       <Route path={"/admin"} component={AdminOrders} />
       <Route path={"/admin/operations"} component={OperationsCenter} />

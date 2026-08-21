@@ -680,3 +680,11 @@
 - [x] Thêm tùy chỉnh font chữ và màu chữ cho nội dung trên nhãn.
 - [x] Cho phép tải từng nhãn thành PNG bên cạnh xuất PDF, kèm kiểm soát dung lượng và định dạng ảnh.
 - [x] Viết/cập nhật test, kiểm tra giao diện và phát hành checkpoint.
+
+
+## Phiên tiện ích cắt và nối video 2026-08-21
+- [x] Thêm lối vào Video Cutter & Joiner trong thư viện Công cụ.
+- [x] Cho phép nhập video cục bộ, xem trước và chọn đoạn bắt đầu/kết thúc để cắt.
+- [x] Cho phép thêm nhiều video, sắp xếp và nối thành một tệp kết quả.
+- [x] Cho phép tải video đã cắt/nối, giữ dữ liệu cục bộ và giới hạn tệp hợp lý.
+- [x] Viết test, kiểm tra responsive desktop, build và phát hành checkpoint.
