@@ -733,10 +733,15 @@
 ## Phiên sửa lỗi 503 xử lý video 2026-08-21
 - [x] Kiểm tra log production/Docker để xác định nguyên nhân endpoint FFmpeg trả 503.
 - [x] Sửa runtime hoặc route tRPC để endpoint trả JSON hợp lệ thay vì Service Unavailable.
-- [ ] Kiểm thử endpoint thực tế và phát hành bản sửa.
+- [x] Không áp dụng: endpoint đã được gỡ theo yêu cầu xử lý video hoàn toàn cục bộ.
 
 ## Phiên sửa 503 bằng tải S3 trực tiếp 2026-08-21
 - [x] Thêm presigned PUT cho video tạm có giới hạn quyền và dung lượng.
 - [x] Chuyển endpoint FFmpeg sang nhận khóa S3, tải nguồn trực tiếp từ S3 và trả JSON tRPC nhỏ.
 - [x] Cập nhật giao diện tải trực tiếp lên S3, hiển thị tiến trình và nhận kết quả.
-- [ ] Viết test hồi quy, kiểm tra production và phát hành bản sửa.
+- [x] Không áp dụng: luồng tải S3 đã được gỡ theo yêu cầu xử lý video hoàn toàn cục bộ.
+
+## Phiên xử lý video local không giới hạn cố định 2026-08-21
+- [x] Loại bỏ nút, endpoint và luồng tải video lên S3/máy chủ khỏi tiện ích.
+- [x] Bỏ giới hạn 20 MB và 300 MB; để trình duyệt xử lý theo khả năng thiết bị.
+- [x] Cập nhật thông báo quyền riêng tư, test hồi quy và phát hành bản sửa.
