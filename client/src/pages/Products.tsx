@@ -33,12 +33,17 @@ export default function Products() {
 
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCategory);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("default");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sizeFilter, setSizeFilter] = useState("");
   const [colorFilter, setColorFilter] = useState("");
   const [catalogQuickFilter, setCatalogQuickFilter] = useState<"all" | "digital" | "physical" | "in-stock">("all");
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearchQuery(searchQuery.trim()), 280);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
   const clearCatalogFilters = () => {
     setSelectedCategory(undefined);
     setSearchQuery("");
@@ -53,7 +58,7 @@ export default function Products() {
   const facetsQuery = trpc.store.productVariantFacets.useQuery(isPrintShop ? { categoryId: selectedCategory } : undefined, { enabled: isPrintShop });
   const productsQuery = trpc.store.products.useQuery({
     categoryId: selectedCategory,
-    search: searchQuery || undefined,
+    search: debouncedSearchQuery || undefined,
     type: isTypeScoped ? (isPhysicalCatalog ? "physical" : "digital") : undefined,
     minPrice: isPrintShop && minPrice ? Number(minPrice) : undefined,
     maxPrice: isPrintShop && maxPrice ? Number(maxPrice) : undefined,

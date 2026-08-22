@@ -20,5 +20,7 @@ describe("catalog type split", () => {
     expect(products).toContain("product.type === (isPhysicalCatalog ? \"physical\" : \"digital\")");
     expect(products).toContain('loading={index < 4 ? "eager" : "lazy"}');
     expect(products).toContain('decoding="async"');
+    expect(products).toContain("setDebouncedSearchQuery(searchQuery.trim())");
+    expect(products).toContain("search: debouncedSearchQuery || undefined");
   });
 });

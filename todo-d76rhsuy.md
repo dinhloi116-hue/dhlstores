@@ -795,3 +795,7 @@
 - [x] Kiểm tra các thành phần nổi có thể che nội dung khi khách duyệt trang.
 - [x] Điều chỉnh ưu tiên hiển thị và lưu lựa chọn đóng của người dùng để giảm gián đoạn.
 - [x] Kiểm tra desktop/mobile, cập nhật hồi quy và phát hành cải tiến.
+
+## Đợt tối ưu tìm kiếm catalog 2026-08-21
+- [x] Debounce từ khóa tìm kiếm catalog để không gửi query ở từng ký tự người dùng gõ.
+- [x] Bổ sung hồi quy, kiểm tra trải nghiệm lọc và phát hành cải tiến.
