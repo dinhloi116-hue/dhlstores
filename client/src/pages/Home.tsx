@@ -51,6 +51,7 @@ export default function Home() {
 
   const formatCurrency = (val: string | number) => {
     const num = Number(val);
+    if (!Number.isFinite(num) || num <= 0) return lang === 'vi' ? 'Đang cập nhật giá' : 'Price being updated';
     if (lang === 'en') {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num / 25000);
     }

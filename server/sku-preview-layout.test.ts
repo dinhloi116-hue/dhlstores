@@ -64,6 +64,16 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
   });
 
+  it("uses a clear pending-price label across customer product surfaces", () => {
+    const detailSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+    const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+    const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+
+    expect(detailSource).toContain("Sản phẩm đang được cập nhật giá");
+    expect(catalogSource).toContain("return lang === 'vi' ? 'Đang cập nhật giá'");
+    expect(homeSource).toContain("return lang === 'vi' ? 'Đang cập nhật giá'");
+  });
+
   it("blocks purchase actions and explains missing price", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
