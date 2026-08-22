@@ -790,3 +790,8 @@
 - [x] Tách route Cắt & Nối Video bằng lazy loading để thư viện xử lý video không chặn tải trang cửa hàng ban đầu.
 - [x] Tách tải các trang phụ như quản trị, tài khoản, checkout, so sánh và công cụ bằng lazy loading để giảm bundle trang chủ.
 - [x] Tối ưu ảnh catalog bằng tải chậm và giải mã bất đồng bộ cho sản phẩm ngoài vùng nhìn ban đầu.
+
+## Đợt tối ưu thành phần nổi 2026-08-21
+- [x] Kiểm tra các thành phần nổi có thể che nội dung khi khách duyệt trang.
+- [x] Điều chỉnh ưu tiên hiển thị và lưu lựa chọn đóng của người dùng để giảm gián đoạn.
+- [x] Kiểm tra desktop/mobile, cập nhật hồi quy và phát hành cải tiến.

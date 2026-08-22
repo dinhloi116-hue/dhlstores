@@ -8,6 +8,8 @@ type InstallPromptEvent = Event & {
 };
 
 const DISMISS_KEY = "dhlstores-pwa-install-dismissed";
+const PROMPT_DELAY_MS = 12_000;
+const DISMISS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
 export default function PwaInstallPrompt() {
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null);
@@ -16,25 +18,34 @@ export default function PwaInstallPrompt() {
 
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
-    if (standalone || localStorage.getItem(DISMISS_KEY) === "1") return;
+    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY));
+    if (standalone || (Number.isFinite(dismissedAt) && dismissedAt > 0 && Date.now() - dismissedAt < DISMISS_WINDOW_MS)) return;
 
     const ios = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
     setIsIos(ios);
+    let promptTimer: number | undefined;
+    const revealAfterDelay = () => {
+      window.clearTimeout(promptTimer);
+      promptTimer = window.setTimeout(() => setVisible(true), PROMPT_DELAY_MS);
+    };
     const handleInstallAvailable = (event: Event) => {
       event.preventDefault();
       setInstallEvent(event as InstallPromptEvent);
-      setVisible(true);
+      revealAfterDelay();
     };
 
     window.addEventListener("beforeinstallprompt", handleInstallAvailable);
-    if (ios) setVisible(true);
-    return () => window.removeEventListener("beforeinstallprompt", handleInstallAvailable);
+    if (ios) revealAfterDelay();
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleInstallAvailable);
+      window.clearTimeout(promptTimer);
+    };
   }, []);
 
   if (!visible) return null;
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, "1");
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
     setVisible(false);
   };
 
@@ -47,7 +58,7 @@ export default function PwaInstallPrompt() {
   };
 
   return (
-    <aside className="fixed inset-x-3 bottom-20 z-[80] mx-auto max-w-md rounded-2xl border border-amber-200 bg-white p-3 shadow-2xl shadow-slate-900/20 sm:inset-x-auto sm:right-5 sm:bottom-5" aria-label="Cài DHL Stores như ứng dụng">
+    <aside className="fixed inset-x-3 bottom-4 z-[80] mx-auto max-w-md rounded-2xl border border-amber-200 bg-white p-3 shadow-2xl shadow-slate-900/20 sm:inset-x-auto sm:right-5 sm:bottom-5" aria-label="Cài DHL Stores như ứng dụng">
       <div className="flex items-start gap-3">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700"><Download className="h-5 w-5" /></div>
         <div className="min-w-0 flex-1">
