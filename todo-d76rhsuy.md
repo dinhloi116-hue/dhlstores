@@ -818,3 +818,11 @@
 - [x] Rà soát tiếp các mục còn tồn đọng trong báo cáo trải nghiệm khách hàng sau đợt sửa giá 0đ/hết hàng.
 - [ ] Tiếp tục tự kiểm thử và sửa các lỗi UX an toàn được phát hiện trong các đợt sau.
 - [ ] Tự báo cáo kết quả kiểm thử và các mục cần người dùng kiểm tra thực tế.
+
+## Năm vòng tự kiểm thử và cải thiện liên tiếp 2026-08-22
+- [x] Vòng 1: kiểm thử và cải thiện duyệt sản phẩm, tìm kiếm, giá và tồn kho.
+- [ ] Vòng 2: kiểm thử và cải thiện giỏ hàng, số lượng, xóa dòng và checkout trước thanh toán thật.
+- [ ] Vòng 3: kiểm thử và cải thiện tài khoản, hỗ trợ, nhắn tin và góp ý.
+- [ ] Vòng 4: kiểm thử và cải thiện thư viện công cụ, tải tệp local-only và responsive.
+- [ ] Vòng 5: chạy hồi quy toàn hệ thống, tối ưu an toàn, build và kiểm tra giao diện tổng hợp.
+- [ ] Lưu checkpoint sau từng vòng và báo cáo kết quả ngắn gọn.
