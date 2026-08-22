@@ -799,3 +799,13 @@
 ## Đợt tối ưu tìm kiếm catalog 2026-08-21
 - [x] Debounce từ khóa tìm kiếm catalog để không gửi query ở từng ký tự người dùng gõ.
 - [x] Bổ sung hồi quy, kiểm tra trải nghiệm lọc và phát hành cải tiến.
+
+## Phiên kiểm tra trải nghiệm khách hàng 2026-08-22
+- [x] Kiểm tra luồng vào cửa hàng, catalog, sản phẩm, giỏ hàng, tài khoản và công cụ theo góc nhìn khách.
+- [x] Ghi nhận 5 điểm cải thiện có tác động cao mà không tạo đơn/thanh toán thật.
+- [x] Bàn giao báo cáo ưu tiên cho người dùng.
+
+## Phiên cải thiện khách hàng ưu tiên 2026-08-22
+- [x] Gom/thu gọn nút Nhắn tin và Góp ý để không che ảnh, biểu mẫu hoặc nội dung trên mobile.
+- [x] Chỉ hiển thị nút “Nhắc lại khi có hàng” khi mọi SKU thực sự hết; ưu tiên CTA mua/giỏ hàng khi còn SKU bán được.
+- [x] Bổ sung hồi quy, kiểm tra desktop/mobile và phát hành hai cải thiện.

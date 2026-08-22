@@ -26,6 +26,7 @@ export default function CustomerContactHub() {
   const [visitorKey, setVisitorKey] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [supportMenuOpen, setSupportMenuOpen] = useState(false);
   const [feedback, setFeedback] = useState({ displayName: "", contact: "", topic: "suggestion" as "suggestion" | "issue" | "other", message: "" });
   const [chatName, setChatName] = useState("");
   const [chatMessage, setChatMessage] = useState("");
@@ -112,7 +113,7 @@ export default function CustomerContactHub() {
 
   return (
     <>
-      <div className="fixed right-3 top-1/2 z-40 -translate-y-1/2 sm:right-4">
+      <div className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 sm:block sm:right-4">
         <Sheet open={feedbackOpen} onOpenChange={setFeedbackOpen}>
           <SheetTrigger asChild>
             <button className="group flex w-11 flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-white px-2 py-3 text-amber-700 shadow-lg transition hover:-translate-y-1 hover:border-amber-400 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-400 sm:w-12" aria-label="Gửi góp ý cho DHL Stores">
@@ -148,7 +149,7 @@ export default function CustomerContactHub() {
         </Sheet>
       </div>
 
-      <div className="fixed right-3 top-[calc(50%+4.25rem)] z-40 sm:right-4">
+      <div className="fixed right-3 top-[calc(50%+4.25rem)] z-40 hidden sm:block sm:right-4">
         <Sheet open={chatOpen} onOpenChange={setChatOpen}>
           <SheetTrigger asChild>
             <button className="group flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl transition hover:-translate-y-1 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-400">
@@ -183,6 +184,14 @@ export default function CustomerContactHub() {
             </form>
           </SheetContent>
         </Sheet>
+      </div>
+
+      <div className="fixed bottom-5 right-3 z-40 flex flex-col items-end gap-2 sm:hidden">
+        {supportMenuOpen && <div className="flex flex-col items-end gap-2 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur">
+          <button type="button" onClick={() => { setChatOpen(true); setSupportMenuOpen(false); }} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white"><MessageCircleMore className="h-4 w-4 text-cyan-300" />Nhắn cửa hàng</button>
+          <button type="button" onClick={() => { setFeedbackOpen(true); setSupportMenuOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-black text-amber-800"><ThumbsUp className="h-4 w-4" />Gửi góp ý</button>
+        </div>}
+        <button type="button" onClick={() => setSupportMenuOpen(current => !current)} aria-label={supportMenuOpen ? "Đóng hỗ trợ" : "Mở hỗ trợ"} aria-expanded={supportMenuOpen} className="inline-flex h-12 items-center gap-2 rounded-full bg-slate-950 px-4 text-xs font-black text-white shadow-xl transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-400"><span>{supportMenuOpen ? "Đóng" : "Hỗ trợ"}</span>{supportMenuOpen ? <X className="h-4 w-4" /> : <MessageCircleMore className="h-5 w-5 text-cyan-300" />}</button>
       </div>
     </>
   );

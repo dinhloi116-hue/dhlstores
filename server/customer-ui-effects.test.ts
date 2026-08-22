@@ -17,10 +17,16 @@ describe("customer UI effects", () => {
   it("keeps catalog browsing in place with Quick View and only exposes real size data on product detail", () => {
     const products = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
     const detail = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+    const contactHub = readFileSync(new URL("../client/src/components/CustomerContactHub.tsx", import.meta.url), "utf8");
 
     expect(products).toContain("quickViewProduct");
     expect(products).toContain("Xem chi tiết & chọn SKU");
     expect(detail).toContain("availableSizes");
     expect(detail).toContain("không áp dụng bảng số đo chung");
+    expect(detail).toContain("allPhysicalSkusOutOfStock");
+    expect(detail).toContain("const canRequestRestock = Boolean(allPhysicalSkusOutOfStock)");
+    expect(contactHub).toContain("supportMenuOpen");
+    expect(contactHub).toContain("Nhắn cửa hàng");
+    expect(contactHub).toContain("Gửi góp ý");
   });
 });

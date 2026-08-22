@@ -105,11 +105,12 @@ export default function ProductDetail() {
   const requestRestockMutation = trpc.store.requestRestock.useMutation({ onSuccess: () => { void utils.store.restockSubscriptions.invalidate(); toast.success("Đã đăng ký nhắc lại hàng. Khi kho được cập nhật, trạng thái sẽ hiện trong Tài khoản."); }, onError: error => toast.error(error.message) });
   const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
   const isFavorite = Boolean(product && (favoritesQuery.data || []).some(item => item.productId === product.id));
-  const restockVariantId = selectedVariant && Number(selectedVariant.stock || 0) <= 0 ? selectedVariant.id : undefined;
-  const restockSubscription = product ? (restockSubscriptionsQuery.data || []).find(item => item.productId === product.id && item.variantId === (restockVariantId || 0) && item.status !== "cancelled") : undefined;
   const sortedVariants = [...variants].sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
   const inStockSkuCount = variants.filter(variant => Number(variant.stock) > 0).length;
   const totalSkuStock = variants.reduce((total, variant) => total + Math.max(0, Number(variant.stock) || 0), 0);
+  const allPhysicalSkusOutOfStock = product?.type === "physical" && (variants.length > 0 ? totalSkuStock <= 0 : Number(product.stock || 0) <= 0);
+  const restockVariantId = allPhysicalSkusOutOfStock && selectedVariant ? selectedVariant.id : undefined;
+  const restockSubscription = product ? (restockSubscriptionsQuery.data || []).find(item => item.productId === product.id && item.variantId === (restockVariantId || 0) && item.status !== "cancelled") : undefined;
   const normalizedSkuSearch = skuSearch.trim().toLocaleLowerCase("vi-VN");
   const visibleVariants = normalizedSkuSearch ? sortedVariants.filter(variant => `${formatVariantOptions(variant)} ${variant.sku || ""}`.toLocaleLowerCase("vi-VN").includes(normalizedSkuSearch)) : sortedVariants;
   const selectedSkuItems = sortedVariants.map(variant => ({ variant, quantity: variantQuantities[variant.id] ?? 0 })).filter(item => item.quantity > 0);
@@ -124,7 +125,7 @@ export default function ProductDetail() {
   const availableSizes = Array.from(new Set(sortedVariants.map(variant => variant.size).filter((size): size is string => Boolean(size))));
   const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
   const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? totalSkuStock : product.stock) : Number.MAX_SAFE_INTEGER;
-  const canRequestRestock = Boolean(product?.type === "physical" && ((!selectedVariant && Number(availableStock || 0) <= 0) || Number(selectedVariant?.stock || 0) <= 0));
+  const canRequestRestock = Boolean(allPhysicalSkusOutOfStock);
   const requiresVariant = product?.type === "physical" && variants.length > 0;
   const isPreorder = product?.type === "physical" && fulfillmentMode === 'preorder';
   const isMarketplaceLayout = product?.type === "physical" && product.purchaseLayout === "marketplace";
