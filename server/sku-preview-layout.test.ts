@@ -64,6 +64,14 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
   });
 
+  it("blocks purchase actions and explains missing price", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const hasSellablePrice = Number(product?.price ?? 0) > 0");
+    expect(source).toContain("Sản phẩm đang được cập nhật giá");
+    expect(source).toContain("disabled={adding || !hasSellablePrice");
+  });
+
   it("uses post-merger province and ward selectors for physical shipping", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
     const dataSource = readFileSync(new URL("../client/src/data/vietnam-admin-2025.json", import.meta.url), "utf8");

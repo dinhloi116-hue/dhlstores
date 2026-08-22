@@ -125,6 +125,7 @@ export default function ProductDetail() {
   const availableSizes = Array.from(new Set(sortedVariants.map(variant => variant.size).filter((size): size is string => Boolean(size))));
   const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
   const availableStock = product?.type === "physical" ? (selectedVariant ? selectedVariant.stock : variants.length > 0 ? totalSkuStock : product.stock) : Number.MAX_SAFE_INTEGER;
+  const hasSellablePrice = Number(product?.price ?? 0) > 0 && Number.isFinite(Number(product?.price));
   const canRequestRestock = Boolean(allPhysicalSkusOutOfStock);
   const requiresVariant = product?.type === "physical" && variants.length > 0;
   const isPreorder = product?.type === "physical" && fulfillmentMode === 'preorder';
@@ -286,6 +287,10 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = () => {
+    if (!hasSellablePrice) {
+      toast.error(lang === 'vi' ? "Sản phẩm đang được cập nhật giá. Bạn vẫn có thể xem chi tiết hoặc nhắn cửa hàng." : "The price is being updated. You can still view details or contact the store.");
+      return;
+    }
     if (!isAuthenticated) {
       toast.error(lang === 'vi' ? "Vui lòng đăng nhập để thêm vào giỏ hàng" : "Please sign in to add to cart");
       startLogin();
@@ -313,6 +318,10 @@ export default function ProductDetail() {
   };
 
   const handleBuyNow = () => {
+    if (!hasSellablePrice) {
+      toast.error(lang === 'vi' ? "Sản phẩm đang được cập nhật giá. Bạn vẫn có thể xem chi tiết hoặc nhắn cửa hàng." : "The price is being updated. You can still view details or contact the store.");
+      return;
+    }
     if (!isAuthenticated) {
       toast.error(lang === 'vi' ? "Vui lòng đăng nhập để mua tài nguyên" : "Please sign in to purchase");
       startLogin();
@@ -438,7 +447,7 @@ export default function ProductDetail() {
                 <span>{product.type === "physical" ? (isPreorder ? (lang === 'vi' ? 'Order trước · dự kiến 7–10 ngày' : 'Pre-order · estimated 7–10 days') : (lang === 'vi' ? `${availableStock > 0 ? `Còn ${availableStock}` : "Đã hết"} trong kho` : `${availableStock > 0 ? availableStock : "Out of"} stock`)) : (lang === 'vi' ? 'Bản quyền thương mại trọn đời' : 'Lifetime Commercial License')}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{product.name}</h1>
-              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className={`text-2xl font-black ${product.type === 'physical' ? 'text-[#ee4d2d]' : 'text-amber-600'}`}>{formatCurrency(unitPrice * (isPreorder ? 0.9 : 1))}</p>{applicableWholesaleTier && <Badge className="bg-emerald-100 text-emerald-800">Giá sỉ từ {applicableWholesaleTier.minQuantity} cái</Badge>}{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(unitPrice)}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
+              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1"><p className={`text-2xl font-black ${product.type === 'physical' ? 'text-[#ee4d2d]' : 'text-amber-600'}`}>{hasSellablePrice ? formatCurrency(unitPrice * (isPreorder ? 0.9 : 1)) : (lang === 'vi' ? 'Đang cập nhật giá' : 'Price being updated')}</p>{applicableWholesaleTier && <Badge className="bg-emerald-100 text-emerald-800">Giá sỉ từ {applicableWholesaleTier.minQuantity} cái</Badge>}{isPreorder && <><p className="text-sm font-bold text-slate-400 line-through">{formatCurrency(unitPrice)}</p><Badge className="bg-rose-100 text-rose-700">Giảm 10% Order</Badge></>}</div>
               <div className="mt-4 flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" className={isFavorite ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100" : "border-slate-200 text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"} disabled={toggleFavoriteMutation.isPending} onClick={() => { if (!isAuthenticated) { toast.info("Đăng nhập để lưu sản phẩm yêu thích"); startLogin(); return; } toggleFavoriteMutation.mutate({ productId: product.id }); }}><Heart className={`mr-1.5 h-3.5 w-3.5 ${isFavorite ? "fill-current" : ""}`} />{isFavorite ? "Đã yêu thích" : "Yêu thích"}</Button><Button type="button" size="sm" variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" onClick={() => { const result = toggleComparedProduct(product.id); if (result.limitReached) { toast.error("Bạn chỉ có thể so sánh tối đa 4 sản phẩm."); return; } setCompareIds(getComparedProductIds()); toast.success(result.added ? "Đã thêm vào danh sách so sánh" : "Đã bỏ khỏi danh sách so sánh"); }}><Scale className="mr-1.5 h-3.5 w-3.5" />{compareIds.includes(product.id) ? "Đã chọn so sánh" : "So sánh"}</Button>{compareIds.length > 0 && <Link href="/compare" className="inline-flex items-center rounded-md border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-50">So sánh ({compareIds.length})</Link>}{canRequestRestock && <Button type="button" size="sm" variant="outline" disabled={requestRestockMutation.isPending || Boolean(restockSubscription?.status === "active")} className={restockSubscription?.status === "ready" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"} onClick={() => { if (!isAuthenticated) { toast.info("Đăng nhập để đăng ký nhắc lại hàng"); startLogin(); return; } requestRestockMutation.mutate({ productId: product.id, variantId: restockVariantId }); }}><BellRing className="mr-1.5 h-3.5 w-3.5" />{restockSubscription?.status === "ready" ? "SKU đã về hàng" : restockSubscription?.status === "active" ? "Đã đăng ký nhắc hàng" : "Nhắc lại khi có hàng"}</Button>}</div>
             </div>
 
@@ -477,7 +486,7 @@ export default function ProductDetail() {
             <div id="product-purchase-actions" className={`sticky bottom-0 z-20 rounded-xl bg-emerald-50/95 p-2 pt-3 shadow-[0_-8px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:flex sm:flex-row sm:gap-4 ${product.type === 'physical' ? 'fixed inset-x-0 bottom-0 rounded-none border-t border-slate-200 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:static sm:rounded-xl sm:border-0 sm:p-2' : ''} ${isMarketplaceLayout ? 'hidden' : ''}`}>
               <Button
                 onClick={handleAddToCart}
-                disabled={adding || (product.type === "physical" && ((variants.length > 0 && selectedSkuTotal < 1) || (variants.length === 0 && fulfillmentMode === 'in_stock' && availableStock <= 0)))}
+                disabled={adding || !hasSellablePrice || (product.type === "physical" && ((variants.length > 0 && selectedSkuTotal < 1) || (variants.length === 0 && fulfillmentMode === 'in_stock' && availableStock <= 0)))}
                 variant="outline"
                 className={`flex-1 bg-white font-bold py-3.5 rounded-xl shadow-xs text-sm ${product.type === 'physical' ? 'border-[#ee4d2d] text-[#ee4d2d] hover:bg-orange-50' : 'border-amber-500 text-amber-700 hover:bg-amber-50'}`}
               >
@@ -486,7 +495,7 @@ export default function ProductDetail() {
               </Button>
               <Button
                 onClick={handleBuyNow}
-                disabled={adding || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && (!selectedVariantId || directPurchaseQuantity < 1))))}
+                disabled={adding || !hasSellablePrice || (product.type === "physical" && ((fulfillmentMode === 'in_stock' && availableStock <= 0) || (requiresVariant && (!selectedVariantId || directPurchaseQuantity < 1))))}
                 className={`flex-1 font-bold py-3.5 rounded-xl shadow-md text-sm ${isPreorder ? "bg-rose-500 text-white hover:bg-rose-600" : product.type === 'physical' ? "bg-[#ee4d2d] text-white hover:bg-[#d94325]" : "bg-amber-500 text-slate-950 hover:bg-amber-600"}`}
               >
                 {isPreorder ? <Clock3 className="w-4 h-4 mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
