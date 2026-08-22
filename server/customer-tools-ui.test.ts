@@ -13,6 +13,13 @@ describe("customer shopping tools", () => {
     expect(account).toContain("Nhắc lại hàng");
   });
 
+  it("labels desktop chat and mobile support controls for assistive technology", () => {
+    const source = readFileSync(new URL("../client/src/components/CustomerContactHub.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('aria-label="Nhắn tin với DHL Stores"');
+    expect(source).toContain('aria-expanded={supportMenuOpen}');
+  });
+
   it("provides comparison, recently viewed products, and contextual checkout help without changing server prices", () => {
     const productDetail = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
     const compare = readFileSync(new URL("../client/src/pages/CompareProducts.tsx", import.meta.url), "utf8");

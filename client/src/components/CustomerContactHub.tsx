@@ -152,7 +152,7 @@ export default function CustomerContactHub() {
       <div className="fixed right-3 top-[calc(50%+4.25rem)] z-40 hidden sm:block sm:right-4">
         <Sheet open={chatOpen} onOpenChange={setChatOpen}>
           <SheetTrigger asChild>
-            <button className="group flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl transition hover:-translate-y-1 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+            <button type="button" aria-label="Nhắn tin với DHL Stores" className="group flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl transition hover:-translate-y-1 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-400">
               <MessageCircleMore className="h-5 w-5 text-cyan-300 transition-transform group-hover:scale-110" />
               <span>Nhắn tin</span>
             </button>
