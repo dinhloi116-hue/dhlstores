@@ -823,6 +823,6 @@
 - [x] Vòng 1: kiểm thử và cải thiện duyệt sản phẩm, tìm kiếm, giá và tồn kho.
 - [x] Vòng 2: kiểm thử và cải thiện giỏ hàng, số lượng, xóa dòng và checkout trước thanh toán thật.
 - [x] Vòng 3: kiểm thử và cải thiện tài khoản, hỗ trợ, nhắn tin và góp ý.
-- [ ] Vòng 4: kiểm thử và cải thiện thư viện công cụ, tải tệp local-only và responsive.
+- [x] Vòng 4: kiểm thử và cải thiện thư viện công cụ, tải tệp local-only và responsive.
 - [ ] Vòng 5: chạy hồi quy toàn hệ thống, tối ưu an toàn, build và kiểm tra giao diện tổng hợp.
 - [ ] Lưu checkpoint sau từng vòng và báo cáo kết quả ngắn gọn.
