@@ -64,6 +64,15 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
   });
 
+  it("makes cart controls explicit and prevents invalid decrement", () => {
+    const source = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("aria-label={`${lang === 'vi' ? 'Xóa' : 'Remove'} ${p.name}`}");
+    expect(source).toContain("aria-label={`Giảm số lượng ${p.name}`}");
+    expect(source).toContain("item.quantity <= 1");
+    expect(source).toContain("aria-label={`Tăng số lượng ${p.name}`}");
+  });
+
   it("keeps homepage physical cards honest about stock and actions", () => {
     const source = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 

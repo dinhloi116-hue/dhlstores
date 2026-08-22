@@ -322,6 +322,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             <button
+                              type="button"
+                              aria-label={`${lang === 'vi' ? 'Xóa' : 'Remove'} ${p.name}`}
                               onClick={() => removeCartMutation.mutate({ cartItemId: item.id })}
                               className="text-xs text-rose-600 hover:text-rose-700 font-semibold"
                             >
@@ -329,15 +331,19 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                             </button>
                             <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
                               <button
-                                disabled={updateCartMutation.isPending}
+                                type="button"
+                                aria-label={`Giảm số lượng ${p.name}`}
+                                disabled={updateCartMutation.isPending || item.quantity <= 1}
                                 onClick={() => {
-                                  if (updateCartMutation.isPending) return;
+                                  if (updateCartMutation.isPending || item.quantity <= 1) return;
                                   updateCartMutation.mutate({ cartItemId: item.id, quantity: item.quantity - 1 });
                                 }}
                                 className="text-slate-600 hover:text-black px-1 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40"
                               >-</button>
                               <span className="text-xs font-bold px-1">{item.quantity}</span>
                               <button
+                                type="button"
+                                aria-label={`Tăng số lượng ${p.name}`}
                                 disabled={updateCartMutation.isPending}
                                 onClick={() => {
                                   if (updateCartMutation.isPending) return;
