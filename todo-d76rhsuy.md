@@ -761,3 +761,31 @@
 - [x] Bỏ nút cắt FFmpeg không tương thích và giữ một lối vào cắt native rõ ràng.
 - [x] Giữ tên video gốc khi xuất kết quả, chỉ thêm hậu tố xử lý.
 - [x] Viết test hồi quy, kiểm tra giao diện và phát hành bản sửa.
+
+## Phiên đóng gói mã nguồn 2026-08-21
+- [x] Tạo hướng dẫn chạy dự án, mô tả biến môi trường và các vị trí mã quan trọng.
+- [x] Đóng gói mã nguồn, cấu hình và tài liệu; loại trừ node_modules, tệp build, log, git và bí mật.
+- [x] Kiểm tra nội dung ZIP và bàn giao tệp cho người dùng.
+
+## Phiên giải thích bản chất hệ thống 2026-08-21
+- [x] Tổng hợp mô hình vận hành, kiến trúc và các thành phần đã triển khai của DHL Stores.
+- [x] Soạn tài liệu dễ hiểu về dữ liệu, quyền hạn, thanh toán, tích hợp và giới hạn hiện tại.
+- [x] Rà soát và bàn giao tài liệu để người dùng dùng khi trao đổi với bên phát triển khác.
+
+## Phiên chuẩn bị GitHub 2026-08-21
+- [x] Kiểm tra trạng thái Git và remote hiện tại của dự án: tài khoản GitHub đã liên kết, nhưng dự án mới dùng remote triển khai nội bộ và chưa có repository GitHub riêng.
+- [ ] Chuẩn bị repository GitHub private và quy tắc branch để cộng tác song song.
+- [ ] Đẩy mã nguồn sạch, xác nhận repository và bàn giao hướng dẫn dùng GitHub.
+
+## Phiên hướng dẫn sao lưu S3 sang Google Drive 2026-08-21
+- [ ] Phân biệt kho tệp vận hành S3 với nơi sao lưu Google Drive.
+- [ ] Soạn quy trình sao lưu Drive an toàn, không thay đổi link ảnh đang chạy.
+- [ ] Nêu điều kiện cần thiết nếu muốn tự động hóa sao lưu trong tương lai.
+
+## Đợt tối ưu ưu tiên 2026-08-21
+- [x] Rà soát test, log runtime, các route chính và bundle để xác định điểm nghẽn thực tế.
+- [x] Tối ưu ít nhất một luồng có tác động cao về hiệu năng/độ ổn định/khả năng dùng.
+- [x] Cập nhật hồi quy, kiểm tra desktop/mobile và phát hành bản tối ưu.
+- [x] Tách FFmpeg WebAssembly ra khỏi bundle JavaScript chính bằng tải động khi người dùng thực sự dùng nén/chuyển đổi.
+- [x] Tách route Cắt & Nối Video bằng lazy loading để thư viện xử lý video không chặn tải trang cửa hàng ban đầu.
+- [x] Tách tải các trang phụ như quản trị, tài khoản, checkout, so sánh và công cụ bằng lazy loading để giảm bundle trang chủ.

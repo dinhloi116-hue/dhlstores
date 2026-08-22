@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
+import type { FFmpeg } from "@ffmpeg/ffmpeg";
 import StoreLayout from "@/components/StoreLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,7 @@ function explainVideoError(action: string, error: unknown, logs: string[]) {
 export default function VideoCutterJoiner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
+  const ffmpegUtilsRef = useRef<typeof import("@ffmpeg/util") | null>(null);
   const ffmpegLogs = useRef<string[]>([]);
   const nativeStopRef = useRef(false);
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -113,14 +113,16 @@ export default function VideoCutterJoiner() {
 
   const loadFFmpeg = async () => {
     if (ffmpegRef.current?.loaded) return ffmpegRef.current;
+    const [{ FFmpeg }, ffmpegUtils] = await Promise.all([import("@ffmpeg/ffmpeg"), import("@ffmpeg/util")]);
     const ffmpeg = new FFmpeg();
     ffmpeg.on("progress", ({ progress: value }) => setProgress(Math.round(value * 100)));
     ffmpeg.on("log", ({ message }) => {
       if (/error|invalid|unknown|decoder|encoder|failed|memory|unsupported/i.test(message)) ffmpegLogs.current = [...ffmpegLogs.current, message].slice(-5);
     });
     setStatus("Đang tải bộ xử lý video lần đầu…");
-    await ffmpeg.load({ coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, "text/javascript"), wasmURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, "application/wasm") });
+    await ffmpeg.load({ coreURL: await ffmpegUtils.toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, "text/javascript"), wasmURL: await ffmpegUtils.toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, "application/wasm") });
     ffmpegRef.current = ffmpeg;
+    ffmpegUtilsRef.current = ffmpegUtils;
     return ffmpeg;
   };
 
@@ -131,6 +133,7 @@ export default function VideoCutterJoiner() {
     ffmpegLogs.current = []; setDiagnostic(""); setBusy(true); setProgress(0);
     try {
       const ffmpeg = await loadFFmpeg();
+      const { fetchFile } = ffmpegUtilsRef.current ?? await import("@ffmpeg/util");
       if (action === "trim" && active) {
         const safeStart = Math.max(0, Math.min(start, active.duration - 0.05));
         const safeEnd = Math.max(safeStart + 0.05, Math.min(end || active.duration, active.duration));

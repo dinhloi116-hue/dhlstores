@@ -9,6 +9,7 @@ describe("video cutter and joiner", () => {
   it("is registered in the DHL Stores tools library", () => {
     expect(app).toContain("/tools/video-cutter");
     expect(app).toContain("VideoCutterJoiner");
+    expect(app).toContain("lazy(() => import(\"@/pages/VideoCutterJoiner\"))");
     expect(library).toContain("CẮT & NỐI VIDEO");
     expect(library).toContain("/tools/video-cutter");
   });
