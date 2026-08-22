@@ -18,5 +18,7 @@ describe("catalog type split", () => {
     expect(products).toContain("const isDigitalCatalog = initialType === \"digital\"");
     expect(products).toContain("type: isTypeScoped ? (isPhysicalCatalog ? \"physical\" : \"digital\") : undefined");
     expect(products).toContain("product.type === (isPhysicalCatalog ? \"physical\" : \"digital\")");
+    expect(products).toContain('loading={index < 4 ? "eager" : "lazy"}');
+    expect(products).toContain('decoding="async"');
   });
 });

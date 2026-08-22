@@ -789,3 +789,4 @@
 - [x] Tách FFmpeg WebAssembly ra khỏi bundle JavaScript chính bằng tải động khi người dùng thực sự dùng nén/chuyển đổi.
 - [x] Tách route Cắt & Nối Video bằng lazy loading để thư viện xử lý video không chặn tải trang cửa hàng ban đầu.
 - [x] Tách tải các trang phụ như quản trị, tài khoản, checkout, so sánh và công cụ bằng lazy loading để giảm bundle trang chủ.
+- [x] Tối ưu ảnh catalog bằng tải chậm và giải mã bất đồng bộ cho sản phẩm ngoài vùng nhìn ban đầu.
