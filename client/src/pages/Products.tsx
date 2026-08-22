@@ -55,15 +55,15 @@ export default function Products() {
   };
 
   const categoriesQuery = trpc.store.categories.useQuery();
-  const facetsQuery = trpc.store.productVariantFacets.useQuery(isPrintShop ? { categoryId: selectedCategory } : undefined, { enabled: isPrintShop });
+  const facetsQuery = trpc.store.productVariantFacets.useQuery(isPhysicalCatalog ? { categoryId: selectedCategory } : undefined, { enabled: isPhysicalCatalog });
   const productsQuery = trpc.store.products.useQuery({
     categoryId: selectedCategory,
     search: debouncedSearchQuery || undefined,
     type: isTypeScoped ? (isPhysicalCatalog ? "physical" : "digital") : undefined,
-    minPrice: isPrintShop && minPrice ? Number(minPrice) : undefined,
-    maxPrice: isPrintShop && maxPrice ? Number(maxPrice) : undefined,
-    size: isPrintShop ? (sizeFilter || undefined) : undefined,
-    color: isPrintShop ? (colorFilter || undefined) : undefined,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    size: isPhysicalCatalog ? (sizeFilter || undefined) : undefined,
+    color: isPhysicalCatalog ? (colorFilter || undefined) : undefined,
   });
 
   const categories = (categoriesQuery.data || []).filter(category => !isTypeScoped || category.type === (isPhysicalCatalog ? "physical" : "digital"));
@@ -153,18 +153,20 @@ export default function Products() {
 	            <span className="text-xs font-bold text-slate-500">Lọc nhanh:</span>
 	            {([['all', 'Tất cả'], ...(!isPhysicalCatalog ? [['digital', 'Tài nguyên số'], ['physical', 'Hàng vật lý']] : []), ['in-stock', 'Có thể mua ngay']] as Array<["all" | "digital" | "physical" | "in-stock", string]>).map(([value, label]) => <button key={value} type="button" onClick={() => setCatalogQuickFilter(value)} className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${catalogQuickFilter === value ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50'}`}>{label}</button>)}
 	          </div>
-          {isPrintShop && <div className="grid grid-cols-2 gap-2 border-t border-orange-100 pt-3 sm:grid-cols-4">
-            <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá từ' : 'Min price'} value={minPrice} onChange={(event) => setMinPrice(event.target.value)} className="h-9 rounded-lg bg-orange-50/40 text-xs" />
-            <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá đến' : 'Max price'} value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} className="h-9 rounded-lg bg-orange-50/40 text-xs" />
-            <Select value={sizeFilter || 'all'} onValueChange={(value) => setSizeFilter(value === 'all' ? '' : value)}>
-              <SelectTrigger className="h-9 rounded-lg bg-orange-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Kích thước' : 'Size'} /></SelectTrigger>
-              <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi kích thước' : 'All sizes'}</SelectItem>{(facetsQuery.data?.sizes || []).map(size => <SelectItem key={size} value={size}>{size}</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={colorFilter || 'all'} onValueChange={(value) => setColorFilter(value === 'all' ? '' : value)}>
-              <SelectTrigger className="h-9 rounded-lg bg-orange-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Màu sắc' : 'Color'} /></SelectTrigger>
-              <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi màu sắc' : 'All colors'}</SelectItem>{(facetsQuery.data?.colors || []).map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>}
+          <div className={`grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 ${isPhysicalCatalog ? 'border-orange-100 sm:grid-cols-4' : 'sm:grid-cols-2'}`}>
+            <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá từ (đ)' : 'Min price'} value={minPrice} onChange={(event) => setMinPrice(event.target.value)} className={`h-9 rounded-lg text-xs ${isPhysicalCatalog ? 'bg-orange-50/40' : 'bg-slate-50'}`} />
+            <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá đến (đ)' : 'Max price'} value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} className={`h-9 rounded-lg text-xs ${isPhysicalCatalog ? 'bg-orange-50/40' : 'bg-slate-50'}`} />
+            {isPhysicalCatalog && <>
+              <Select value={sizeFilter || 'all'} onValueChange={(value) => setSizeFilter(value === 'all' ? '' : value)}>
+                <SelectTrigger className="h-9 rounded-lg bg-orange-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Kích thước' : 'Size'} /></SelectTrigger>
+                <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi kích thước' : 'All sizes'}</SelectItem>{(facetsQuery.data?.sizes || []).map(size => <SelectItem key={size} value={size}>{size}</SelectItem>)}</SelectContent>
+              </Select>
+              <Select value={colorFilter || 'all'} onValueChange={(value) => setColorFilter(value === 'all' ? '' : value)}>
+                <SelectTrigger className="h-9 rounded-lg bg-orange-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Màu sắc' : 'Color'} /></SelectTrigger>
+                <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi màu sắc' : 'All colors'}</SelectItem>{(facetsQuery.data?.colors || []).map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}</SelectContent>
+              </Select>
+            </>}
+          </div>
         </div>
 	        {!isCatalogLoading && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><p className="text-slate-600">Hiển thị <span className="font-black text-slate-900">{products.length}</span> sản phẩm phù hợp</p>{hasActiveCatalogFilters && <Button type="button" variant="ghost" size="sm" onClick={clearCatalogFilters} className="h-7 px-2.5 text-xs font-black text-amber-700 hover:bg-amber-100 hover:text-amber-800">Xóa tất cả bộ lọc</Button>}</div>}
 

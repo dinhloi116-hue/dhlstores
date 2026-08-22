@@ -826,3 +826,9 @@
 - [x] Vòng 4: kiểm thử và cải thiện thư viện công cụ, tải tệp local-only và responsive.
 - [x] Vòng 5: chạy hồi quy toàn hệ thống, tối ưu an toàn, build và kiểm tra giao diện tổng hợp.
 - [x] Lưu checkpoint sau từng vòng và báo cáo kết quả ngắn gọn.
+
+## Đề xuất từ ảnh người dùng 2026-08-22
+- [x] Bổ sung loading mượt và toast trạng thái cho thao tác thêm vào giỏ/xóa sản phẩm.
+- [x] Tích hợp bộ lọc sản phẩm nâng cao theo mức giá và danh mục.
+- [ ] Soạn hướng dẫn cấu hình Stripe và SePay an toàn, không bật giao dịch thật khi chưa có khóa/cấu hình xác nhận.
+- [ ] Kiểm thử, build, ghi hồi quy và phát hành ba đề xuất.

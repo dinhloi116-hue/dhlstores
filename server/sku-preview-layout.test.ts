@@ -64,6 +64,15 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
   });
 
+  it("exposes advanced price filters across catalog modes", () => {
+    const source = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("minPrice: minPrice ? Number(minPrice) : undefined");
+    expect(source).toContain("maxPrice: maxPrice ? Number(maxPrice) : undefined");
+    expect(source).toContain("Giá từ (đ)");
+    expect(source).toContain("Xóa tất cả bộ lọc");
+  });
+
   it("makes cart controls explicit and prevents invalid decrement", () => {
     const source = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
 
@@ -71,6 +80,13 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("aria-label={`Giảm số lượng ${p.name}`}");
     expect(source).toContain("item.quantity <= 1");
     expect(source).toContain("aria-label={`Tăng số lượng ${p.name}`}");
+  });
+
+  it("provides cart update feedback and busy state", () => {
+    const source = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("Đã cập nhật số lượng trong giỏ hàng");
+    expect(source).toContain("aria-busy={updateCartMutation.isPending}");
   });
 
   it("keeps homepage physical cards honest about stock and actions", () => {

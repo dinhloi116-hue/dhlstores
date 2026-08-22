@@ -152,6 +152,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const cartQuery = trpc.store.cart.useQuery(undefined, { enabled: isAuthenticated });
   const updateCartMutation = trpc.store.updateCart.useMutation({
     onSuccess: () => {
+      toast.success(lang === 'vi' ? 'Đã cập nhật số lượng trong giỏ hàng' : 'Cart quantity updated');
       utils.store.cart.invalidate();
     },
     onError: error => {
@@ -329,7 +330,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                             >
                               {lang === 'vi' ? 'Xóa' : 'Remove'}
                             </button>
-                            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
+                            <div aria-busy={updateCartMutation.isPending} className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
                               <button
                                 type="button"
                                 aria-label={`Giảm số lượng ${p.name}`}
