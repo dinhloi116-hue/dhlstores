@@ -64,6 +64,14 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
   });
 
+  it("keeps homepage physical cards honest about stock and actions", () => {
+    const source = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("Number(product.stock) > 0 ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'");
+    expect(source).toContain("Number(product.stock) > 0 ? 'Xem chi tiết' : 'Xem sản phẩm'");
+    expect(source).not.toContain('>Đặt hàng</span>');
+  });
+
   it("uses a clear pending-price label across customer product surfaces", () => {
     const detailSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
     const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");

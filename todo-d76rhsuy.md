@@ -815,6 +815,6 @@
 - [x] Kiểm tra các trạng thái hết hàng/còn hàng ở catalog, chi tiết sản phẩm và giỏ hàng; bảo đảm CTA nhất quán.
 - [x] Tự chạy test, build và kiểm tra trực quan các luồng khách; sửa các lỗi UX an toàn được phát hiện.
 - [x] Ghi báo cáo thay đổi, đánh dấu TODO hoàn tất và phát hành checkpoint mới.
-- [ ] Rà soát tiếp các mục còn tồn đọng trong báo cáo trải nghiệm khách hàng sau đợt sửa giá 0đ/hết hàng.
+- [x] Rà soát tiếp các mục còn tồn đọng trong báo cáo trải nghiệm khách hàng sau đợt sửa giá 0đ/hết hàng.
 - [ ] Tiếp tục tự kiểm thử và sửa các lỗi UX an toàn được phát hiện trong các đợt sau.
 - [ ] Tự báo cáo kết quả kiểm thử và các mục cần người dùng kiểm tra thực tế.
