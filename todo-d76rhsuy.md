@@ -774,8 +774,8 @@
 
 ## Phiên chuẩn bị GitHub 2026-08-21
 - [x] Kiểm tra trạng thái Git và remote hiện tại của dự án: tài khoản GitHub đã liên kết, nhưng dự án mới dùng remote triển khai nội bộ và chưa có repository GitHub riêng.
-- [ ] Chuẩn bị repository GitHub private và quy tắc branch để cộng tác song song.
-- [ ] Đẩy mã nguồn sạch, xác nhận repository và bàn giao hướng dẫn dùng GitHub.
+- [x] Chuẩn bị repository GitHub private và quy tắc branch để cộng tác song song.
+- [x] Đẩy mã nguồn sạch, xác nhận repository và bàn giao hướng dẫn dùng GitHub.
 
 ## Phiên hướng dẫn sao lưu S3 sang Google Drive 2026-08-21
 - [x] Phân biệt kho tệp vận hành S3 với nơi sao lưu Google Drive.
