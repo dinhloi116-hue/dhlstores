@@ -834,7 +834,7 @@
 - [x] Kiểm thử, build, ghi hồi quy và phát hành ba đề xuất.
 
 ## Đề xuất mới từ ảnh 2026-08-22
-- [ ] Triển khai Stripe và SePay ở Test mode theo tài liệu setup, không bật giao dịch thật.
+- [x] Đã bỏ qua triển khai Stripe và SePay ở Test mode theo yêu cầu người dùng; giữ nguyên thanh toán QR/SePay hiện tại.
 - [x] Thêm animation mượt khi lọc giá và cập nhật số lượng trong giỏ hàng.
 - [x] Tạo trang lịch sử đơn hàng để khách xem các giao dịch đã thực hiện.
 - [x] Bổ sung test, build, kiểm tra giao diện và phát hành ba đề xuất mới.
