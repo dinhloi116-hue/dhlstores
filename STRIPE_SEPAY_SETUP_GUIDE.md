@@ -101,3 +101,18 @@ Khi đã sẵn sàng, gửi theo từng nhóm riêng trong mục Secrets của d
 [3]: https://developer.sepay.vn/en/sepay-webhooks "SePay — What are SePay Webhooks?"
 
 [4]: https://developer.sepay.vn/en/bankhub/api/api-webhook/cap-nhat-webhook "SePay — Create or update Webhook API"
+
+
+## 8. Resend và Cloudflare cho mã xác minh email
+
+Resend yêu cầu ít nhất một domain do chủ tài khoản sở hữu được xác minh trước khi gửi email. Resend khuyến nghị dùng subdomain riêng, chẳng hạn `account.dhlstores.com` hoặc `notifications.dhlstores.com`, để tách uy tín gửi email giao dịch khỏi domain chính [5] [6].
+
+Quy trình an toàn là: trong Resend Dashboard mở **Domains → Add Domain**, nhập domain/subdomain, chọn khu vực gửi và mở tab **Records**. Sao chép chính xác các giá trị Resend cung cấp vào Cloudflare. Không tự thay giá trị ví dụ bằng giá trị đoán. Với cấu hình thủ công, Resend hướng dẫn bản ghi MX cho `send`, TXT SPF cho `send` và TXT DKIM cho `resend._domainkey`; các bản ghi phải đặt **DNS only**, không bật proxy [7].
+
+Sau khi lưu DNS, bấm **Verify DNS Records** trong Resend. Thường việc xác minh hoàn tất trong khoảng 15 phút nhưng có thể mất đến 72 giờ. Sau khi domain Verified, dùng địa chỉ From thuộc domain đó, ví dụ `verify@notifications.dhlstores.com`; không dùng địa chỉ From chưa được xác minh. Nếu domain gốc đang có MX cho email hiện hữu, không bật receiving trên domain gốc nếu chưa hiểu rõ tác động; dùng subdomain riêng sẽ an toàn hơn [5] [7].
+
+DHL Stores chưa tự thêm domain, sửa DNS hoặc chọn From production vì các bước đó cần quyền trên tài khoản Resend/Cloudflare của chủ shop. Chỉ sau khi domain Verified và địa chỉ From hợp lệ mới nên kiểm tra luồng gửi mã xác minh; mọi API key vẫn phải lưu trong Secrets, không ghi vào GitHub hay mã client.
+
+[5]: https://resend.com/docs/add-a-domain "Resend — Add and verify a domain"
+[6]: https://resend.com/docs/dashboard/domains/introduction "Resend — Verified domains"
+[7]: https://resend.com/docs/knowledge-base/cloudflare "Resend — Cloudflare domain verification"
