@@ -12,6 +12,7 @@ const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
 const CompareProducts = lazy(() => import("@/pages/CompareProducts"));
 const Checkout = lazy(() => import("@/pages/Checkout"));
 const Account = lazy(() => import("@/pages/Account"));
+const OrderHistory = lazy(() => import("@/pages/OrderHistory"));
 const AdminOrders = lazy(() => import("@/pages/AdminOrders"));
 const OperationsCenter = lazy(() => import("@/pages/OperationsCenter"));
 const TestCustomerAccount = lazy(() => import("@/pages/TestCustomerAccount"));
@@ -39,6 +40,7 @@ function Router() {
       <Route path={"/tools/notebook-labels"} component={NotebookLabelMaker} />
       <Route path={"/tools/video-cutter"} component={VideoCutterRoute} />
       <Route path={"/account"} component={Account} />
+      <Route path={"/orders"} component={OrderHistory} />
       <Route path={"/admin"} component={AdminOrders} />
       <Route path={"/admin/operations"} component={OperationsCenter} />
       <Route path={"/admin/test-customer"} component={TestCustomerAccount} />

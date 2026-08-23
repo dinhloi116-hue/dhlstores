@@ -168,7 +168,7 @@ export default function Products() {
             </>}
           </div>
         </div>
-	        {!isCatalogLoading && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><p className="text-slate-600">Hiển thị <span className="font-black text-slate-900">{products.length}</span> sản phẩm phù hợp</p>{hasActiveCatalogFilters && <Button type="button" variant="ghost" size="sm" onClick={clearCatalogFilters} className="h-7 px-2.5 text-xs font-black text-amber-700 hover:bg-amber-100 hover:text-amber-800">Xóa tất cả bộ lọc</Button>}</div>}
+	        {!isCatalogLoading && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><p className="text-slate-600">Hiển thị <span key={`${products.length}-${searchQuery}-${selectedCategory ?? 'all'}`} className="inline-block animate-in fade-in-0 slide-in-from-bottom-1 font-black text-slate-900">{products.length}</span> sản phẩm phù hợp</p>{hasActiveCatalogFilters && <Button type="button" variant="ghost" size="sm" onClick={clearCatalogFilters} className="h-7 px-2.5 text-xs font-black text-amber-700 transition hover:bg-amber-100 hover:text-amber-800"><span aria-hidden="true">×</span> Xóa bộ lọc</Button>}</div>}
 
         {/* Product Grid */}
         {isCatalogLoading ? (

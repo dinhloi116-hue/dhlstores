@@ -832,3 +832,15 @@
 - [x] Tích hợp bộ lọc sản phẩm nâng cao theo mức giá và danh mục.
 - [x] Soạn hướng dẫn cấu hình Stripe và SePay an toàn, không bật giao dịch thật khi chưa có khóa/cấu hình xác nhận.
 - [x] Kiểm thử, build, ghi hồi quy và phát hành ba đề xuất.
+
+## Đề xuất mới từ ảnh 2026-08-22
+- [ ] Triển khai Stripe và SePay ở Test mode theo tài liệu setup, không bật giao dịch thật.
+- [x] Thêm animation mượt khi lọc giá và cập nhật số lượng trong giỏ hàng.
+- [x] Tạo trang lịch sử đơn hàng để khách xem các giao dịch đã thực hiện.
+- [x] Bổ sung test, build, kiểm tra giao diện và phát hành ba đề xuất mới.
+
+## Đề xuất mới từ ảnh 2026-08-23
+- [x] Thêm trạng thái chi tiết và nút Mua lại cho từng đơn trong lịch sử đơn hàng.
+- [x] Bổ sung nút Xóa bộ lọc và số lượng sản phẩm realtime trong bộ lọc catalog.
+- [x] Thêm mini-cart dropdown khi người dùng di chuột vào biểu tượng giỏ hàng.
+- [x] Bổ sung test, build, kiểm tra giao diện và phát hành ba đề xuất mới.

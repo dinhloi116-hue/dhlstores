@@ -273,7 +273,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <div className="group/cart relative">
             <Sheet open={cartOpen} onOpenChange={setCartOpen}>
               <SheetTrigger asChild>
-                <Button id="header-cart-trigger" variant="outline" size="sm" className="relative bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-amber-600 shadow-sm">
+                <Button id="header-cart-trigger" aria-label={`${lang === 'vi' ? 'Mở giỏ hàng, ' : 'Open cart, '}${cartItemCount} ${lang === 'vi' ? 'sản phẩm' : 'items'}`} variant="outline" size="sm" className="relative bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-amber-600 shadow-sm">
                   <ShoppingBag className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">{t.cart}</span>
                   {cartItemCount > 0 && (
@@ -330,7 +330,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                             >
                               {lang === 'vi' ? 'Xóa' : 'Remove'}
                             </button>
-                            <div aria-busy={updateCartMutation.isPending} className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
+                            <div aria-busy={updateCartMutation.isPending} className={`flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 shadow-xs transition-opacity ${updateCartMutation.isPending ? 'animate-pulse opacity-70' : 'opacity-100'}`}>
                               <button
                                 type="button"
                                 aria-label={`Giảm số lượng ${p.name}`}
@@ -398,7 +398,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                     <div className="border-b border-slate-100 px-4 pb-3 pt-2"><p className="text-[10px] uppercase font-black tracking-wide text-slate-400">{lang === 'vi' ? 'Đang đăng nhập' : 'Signed in as'}</p><p className="mt-1 truncate text-xs font-black text-slate-800">{user.email || user.name}</p><p className="mt-1 text-[10px] font-semibold text-emerald-700">{lang === 'vi' ? `Số dư ví: ${formatCurrency(Number(user.balance || 0))}` : `Wallet: ${formatCurrency(Number(user.balance || 0))}`}</p></div>
                     <div className="grid grid-cols-2 gap-1 p-2">
                       <Link onClick={() => setAccountNavPending(true)} role="menuitem" href="/account#wallet" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700"><WalletCards className="h-4 w-4 text-amber-600" />{lang === 'vi' ? 'Ví & số dư' : 'Wallet'}</Link>
-                      <Link onClick={() => setAccountNavPending(true)} role="menuitem" href="/account#orders" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700"><History className="h-4 w-4 text-blue-600" />{lang === 'vi' ? 'Đơn hàng' : 'Orders'}</Link>
+                      <Link onClick={() => setAccountNavPending(true)} role="menuitem" href="/orders" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700"><History className="h-4 w-4 text-blue-600" />{lang === 'vi' ? 'Đơn hàng' : 'Orders'}</Link>
                       <Link onClick={() => setAccountNavPending(true)} role="menuitem" href="/account#addresses" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700"><MapPin className="h-4 w-4 text-cyan-600" />{lang === 'vi' ? 'Địa chỉ' : 'Addresses'}</Link>
                       <Link onClick={() => setAccountNavPending(true)} role="menuitem" href="/account#downloads" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-violet-50 hover:text-violet-700"><Download className="h-4 w-4 text-violet-600" />{lang === 'vi' ? 'Tải xuống' : 'Downloads'}</Link>
                       <Link onClick={() => setAccountNavPending(true)} role="menuitem" href="/account" className="col-span-2 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-950"><Package className="h-4 w-4 text-slate-600" />{lang === 'vi' ? 'Tài khoản & Email' : 'Account & Email'}</Link>

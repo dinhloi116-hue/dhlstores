@@ -70,7 +70,7 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("minPrice: minPrice ? Number(minPrice) : undefined");
     expect(source).toContain("maxPrice: maxPrice ? Number(maxPrice) : undefined");
     expect(source).toContain("Giá từ (đ)");
-    expect(source).toContain("Xóa tất cả bộ lọc");
+    expect(source).toContain("Xóa bộ lọc");
   });
 
   it("makes cart controls explicit and prevents invalid decrement", () => {
