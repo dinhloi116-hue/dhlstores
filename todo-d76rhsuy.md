@@ -851,3 +851,9 @@
 - [x] Thêm nút Thêm nhanh vào giỏ trên các thẻ sản phẩm trong catalog.
 - [x] Thêm thanh tiến trình miễn phí vận chuyển trong mini-cart với ngưỡng cấu hình rõ ràng.
 - [x] Bổ sung test, validate skill, build, kiểm tra giao diện và phát hành các cải thiện mới.
+
+## Đề xuất mới từ ảnh 2026-08-23 — freeship, Quick Add và mobile UX
+- [x] Thêm hiệu ứng chúc mừng và đổi màu thanh tiến trình mini-cart khi đạt mốc freeship 500.000đ.
+- [x] Hiển thị toast thành công kèm hình ảnh sản phẩm khi dùng tính năng Thêm nhanh vào giỏ.
+- [x] Chạy một vòng dhl-stores-ux-loop để rà soát và tối ưu giao diện trên thiết bị di động.
+- [x] Bổ sung test, build, kiểm tra mobile và phát hành các cải thiện mới.

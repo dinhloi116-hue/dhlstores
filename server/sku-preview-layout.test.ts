@@ -185,3 +185,19 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("Lưu thay đổi");
     expect(source).toContain("object-contain");
   });
+
+
+  it("shows product image in the Quick Add success toast", () => {
+    const source = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+    expect(source).toContain("Đã thêm nhanh vào giỏ hàng");
+    expect(source).toContain("product.image");
+    expect(source).toContain("h-8 w-8 rounded object-cover");
+  });
+
+  it("celebrates reaching the reference free-shipping threshold", () => {
+    const source = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
+    expect(source).toContain("freeShippingThreshold = 500000");
+    expect(source).toContain("Chúc mừng! Đơn đã đạt mốc freeship dự kiến");
+    expect(source).toContain("animate-[pulse_1.8s_ease-in-out_1]");
+    expect(source).toContain("transition-[width] duration-500");
+  });

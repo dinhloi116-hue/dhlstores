@@ -27,14 +27,13 @@ export default function Products() {
 
   const t = translations[lang];
   const addToCartMutation = trpc.store.addToCart.useMutation({
-    onSuccess: () => toast.success(lang === 'vi' ? 'Đã thêm nhanh vào giỏ hàng' : 'Added to cart'),
     onError: error => toast.error(error.message),
   });
   const handleQuickAdd = (product: (typeof products)[number]) => {
     if (!isAuthenticated) { startLogin(); return; }
     if (!Number(product.price) || Number(product.price) <= 0) { toast.error(lang === 'vi' ? 'Sản phẩm chưa có giá bán' : 'This product has no active price'); return; }
     if (product.type === 'physical' && Number(product.stock) <= 0) { toast.error(lang === 'vi' ? 'Sản phẩm đang hết hàng' : 'This product is out of stock'); return; }
-    addToCartMutation.mutate({ productId: product.id, quantity: 1 });
+    addToCartMutation.mutate({ productId: product.id, quantity: 1 }, { onSuccess: () => toast.success(lang === 'vi' ? 'Đã thêm nhanh vào giỏ hàng' : 'Added to cart', { icon: <img src={product.image} alt="" className="h-8 w-8 rounded object-cover" /> }) });
   };
 
   const searchParams = new URLSearchParams(window.location.search);
