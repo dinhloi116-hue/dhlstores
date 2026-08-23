@@ -778,9 +778,9 @@
 - [ ] Đẩy mã nguồn sạch, xác nhận repository và bàn giao hướng dẫn dùng GitHub.
 
 ## Phiên hướng dẫn sao lưu S3 sang Google Drive 2026-08-21
-- [ ] Phân biệt kho tệp vận hành S3 với nơi sao lưu Google Drive.
-- [ ] Soạn quy trình sao lưu Drive an toàn, không thay đổi link ảnh đang chạy.
-- [ ] Nêu điều kiện cần thiết nếu muốn tự động hóa sao lưu trong tương lai.
+- [x] Phân biệt kho tệp vận hành S3 với nơi sao lưu Google Drive.
+- [x] Soạn quy trình sao lưu Drive an toàn, không thay đổi link ảnh đang chạy.
+- [x] Nêu điều kiện cần thiết nếu muốn tự động hóa sao lưu trong tương lai.
 
 ## Đợt tối ưu ưu tiên 2026-08-21
 - [x] Rà soát test, log runtime, các route chính và bundle để xác định điểm nghẽn thực tế.
