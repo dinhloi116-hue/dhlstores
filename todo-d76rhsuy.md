@@ -844,3 +844,10 @@
 - [x] Bổ sung nút Xóa bộ lọc và số lượng sản phẩm realtime trong bộ lọc catalog.
 - [x] Thêm mini-cart dropdown khi người dùng di chuột vào biểu tượng giỏ hàng.
 - [x] Bổ sung test, build, kiểm tra giao diện và phát hành ba đề xuất mới.
+
+## Đề xuất mới từ ảnh 2026-08-23 — skill và mua sắm nhanh
+- [x] Đóng gói quy trình tự kiểm thử/cải thiện DHL Stores thành skill tái sử dụng theo chuẩn skill-creator.
+- [x] Cho phép chọn nhiều đơn trong lịch sử để thêm toàn bộ sản phẩm vào giỏ cùng lúc.
+- [x] Thêm nút Thêm nhanh vào giỏ trên các thẻ sản phẩm trong catalog.
+- [x] Thêm thanh tiến trình miễn phí vận chuyển trong mini-cart với ngưỡng cấu hình rõ ràng.
+- [x] Bổ sung test, validate skill, build, kiểm tra giao diện và phát hành các cải thiện mới.

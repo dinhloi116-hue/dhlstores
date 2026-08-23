@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { startLogin } from "@/const";
+import { toast } from "sonner";
 import StoreLayout from "@/components/StoreLayout";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
@@ -8,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Search, Filter, Eye } from "lucide-react";
+import { Download, Search, Filter, Eye, ShoppingCart } from "lucide-react";
 
 export default function Products() {
+  const { isAuthenticated } = useAuth();
   const [lang, setLang] = useState<Language>(getClientLanguage());
 
   useEffect(() => {
@@ -22,6 +26,16 @@ export default function Products() {
   }, [lang]);
 
   const t = translations[lang];
+  const addToCartMutation = trpc.store.addToCart.useMutation({
+    onSuccess: () => toast.success(lang === 'vi' ? 'Đã thêm nhanh vào giỏ hàng' : 'Added to cart'),
+    onError: error => toast.error(error.message),
+  });
+  const handleQuickAdd = (product: (typeof products)[number]) => {
+    if (!isAuthenticated) { startLogin(); return; }
+    if (!Number(product.price) || Number(product.price) <= 0) { toast.error(lang === 'vi' ? 'Sản phẩm chưa có giá bán' : 'This product has no active price'); return; }
+    if (product.type === 'physical' && Number(product.stock) <= 0) { toast.error(lang === 'vi' ? 'Sản phẩm đang hết hàng' : 'This product is out of stock'); return; }
+    addToCartMutation.mutate({ productId: product.id, quantity: 1 });
+  };
 
   const searchParams = new URLSearchParams(window.location.search);
   const initialCategory = searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined;
@@ -224,7 +238,7 @@ export default function Products() {
                   </div>
                 </div>
               </Link>
-              <button type="button" onClick={() => setQuickViewProduct(p)} aria-label={`Xem nhanh ${p.name}`} className="absolute right-2 top-2 z-30 inline-flex h-8 items-center gap-1 rounded-lg border border-white/80 bg-white/95 px-2 text-[10px] font-black text-slate-800 opacity-100 shadow-sm transition hover:bg-amber-400 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:opacity-0 sm:group-hover:opacity-100"><Eye className="h-3.5 w-3.5" /><span className="hidden sm:inline">Xem nhanh</span></button>
+              <div className="absolute right-2 top-2 z-30 flex items-center gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100"><button type="button" onClick={() => setQuickViewProduct(p)} aria-label={`Xem nhanh ${p.name}`} className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/80 bg-white/95 px-2 text-[10px] font-black text-slate-800 shadow-sm transition hover:bg-amber-400 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"><Eye className="h-3.5 w-3.5" /><span className="hidden sm:inline">Xem nhanh</span></button>{(p.type === 'digital' || Number(p.stock) > 0) && <button type="button" disabled={addToCartMutation.isPending} onClick={() => handleQuickAdd(p)} aria-label={`Thêm nhanh ${p.name}`} className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-500 px-2 text-[10px] font-black text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"><ShoppingCart className="h-3.5 w-3.5" /><span className="hidden sm:inline">Thêm nhanh</span></button>}</div>
               </div>
             ))}
           </div>

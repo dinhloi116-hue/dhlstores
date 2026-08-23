@@ -50,3 +50,21 @@ describe("account page layout", () => {
     expect(layoutSource).toContain("group-hover/cart:visible");
     expect(layoutSource).toContain("Xem toàn bộ giỏ hàng");
   });
+
+  it("supports selecting multiple orders for one reorder action", async () => {
+    const source = await readFile(orderHistoryPagePath, "utf8");
+    expect(source).toContain("selectedOrderIds");
+    expect(source).toContain("bulkReorder");
+    expect(source).toContain("Mua lại ${selectedOrderIds.length} đơn");
+  });
+
+  it("exposes safe quick add and shipping-progress UX", async () => {
+    const productsSource = await readFile(path.resolve(process.cwd(), "client/src/pages/Products.tsx"), "utf8");
+    const layoutSource = await readFile(path.resolve(process.cwd(), "client/src/components/StoreLayout.tsx"), "utf8");
+    expect(productsSource).toContain("Thêm nhanh");
+    expect(productsSource).toContain("handleQuickAdd");
+    expect(productsSource).toContain("addToCartMutation");
+    expect(layoutSource).toContain("freeShippingThreshold");
+    expect(layoutSource).toContain("Mua thêm");
+    expect(layoutSource).toContain("transition-[width]");
+  });
