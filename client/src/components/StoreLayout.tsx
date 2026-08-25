@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
+import { catalogName } from "@/lib/catalogLocale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -103,7 +104,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const toolGroups = Array.from(new Set(filteredTools.map(tool => tool.group)));
   const categoryBySlug = (slug: string, fallback: { id: number; name: string; type: 'physical' | 'digital' }) => {
     const category = catalogCategories.find(item => item.slug === slug);
-    return { id: category?.id ?? fallback.id, name: category?.name ?? fallback.name, type: category?.type ?? fallback.type };
+    return { id: category?.id ?? fallback.id, name: category ? catalogName(category, lang) : fallback.name, type: category?.type ?? fallback.type };
   };
   const footballCategories = [
     categoryBySlug('quan-ao-bong-da', { id: 11, name: lang === 'vi' ? 'Quần Áo Bóng Đá' : 'Football jerseys', type: 'physical' }),

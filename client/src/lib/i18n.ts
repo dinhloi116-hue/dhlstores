@@ -163,5 +163,8 @@ export function getClientLanguage(): Language {
   }
   const saved = localStorage.getItem('dhl_lang_selected');
   if (saved === 'vi' || saved === 'en') return saved;
-  return 'vi';
+  const browserLocales = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language];
+  return browserLocales.some(locale => locale?.toLowerCase().startsWith('vi')) ? 'vi' : 'en';
 }

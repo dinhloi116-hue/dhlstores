@@ -247,8 +247,10 @@ export const visitorEvents = mysqlTable("visitor_events", {
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 128 }).notNull(),
+  nameEn: varchar("nameEn", { length: 128 }),
   slug: varchar("slug", { length: 128 }).notNull().unique(),
   description: text("description"),
+  descriptionEn: text("descriptionEn"),
   iconKey: varchar("iconKey", { length: 64 }).default("Package").notNull(),
   type: mysqlEnum("type", ["physical", "digital", "all"]).default("all").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
@@ -261,8 +263,10 @@ export type InsertCategory = typeof categories.$inferInsert;
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  nameEn: varchar("nameEn", { length: 255 }),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
+  descriptionEn: text("descriptionEn"),
   price: decimal("price", { precision: 12, scale: 2 }).notNull(),
   type: mysqlEnum("type", ["physical", "digital"]).notNull(),
   categoryId: int("categoryId").notNull(),

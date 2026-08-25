@@ -26,8 +26,10 @@ export async function getDb() {
 export interface ProductType {
   id: number;
   name: string;
+  nameEn?: string;
   slug: string;
   description: string;
+  descriptionEn?: string;
   price: string;
   type: 'digital' | 'physical';
   categoryId: number;
@@ -79,8 +81,10 @@ export interface ProductWholesaleTierType {
 export interface CategoryType {
   id: number;
   name: string;
+  nameEn?: string;
   slug: string;
   description: string;
+  descriptionEn?: string;
   type: 'digital' | 'physical' | 'all';
   iconKey?: string;
   isActive?: boolean;
@@ -495,8 +499,10 @@ function toCategoryType(category: typeof categories.$inferSelect): CategoryType 
   return {
     id: category.id,
     name: category.name,
+    nameEn: category.nameEn ?? undefined,
     slug: category.slug,
     description: category.description ?? "",
+    descriptionEn: category.descriptionEn ?? undefined,
     type: category.type,
     iconKey: category.iconKey,
     isActive: category.isActive,
@@ -507,8 +513,10 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
   return {
     id: product.id,
     name: product.name,
+    nameEn: product.nameEn ?? undefined,
     slug: product.slug,
     description: product.description ?? "",
+    descriptionEn: product.descriptionEn ?? undefined,
     price: String(product.price),
     type: product.type,
     categoryId: product.categoryId,
@@ -1555,16 +1563,20 @@ export async function getCategories(includeInactive = false) {
 
 export type CatalogCategoryInput = {
   name: string;
+  nameEn?: string;
   slug: string;
   description?: string;
+  descriptionEn?: string;
   iconKey?: string;
   isActive: boolean;
 };
 
 export type CatalogProductInput = {
   name: string;
+  nameEn?: string;
   slug: string;
   description?: string;
+  descriptionEn?: string;
   price: string;
   categoryId: number;
   image: string;
@@ -1588,8 +1600,10 @@ export async function createCategory(input: CatalogCategoryInput) {
     await ensureDefaultCatalog(connection);
     const inserted = await connection.insert(categories).values({
       name: input.name,
+      nameEn: input.nameEn ?? null,
       slug: input.slug,
       description: input.description ?? null,
+      descriptionEn: input.descriptionEn ?? null,
       iconKey: input.iconKey ?? "Package",
       type: "digital",
       isActive: input.isActive,
@@ -1600,8 +1614,10 @@ export async function createCategory(input: CatalogCategoryInput) {
   const category: CategoryType = {
     id: Math.max(0, ...memoryCategories.map(item => item.id)) + 1,
     name: input.name,
+    nameEn: input.nameEn,
     slug: input.slug,
     description: input.description ?? "",
+    descriptionEn: input.descriptionEn,
     iconKey: input.iconKey ?? "Package",
     type: "digital",
     isActive: input.isActive,
@@ -1615,8 +1631,10 @@ export async function updateCategory(categoryId: number, input: CatalogCategoryI
   if (connection) {
     await connection.update(categories).set({
       name: input.name,
+      nameEn: input.nameEn ?? null,
       slug: input.slug,
       description: input.description ?? null,
+      descriptionEn: input.descriptionEn ?? null,
       iconKey: input.iconKey ?? "Package",
       isActive: input.isActive,
     }).where(eq(categories.id, categoryId));
@@ -1646,8 +1664,10 @@ export async function createProduct(input: CatalogProductInput) {
     const productType = category[0].type === "physical" ? "physical" : "digital";
     const inserted = await connection.insert(products).values({
       name: input.name,
+      nameEn: input.nameEn ?? null,
       slug: input.slug,
       description: input.description ?? null,
+      descriptionEn: input.descriptionEn ?? null,
       price: input.price,
       type: productType,
       categoryId: input.categoryId,
@@ -1670,8 +1690,10 @@ export async function createProduct(input: CatalogProductInput) {
   const product: ProductType = {
     id: Math.max(0, ...memoryProducts.map(item => item.id)) + 1,
     name: input.name,
+    nameEn: input.nameEn,
     slug: input.slug,
     description: input.description ?? "",
+    descriptionEn: input.descriptionEn,
     price: input.price,
     type: productType,
     categoryId: input.categoryId,
@@ -1698,8 +1720,10 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
     const productType = category[0].type === "physical" ? "physical" : "digital";
     await connection.update(products).set({
       name: input.name,
+      nameEn: input.nameEn ?? null,
       slug: input.slug,
       description: input.description ?? null,
+      descriptionEn: input.descriptionEn ?? null,
       price: input.price,
       type: productType,
       categoryId: input.categoryId,
@@ -2069,7 +2093,12 @@ export async function getProducts(filter?: {
   }
   if (filter?.search) {
     const q = filter.search.toLowerCase();
-    list = list.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+    list = list.filter(p =>
+      p.name.toLowerCase().includes(q)
+      || p.description.toLowerCase().includes(q)
+      || p.nameEn?.toLowerCase().includes(q)
+      || p.descriptionEn?.toLowerCase().includes(q),
+    );
   }
   if (filter?.size || filter?.color) {
     const matchingProducts = await Promise.all(list.map(async product => {

@@ -857,3 +857,10 @@
 - [x] Hiển thị toast thành công kèm hình ảnh sản phẩm khi dùng tính năng Thêm nhanh vào giỏ.
 - [x] Chạy một vòng dhl-stores-ux-loop để rà soát và tối ưu giao diện trên thiết bị di động.
 - [x] Bổ sung test, build, kiểm tra mobile và phát hành các cải thiện mới.
+
+## Địa phương hóa tự động Việt/Anh 2026-08-23
+- [x] Rà soát dữ liệu sản phẩm/danh mục và mô hình ngôn ngữ hiện có.
+- [x] Bổ sung dữ liệu/API tiếng Anh cho tên, mô tả và danh mục sản phẩm.
+- [x] Tạo bản dịch tiếng Anh cho dữ liệu catalog hiện có và lưu theo trường song ngữ.
+- [x] Tự nhận diện locale trình duyệt và hiển thị storefront Việt/Anh nhất quán.
+- [x] Bổ sung hồi quy, kiểm tra TypeScript/build và phát hành.

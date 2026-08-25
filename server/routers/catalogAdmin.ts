@@ -7,16 +7,20 @@ import { parseExcelProducts, toOptionGroups } from "../excelProductImport";
 
 const categoryInput = z.object({
   name: z.string().trim().min(2).max(128),
+  nameEn: z.string().trim().max(128).optional(),
   slug: z.string().trim().min(2).max(128).regex(/^[a-z0-9-]+$/, "Slug chỉ gồm chữ thường, số và dấu gạch ngang"),
   description: z.string().trim().max(2000).optional(),
+  descriptionEn: z.string().trim().max(2000).optional(),
   iconKey: z.string().trim().min(1).max(64).default("Package"),
   isActive: z.boolean().default(true),
 });
 
 const productInput = z.object({
   name: z.string().trim().min(2).max(255),
+  nameEn: z.string().trim().max(255).optional(),
   slug: z.string().trim().min(2).max(255).regex(/^[a-z0-9-]+$/, "Slug chỉ gồm chữ thường, số và dấu gạch ngang"),
   description: z.string().trim().max(5000).optional(),
+  descriptionEn: z.string().trim().max(5000).optional(),
   price: z.coerce.number().min(0).max(999_999_999),
   categoryId: z.number().int().positive(),
   image: z.string().trim().min(1).max(4096),

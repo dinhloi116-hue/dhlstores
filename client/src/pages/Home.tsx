@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { clearRecentProducts, getRecentProductIds } from "@/lib/customer-tools";
 import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
+import { catalogDescription, catalogName } from "@/lib/catalogLocale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/category-icons";
@@ -83,7 +84,7 @@ export default function Home() {
           {categoriesQuery.isLoading ? Array.from({ length: 10 }).map((_, index) => <div key={index} className="h-16 animate-pulse border border-slate-200 bg-slate-100" />) : categories.map(category => { const Icon = getCategoryIcon(category.iconKey); return (
             <Link key={category.id} href={`/products?categoryId=${category.id}`} className="dhl-hover-card relative border border-slate-200 bg-white p-3 text-center shadow-sm hover:bg-amber-50 group">
               <Icon className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform duration-200 group-hover:scale-125 group-hover:-rotate-6" />
-              <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{category.name}</h4>
+              <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{catalogName(category, lang)}</h4>
               {category.type === "physical" && <span className="absolute right-1.5 top-1.5 rounded bg-emerald-100 px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-emerald-700">Hàng vật lý</span>}
             </Link>
           ); })}
@@ -125,7 +126,7 @@ export default function Home() {
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                   <div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <AssetVisual categoryId={p.categoryId} title={p.name} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
+                    <AssetVisual categoryId={p.categoryId} title={catalogName(p, lang)} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-violet-700 text-white text-[10px] font-bold px-2 py-0.5">
 	                        {lang === "vi" ? "Tài nguyên số" : "Digital Asset"}
@@ -135,10 +136,10 @@ export default function Home() {
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
                       <h3 className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed">
-                        {p.name}
+                        {catalogName(p, lang)}
                       </h3>
                       <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">
-                        {p.description}
+                        {catalogDescription(p, lang)}
                       </p>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
