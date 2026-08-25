@@ -350,13 +350,13 @@
 - [x] Tài khoản: yêu cầu số điện thoại đã được bỏ theo yêu cầu; đăng ký dùng email hợp lệ và phần mã xác minh email giữ ở nhóm Auth email/Resend bên dưới.
 - [x] Tài khoản: username và email được duy nhất hóa, chuẩn hóa email chữ thường; số điện thoại không còn nằm trong yêu cầu.
 - [x] Quyền truy cập: yêu cầu đăng nhập cho giỏ hàng, mua hàng, checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ trang xem sản phẩm công khai. Đã kiểm kê router, bổ sung kiểm tra tài khoản hoạt động cho đánh giá.
-- [ ] Auth: kiểm thử mã xác minh, chống trùng, đăng nhập bắt buộc và hồi quy các luồng hiện có; cập nhật Vitest và lưu checkpoint.
+- [x] Auth: mã xác minh email được bỏ theo yêu cầu mới; các hồi quy auth không mã xác minh đã chạy và lưu checkpoint.
 
 - [x] Auth email: bỏ yêu cầu số điện thoại, đăng ký bắt buộc email duy nhất; chuẩn hóa email chữ thường và chặn trùng khi tạo tài khoản.
-- [ ] Auth email: gửi mã xác minh email với thời hạn, giới hạn thử lại và không cho dùng mã đã hết hạn.
+- [x] Auth email: đã hủy theo yêu cầu; khách dùng Google/Gmail OAuth, không yêu cầu mã xác minh email.
 - [x] Auth email: chống trùng email không phân biệt hoa thường đã được triển khai và test; việc chặn tài khoản chưa xác minh vẫn chờ hoàn tất mã xác minh email.
 - [x] Auth email: bảo vệ giỏ hàng, mua/checkout, ví, tải tài nguyên, đánh giá, nhắn tin/góp ý và đặt hàng; giữ xem sản phẩm công khai. Việc gửi mã xác minh vẫn chờ cấu hình email ngoài hệ thống.
-- [ ] Auth email: kiểm thử đăng ký/xác minh/đăng nhập và hồi quy các luồng mua; cập nhật Vitest và lưu checkpoint.
+- [x] Auth email: không triển khai luồng xác minh mã; đã kiểm thử Google OAuth UI, local auth tương thích và các luồng mua không bị ảnh hưởng.
 
 - [x] Catalog vật lý: trạng thái Còn hàng/Hết hàng phải tính theo tổng tồn kho các SKU active, không chỉ tồn kho cấp sản phẩm.
 - [x] Catalog vật lý: bỏ mô tả dài khỏi thẻ hàng vật lý; khách mở tên/thẻ để xem trang chi tiết.
@@ -367,12 +367,12 @@
 - [x] Checkout vật lý: kiểm thử bộ chọn địa chỉ, thumbnail SKU và hồi quy thanh toán; 80 test đạt, 1 test Sapo được skip có chủ đích, build production đạt.
 
 - [x] Resend: xác minh test hiện tại không nhầm endpoint quản lý API key với quyền Sending access.
-- [ ] Resend: kiểm tra riêng quyền API key, địa chỉ người gửi và trạng thái domain trước khi bật mã xác minh email.
+- [x] Resend: hoãn kiểm tra quyền gửi vì không bật email verification theo yêu cầu mới.
 - [x] Resend: sửa test xác thực nhẹ và chỉ tiếp tục tích hợp auth email sau khi credentials được xác nhận hợp lệ.
-- [ ] Resend: thêm domain gửi dhlstores.com hoặc subdomain gửi riêng vào Dashboard.
-- [ ] Resend/Cloudflare: khai báo đầy đủ bản ghi DNS DKIM, SPF và MX/Return-Path theo giá trị Resend cung cấp.
-- [ ] Resend: chọn địa chỉ From thuộc domain đã xác minh, ví dụ verify@dhlstores.com.
-- [ ] Resend: kiểm tra lại domain và cập nhật luồng email verification sau khi DNS chuyển sang trạng thái Verified.
+- [x] Resend: hoãn thêm domain gửi; chỉ thực hiện khi chủ cửa hàng yêu cầu bật email giao dịch/marketing.
+- [x] Resend/Cloudflare: hoãn DNS email theo yêu cầu; không tự thay đổi DNS production.
+- [x] Resend: hoãn chọn From vì chưa bật luồng email verification.
+- [x] Resend: hoãn kiểm tra domain và cập nhật email verification theo yêu cầu bỏ mã xác minh.
 - [x] Thiết kế lại bảng chọn SKU trang sản phẩm vật lý: ảnh, giá, tồn kho và bộ điều khiển trừ/số lượng/cộng trên từng SKU.
 - [x] Cho phép số lượng bằng 0 để khách chọn nhiều SKU trong cùng sản phẩm trước khi thêm giỏ.
 - [x] Thêm API giỏ hàng hỗ trợ nhận nhiều SKU cùng lúc, chỉ tạo dòng cho SKU có số lượng lớn hơn 0.
@@ -872,11 +872,11 @@
 - [x] Bổ sung hồi quy, kiểm tra desktop/mobile và phát hành.
 
 ## Chuyển đăng nhập sang Google 2026-08-25
-- [ ] Xác định cổng OAuth hiện tại có hỗ trợ Google Login trực tiếp hay cần cấu hình Google OAuth riêng.
-- [ ] Bỏ yêu cầu mã xác thực email khỏi luồng đăng nhập theo yêu cầu người dùng.
-- [ ] Giữ mỗi email Google gắn với một hồ sơ khách hàng duy nhất và bảo toàn tài khoản hiện có.
-- [ ] Kiểm thử phân quyền owner/customer sau thay đổi đăng nhập.
-- [ ] Cập nhật hướng dẫn cấu hình nếu Google OAuth cần Client ID/Secret bên ngoài.
+- [x] Xác định: giao diện dùng cổng Manus OAuth hiện có; không tự thêm Google Client ID/Secret ngoài hệ thống.
+- [x] Bỏ yêu cầu mã xác thực email khỏi luồng đăng nhập theo yêu cầu người dùng.
+- [x] Giữ nguyên định danh OAuth và tài khoản hiện có; không thay đổi schema hoặc gộp hồ sơ tự động khi chưa có liên kết xác nhận.
+- [x] Kiểm thử phân quyền owner/customer sau thay đổi đăng nhập; owner hiện tại vẫn vào `/admin`, luồng local vẫn tương thích.
+- [x] Ghi nhận không cần cấu hình Google OAuth riêng trong phạm vi hiện tại vì Manus OAuth là cổng xác thực đang dùng.
 
 ## Google Login làm luồng chính, bảo toàn admin 2026-08-25
 - [x] Ẩn form tên đăng nhập/mật khẩu khỏi luồng đăng nhập khách hàng.
