@@ -196,7 +196,7 @@ export default function Account() {
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" disabled={uploadAvatarMutation.isPending} onChange={event => { handleAvatarChange(event.target.files?.[0]); event.currentTarget.value = ""; }} />
             </label>
             <div>
-	              <h1 className="text-2xl font-black text-slate-900">{user?.name || (lang === 'vi' ? 'Khách hàng' : 'Customer')}</h1>
+	              <h1 className="text-2xl font-black text-slate-900">{user?.name && user.name !== 'Customer' ? user.name : user?.role === 'owner' ? (lang === 'vi' ? 'Chủ cửa hàng DHL Stores' : 'DHL Stores Owner') : (lang === 'vi' ? 'Khách hàng' : 'Customer')}</h1>
               <p className={`mt-1 text-xs ${user?.email ? "text-slate-500" : "font-semibold text-amber-700"}`}>{user?.email || (lang === "vi" ? "Chưa liên kết email — thêm ở phần bên dưới" : "No email linked — add one below")}</p>
               <p className="mt-2 text-[11px] font-semibold text-slate-500">{uploadAvatarMutation.isPending ? (lang === "vi" ? "Đang tải ảnh…" : "Uploading photo…") : (lang === "vi" ? "Chạm vào ảnh để thay đổi" : "Tap photo to change")}</p>
               <div className="flex items-center gap-2 mt-2">

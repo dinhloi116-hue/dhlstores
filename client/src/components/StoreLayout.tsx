@@ -232,7 +232,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
       {/* Main Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-3 sm:h-[4.5rem] sm:px-6 lg:px-8 2xl:px-10">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-2 px-2 sm:h-[4.5rem] sm:px-6 lg:px-8 2xl:px-10">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-sm sm:h-10 sm:w-10">
@@ -272,7 +272,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
           {/* Right Actions */}
           <div className="flex items-center gap-1.5 sm:gap-3">
-            <Button variant="outline" size="sm" onClick={() => setImageSearchOpen(true)} className="border-cyan-200 bg-cyan-50 text-xs font-bold text-cyan-800 hover:bg-cyan-100" aria-label={lang === "vi" ? "Tìm kiếm bằng hình ảnh" : "Search by image"}>
+            <Button variant="outline" size="sm" onClick={() => setImageSearchOpen(true)} className="h-9 w-9 shrink-0 border-cyan-200 bg-cyan-50 px-0 text-xs font-bold text-cyan-800 hover:bg-cyan-100 sm:w-auto sm:px-3" aria-label={lang === "vi" ? "Tìm kiếm bằng hình ảnh" : "Search by image"}>
               <Camera className="h-4 w-4 sm:mr-1" /><span className="hidden lg:inline">{lang === "vi" ? "Tìm bằng ảnh" : "Search by image"}</span>
             </Button>
             <Button
@@ -281,19 +281,19 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               onClick={toggleLanguage}
               aria-label={lang === 'vi' ? 'Chuyển từ tiếng Việt sang tiếng Anh' : 'Switch from English to Vietnamese'}
               title={lang === 'vi' ? 'Tiếng Việt / English' : 'English / Tiếng Việt'}
-              className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-800 text-xs font-bold gap-1.5"
+              className="h-9 shrink-0 bg-slate-100 px-2 text-slate-800 text-xs font-bold gap-1 sm:px-3"
             >
               <span aria-hidden="true" className="text-sm leading-none">{lang === 'vi' ? '🇻🇳' : '🇬🇧'}</span>
               <span>{lang === 'vi' ? 'VI' : 'EN'}</span>
               <span aria-hidden="true" className="text-slate-400">/</span>
-              <span aria-hidden="true" className="text-sm leading-none">{lang === 'vi' ? '🇬🇧' : '🇻🇳'}</span>
+              <span aria-hidden="true" className="hidden text-sm leading-none sm:inline">{lang === 'vi' ? '🇬🇧' : '🇻🇳'}</span>
             </Button>
 
             {/* Cart Trigger */}
             <div className="group/cart relative">
             <Sheet open={cartOpen} onOpenChange={setCartOpen}>
               <SheetTrigger asChild>
-                <Button id="header-cart-trigger" aria-label={`${lang === 'vi' ? 'Mở giỏ hàng, ' : 'Open cart, '}${cartItemCount} ${lang === 'vi' ? 'sản phẩm' : 'items'}`} variant="outline" size="sm" className="relative bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-amber-600 shadow-sm">
+                <Button id="header-cart-trigger" aria-label={`${lang === 'vi' ? 'Mở giỏ hàng, ' : 'Open cart, '}${cartItemCount} ${lang === 'vi' ? 'sản phẩm' : 'items'}`} variant="outline" size="sm" className="relative h-9 shrink-0 bg-amber-500 px-2 hover:bg-amber-600 text-slate-950 font-bold border-amber-600 shadow-sm sm:px-3">
                   <ShoppingBag className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">{t.cart}</span>
                   {cartItemCount > 0 && (

@@ -899,3 +899,12 @@
 - [x] Xác minh hồ sơ có email `dinhloi116@gmail.com` và cơ chế admin hiện tại; email này đã thuộc hồ sơ owner `local:dinhhoangloi`.
 - [x] Bảo đảm hồ sơ email `dinhloi116@gmail.com` ở trạng thái active và role owner; không tạo tài khoản trùng khi chưa có Google openId riêng.
 - [x] Đã kiểm tra dữ liệu role/status; hồ sơ email mục tiêu có quyền owner, đủ quyền `/admin`, checkpoint sẽ lưu thay đổi dữ liệu.
+
+## Vòng DHL Stores UX tự cải thiện 2026-08-25
+- [x] Rà soát luồng khách: trang chủ, catalog, chi tiết sản phẩm, giỏ hàng, checkout và tài khoản.
+- [x] Rà soát luồng owner: `/admin`, sản phẩm, tồn kho, đơn hàng, khách hàng và quyền truy cập.
+- [x] Kiểm tra responsive desktop/mobile và các trạng thái loading, empty, error, auth.
+- [x] Sửa các lỗi UX an toàn phát hiện được và bổ sung hồi quy Vitest.
+- [x] Chạy test, TypeScript, build, screenshot; cập nhật TODO và phát hành checkpoint.
+- [x] Sửa header mobile để các action tìm ảnh, ngôn ngữ, giỏ hàng, thông báo và tài khoản không bị cắt ngang.
+- [x] Sửa nhãn hồ sơ tài khoản để owner không hiển thị mặc định là Customer khi thiếu tên hiển thị.
