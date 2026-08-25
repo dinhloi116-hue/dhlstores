@@ -888,3 +888,9 @@
 - [x] Giữ lối truy cập tài khoản cũ / quản trị ở chế độ ẩn để chủ cửa hàng `dinhhoangloi` vẫn đăng nhập local khi cần.
 - [x] Không thêm email verification code vào luồng đăng nhập Google; giữ tương thích các API local hiện có để không ảnh hưởng dữ liệu và quyền admin.
 - [x] Chạy hồi quy auth, TypeScript, build production và kiểm tra trực quan các route chính sau thay đổi auth UI.
+
+## Sửa lỗi Google OAuth callback 2026-08-25
+- [x] Điều tra lỗi `OAuth callback failed` khi đăng nhập bằng Google trên domain đang chạy.
+- [x] Sửa an toàn luồng redirect/state/callback hoặc cấu hình OAuth nếu phát hiện nguyên nhân.
+- [x] Bổ sung hồi quy cho callback lỗi và luồng đăng nhập Google thành công.
+- [ ] Kiểm thử production preview, cập nhật TODO và phát hành checkpoint sửa lỗi.
