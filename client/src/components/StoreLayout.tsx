@@ -27,6 +27,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [showLegacyAuth, setShowLegacyAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authForm, setAuthForm] = useState({ name: '', username: '', email: '', password: '', confirmPassword: '' });
   const [accountNavPending, setAccountNavPending] = useState(false);
@@ -125,6 +126,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     { key: 'print', label: lang === 'vi' ? 'Shop Áo Thun In Hình' : 'Printed T-shirt shop', href: '/products?type=physical&categoryId=11070079', icon: Shirt, accent: 'text-[#ee4d2d]', children: printCategories.map(category => ({ ...category, href: `/products?type=physical&categoryId=${category.id}` })) },
     { key: 'digital', label: navDigital, href: '/products?type=digital', icon: Download, accent: 'text-purple-600', children: digitalCategories.map(category => ({ ...category, href: `/products?type=digital&categoryId=${category.id}` })) },
   ];
+
+  const openCustomerAuth = () => startLogin();
+  const openLegacyAuth = () => { setShowLegacyAuth(true); setAuthDialogOpen(true); };
 
   const handleImageSearchFile = (file: File | undefined) => {
     if (!file) return;
@@ -314,7 +318,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   {!isAuthenticated ? (
                     <div className="text-center py-12 text-slate-500">
                       <p className="mb-4 text-sm">{lang === 'vi' ? 'Vui lòng đăng nhập để xem giỏ hàng.' : 'Please sign in to view your cart.'}</p>
-                      <Button onClick={() => setAuthDialogOpen(true)} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
+                      <Button onClick={openCustomerAuth} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
                         {t.login}
                       </Button>
                     </div>
@@ -426,7 +430,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               </div>
             ) : (
               <Button
-                onClick={() => setAuthDialogOpen(true)}
+                onClick={() => { setShowLegacyAuth(false); setAuthDialogOpen(true); }}
                 className="bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-sm px-4 text-xs sm:text-sm"
               >
                 {t.login}
@@ -472,7 +476,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         </DialogContent>
       </Dialog>
 
-      <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
+      <Dialog open={authDialogOpen} onOpenChange={open => { setAuthDialogOpen(open); if (!open) setShowLegacyAuth(false); }}>
         <DialogContent className="max-w-md bg-white border-slate-200 p-0 overflow-hidden">
           <div className="bg-gradient-to-r from-slate-900 to-purple-950 px-7 py-6 text-white">
             <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-amber-300">DHL Stores Account</p>
@@ -481,7 +485,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <DialogDescription className="text-sm text-slate-200">{lang === 'vi' ? 'Tài khoản giúp bảo vệ đơn hàng và chỉ mở quyền tải file sau thanh toán.' : 'Your account protects orders and unlocks downloads only after payment.'}</DialogDescription>
             </DialogHeader>
           </div>
-          <form onSubmit={submitLocalAuth} className="p-7 space-y-5">
+          {showLegacyAuth ? <form onSubmit={submitLocalAuth} className="p-7 space-y-5">
             <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 gap-1">
               <button type="button" onClick={() => setAuthMode('signin')} className={`rounded-lg px-3 py-2.5 text-xs font-black transition-colors ${authMode === 'signin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{lang === 'vi' ? 'ĐĂNG NHẬP' : 'SIGN IN'}</button>
               <button type="button" onClick={() => setAuthMode('signup')} className={`rounded-lg px-3 py-2.5 text-xs font-black transition-colors ${authMode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{lang === 'vi' ? 'TẠO TÀI KHOẢN' : 'CREATE ACCOUNT'}</button>
@@ -498,7 +502,18 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               {localLoginMutation.isPending || localRegisterMutation.isPending ? (lang === 'vi' ? 'ĐANG XỬ LÝ...' : 'PLEASE WAIT...') : authMode === 'signin' ? (lang === 'vi' ? 'ĐĂNG NHẬP' : 'SIGN IN') : (lang === 'vi' ? 'TẠO TÀI KHOẢN' : 'CREATE ACCOUNT')}
             </Button>
             <button type="button" onClick={() => startLogin()} className="w-full text-center text-xs font-bold text-slate-500 underline-offset-4 hover:text-purple-700 hover:underline">{lang === 'vi' ? 'Hoặc tiếp tục với tài khoản Manus' : 'Or continue with your Manus account'}</button>
-          </form>
+          </form> : <div className="space-y-5 p-7">
+            <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm leading-relaxed text-cyan-950">
+              <p className="font-black">{lang === 'vi' ? 'Đăng nhập bằng Google / Gmail' : 'Sign in with Google / Gmail'}</p>
+              <p className="mt-1 text-xs">{lang === 'vi' ? 'Bạn sẽ được chuyển tới cổng xác thực an toàn. Chọn Continue with Google để dùng Gmail của mình.' : 'You will be redirected to a secure sign-in portal. Choose Continue with Google to use your Gmail account.'}</p>
+            </div>
+            <Button type="button" onClick={openCustomerAuth} className="w-full bg-slate-950 py-5 font-black text-white hover:bg-slate-800">
+              {lang === 'vi' ? 'TIẾP TỤC VỚI GOOGLE' : 'CONTINUE WITH GOOGLE'}
+            </Button>
+            <button type="button" onClick={openLegacyAuth} className="w-full text-center text-xs font-bold text-slate-500 underline-offset-4 hover:text-purple-700 hover:underline">
+              {lang === 'vi' ? 'Đăng nhập tài khoản cũ / quản trị' : 'Sign in with a legacy / admin account'}
+            </button>
+          </div>}
         </DialogContent>
       </Dialog>
 

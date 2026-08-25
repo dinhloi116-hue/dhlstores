@@ -870,3 +870,21 @@
 - [x] Hoàn thiện tìm kiếm để khớp tên, mô tả và danh mục bằng cả tiếng Việt lẫn tiếng Anh.
 - [x] Bổ sung nhận diện locale qua quốc gia từ IP với ưu tiên cho lựa chọn thủ công và fallback an toàn.
 - [x] Bổ sung hồi quy, kiểm tra desktop/mobile và phát hành.
+
+## Chuyển đăng nhập sang Google 2026-08-25
+- [ ] Xác định cổng OAuth hiện tại có hỗ trợ Google Login trực tiếp hay cần cấu hình Google OAuth riêng.
+- [ ] Bỏ yêu cầu mã xác thực email khỏi luồng đăng nhập theo yêu cầu người dùng.
+- [ ] Giữ mỗi email Google gắn với một hồ sơ khách hàng duy nhất và bảo toàn tài khoản hiện có.
+- [ ] Kiểm thử phân quyền owner/customer sau thay đổi đăng nhập.
+- [ ] Cập nhật hướng dẫn cấu hình nếu Google OAuth cần Client ID/Secret bên ngoài.
+
+## Google Login làm luồng chính, bảo toàn admin 2026-08-25
+- [x] Ẩn form tên đăng nhập/mật khẩu khỏi luồng đăng nhập khách hàng.
+- [x] Đưa nút Google/Gmail qua cổng Manus lên lựa chọn đăng nhập chính.
+- [x] Giữ lối đăng nhập dự phòng cho owner/admin tại khu vực quản trị, không xóa tài khoản `dinhhoangloi`.
+- [x] Kiểm thử phân quyền owner/customer và redirect OAuth trước khi phát hành.
+
+- [x] Ưu tiên đăng nhập Google/Gmail qua Manus OAuth cho khách hàng; ẩn form username/password khỏi luồng mặc định.
+- [x] Giữ lối truy cập tài khoản cũ / quản trị ở chế độ ẩn để chủ cửa hàng `dinhhoangloi` vẫn đăng nhập local khi cần.
+- [x] Không thêm email verification code vào luồng đăng nhập Google; giữ tương thích các API local hiện có để không ảnh hưởng dữ liệu và quyền admin.
+- [x] Chạy hồi quy auth, TypeScript, build production và kiểm tra trực quan các route chính sau thay đổi auth UI.
