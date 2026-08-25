@@ -893,4 +893,9 @@
 - [x] Điều tra lỗi `OAuth callback failed` khi đăng nhập bằng Google trên domain đang chạy.
 - [x] Sửa an toàn luồng redirect/state/callback hoặc cấu hình OAuth nếu phát hiện nguyên nhân.
 - [x] Bổ sung hồi quy cho callback lỗi và luồng đăng nhập Google thành công.
-- [ ] Kiểm thử production preview, cập nhật TODO và phát hành checkpoint sửa lỗi.
+- [x] Kiểm thử production preview, cập nhật TODO và phát hành checkpoint sửa lỗi; bản sửa đã phát hành ở checkpoint `33a909c8`.
+
+## Cấp admin cho Google account 2026-08-25
+- [x] Xác minh hồ sơ có email `dinhloi116@gmail.com` và cơ chế admin hiện tại; email này đã thuộc hồ sơ owner `local:dinhhoangloi`.
+- [x] Bảo đảm hồ sơ email `dinhloi116@gmail.com` ở trạng thái active và role owner; không tạo tài khoản trùng khi chưa có Google openId riêng.
+- [x] Đã kiểm tra dữ liệu role/status; hồ sơ email mục tiêu có quyền owner, đủ quyền `/admin`, checkpoint sẽ lưu thay đổi dữ liệu.
