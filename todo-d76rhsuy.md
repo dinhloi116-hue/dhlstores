@@ -415,10 +415,10 @@
 - [x] Header mobile: thêm preview giỏ gọn, dễ thao tác trên thiết bị cảm ứng.
 - [x] Marketplace: thêm tìm kiếm nhanh theo tên, thuộc tính hoặc mã SKU trong bảng chọn hàng loạt.
 
-- [ ] Stripe digital: kích hoạt cổng thanh toán quốc tế, giữ nguyên QR/SePay cho khách Việt Nam.
-- [ ] Stripe digital: tạo checkout, xác nhận webhook và chỉ mở quyền tải trong 7 ngày sau khi thanh toán thành công.
-- [ ] Stripe digital: thêm lựa chọn thanh toán quốc tế rõ ràng trên luồng mua sản phẩm số.
-- [ ] Stripe digital: kiểm thử sandbox và hướng dẫn cấu hình production an toàn.
+- [x] Đã hoãn Stripe digital theo yêu cầu; giữ nguyên QR/SePay cho khách Việt Nam.
+- [x] Đã hoãn Stripe checkout/webhook và quyền tải sau thanh toán cho tới khi chủ shop bật lại yêu cầu.
+- [x] Đã hoãn lựa chọn thanh toán quốc tế trên luồng sản phẩm số theo yêu cầu.
+- [x] Đã hoãn kiểm thử Stripe sandbox; tài liệu cấu hình an toàn đã được lưu sẵn.
 
 - [x] Sản phẩm một SKU: đặt bộ điều khiển trừ/số lượng/cộng ngay cạnh tên SKU.
 - [x] Sản phẩm nhiều SKU: giữ nguyên bảng chọn hàng loạt và không ảnh hưởng giá sỉ theo tổng SKU.
