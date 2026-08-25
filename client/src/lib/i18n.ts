@@ -163,8 +163,26 @@ export function getClientLanguage(): Language {
   }
   const saved = localStorage.getItem('dhl_lang_selected');
   if (saved === 'vi' || saved === 'en') return saved;
+  const detected = localStorage.getItem('dhl_lang_detected');
+  if (detected === 'vi' || detected === 'en') return detected;
   const browserLocales = Array.isArray(navigator.languages) && navigator.languages.length
     ? navigator.languages
     : [navigator.language];
   return browserLocales.some(locale => locale?.toLowerCase().startsWith('vi')) ? 'vi' : 'en';
+}
+
+export function setDetectedLanguage(language: Language) {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return false;
+  const selected = localStorage.getItem('dhl_lang_selected');
+  if (selected === 'vi' || selected === 'en') return false;
+  localStorage.setItem('dhl_lang_detected', language);
+  window.dispatchEvent(new Event('dhlstores-language-detected'));
+  return true;
+}
+
+export function setSelectedLanguage(language: Language) {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  localStorage.setItem('dhl_lang_selected', language);
+  localStorage.setItem('dhl_lang', language);
+  window.dispatchEvent(new Event('dhlstores-language-detected'));
 }

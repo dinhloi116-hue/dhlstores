@@ -11,6 +11,7 @@ import { sdk } from "./_core/sdk";
 import { storagePut } from "./storage";
 import { checkSapoProductReadConnection, pullSapoInventoryBySku, syncSapoInventoryBySku } from "./sapo";
 import { invokeLLM } from "./_core/llm";
+import { resolveStoreLocale } from "./locale";
 
 const LOCAL_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 const localUsernameSchema = z.string().trim().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự").max(32, "Tên đăng nhập tối đa 32 ký tự").regex(/^[a-zA-Z0-9_]+$/, "Tên đăng nhập chỉ gồm chữ cái, số và dấu gạch dưới");
@@ -220,6 +221,7 @@ export const appRouter = router({
   }),
 
   store: router({
+    locale: publicProcedure.query(async ({ ctx }) => resolveStoreLocale(ctx.req.headers)),
     siteSettings: publicProcedure.query(() => db.getSiteSettings()),
     categories: publicProcedure.query(async () => {
       return await db.getCategories();

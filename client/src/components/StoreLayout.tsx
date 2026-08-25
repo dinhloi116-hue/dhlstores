@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { translations, getClientLanguage, Language } from "@/lib/i18n";
+import { translations, getClientLanguage, Language, setDetectedLanguage, setSelectedLanguage } from "@/lib/i18n";
 import { catalogName } from "@/lib/catalogLocale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,15 +41,22 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const recordVisit = trpc.analytics.recordVisit.useMutation();
   const siteSettingsQuery = trpc.store.siteSettings.useQuery();
   const categoriesQuery = trpc.store.categories.useQuery();
+  const localeQuery = trpc.store.locale.useQuery(undefined, { staleTime: 24 * 60 * 60 * 1_000, retry: false });
   const notificationOrdersQuery = trpc.store.myOrders.useQuery(undefined, { enabled: isAuthenticated, staleTime: 20_000, refetchInterval: isAuthenticated ? 30_000 : false });
   const attentionOrderCount = (notificationOrdersQuery.data || []).filter(order => order.paymentStatus === "pending" || order.status === "processing" || order.status === "shipping").length;
 
 	  const [lang, setLang] = useState<Language>(getClientLanguage());
 
 	  useEffect(() => {
-	    localStorage.setItem('dhl_lang_selected', lang);
-	    localStorage.setItem('dhl_lang', lang);
-	  }, [lang]);
+	    const syncLanguage = () => setLang(getClientLanguage());
+	    window.addEventListener('dhlstores-language-detected', syncLanguage);
+	    return () => window.removeEventListener('dhlstores-language-detected', syncLanguage);
+	  }, []);
+	  useEffect(() => {
+	    if (localeQuery.data?.locale && setDetectedLanguage(localeQuery.data.locale)) {
+	      setLang(localeQuery.data.locale);
+	    }
+	  }, [localeQuery.data?.locale]);
   useEffect(() => {
     setAccountNavPending(false);
   }, [location]);
@@ -130,6 +137,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
   const toggleLanguage = () => {
     const nextLang = lang === 'vi' ? 'en' : 'vi';
+    setSelectedLanguage(nextLang);
     setLang(nextLang);
     toast.success(nextLang === 'vi' ? 'Đã chuyển sang tiếng Việt' : 'Switched to English');
   };
@@ -267,10 +275,14 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               variant="outline"
               size="sm"
               onClick={toggleLanguage}
-              className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-800 text-xs font-bold gap-1"
+              aria-label={lang === 'vi' ? 'Chuyển từ tiếng Việt sang tiếng Anh' : 'Switch from English to Vietnamese'}
+              title={lang === 'vi' ? 'Tiếng Việt / English' : 'English / Tiếng Việt'}
+              className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-800 text-xs font-bold gap-1.5"
             >
-              <Globe className="w-3.5 h-3.5 text-amber-600" />
-              <span>{lang === 'vi' ? 'VN / EN' : 'EN / VN'}</span>
+              <span aria-hidden="true" className="text-sm leading-none">{lang === 'vi' ? '🇻🇳' : '🇬🇧'}</span>
+              <span>{lang === 'vi' ? 'VI' : 'EN'}</span>
+              <span aria-hidden="true" className="text-slate-400">/</span>
+              <span aria-hidden="true" className="text-sm leading-none">{lang === 'vi' ? '🇬🇧' : '🇻🇳'}</span>
             </Button>
 
             {/* Cart Trigger */}

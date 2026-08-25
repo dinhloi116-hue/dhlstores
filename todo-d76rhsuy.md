@@ -864,3 +864,9 @@
 - [x] Tạo bản dịch tiếng Anh cho dữ liệu catalog hiện có và lưu theo trường song ngữ.
 - [x] Tự nhận diện locale trình duyệt và hiển thị storefront Việt/Anh nhất quán.
 - [x] Bổ sung hồi quy, kiểm tra TypeScript/build và phát hành.
+
+## Tối ưu locale quốc tế 2026-08-25
+- [x] Thêm cờ Việt Nam và Anh vào nút chuyển ngôn ngữ, bảo đảm có nhãn trợ năng.
+- [x] Hoàn thiện tìm kiếm để khớp tên, mô tả và danh mục bằng cả tiếng Việt lẫn tiếng Anh.
+- [x] Bổ sung nhận diện locale qua quốc gia từ IP với ưu tiên cho lựa chọn thủ công và fallback an toàn.
+- [x] Bổ sung hồi quy, kiểm tra desktop/mobile và phát hành.

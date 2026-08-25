@@ -28,5 +28,6 @@ describe("bilingual catalog presentation", () => {
     expect(source).toContain("navigator.languages");
     expect(source).toContain("startsWith('vi')");
     expect(source).toContain("dhl_lang_selected");
+    expect(source).toContain("dhl_lang_detected");
   });
 });

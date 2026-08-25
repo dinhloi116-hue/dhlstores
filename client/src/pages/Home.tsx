@@ -47,7 +47,7 @@ export default function Home() {
   const normalizedSearchTerm = searchTerm.trim().toLocaleLowerCase("vi");
   const searchSuggestions = !normalizedSearchTerm ? [] : allProducts.filter(product => {
     const category = categories.find(item => item.id === product.categoryId);
-    return `${product.name} ${product.description || ""} ${product.slug || ""} ${category?.name || ""}`.toLocaleLowerCase("vi").includes(normalizedSearchTerm);
+    return `${product.name} ${product.nameEn || ""} ${product.description || ""} ${product.descriptionEn || ""} ${product.slug || ""} ${category?.name || ""} ${category?.nameEn || ""}`.toLocaleLowerCase("vi").includes(normalizedSearchTerm);
   }).slice(0, 6);
 
   const formatCurrency = (val: string | number) => {
