@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="vi">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Font Pro Studio</title></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Font Pro Studio</title>
+</head>
 <body style="font-family:Segoe UI,Arial;padding:24px"><div id="status">Đang tải Font Pro Studio...</div>
 <script>
 (async()=>{
@@ -9,13 +16,20 @@
   const s=await r.text();
   const m=s.match(/const b="([\s\S]*?)";const a=/);
   if(!m) throw new Error('Không tìm thấy dữ liệu tool trong payload.');
+
+  // Chỉ giữ alphabet Base64, xóa MỌI dấu = cũ rồi tự padding lại chuẩn ở cuối.
   let b=m[1].replace(/[^A-Za-z0-9+/=]/g,'');
-  b=b.replace(/=+$/,'');
-  b += '='.repeat((4-b.length%4)%4);
+  b=b.replace(/=/g,'');
+  b += '='.repeat((4-(b.length%4))%4);
+
+  document.getElementById('status').textContent='Đang giải nén Font Pro Studio...';
   const bin=atob(b);
   const a=Uint8Array.from(bin,c=>c.charCodeAt(0));
   const ds=new DecompressionStream('gzip');
   const t=await new Response(new Blob([a]).stream().pipeThrough(ds)).text();
   document.open();document.write(t);document.close();
-})().catch(e=>{document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'</pre>';console.error(e);});
+})().catch(e=>{
+  document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'\n\nLoader: v3</pre>';
+  console.error(e);
+});
 </script></body></html>
