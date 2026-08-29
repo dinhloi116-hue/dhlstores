@@ -6,10 +6,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Font Pro Studio</title>
+<title>Font Pro Studio V32</title>
 </head>
 <body style="font-family:Segoe UI,Arial;padding:24px">
-<div id="status">Đang tải Font Pro Studio...</div>
+<div id="status">Đang tải Font Pro Studio V32...</div>
 <script>
 (async()=>{
   const files = [
@@ -19,42 +19,40 @@
 
   const parts = [];
   for (let i=0;i<files.length;i++) {
-    document.getElementById('status').textContent = 'Đang tải Font Pro Studio... ' + (i+1) + '/8';
-    const r = await fetch('./'+files[i]+'?v=5-utf8',{cache:'no-store'});
+    document.getElementById('status').textContent = 'Đang tải Font Pro Studio V32... ' + (i+1) + '/8';
+    const r = await fetch('./'+files[i]+'?v=32',{cache:'no-store'});
     if(!r.ok) throw new Error('Không tải được '+files[i]+': HTTP '+r.status);
     parts.push((await r.text()).trim());
   }
 
   const b = parts.join('');
-  if (b.length !== 60100) throw new Error('Payload sai độ dài: '+b.length+' / 60100');
-  if (b.slice(0,20) !== 'H4sIAAAAAAAC/+y9+3sb') throw new Error('Payload sai phần đầu.');
-  if (b.slice(-20) !== 'Qad99dz/B4xw7n4mAAMA') throw new Error('Payload sai phần cuối.');
+  if (b.length !== 71252) throw new Error('Payload V32 sai độ dài: '+b.length+' / 71252');
+  if (b.slice(0,20) !== 'H4sIAAAAAAAC/+y9+3sb') throw new Error('Payload V32 sai phần đầu.');
+  if (b.slice(-20) !== 'o1735rn/H1pJVHoHkAMA') throw new Error('Payload V32 sai phần cuối.');
 
-  document.getElementById('status').textContent='Đang giải nén Font Pro Studio...';
+  document.getElementById('status').textContent='Đang giải nén Font Pro Studio V32...';
   const bin = atob(b);
   const bytes = Uint8Array.from(bin,c=>c.charCodeAt(0));
   const ds = new DecompressionStream('gzip');
   const html = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).text();
 
-  // JS string length đếm ký tự Unicode, còn file gốc 196646 là số byte UTF-8.
   const utf8Bytes = new TextEncoder().encode(html);
-  if (html.length !== 191927) throw new Error('Số ký tự HTML sai: '+html.length+' / 191927');
-  if (utf8Bytes.length !== 196646) throw new Error('Số byte UTF-8 sai: '+utf8Bytes.length+' / 196646');
+  if (html.length !== 228259) throw new Error('Số ký tự HTML V32 sai: '+html.length+' / 228259');
+  if (utf8Bytes.length !== 233479) throw new Error('Số byte UTF-8 V32 sai: '+utf8Bytes.length+' / 233479');
 
-  // Xác nhận đúng tuyệt đối file V29 gốc bằng SHA-256.
   const hashBuffer = await crypto.subtle.digest('SHA-256', utf8Bytes);
   const hashHex = [...new Uint8Array(hashBuffer)].map(x=>x.toString(16).padStart(2,'0')).join('');
-  if (hashHex !== 'f256bc0ded3e056f22f2c9bf57b28ea3b4719fddcc1a9ad1fad37a0d5c9edb08') {
-    throw new Error('SHA-256 của tool không khớp bản V29 gốc: '+hashHex);
+  if (hashHex !== '1730277029ff963d849599e88ff22a8f84ee691ba235d20cd04c2245a7b997e8') {
+    throw new Error('SHA-256 của tool V32 không khớp: '+hashHex);
   }
 
-  if (!html.includes('DIACRITIC EDITOR') || !html.includes('Chỉnh dấu tiếng Việt')) throw new Error('Nội dung tool sau giải nén không hợp lệ.');
+  if (!html.includes('V32.0') || !html.includes('Gạch Đ')) throw new Error('Nội dung V32 sau giải nén không hợp lệ.');
 
   document.open();
   document.write(html);
   document.close();
 })().catch(e=>{
-  document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'\n\nLoader: v5-utf8</pre>';
+  document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'\n\nLoader: v32</pre>';
   console.error(e);
 });
 </script>
