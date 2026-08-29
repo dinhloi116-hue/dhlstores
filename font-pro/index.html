@@ -12,17 +12,30 @@
 <div id="status">Đang tải Font Pro Studio V32...</div>
 <script>
 (async()=>{
-  const files = [
-    'data/part-00.txt','data/part-01.txt','data/part-02.txt','data/part-03.txt','data/part-04.txt',
-    'data/part-05.txt','data/part-06.txt','data/part-07.txt','data/part-08.txt'
-  ];
+  const files=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt','part-06.txt','part-07.txt','part-08.txt'];
+  const pinned='3378e5c16c743fd66fc928250fad8506794823d5';
+  const rawBase='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/'+pinned+'/font-pro/data/';
   const parts=[];
-  for(let i=0;i<files.length;i++){
-    document.getElementById('status').textContent='Đang tải Font Pro Studio V32... '+(i+1)+'/'+files.length;
-    const r=await fetch('./'+files[i]+'?v=32-fixed-'+Date.now(),{cache:'no-store'});
-    if(!r.ok) throw new Error('Không tải được '+files[i]+': HTTP '+r.status);
-    parts.push((await r.text()).trim());
+  async function getPart(name,i){
+    const status=document.getElementById('status');
+    status.textContent='Đang tải Font Pro Studio V32... '+(i+1)+'/'+files.length;
+    const attempts=[
+      './data/'+name+'?v=32-dual-'+Date.now(),
+      rawBase+name+'?v=32-dual-'+Date.now()
+    ];
+    let last='';
+    for(let n=0;n<attempts.length;n++){
+      try{
+        const r=await fetch(attempts[n],{cache:'no-store',mode:'cors'});
+        if(!r.ok){last='HTTP '+r.status;continue;}
+        const txt=(await r.text()).trim();
+        if(!txt){last='file rỗng';continue;}
+        return txt;
+      }catch(e){last=String(e);}
+    }
+    throw new Error('Không tải được '+name+' ở cả Pages và raw GitHub. Lỗi cuối: '+last);
   }
+  for(let i=0;i<files.length;i++) parts.push(await getPart(files[i],i));
   const payload=parts.join('');
   if(payload.length!==71252) throw new Error('Payload V32 sai độ dài: '+payload.length+' / 71252');
   if(payload.slice(0,20)!=='H4sIAAAAAAAC/+y9+3sb') throw new Error('Payload V32 sai phần đầu.');
@@ -39,9 +52,9 @@
   const hashHex=[...new Uint8Array(hashBuffer)].map(x=>x.toString(16).padStart(2,'0')).join('');
   if(hashHex!=='1730277029ff963d849599e88ff22a8f84ee691ba235d20cd04c2245a7b997e8') throw new Error('SHA-256 V32 không khớp: '+hashHex);
   if(!html.includes('V32.0 • SONG NGỮ + CHỌN NHIỀU + FIX Đ')) throw new Error('Nội dung V32 không hợp lệ.');
-  document.open(); document.write(html); document.close();
+  document.open();document.write(html);document.close();
 })().catch(e=>{
-  document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'\n\nLoader: v32-fixed</pre>';
+  document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'\n\nLoader: v32-dual-source</pre>';
   console.error(e);
 });
 </script>
