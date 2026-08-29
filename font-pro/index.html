@@ -20,7 +20,7 @@
   const parts = [];
   for (let i=0;i<files.length;i++) {
     document.getElementById('status').textContent = 'Đang tải Font Pro Studio... ' + (i+1) + '/8';
-    const r = await fetch('./'+files[i]+'?v=4-split',{cache:'no-store'});
+    const r = await fetch('./'+files[i]+'?v=5-utf8',{cache:'no-store'});
     if(!r.ok) throw new Error('Không tải được '+files[i]+': HTTP '+r.status);
     parts.push((await r.text()).trim());
   }
@@ -35,14 +35,26 @@
   const bytes = Uint8Array.from(bin,c=>c.charCodeAt(0));
   const ds = new DecompressionStream('gzip');
   const html = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).text();
-  if (html.length !== 196646) throw new Error('HTML sau giải nén sai độ dài: '+html.length+' / 196646');
+
+  // JS string length đếm ký tự Unicode, còn file gốc 196646 là số byte UTF-8.
+  const utf8Bytes = new TextEncoder().encode(html);
+  if (html.length !== 191927) throw new Error('Số ký tự HTML sai: '+html.length+' / 191927');
+  if (utf8Bytes.length !== 196646) throw new Error('Số byte UTF-8 sai: '+utf8Bytes.length+' / 196646');
+
+  // Xác nhận đúng tuyệt đối file V29 gốc bằng SHA-256.
+  const hashBuffer = await crypto.subtle.digest('SHA-256', utf8Bytes);
+  const hashHex = [...new Uint8Array(hashBuffer)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  if (hashHex !== 'f256bc0ded3e056f22f2c9bf57b28ea3b4719fddcc1a9ad1fad37a0d5c9edb08') {
+    throw new Error('SHA-256 của tool không khớp bản V29 gốc: '+hashHex);
+  }
+
   if (!html.includes('DIACRITIC EDITOR') || !html.includes('Chỉnh dấu tiếng Việt')) throw new Error('Nội dung tool sau giải nén không hợp lệ.');
 
   document.open();
   document.write(html);
   document.close();
 })().catch(e=>{
-  document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'\n\nLoader: v4-split</pre>';
+  document.getElementById('status').innerHTML='<pre style="white-space:pre-wrap;color:#b91c1c">Không mở được tool: '+String(e)+'\n\nLoader: v5-utf8</pre>';
   console.error(e);
 });
 </script>
