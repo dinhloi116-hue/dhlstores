@@ -916,3 +916,8 @@
 - [x] Bổ sung hồi quy Vitest, chạy test/TypeScript/build và kiểm tra screenshot.
 - [x] Cập nhật TODO và lưu checkpoint phát hành.
 - [x] Cho phép khách chưa đăng nhập mở Google Login trực tiếp từ checkout thay vì chỉ quay về trang chủ.
+
+## Đồng bộ GitHub 2026-08-30
+- [x] Kiểm tra remote, nhánh hiện tại và thay đổi chưa đồng bộ; GitHub main đang lệch lịch sử nên không ghi đè trực tiếp.
+- [x] Đẩy phiên bản DHL Stores mới nhất lên repository `dinhloi116-hue/dhlstores` qua nhánh đồng bộ riêng để bảo toàn main hiện có.
+- [x] Xác minh commit trên GitHub và ghi hướng dẫn làm việc đồng thời bằng nhiều công cụ.
