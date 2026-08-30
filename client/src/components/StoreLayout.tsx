@@ -64,8 +64,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const openImageSearch = () => setImageSearchOpen(true);
+    const handleOpenCustomerAuth = () => startLogin();
     window.addEventListener("dhlstores-open-image-search", openImageSearch);
-    return () => window.removeEventListener("dhlstores-open-image-search", openImageSearch);
+    window.addEventListener("dhlstores-open-customer-auth", handleOpenCustomerAuth);
+    return () => {
+      window.removeEventListener("dhlstores-open-image-search", openImageSearch);
+      window.removeEventListener("dhlstores-open-customer-auth", handleOpenCustomerAuth);
+    };
   }, []);
 
   useEffect(() => {

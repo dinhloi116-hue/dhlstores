@@ -908,3 +908,11 @@
 - [x] Chạy test, TypeScript, build, screenshot; cập nhật TODO và phát hành checkpoint.
 - [x] Sửa header mobile để các action tìm ảnh, ngôn ngữ, giỏ hàng, thông báo và tài khoản không bị cắt ngang.
 - [x] Sửa nhãn hồ sơ tài khoản để owner không hiển thị mặc định là Customer khi thiếu tên hiển thị.
+
+## Vòng DHL Stores UX tiếp theo 2026-08-25
+- [x] Rà soát trạng thái storefront, giỏ hàng, checkout, tài khoản và khu vực owner.
+- [x] Kiểm thử desktop/mobile, loading, empty, lỗi và các điểm mua hàng chính.
+- [x] Sửa các vấn đề UX an toàn phát hiện được, không thay đổi thanh toán thật hoặc phân quyền owner.
+- [x] Bổ sung hồi quy Vitest, chạy test/TypeScript/build và kiểm tra screenshot.
+- [x] Cập nhật TODO và lưu checkpoint phát hành.
+- [x] Cho phép khách chưa đăng nhập mở Google Login trực tiếp từ checkout thay vì chỉ quay về trang chủ.

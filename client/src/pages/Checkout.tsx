@@ -139,7 +139,10 @@ export default function Checkout() {
           <ShieldCheck className="w-14 h-14 mx-auto text-amber-500" />
           <h1 className="text-2xl font-black text-slate-900">{lang === "vi" ? "Đăng nhập để thanh toán" : "Sign in to checkout"}</h1>
           <p className="text-sm text-slate-500">{lang === "vi" ? "Bạn cần có tài khoản DHL Stores để theo dõi đơn và nhận link tải an toàn." : "A DHL Stores account is required to track the order and access secure downloads."}</p>
-          <Link href="/"><Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black">{t.home}</Button></Link>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Button onClick={() => window.dispatchEvent(new Event("dhlstores-open-customer-auth"))} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black">{lang === "vi" ? "Tiếp tục với Google" : "Continue with Google"}</Button>
+            <Link href="/"><Button variant="outline" className="font-bold">{t.home}</Button></Link>
+          </div>
         </div>
       </StoreLayout>
     );
