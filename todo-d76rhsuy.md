@@ -921,3 +921,8 @@
 - [x] Kiểm tra remote, nhánh hiện tại và thay đổi chưa đồng bộ; GitHub main đang lệch lịch sử nên không ghi đè trực tiếp.
 - [x] Đẩy phiên bản DHL Stores mới nhất lên repository `dinhloi116-hue/dhlstores` qua nhánh đồng bộ riêng để bảo toàn main hiện có.
 - [x] Xác minh commit trên GitHub và ghi hướng dẫn làm việc đồng thời bằng nhiều công cụ.
+
+## Hợp nhất GitHub main 2026-08-30
+- [ ] Kiểm tra chênh lệch và xung đột giữa local hiện tại với `github/main`.
+- [ ] Hợp nhất an toàn vào `main`, không force-push và không làm mất thay đổi đang có.
+- [ ] Xác minh commit main trên GitHub và cập nhật hướng dẫn cộng tác.
