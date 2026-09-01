@@ -22,7 +22,7 @@ const toolCatalog = [
 ] as const;
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -36,6 +36,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [scrollProgress, setScrollProgress] = useState(0);
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const [toolQuery, setToolQuery] = useState("");
+  const [mobileSearchQuery, setMobileSearchQuery] = useState("");
   const [imageSearchPreview, setImageSearchPreview] = useState<string | null>(null);
   const [imageSearchResults, setImageSearchResults] = useState<Array<{ productId: number; confidence: number; reason: string; product?: { id: number; name: string; slug: string; image?: string | null; price: string | number; type: string } }>>([]);
   const imageSearchMutation = trpc.store.imageSearch.useMutation({ onSuccess: result => { setImageSearchResults(result.matches as typeof imageSearchResults); if (!result.matches.length) toast.info(result.message); }, onError: error => toast.error(error.message) });
@@ -235,8 +236,24 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         <Sparkles className="w-4 h-4 animate-bounce" />
       </div>
 
+      {/* Mobile marketplace header */}
+      <header className="sticky top-0 z-50 border-b border-orange-700/40 bg-[#d94728] px-3 pb-3 pt-2 text-white shadow-md md:hidden">
+        <div className="mx-auto max-w-lg">
+          <div className="flex items-center gap-2">
+            <Link href="/" aria-label="DHL Stores" className="shrink-0 rounded-lg bg-white/95 px-2 py-1 text-[11px] font-black leading-none text-[#d94728] shadow-sm">DHL<br /><span className="text-slate-950">STORES</span></Link>
+            <form className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-white px-3 py-2 text-slate-700 shadow-sm" onSubmit={event => { event.preventDefault(); const query = mobileSearchQuery.trim(); setLocation(query ? `/products?search=${encodeURIComponent(query)}` : "/products"); }}>
+              <Search className="h-5 w-5 shrink-0 text-slate-500" />
+              <input value={mobileSearchQuery} onChange={event => setMobileSearchQuery(event.target.value)} placeholder={lang === 'vi' ? 'Tìm áo, file, font...' : 'Search jerseys, files, fonts...'} className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-slate-400" aria-label={lang === 'vi' ? 'Tìm kiếm sản phẩm' : 'Search products'} />
+              <button type="button" onClick={() => setImageSearchOpen(true)} aria-label={lang === 'vi' ? 'Tìm kiếm bằng hình ảnh' : 'Search by image'} className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100"><Camera className="h-5 w-5" /></button>
+            </form>
+            <button type="button" onClick={() => setCartOpen(true)} aria-label={lang === 'vi' ? 'Mở giỏ hàng' : 'Open cart'} className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/95 text-[#d94728] shadow-sm transition active:scale-95"><ShoppingBag className="h-5 w-5" />{cartItemCount > 0 && <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-amber-300 px-1 text-[10px] font-black text-slate-950">{cartItemCount > 99 ? '99+' : cartItemCount}</span>}</button>
+          </div>
+          <div className="mt-2 flex items-center justify-between px-1 text-[10px] font-bold text-white/85"><span>{lang === 'vi' ? 'Mua nhanh · Chọn SKU · Giao SPX' : 'Quick buy · Choose SKU · SPX delivery'}</span><div className="flex items-center gap-2"><Link href="/orders" aria-label={lang === 'vi' ? 'Thông báo đơn hàng' : 'Order notifications'} className="relative rounded-md p-1 hover:bg-white/10"><Bell className="h-4 w-4" />{attentionOrderCount > 0 && <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-amber-300 px-0.5 text-[8px] font-black text-slate-950">{attentionOrderCount > 9 ? '9+' : attentionOrderCount}</span>}</Link><Link href="/account" aria-label={lang === 'vi' ? 'Tài khoản' : 'Account'} className="rounded-md p-1 hover:bg-white/10"><UserIcon className="h-4 w-4" /></Link></div></div>
+        </div>
+      </header>
+
       {/* Main Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-50 hidden border-b border-slate-200 bg-white shadow-sm md:block">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-2 px-2 sm:h-[4.5rem] sm:px-6 lg:px-8 2xl:px-10">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3 group">

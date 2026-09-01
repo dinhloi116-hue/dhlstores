@@ -935,3 +935,11 @@
 - [x] Cải thiện tìm kiếm mobile, lazy-load ảnh và giảm animation không cần thiết trên thiết bị nhỏ.
 - [x] Bổ sung hồi quy Vitest, kiểm tra nhiều viewport, chạy test/TypeScript/build và phát hành checkpoint.
 - [x] Sửa fallback ảnh sản phẩm trên mobile khi URL ảnh không tải được, tránh hiển thị broken image và vẫn giữ khung tỷ lệ vuông.
+
+## Mobile marketplace UI theo ảnh tham chiếu 2026-09-01
+- [x] Tạo shell mobile kiểu marketplace: header màu nổi, tìm kiếm lớn, nút camera/giỏ hàng/thông báo và giữ thương hiệu DHL.
+- [x] Bố trí khu vực khám phá/khuyến mãi và các lối tắt danh mục dễ quét trên điện thoại.
+- [x] Chuyển catalog mobile sang lưới hai cột với thẻ sản phẩm ảnh lớn, giá, trạng thái và CTA rõ ràng.
+- [x] Giữ bottom navigation, bảo toàn desktop, tìm kiếm, auth, giỏ hàng và checkout hiện tại.
+- [x] Bổ sung hồi quy, kiểm tra nhiều viewport, chạy test/TypeScript/build và phát hành checkpoint.
+- [x] Cập nhật test tĩnh `sku-preview-layout` để khớp typography mới của thẻ catalog mobile, không đổi hành vi sản phẩm.

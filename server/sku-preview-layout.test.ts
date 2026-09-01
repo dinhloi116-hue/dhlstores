@@ -61,7 +61,7 @@ describe("public SKU inventory presentation", () => {
     expect(dbSource).toContain("const stockByProduct = await Promise.all(list.map(async product =>");
     expect(dbSource).toContain("variants.reduce((total, variant) => total + Math.max(0, Number(variant.stock) || 0), 0)");
     expect(catalogSource).toContain("Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'");
-    expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[11px] text-slate-500\">");
+    expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[10px] text-slate-500 sm:text-[11px]\">");
   });
 
   it("exposes advanced price filters across catalog modes", () => {

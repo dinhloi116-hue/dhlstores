@@ -206,7 +206,7 @@ export default function Products() {
             </Button>
           </div>
         ) : (
-          <div className={`grid gap-3 sm:gap-6 ${isPhysicalCatalog ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+          <div className={`grid grid-cols-2 gap-3 sm:gap-6 ${isPhysicalCatalog ? 'lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : 'lg:grid-cols-3 xl:grid-cols-4'}`}>
             {products.map((p, index) => (
               <div key={p.id} className="group relative">
               <Link href={`/product/${p.slug}`} className="block h-full">
@@ -217,13 +217,13 @@ export default function Products() {
                     <span className={`absolute left-2 top-2 z-20 rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm ${p.type === 'physical' ? 'bg-orange-400 text-slate-950' : 'bg-violet-500 text-white'}`}>{p.type === 'physical' ? 'Physical item' : 'Digital asset'}</span>
                     {isPhysicalCatalog && <span className={`absolute bottom-2 left-2 z-20 rounded bg-white/95 px-1.5 py-0.5 text-[9px] font-black shadow-sm ${Number(p.stock) > 0 ? 'text-emerald-700' : 'text-red-600'}`}>{Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'}</span>}
                   </div>
-                  <div className={`flex flex-1 flex-col justify-between space-y-2 ${isPhysicalCatalog ? 'p-2.5 sm:p-4' : 'p-4 space-y-3'}`}>
+                  <div className={`flex flex-1 flex-col justify-between ${isPhysicalCatalog ? 'space-y-2 p-2.5 sm:p-4' : 'space-y-2 p-2.5 sm:space-y-3 sm:p-4'}`}>
                     <div>
                       <Badge className={`${p.type === 'physical' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-800'} mb-2 text-[10px] font-bold px-2 py-0.5`}>{p.type === 'physical' ? (lang === 'vi' ? 'Hàng vật lý' : 'Physical item') : (lang === 'vi' ? 'Tài liệu số' : 'Digital asset')}</Badge>
-                      <h3 className={`${isPhysicalCatalog ? 'text-[12px] sm:text-xs' : 'text-xs'} font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed`}> 
+                      <h3 className="text-[12px] font-bold text-slate-800 transition-colors group-hover:text-amber-600 line-clamp-2 leading-relaxed sm:text-xs"> 
                         {catalogName(p, lang)}
                       </h3>
-                      {!isPhysicalCatalog && <p className="mt-1 line-clamp-2 text-[11px] text-slate-500">
+                      {!isPhysicalCatalog && <p className="mt-1 line-clamp-2 text-[10px] text-slate-500 sm:text-[11px]">
                         {catalogDescription(p, lang)}
                       </p>}
                     </div>
