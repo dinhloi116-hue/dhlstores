@@ -923,6 +923,15 @@
 - [x] Xác minh commit trên GitHub và ghi hướng dẫn làm việc đồng thời bằng nhiều công cụ.
 
 ## Hợp nhất GitHub main 2026-08-30
-- [ ] Kiểm tra chênh lệch và xung đột giữa local hiện tại với `github/main`.
-- [ ] Hợp nhất an toàn vào `main`, không force-push và không làm mất thay đổi đang có.
-- [ ] Xác minh commit main trên GitHub và cập nhật hướng dẫn cộng tác.
+- [x] Kiểm tra chênh lệch và xung đột giữa local hiện tại với `github/main`.
+- [x] Hợp nhất an toàn vào `main`, không force-push và không làm mất thay đổi đang có.
+- [x] Xác minh commit main trên GitHub và cập nhật hướng dẫn cộng tác.
+
+## Gói cải thiện mobile toàn diện 2026-08-30
+- [x] Tối ưu header và thêm bottom navigation mobile cho Trang chủ, Danh mục, Công cụ, Tài khoản và Giỏ hàng.
+- [x] Thêm thanh mua hàng cố định trên trang chi tiết sản phẩm và cải thiện thao tác chọn SKU/số lượng.
+- [x] Chuyển mini-cart mobile sang bottom sheet, giữ hover/focus dropdown cho desktop.
+- [x] Tối ưu checkout mobile thành bố cục một cột và giữ nút Google Login trực tiếp.
+- [x] Cải thiện tìm kiếm mobile, lazy-load ảnh và giảm animation không cần thiết trên thiết bị nhỏ.
+- [x] Bổ sung hồi quy Vitest, kiểm tra nhiều viewport, chạy test/TypeScript/build và phát hành checkpoint.
+- [x] Sửa fallback ảnh sản phẩm trên mobile khi URL ảnh không tải được, tránh hiển thị broken image và vẫn giữ khung tỷ lệ vuông.

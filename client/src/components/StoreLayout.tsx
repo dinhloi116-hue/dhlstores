@@ -224,7 +224,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
+    <div className="min-h-screen flex flex-col bg-slate-50 pb-16 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950 md:pb-0">
       <div aria-hidden="true" className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-1 origin-left bg-amber-500 transition-transform duration-200" style={{ transform: `scaleX(${pageProgress / 100})` }} />
       <div aria-hidden="true" className="pointer-events-none fixed bottom-0 left-0 z-[60] h-1 bg-indigo-500/80 transition-[width] duration-150" style={{ width: `${scrollProgress}%` }} />
       <PwaInstallPrompt />
@@ -308,7 +308,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="flex w-[min(100vw,26rem)] flex-col border-slate-200 bg-white text-slate-900 sm:max-w-md">
+              <SheetContent className="flex w-[min(100vw,26rem)] flex-col border-slate-200 bg-white text-slate-900 max-md:inset-x-0 max-md:bottom-0 max-md:top-auto max-md:h-[min(78vh,42rem)] max-md:w-full max-md:max-w-none max-md:rounded-t-3xl max-md:rounded-b-none sm:max-w-md">
                 <SheetHeader className="border-b border-slate-100 pb-4">
                   <SheetTitle className="text-slate-900 flex items-center justify-between font-bold">
                     <span>{t.cartTitle}</span>
@@ -526,6 +526,11 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       <main key={location} className="dhl-page-enter flex-1">
         {children}
       </main>
+      <nav aria-label={lang === 'vi' ? 'Điều hướng nhanh trên điện thoại' : 'Mobile quick navigation'} className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.1)] backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
+          {[{ href: '/', label: lang === 'vi' ? 'Trang chủ' : 'Home', icon: Sparkles, active: location === '/' }, { href: '/products', label: lang === 'vi' ? 'Danh mục' : 'Catalog', icon: ShoppingBag, active: location.startsWith('/products') || location.startsWith('/product') }, { href: '/tools', label: lang === 'vi' ? 'Công cụ' : 'Tools', icon: WandSparkles, active: location.startsWith('/tools') }, { href: '/account', label: lang === 'vi' ? 'Tài khoản' : 'Account', icon: UserIcon, active: location.startsWith('/account') || location.startsWith('/orders') }].map(item => { const Icon = item.icon; return <Link key={item.href} href={item.href} aria-current={item.active ? 'page' : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-black transition-colors active:scale-95 ${item.active ? 'bg-slate-950 text-amber-300' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}><Icon className="h-4 w-4" /><span>{item.label}</span></Link>; })}
+        </div>
+      </nav>
       {comparedCount > 0 && <Link href="/compare" className="fixed bottom-5 left-4 z-40 inline-flex items-center gap-2 rounded-full border border-indigo-300 bg-slate-950 px-4 py-3 text-xs font-black text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-indigo-700 sm:left-6"><Scale className="h-4 w-4 text-indigo-200" />So sánh <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber-400 px-1 text-[10px] text-slate-950">{comparedCount}</span></Link>}
       {scrollProgress > 18 && <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label={lang === "vi" ? "Quay lên đầu trang" : "Back to top"} className="fixed bottom-24 right-4 z-40 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:right-6"><ArrowUp className="h-5 w-5" /></button>}
       <CustomerContactHub />

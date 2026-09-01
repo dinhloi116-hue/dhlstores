@@ -102,6 +102,7 @@ export default function ProductDetail() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewBody, setReviewBody] = useState("");
   const [cartFly, setCartFly] = useState<{ id: number; image: string; startX: number; startY: number; endX: number; endY: number; active: boolean } | null>(null);
+  const [primaryImageFailed, setPrimaryImageFailed] = useState(false);
   const [compareIds, setCompareIds] = useState<number[]>(getComparedProductIds);
   const submitReviewMutation = trpc.store.submitProductReview.useMutation({ onSuccess: () => { setReviewBody(""); setReviewRating(5); toast.success("Đã gửi đánh giá thành công."); void utils.store.productReviews.invalidate(); }, onError: error => toast.error(error.message) });
   const toggleFavoriteMutation = trpc.store.toggleFavorite.useMutation({ onSuccess: result => { void utils.store.favorites.invalidate(); toast.success(result.isFavorite ? "Đã lưu vào Yêu thích" : "Đã bỏ khỏi Yêu thích"); }, onError: error => toast.error(error.message) });
@@ -155,6 +156,10 @@ export default function ProductDetail() {
   const inlinePaymentInput = useMemo(() => inlinePayment ? { orderId: inlinePayment.orderId } : undefined, [inlinePayment]);
   const inlinePaymentStatus = trpc.store.paymentStatus.useQuery(inlinePaymentInput!, { enabled: Boolean(inlinePaymentInput), refetchInterval: query => query.state.data?.paymentStatus === "paid" ? false : 3500 });
   const inlineDownloads = trpc.store.instantDownloads.useQuery(inlinePaymentInput!, { enabled: Boolean(inlinePaymentInput) && inlinePaymentStatus.data?.paymentStatus === "paid" && !inlinePayment?.hasPhysicalItems });
+
+  useEffect(() => {
+    setPrimaryImageFailed(false);
+  }, [product?.image, selectedVariant?.image]);
 
   useEffect(() => {
     if (product?.type === "physical" && fulfillmentMode === 'in_stock' && availableStock > 0) setQuantity(current => Math.min(current, availableStock));
@@ -434,7 +439,7 @@ export default function ProductDetail() {
         <div className={`grid grid-cols-1 items-start gap-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:h-[calc(100vh-9rem)] lg:min-h-[44rem] lg:grid-cols-12 lg:overflow-hidden ${product.type === 'physical' ? 'rounded-none border-0 p-0 shadow-none sm:rounded-2xl sm:border sm:p-10 sm:shadow-sm lg:rounded-md lg:border lg:p-6 lg:shadow-sm' : ''}`}>
           <div className="lg:col-span-5 lg:self-start">
             <div className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-inner md:cursor-zoom-in" title={product.type === 'physical' ? 'Rê chuột để phóng to ảnh' : undefined}>
-              {(selectedVariant?.image || product.image) ? <img data-product-primary-image src={selectedVariant?.image || product.image} alt={selectedVariant ? `${productName} · ${formatVariantOptions(selectedVariant)}` : productName} className="h-full w-full object-contain transition-transform duration-300 ease-out motion-reduce:transition-none md:group-hover:scale-[1.65]" /> : <AssetVisual categoryId={product.categoryId} title={productName} fileSize={product.fileSize} />}
+              {(selectedVariant?.image || product.image) && !primaryImageFailed ? <img data-product-primary-image src={selectedVariant?.image || product.image} alt={selectedVariant ? `${productName} · ${formatVariantOptions(selectedVariant)}` : productName} onError={() => setPrimaryImageFailed(true)} className="h-full w-full object-contain transition-transform duration-300 ease-out motion-reduce:transition-none md:group-hover:scale-[1.65]" /> : <AssetVisual categoryId={product.categoryId} title={productName} fileSize={product.fileSize} />}
               <span className="pointer-events-none absolute bottom-3 right-3 hidden items-center gap-1.5 rounded-full bg-slate-950/80 px-3 py-1.5 text-[10px] font-black text-white shadow-lg md:flex md:opacity-0 md:transition-opacity md:group-hover:opacity-100"><ZoomIn className="h-3 w-3" />Rê chuột để phóng to</span>
             </div>
             {productDescription && <>
@@ -486,7 +491,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            <div id="product-purchase-actions" className={`sticky bottom-0 z-20 rounded-xl bg-emerald-50/95 p-2 pt-3 shadow-[0_-8px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:flex sm:flex-row sm:gap-4 ${product.type === 'physical' ? 'fixed inset-x-0 bottom-0 rounded-none border-t border-slate-200 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:static sm:rounded-xl sm:border-0 sm:p-2' : ''} ${isMarketplaceLayout ? 'hidden' : ''}`}>
+            <div id="product-purchase-actions" className={`sticky bottom-0 z-20 rounded-xl bg-emerald-50/95 p-2 pt-3 shadow-[0_-8px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:flex sm:flex-row sm:gap-4 ${product.type === 'physical' ? 'fixed inset-x-0 bottom-16 rounded-none border-t border-slate-200 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:static sm:bottom-auto sm:rounded-xl sm:border-0 sm:p-2' : ''} ${isMarketplaceLayout ? 'hidden' : ''}`}>
               <Button
                 onClick={handleAddToCart}
                 disabled={adding || !hasSellablePrice || (product.type === "physical" && ((variants.length > 0 && selectedSkuTotal < 1) || (variants.length === 0 && fulfillmentMode === 'in_stock' && availableStock <= 0)))}
