@@ -943,3 +943,15 @@
 - [x] Giữ bottom navigation, bảo toàn desktop, tìm kiếm, auth, giỏ hàng và checkout hiện tại.
 - [x] Bổ sung hồi quy, kiểm tra nhiều viewport, chạy test/TypeScript/build và phát hành checkpoint.
 - [x] Cập nhật test tĩnh `sku-preview-layout` để khớp typography mới của thẻ catalog mobile, không đổi hành vi sản phẩm.
+
+## Google Login cho mobile app 2026-09-01
+- [x] Rà soát cấu hình OAuth web hiện tại và xác định redirect/deep link cần cho Android app.
+- [x] Cấu hình lớp tương thích mobile app mà không phá web OAuth, session hoặc quyền owner/customer.
+- [x] Bổ sung hồi quy cho redirect, deep link và trạng thái đăng nhập mobile.
+- [x] Kiểm tra TypeScript/test/build, cập nhật hướng dẫn Android/Google Play và lưu checkpoint nếu có thay đổi mã nguồn.
+
+## Chuẩn bị Android app Capacitor 2026-09-01
+- [x] Cài và cấu hình Capacitor với package ID `com.dhlstores.app`, giữ web build hiện tại.
+- [x] Thêm lớp nhận diện mobile app và tài liệu deep link OAuth, không phá callback web.
+- [x] Tạo/kiểm tra cấu trúc Android và script build đồng bộ.
+- [x] Chạy test/TypeScript/build, cập nhật hướng dẫn Android Studio/Play Store và lưu checkpoint; ký `.aab`, emulator/thiết bị thật và Play Console vẫn cần thao tác ngoài sandbox.
