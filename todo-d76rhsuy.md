@@ -955,3 +955,10 @@
 - [x] Thêm lớp nhận diện mobile app và tài liệu deep link OAuth, không phá callback web.
 - [x] Tạo/kiểm tra cấu trúc Android và script build đồng bộ.
 - [x] Chạy test/TypeScript/build, cập nhật hướng dẫn Android Studio/Play Store và lưu checkpoint; ký `.aab`, emulator/thiết bị thật và Play Console vẫn cần thao tác ngoài sandbox.
+
+## Android App Links cho domain hiện tại 2026-09-02
+- [x] Kiểm tra fingerprint debug/release và domain `cuahangtoit-9a4r8wsz.manus.space`; đã có fingerprint debug, fingerprint release/Play App Signing vẫn cần bổ sung trước phát hành.
+- [x] Thêm intent filter HTTPS/App Links cho Android package `com.dhlstores.app`.
+- [x] Thêm `/.well-known/assetlinks.json` chỉ với fingerprint debug xác thực, không dùng giá trị giả.
+- [x] Kiểm thử manifest, web callback OAuth và cập nhật tài liệu phát hành; endpoint preview trả JSON HTTP 200.
+- [x] Kiểm tra endpoint `/.well-known/assetlinks.json`: preview hiện trả đúng JSON HTTP 200; bản live cần xác minh sau checkpoint mới.

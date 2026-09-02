@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.dhlstores.app",
+      "sha256_cert_fingerprints": [
+        "6B:DA:B4:EC:AF:3A:15:02:7D:D1:4B:3A:4C:C9:56:7D:C4:D0:AA:DB:AA:15:13:D2:53:59:1F:08:83:78:57:E4"
+      ]
+    }
+  }
+]

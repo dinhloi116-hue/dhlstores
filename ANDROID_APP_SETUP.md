@@ -8,7 +8,7 @@ Dự án web đã được chuẩn bị để đóng gói bằng Capacitor với
 
 Google Login đang đi qua Manus OAuth. Luồng web dùng `window.location.origin` để tạo callback `/api/oauth/callback`, nonce trong cookie `__Host-oauth_state` và state chống CSRF. Cấu hình Capacitor hiện tại dùng HTTPS domain `https://cuahangtoit-9a4r8wsz.manus.space`, vì vậy app vẫn truy cập đúng web origin, callback và session cookie hiện có.
 
-Đây là cấu hình **web-first an toàn để kiểm thử**. Chưa thêm custom scheme như `dhlstores://oauth/callback` vì callback native cần được đăng ký đồng thời ở Android Manifest, OAuth portal và backend. Không nên tự đổi sang deep link một phía; làm vậy có thể gây lỗi `OAuth callback failed` hoặc tạo phiên không liên tục.
+Đây là cấu hình **web-first an toàn để kiểm thử**. Android Manifest hiện đã có HTTPS App Link cho `https://cuahangtoit-9a4r8wsz.manus.space` và website có `/.well-known/assetlinks.json`. Bản assetlinks hiện dùng SHA-256 của debug keystore để kiểm thử cục bộ; trước khi phát hành cần bổ sung fingerprint của keystore release hoặc Google Play App Signing vào cùng tệp. Chưa thêm custom scheme như `dhlstores://oauth/callback` vì callback native cần được đăng ký đồng thời ở Android Manifest, OAuth portal và backend. Không nên tự đổi sang deep link một phía; làm vậy có thể gây lỗi `OAuth callback failed` hoặc tạo phiên không liên tục.
 
 ## Lệnh phát triển
 
