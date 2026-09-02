@@ -30,6 +30,8 @@ Chỉ dùng HTTPS production; không bật cleartext cho bản phát hành.
 
 Trên thiết bị thật, mở app, đăng xuất, bấm **Continue with Google**, hoàn tất đăng nhập và kiểm tra app quay lại đúng trang web với phiên người dùng còn hiệu lực. Cần kiểm tra thêm account owner `dinhloi116@gmail.com` vẫn vào được `/admin`, tài khoản khách không nhìn thấy khu vực quản trị, và đóng/mở app không làm mất session ngoài thời hạn cookie.
 
+Hook auth hiện chủ động gọi lại `auth.me` khi cửa sổ/app nhận `focus`, khi document chuyển sang `visibilityState=visible`, khi có `pageshow` và khi mạng kết nối lại. Cơ chế này chỉ đọc session cookie HttpOnly từ server; không lưu access token hoặc refresh token trong localStorage. Vì vậy khi người dùng chuyển sang Google/browser rồi quay lại app, UI sẽ xác nhận lại phiên thay vì giữ trạng thái đăng nhập cũ một cách mù quáng.
+
 Nếu Android WebView hoặc trình duyệt Google chặn đăng nhập nhúng, bước tiếp theo là dùng Capacitor Browser/System Custom Tab kết hợp deep link đã đăng ký đầy đủ. Không đưa client secret vào app và không xử lý token Google trực tiếp ở client.
 
 ## Trước khi phát hành Google Play

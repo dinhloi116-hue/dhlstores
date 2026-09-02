@@ -962,3 +962,9 @@
 - [x] Thêm `/.well-known/assetlinks.json` chỉ với fingerprint debug xác thực, không dùng giá trị giả.
 - [x] Kiểm thử manifest, web callback OAuth và cập nhật tài liệu phát hành; endpoint preview trả JSON HTTP 200.
 - [x] Kiểm tra endpoint `/.well-known/assetlinks.json`: preview hiện trả đúng JSON HTTP 200; bản live cần xác minh sau checkpoint mới.
+
+## Giữ session Google Login khi chuyển app 2026-09-02
+- [x] Rà soát cookie session, callback OAuth, App Links và lifecycle app hiện tại.
+- [x] Thêm cơ chế refresh trạng thái auth khi app/web resume, không lưu access token trong client.
+- [x] Củng cố cấu hình cookie/callback và tài liệu kiểm thử chuyển đổi ứng dụng.
+- [x] Bổ sung hồi quy, chạy test/TypeScript/build và lưu checkpoint.

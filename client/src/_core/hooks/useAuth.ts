@@ -18,8 +18,12 @@ export function useAuth(options?: UseAuthOptions) {
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
-    refetchOnWindowFocus: false,
+    // Re-check the server session when a mobile browser/WebView returns to the app.
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
+
+  const refresh = useCallback(() => meQuery.refetch(), [meQuery.refetch]);
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
@@ -70,6 +74,25 @@ export function useAuth(options?: UseAuthOptions) {
   ]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const refreshOnResume = () => {
+      if (document.visibilityState === "hidden") return;
+      void refresh();
+    };
+
+    window.addEventListener("pageshow", refreshOnResume);
+    window.addEventListener("focus", refreshOnResume);
+    document.addEventListener("visibilitychange", refreshOnResume);
+
+    return () => {
+      window.removeEventListener("pageshow", refreshOnResume);
+      window.removeEventListener("focus", refreshOnResume);
+      document.removeEventListener("visibilitychange", refreshOnResume);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
     if (!redirectOnUnauthenticated) return;
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
@@ -92,7 +115,7 @@ export function useAuth(options?: UseAuthOptions) {
 
   return {
     ...state,
-    refresh: () => meQuery.refetch(),
+    refresh,
     logout,
   };
 }
