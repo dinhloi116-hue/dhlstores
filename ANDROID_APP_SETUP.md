@@ -38,6 +38,10 @@ Nếu Android WebView hoặc trình duyệt Google chặn đăng nhập nhúng, 
 
 Cần mở Android Studio để kiểm tra application ID, version code, icon, splash screen, signing keystore và build file `.aab`. Cần chuẩn bị privacy policy, khai báo dữ liệu, nội dung giới thiệu, ảnh chụp màn hình và tài khoản Play Console. Luồng thanh toán sản phẩm số cũng phải được rà soát riêng theo chính sách Google Play; việc đóng gói Capacitor không tự giải quyết yêu cầu thanh toán của nền tảng.
 
+Gradle đã hỗ trợ signing release qua bốn biến môi trường: `ANDROID_RELEASE_KEYSTORE`, `ANDROID_RELEASE_STORE_PASSWORD`, `ANDROID_RELEASE_KEY_ALIAS` và `ANDROID_RELEASE_KEY_PASSWORD`. Khi cả bốn biến có giá trị, lệnh build release sẽ dùng keystore đó; khi thiếu, bản debug/dev vẫn hoạt động nhưng bản release cần được ký trong Android Studio hoặc CI bảo mật. Không đặt các giá trị này trong `package.json`, GitHub, frontend hoặc file `.env` đã commit.
+
+Quy trình Play App Signing nên là: tạo hoặc chọn app với package ID `com.dhlstores.app` trong Play Console, đăng ký Play App Signing, upload `.aab` đã ký bằng upload key, sau đó lấy **App signing certificate SHA-256** từ Play Console. Fingerprint App Signing này cần được thêm vào `client/public/.well-known/assetlinks.json`; fingerprint debug hiện tại chỉ dành cho kiểm thử và không thay thế chứng chỉ production.
+
 ## Cảnh báo dữ liệu
 
 Không commit keystore, secret OAuth, API key, `.env` hoặc file credential vào GitHub. Repository nên để **Private** nếu có mã nguồn/quy trình nội bộ. Backend, database, S3 và quyền owner vẫn nằm ở môi trường web; xóa app khỏi điện thoại không xóa dữ liệu máy chủ.

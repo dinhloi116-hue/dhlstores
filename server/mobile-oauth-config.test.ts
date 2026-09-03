@@ -31,6 +31,18 @@ describe("mobile OAuth configuration", () => {
     );
   });
 
+  it("configures release signing without embedding credentials", () => {
+    const gradle = read("android/app/build.gradle");
+    const ignore = read("android/.gitignore");
+    const guide = read("ANDROID_APP_SETUP.md");
+    expect(gradle).toContain("ANDROID_RELEASE_KEYSTORE");
+    expect(gradle).toContain("ANDROID_RELEASE_STORE_PASSWORD");
+    expect(gradle).toContain("signingConfig signingConfigs.release");
+    expect(ignore).toContain("*.jks");
+    expect(ignore).toContain("*.keystore");
+    expect(guide).toContain("App signing certificate SHA-256");
+  });
+
   it("documents web-first OAuth and avoids an unregistered custom scheme", () => {
     const guide = read("ANDROID_APP_SETUP.md");
     expect(guide).toContain("Manus OAuth");

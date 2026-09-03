@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { jsPDF } from "jspdf";
-import * as XLSX from "xlsx";
 import StoreLayout from "@/components/StoreLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -152,6 +150,7 @@ export default function NotebookLabelMaker() {
   const importSpreadsheet = async (file: File) => {
     if (file.size > 5 * 1024 * 1024) return toast.error("File tối đa 5 MB để trình duyệt xử lý ổn định.");
     try {
+      const XLSX = await import("xlsx");
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
@@ -166,6 +165,7 @@ export default function NotebookLabelMaker() {
   const exportPdf = async () => {
     setIsExporting(true);
     try {
+      const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const marginX = 10; const marginY = 12; const gap = 4; const cellW = 91; const cellH = 42;
       for (let index = 0; index < rows.length; index += 1) {

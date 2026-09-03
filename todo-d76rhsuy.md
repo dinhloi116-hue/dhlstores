@@ -968,3 +968,15 @@
 - [x] Thêm cơ chế refresh trạng thái auth khi app/web resume, không lưu access token trong client.
 - [x] Củng cố cấu hình cookie/callback và tài liệu kiểm thử chuyển đổi ứng dụng.
 - [x] Bổ sung hồi quy, chạy test/TypeScript/build và lưu checkpoint.
+
+## Release fingerprint và Play App Signing 2026-09-02
+- [x] Kiểm tra package ID `com.dhlstores.app`, signing config và chứng chỉ release hiện có; package đúng, chưa có chứng chỉ release trong sandbox.
+- [x] Chuẩn bị cấu hình release an toàn, không commit keystore/password/secret.
+- [x] Tạm hoãn cập nhật `assetlinks.json` bằng fingerprint release/Play App Signing theo yêu cầu người dùng; fingerprint debug vẫn giữ cho kiểm thử.
+- [x] Bổ sung hồi quy và tài liệu phát hành CH Play; xác nhận fingerprint App Signing/release là dữ liệu cần người dùng cung cấp.
+
+## Tối ưu hiệu năng mobile thay cho Play Signing 2026-09-02
+- [x] Rà soát bundle và router để xác định trang công cụ nặng cần lazy-load.
+- [x] Tách chunk cho tạo nhãn và xử lý video, giữ storefront tải nhanh; riêng jsPDF/XLSX của tạo nhãn đã chuyển sang tải theo nhu cầu.
+- [x] Thêm loading/error fallback và hồi quy cho lazy routes.
+- [x] Chạy test/TypeScript/build, kiểm tra mobile và phát hành checkpoint.
