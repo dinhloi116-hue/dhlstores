@@ -31,15 +31,17 @@ describe("public SKU inventory presentation", () => {
     expect(source).not.toContain('purchaseActions.after(panel)');
     expect(source).toContain('panel.before(purchaseActions)');
     expect(source).toContain('max-h-72 overflow-y-auto');
-    expect(source).toContain('lg:col-span-7 lg:h-full lg:overflow-y-auto lg:pr-3');
+    expect(source).toContain('lg:col-span-5 lg:h-full lg:overflow-y-auto lg:pr-3');
   });
 
-  it("zooms the main product image on desktop hover without changing mobile behavior", () => {
+  it("shows a synchronized desktop zoom pane and mobile image dialog", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('md:cursor-zoom-in');
-    expect(source).toContain('md:group-hover:scale-[1.65]');
-    expect(source).toContain('Rê chuột để phóng to');
+    expect(source).toContain('md:cursor-crosshair');
+    expect(source).toContain('setZoomPoint');
+    expect(source).toContain('backgroundSize: \'220%\'');
+    expect(source).toContain('mobileZoomOpen');
+    expect(source).toContain('Chạm để phóng to');
   });
 
   it("offers wallet or QR payment and accessible quantity entry for each SKU", () => {

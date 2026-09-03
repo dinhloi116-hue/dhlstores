@@ -103,6 +103,8 @@ export default function ProductDetail() {
   const [reviewBody, setReviewBody] = useState("");
   const [cartFly, setCartFly] = useState<{ id: number; image: string; startX: number; startY: number; endX: number; endY: number; active: boolean } | null>(null);
   const [primaryImageFailed, setPrimaryImageFailed] = useState(false);
+  const [zoomPoint, setZoomPoint] = useState<{ x: number; y: number } | null>(null);
+  const [mobileZoomOpen, setMobileZoomOpen] = useState(false);
   const [compareIds, setCompareIds] = useState<number[]>(getComparedProductIds);
   const submitReviewMutation = trpc.store.submitProductReview.useMutation({ onSuccess: () => { setReviewBody(""); setReviewRating(5); toast.success("Đã gửi đánh giá thành công."); void utils.store.productReviews.invalidate(); }, onError: error => toast.error(error.message) });
   const toggleFavoriteMutation = trpc.store.toggleFavorite.useMutation({ onSuccess: result => { void utils.store.favorites.invalidate(); toast.success(result.isFavorite ? "Đã lưu vào Yêu thích" : "Đã bỏ khỏi Yêu thích"); }, onError: error => toast.error(error.message) });
@@ -125,6 +127,7 @@ export default function ProductDetail() {
   const unitPrice = Number(applicableWholesaleTier?.unitPrice ?? product?.price ?? 0) + Number(selectedVariant?.priceAdjustment || 0);
   const previewVariant = variants.find(variant => variant.id === previewVariantId);
   const hoveredVariant = variants.find(variant => variant.id === hoveredPreview?.variantId);
+  const primaryImageUrl = selectedVariant?.image || product?.image || "";
   const optionGroups = Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).map(option => option.name))).map(name => ({ name, values: Array.from(new Set(sortedVariants.flatMap(variant => getVariantOptions(variant)).filter(option => option.name === name).map(option => option.value))) }));
   const availableSizes = Array.from(new Set(sortedVariants.map(variant => variant.size).filter((size): size is string => Boolean(size))));
   const selectedOptionValues = new Map(getVariantOptions(selectedVariant || {}).map(option => [option.name, option.value]));
@@ -159,6 +162,8 @@ export default function ProductDetail() {
 
   useEffect(() => {
     setPrimaryImageFailed(false);
+    setZoomPoint(null);
+    setMobileZoomOpen(false);
   }, [product?.image, selectedVariant?.image]);
 
   useEffect(() => {
@@ -437,18 +442,38 @@ export default function ProductDetail() {
         </Link>
 
         <div className={`grid grid-cols-1 items-start gap-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:h-[calc(100vh-9rem)] lg:min-h-[44rem] lg:grid-cols-12 lg:overflow-hidden ${product.type === 'physical' ? 'rounded-none border-0 p-0 shadow-none sm:rounded-2xl sm:border sm:p-10 sm:shadow-sm lg:rounded-md lg:border lg:p-6 lg:shadow-sm' : ''}`}>
-          <div className="lg:col-span-5 lg:self-start">
-            <div className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-inner md:cursor-zoom-in" title={product.type === 'physical' ? 'Rê chuột để phóng to ảnh' : undefined}>
-              {(selectedVariant?.image || product.image) && !primaryImageFailed ? <img data-product-primary-image src={selectedVariant?.image || product.image} alt={selectedVariant ? `${productName} · ${formatVariantOptions(selectedVariant)}` : productName} onError={() => setPrimaryImageFailed(true)} className="h-full w-full object-contain transition-transform duration-300 ease-out motion-reduce:transition-none md:group-hover:scale-[1.65]" /> : <AssetVisual categoryId={product.categoryId} title={productName} fileSize={product.fileSize} />}
-              <span className="pointer-events-none absolute bottom-3 right-3 hidden items-center gap-1.5 rounded-full bg-slate-950/80 px-3 py-1.5 text-[10px] font-black text-white shadow-lg md:flex md:opacity-0 md:transition-opacity md:group-hover:opacity-100"><ZoomIn className="h-3 w-3" />Rê chuột để phóng to</span>
+          <div className="lg:col-span-7 lg:self-start">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div
+                className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-inner md:cursor-crosshair"
+                title={primaryImageUrl && !primaryImageFailed ? 'Rê chuột để xem vùng phóng to' : undefined}
+                onMouseMove={(event) => {
+                  if (!primaryImageUrl || primaryImageFailed) return;
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  setZoomPoint({
+                    x: Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)),
+                    y: Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100)),
+                  });
+                }}
+                onMouseLeave={() => setZoomPoint(null)}
+                onClick={() => { if (primaryImageUrl && !primaryImageFailed) setMobileZoomOpen(true); }}
+              >
+                {primaryImageUrl && !primaryImageFailed ? <img data-product-primary-image src={primaryImageUrl} alt={selectedVariant ? `${productName} · ${formatVariantOptions(selectedVariant)}` : productName} onError={() => { setPrimaryImageFailed(true); setZoomPoint(null); }} className="h-full w-full object-contain" /> : <AssetVisual categoryId={product.categoryId} title={productName} fileSize={product.fileSize} />}
+                {zoomPoint && <span className="pointer-events-none absolute hidden h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-white/10 shadow-[0_0_0_1px_rgba(15,23,42,0.25)] md:block" style={{ left: `${zoomPoint.x}%`, top: `${zoomPoint.y}%` }} />}
+                <span className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-950/80 px-3 py-1.5 text-[10px] font-black text-white shadow-lg md:opacity-0 md:transition-opacity md:group-hover:opacity-100"><ZoomIn className="h-3 w-3" />{zoomPoint ? 'Đang phóng to' : 'Chạm để phóng to'}</span>
+              </div>
+              <div className="hidden min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-inner lg:block">
+                {zoomPoint && primaryImageUrl && !primaryImageFailed ? <div className="h-full min-h-[22rem] w-full bg-no-repeat" role="img" aria-label={`Vùng phóng to của ${productName}`} style={{ backgroundImage: `url(${primaryImageUrl})`, backgroundPosition: `${zoomPoint.x}% ${zoomPoint.y}%`, backgroundSize: '220%' }} /> : <div className="grid min-h-[22rem] place-items-center p-6 text-center text-xs font-bold text-slate-400"><ZoomIn className="mb-2 h-5 w-5" />Rê chuột lên ảnh để xem chi tiết</div>}
+              </div>
             </div>
+            <Dialog open={mobileZoomOpen} onOpenChange={setMobileZoomOpen}><DialogContent className="max-w-[calc(100vw-2rem)] border-slate-200 bg-white p-3 sm:max-w-3xl"><DialogHeader><DialogTitle>{productName}</DialogTitle><DialogDescription>Ảnh phóng to của sản phẩm</DialogDescription></DialogHeader>{primaryImageUrl && !primaryImageFailed ? <img src={primaryImageUrl} alt={productName} className="max-h-[75vh] w-full object-contain" /> : <AssetVisual categoryId={product.categoryId} title={productName} fileSize={product.fileSize} />}</DialogContent></Dialog>
             {productDescription && <>
               {product.type === 'physical' && <details className="mt-3 border-y border-slate-200 bg-white px-4 py-3 sm:hidden"><summary className="cursor-pointer list-none text-base font-bold text-slate-800">{lang === 'vi' ? 'Thông số & Mô tả' : 'Details & description'} <span className="float-right text-slate-400">⌄</span></summary><p className="mt-3 text-sm leading-relaxed text-slate-600">{productDescription}</p></details>}
               <section className={`${product.type === 'physical' ? 'hidden sm:block' : ''} mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4`}><div className="flex items-center justify-between gap-3"><h2 className="text-xs font-black uppercase tracking-wide text-slate-800">{lang === 'vi' ? 'Mô tả sản phẩm' : 'Product description'}</h2>{productDescription.length > 260 && <button type="button" onClick={() => setDescriptionExpanded(current => !current)} className="shrink-0 text-xs font-black text-amber-700 hover:text-amber-900">{descriptionExpanded ? (lang === 'vi' ? 'Thu gọn' : 'Show less') : (lang === 'vi' ? 'Xem thêm' : 'Read more')}</button>}</div><p className={`mt-2 text-xs leading-relaxed text-slate-600 sm:text-sm ${descriptionExpanded ? '' : 'line-clamp-5'}`}>{productDescription}</p></section>
             </>}
           </div>
 
-          <div className="space-y-6 lg:col-span-7 lg:h-full lg:overflow-y-auto lg:pr-3">
+          <div className="space-y-6 lg:col-span-5 lg:h-full lg:overflow-y-auto lg:pr-3">
             <div>
               <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
                 <Sparkles className="w-4 h-4" />

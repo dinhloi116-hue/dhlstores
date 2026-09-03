@@ -20,7 +20,7 @@ describe("mobile commerce UX", () => {
   it("falls back from broken primary product images without leaving a broken image element", () => {
     const detail = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
     expect(detail).toContain("primaryImageFailed");
-    expect(detail).toContain("onError={() => setPrimaryImageFailed(true)}");
+    expect(detail).toContain("setPrimaryImageFailed(true); setZoomPoint(null)");
     expect(detail).toContain("<AssetVisual categoryId={product.categoryId}");
   });
 

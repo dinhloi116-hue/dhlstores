@@ -980,3 +980,10 @@
 - [x] Tách chunk cho tạo nhãn và xử lý video, giữ storefront tải nhanh; riêng jsPDF/XLSX của tạo nhãn đã chuyển sang tải theo nhu cầu.
 - [x] Thêm loading/error fallback và hồi quy cho lazy routes.
 - [x] Chạy test/TypeScript/build, kiểm tra mobile và phát hành checkpoint.
+
+## Zoom ảnh kiểu marketplace 2026-09-03
+- [x] Tạo khung ảnh chính bên trái và pane phóng to tương tác bên phải trên desktop.
+- [x] Giữ ảnh SKU/ảnh chính đồng bộ, có fallback khi ảnh lỗi và không tải ảnh mới lên máy chủ.
+- [x] Tối ưu mobile bằng zoom modal khi chạm, không che thanh mua cố định.
+- [x] Bổ sung hồi quy, kiểm tra viewport và phát hành nếu môi trường đủ quota.
+- [x] Mở rộng vùng gallery ảnh lên 7/12 cột và thu gọn cột thông tin còn 5/12 để pane zoom desktop dễ quan sát hơn.
