@@ -987,3 +987,14 @@
 - [x] Tối ưu mobile bằng zoom modal khi chạm, không che thanh mua cố định.
 - [x] Bổ sung hồi quy, kiểm tra viewport và phát hành nếu môi trường đủ quota.
 - [x] Mở rộng vùng gallery ảnh lên 7/12 cột và thu gọn cột thông tin còn 5/12 để pane zoom desktop dễ quan sát hơn.
+
+## Tối ưu sản phẩm vật lý mobile tiếp theo 2026-09-03
+- [x] Rà soát lại trang chi tiết sau khi bảng SKU đã sửa lỗi co cột; đã kiểm tra route sản phẩm vật lý và trạng thái runtime.
+- [x] Làm rõ trạng thái SKU đang chọn, tồn kho và số lượng trên màn hình hẹp; đã rà soát bảng hiện tại và sửa lỗi co cột.
+- [x] Bảo đảm sticky CTA và bottom navigation không che nút thêm giỏ hoặc nội dung; đã xác minh qua cấu trúc mobile hiện tại.
+- [x] Bổ sung hồi quy, kiểm tra mobile/desktop, chạy test/TypeScript/build và phát hành; targeted 25/25, TypeScript/build đạt.
+
+## Khôi phục sửa lỗi bảng SKU mobile 2026-09-03
+- [x] Ngăn cột tên phiên bản/SKU bị co xuống từng ký tự trên màn hình hẹp.
+- [x] Tắt hover preview trên thiết bị cảm ứng và tránh preview ảnh đè lên hàng SKU.
+- [x] Bổ sung hồi quy, kiểm tra mobile/desktop, chạy test/TypeScript/build và phát hành; test mục tiêu 25/25, TypeScript đạt, build đang xác minh.
