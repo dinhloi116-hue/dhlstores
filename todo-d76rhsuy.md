@@ -998,3 +998,8 @@
 - [x] Ngăn cột tên phiên bản/SKU bị co xuống từng ký tự trên màn hình hẹp.
 - [x] Tắt hover preview trên thiết bị cảm ứng và tránh preview ảnh đè lên hàng SKU.
 - [x] Bổ sung hồi quy, kiểm tra mobile/desktop, chạy test/TypeScript/build và phát hành; test mục tiêu 25/25, TypeScript đạt, build đang xác minh.
+
+## Đồng bộ thay đổi sau checkpoint d0be64e2 2026-09-04
+- [ ] Kiểm tra commit local và trạng thái `github/main` sau bản sửa SKU mobile.
+- [ ] Đẩy thay đổi lên `main` nếu GitHub chưa có commit tương ứng, không force-push.
+- [ ] Xác minh commit trên GitHub và báo rõ quy tắc checkpoint/live khác với GitHub sync.
