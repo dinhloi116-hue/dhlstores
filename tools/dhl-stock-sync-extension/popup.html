@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DHL Stock Sync</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>DHL STOCK SYNC</h1>
+        <p>si.aobongda.net → chuẩn bị Sapo</p>
+      </div>
+      <span id="sourceState" class="badge">Đang kiểm tra</span>
+    </header>
+
+    <section class="controls">
+      <button id="scanCurrent" class="primary">Quét sản phẩm hiện tại</button>
+      <div class="row">
+        <label for="batchLimit">Quét nhanh</label>
+        <input id="batchLimit" type="number" min="1" max="50" value="10" />
+        <button id="scanBatch">Quét danh sách</button>
+      </div>
+    </section>
+
+    <section id="statusBox" class="status">Chưa quét.</section>
+
+    <section class="stats">
+      <div><b id="productCount">0</b><span>Sản phẩm</span></div>
+      <div><b id="variantCount">0</b><span>Biến thể</span></div>
+      <div><b id="outCount">0</b><span>Hết hàng</span></div>
+      <div><b id="errorCount">0</b><span>Cần kiểm tra</span></div>
+    </section>
+
+    <section class="toolbar">
+      <input id="filter" placeholder="Lọc SKU / màu / size..." />
+      <div class="toolbar-actions"><button id="exportCsv" disabled>Xuất CSV</button><button id="copyJson" disabled>Copy JSON</button></div>
+    </section>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>SKU</th><th>Màu</th><th>Size</th><th>Tồn</th></tr></thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
+
+    <footer>Chưa ghi dữ liệu vào Sapo ở bản test này.</footer>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
