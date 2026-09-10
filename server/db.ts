@@ -1888,6 +1888,31 @@ export async function updateProductVariant(variantId: number, input: Omit<Catalo
   return { success: true };
 }
 
+export async function deleteProductVariant(variantId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const variant = (await connection.select().from(productVariants).where(eq(productVariants.id, variantId)).limit(1))[0];
+    if (!variant) throw new Error("Không tìm thấy SKU cần xóa");
+    const orderReference = await connection.select({ id: orderItemsTable.id }).from(orderItemsTable).where(eq(orderItemsTable.variantId, variantId)).limit(1);
+    if (orderReference.length) throw new Error("SKU đã xuất hiện trong lịch sử đơn hàng; hãy chuyển sang Đang ẩn thay vì xóa");
+    await connection.transaction(async transaction => {
+      await transaction.delete(cartItems).where(eq(cartItems.variantId, variantId));
+      await transaction.delete(restockSubscriptions).where(eq(restockSubscriptions.variantId, variantId));
+      await transaction.delete(sapoSyncEvents).where(eq(sapoSyncEvents.localVariantId, variantId));
+      await transaction.delete(sapoVariantMappings).where(eq(sapoVariantMappings.localVariantId, variantId));
+      await transaction.delete(productVariants).where(eq(productVariants.id, variantId));
+    });
+    return { success: true, productId: variant.productId };
+  }
+  const variant = memoryProductVariants.find(item => item.id === variantId);
+  if (!variant) throw new Error("Không tìm thấy SKU cần xóa");
+  if (memoryOrderItems.some(item => item.variantId === variantId)) throw new Error("SKU đã xuất hiện trong lịch sử đơn hàng; hãy chuyển sang Đang ẩn thay vì xóa");
+  memoryCart = memoryCart.filter(item => item.variantId !== variantId);
+  memoryRestockSubscriptions = memoryRestockSubscriptions.filter(item => item.variantId !== variantId);
+  memoryProductVariants = memoryProductVariants.filter(item => item.id !== variantId);
+  return { success: true, productId: variant.productId };
+}
+
 export async function bulkUpdateProductVariants(input: { productId: number; changes: Array<{ variantId: number; stock?: number; priceAdjustment?: string; costPrice?: string; isActive?: boolean }> }) {
   const variants = await getProductVariants(input.productId, true);
   if (!input.changes.length || input.changes.length > 1_000 || input.changes.some(change => !variants.some(variant => variant.id === change.variantId))) throw new Error("Danh sách SKU cần cập nhật không hợp lệ");

@@ -106,6 +106,9 @@ export const catalogAdminRouter = router({
   })).mutation(({ input }) =>
     db.updateProductVariant(input.variantId, { ...input.data, priceAdjustment: String(input.data.priceAdjustment), costPrice: String(input.data.costPrice) }),
   ),
+  deleteProductVariant: adminProcedure.input(z.object({ variantId: z.number().int().positive() })).mutation(({ input }) =>
+    db.deleteProductVariant(input.variantId),
+  ),
   bulkUpdateProductVariants: adminProcedure.input(z.object({
     productId: z.number().int().positive(),
     changes: z.array(z.object({

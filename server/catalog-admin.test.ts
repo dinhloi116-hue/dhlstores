@@ -190,4 +190,17 @@ describe("catalogAdmin", () => {
     await caller.catalogAdmin.replaceProductWholesaleTiers({ productId: product!.id, tiers: [{ minQuantity: 10, unitPrice: 85000 }, { minQuantity: 25, unitPrice: 75000 }, { minQuantity: 50, unitPrice: 65000 }] });
     expect(await caller.catalogAdmin.productWholesaleTiers({ productId: product!.id })).toEqual(expect.arrayContaining([expect.objectContaining({ minQuantity: 10, unitPrice: "85000.00" }), expect.objectContaining({ minQuantity: 25, unitPrice: "75000.00" }), expect.objectContaining({ minQuantity: 50, unitPrice: "65000.00" })]));
   });
+
+  it("lets the owner delete an unused SKU and keeps the operation owner-only", async () => {
+    const owner = appRouter.createCaller(createContext("owner"));
+    const regularUser = appRouter.createCaller(createContext("user"));
+    const suffix = `delete-${Date.now().toString(36)}`;
+    const physicalCategory = (await owner.catalogAdmin.categories()).find(category => category.slug === "patch-tay");
+    const product = await owner.catalogAdmin.createProduct({ name: `Patch xóa SKU ${suffix}`, slug: `patch-xoa-sku-${suffix}`, description: "Kiểm thử xóa SKU", price: 100000, categoryId: physicalCategory!.id, image: "/manus-storage/catalog/delete-test.png", stock: 0, featured: false, isActive: true });
+    const variant = await owner.catalogAdmin.createProductVariant({ productId: product!.id, sku: `DELETE-${suffix}`, priceAdjustment: 0, stock: 0, isActive: true });
+
+    await expect(regularUser.catalogAdmin.deleteProductVariant({ variantId: variant!.id })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(owner.catalogAdmin.deleteProductVariant({ variantId: variant!.id })).resolves.toMatchObject({ success: true, productId: product!.id });
+    expect((await owner.catalogAdmin.productVariants({ productId: product!.id })).some(item => item.id === variant!.id)).toBe(false);
+  });
 });
