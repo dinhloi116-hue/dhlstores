@@ -15,6 +15,9 @@
   function escapeHtml(text) { return String(text || '').replace(/[&<>\"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
   function sourceGroups() { return matcher.groupSourceVariants(sourceResults); }
   function readyVariantCount() { return matches.reduce((n, m) => n + (m.complete ? m.variantMatches.length : 0), 0); }
+  function fullMatchReady() {
+    return Boolean(sapoData && sapoData.products.length && matches.length === sapoData.products.length && matches.every(m => m.complete) && readyVariantCount() === sapoData.variants.length);
+  }
 
   function updateStats() {
     $('sapoProductCount').textContent = sapoData ? sapoData.products.length : 0;
@@ -22,12 +25,12 @@
     $('sourceGroupCount').textContent = sourceGroups().length;
     $('matchedCount').textContent = matches.filter(m => m.complete).length;
     $('readyVariantCount').textContent = readyVariantCount();
-    $('makeImport').disabled = !(sapoData && templateBuffer && readyVariantCount() > 0);
+    $('makeImport').disabled = !(sapoData && templateBuffer && fullMatchReady());
   }
 
   function renderMatches() {
     const q = $('filter').value.trim().toLowerCase();
-    const rows = matches.filter(m => !q || `${m.sapoProduct.name} ${m.best ? m.best.parentName : ''} ${m.best ? m.best.color : ''}`.toLowerCase().includes(q));
+    const rows = matches.filter(m => !q || `${m.sapoProduct.name} ${m.sapoProduct.skuBase || ''} ${m.best ? m.best.parentName : ''} ${m.best ? m.best.color : ''}`.toLowerCase().includes(q));
     $('matchBody').innerHTML = rows.map(m => {
       const best = m.best ? `${m.best.parentName} / ${m.best.color}` : '—';
       const sizesOk = m.variantMatches.filter(x => x.source).length;
@@ -35,7 +38,8 @@
       const score = m.best ? Math.round(m.best.score * 100) : 0;
       const cls = m.complete ? 'ok-row' : 'warn-row';
       const pill = m.complete ? '<span class="pill ok">OK</span>' : '<span class="pill warn">Cần kiểm tra</span>';
-      return `<tr class="${cls}"><td>${escapeHtml(m.sapoProduct.name)}</td><td>${escapeHtml(best)}</td><td class="score">${score}%</td><td>${sizesOk}/${totalSizes}</td><td>${pill}</td></tr>`;
+      const base = m.sapoProduct.skuBase ? `<br><small>SKU gốc: ${escapeHtml(m.sapoProduct.skuBase)}</small>` : '';
+      return `<tr class="${cls}"><td>${escapeHtml(m.sapoProduct.name)}${base}</td><td>${escapeHtml(best)}</td><td class="score">${score}%</td><td>${sizesOk}/${totalSizes}</td><td>${pill}</td></tr>`;
     }).join('');
   }
 
@@ -43,9 +47,13 @@
     matches = sapoData && sourceResults.length ? matcher.matchSapoProducts(sapoData.products, sourceResults) : [];
     updateStats(); renderMatches();
     if (matches.length) {
-      const ok = matches.filter(m => m.complete).length, ready = readyVariantCount();
-      if (ok === sapoData.products.length) setStatus(`Ghép đủ ${ok}/${sapoData.products.length} sản phẩm, ${ready}/${sapoData.variants.length} biến thể sẵn sàng ghi tồn.`, 'ok');
-      else setStatus(`Ghép chắc chắn ${ok}/${sapoData.products.length} sản phẩm. Dòng chưa chắc chắn sẽ KHÔNG được ghi vào file nhập.`, 'error');
+      const ok = matches.filter(m => m.complete).length, ready = readyVariantCount(), groups = sourceGroups().length;
+      if (fullMatchReady()) {
+        setStatus(`Ghép đủ ${ok}/${sapoData.products.length} sản phẩm, ${ready}/${sapoData.variants.length} size. Có thể tạo file nhập.`, 'ok');
+      } else {
+        const sourceNote = groups < sapoData.products.length ? ` Nguồn mới đọc được ${groups} mẫu/màu, nên vẫn còn thiếu màu cần quét.` : '';
+        setStatus(`Ghép chắc chắn ${ok}/${sapoData.products.length} sản phẩm, ${ready}/${sapoData.variants.length} size.${sourceNote} Chưa đủ thì KHÔNG cho tạo file nhập.`, 'error');
+      }
     }
   }
 
@@ -54,9 +62,13 @@
     setStatus('Đang đọc file xuất Sapo...');
     try {
       sapoData = await xlsx.parseSapoExport(await file.arrayBuffer());
-      $('exportState').textContent = `${sapoData.products.length} sản phẩm • ${sapoData.variants.length} biến thể`;
+      const sizeText = `${sapoData.sizeResolved}/${sapoData.sizeTotal} size tự nhận`;
+      $('exportState').textContent = `${sapoData.products.length} sản phẩm • ${sapoData.variants.length} biến thể • ${sizeText}`;
       recomputeMatches();
-      if (!sourceResults.length) setStatus(`Đã đọc ${sapoData.products.length} sản phẩm. Bấm QUÉT KHO HD 2026.`, 'ok');
+      if (!sourceResults.length) {
+        const issueText = sapoData.issues && sapoData.issues.length ? ` Có ${sapoData.issues.length} cảnh báo cấu trúc.` : '';
+        setStatus(`Đã đọc ${sapoData.products.length} sản phẩm; nhận ${sizeText}. Tool dùng Id sản phẩm + Id phiên bản để giữ đúng dòng, SKU gốc để nhận đội/màu, và size để ghép biến thể.${issueText} Bấm QUÉT KHO HD 2026.`, sapoData.issues && sapoData.issues.length ? 'error' : 'ok');
+      }
     } catch (error) { sapoData = null; $('exportState').textContent = 'File không hợp lệ.'; updateStats(); setStatus(error.message || String(error), 'error'); }
   }
 
@@ -84,16 +96,17 @@
     await new Promise(resolve => setTimeout(resolve, 120));
   }
 
-  async function send(type) {
+  async function send(type, extra = {}) {
     const tab = await activeTab();
     if (!tab || !tab.id || !String(tab.url || '').startsWith('https://si.aobongda.net/')) throw new Error('Hãy mở si.aobongda.net và đăng nhập trước.');
+    const message = { type, ...extra };
     try {
-      return await chrome.tabs.sendMessage(tab.id, { type });
+      return await chrome.tabs.sendMessage(tab.id, message);
     } catch (error) {
       if (!noReceiver(error)) throw error;
       await injectScanner(tab.id);
       try {
-        return await chrome.tabs.sendMessage(tab.id, { type });
+        return await chrome.tabs.sendMessage(tab.id, message);
       } catch (retryError) {
         throw new Error(`Không kết nối được với trang nguồn sau khi tự kết nối lại. Hãy F5 trang si.aobongda.net rồi thử lại. (${retryError.message || retryError})`);
       }
@@ -104,7 +117,8 @@
     $('scanHd').disabled = true; $('scanCurrent').disabled = true; $('makeImport').disabled = true;
     setStatus(type === 'DHL_SCAN_HD_2026' ? 'Đang quét danh mục HD 2026... giữ tab nguồn mở.' : 'Đang test sản phẩm hiện tại...');
     try {
-      const response = await send(type);
+      const hints = sapoData ? matcher.buildScanHints(sapoData.products) : [];
+      const response = await send(type, { hints });
       if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu nguồn');
       sourceResults = Array.isArray(response.result) ? response.result : [response.result];
       await chrome.storage.local.set({ dhlLastSourceResults: sourceResults, dhlLastSourceAt: Date.now() });
@@ -116,6 +130,7 @@
 
   async function makeImport() {
     if (!sapoData || !templateBuffer) return;
+    if (!fullMatchReady()) { setStatus('Chưa ghép đủ toàn bộ sản phẩm và size; tool chặn tạo file để tránh cập nhật thiếu.', 'error'); return; }
     const inventory = Object.create(null);
     for (const m of matches) if (m.complete) for (const vm of m.variantMatches) inventory[String(vm.sapo.variantId)] = Number(vm.source.available);
     const count = Object.keys(inventory).length;
