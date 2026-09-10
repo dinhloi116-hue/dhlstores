@@ -11,14 +11,14 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>File xuất Sapo → tồn si.aobongda.net → file nhập Sapo</p>
+        <p>Web nguồn → ghép từng size → điền tồn vào file nhập Sapo</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
     <section class="safety-note">
       <b>CHỈ GHI ĐÈ TỒN KHO</b>
-      <span>Tên sản phẩm, ảnh, giá, SKU, mô tả và Id phiên bản được giữ nguyên từ file xuất Sapo. Nếu phát hiện các trường này bị đổi, tool sẽ chặn không cho tạo file.</span>
+      <span>Ví dụ nguồn Mexico / S = 7 → dòng Mexico-S của Sapo nhận Tồn kho = 7. Tên, ảnh, giá, SKU, mô tả và Id phiên bản lấy từ file xuất Sapo; biến thể chưa đọc được nguồn sẽ bỏ qua, không tự ghi 0.</span>
     </section>
 
     <section class="steps">
@@ -33,9 +33,9 @@
         <small id="templateState">Chưa chọn file.</small>
       </div>
       <div class="step actions">
-        <b>3. Quét kho nguồn</b>
+        <b>3. Lấy tồn kho nguồn</b>
         <button id="scanHd" class="primary">QUÉT KHO HD 2026</button>
-        <button id="scanCurrent" class="secondary">Test sản phẩm đang mở</button>
+        <button id="scanCurrent" class="secondary">TEST POPUP ĐANG MỞ</button>
       </div>
     </section>
 
@@ -45,8 +45,8 @@
       <div><b id="sapoProductCount">0</b><span>SP Sapo</span></div>
       <div><b id="sapoVariantCount">0</b><span>Biến thể Sapo</span></div>
       <div><b id="sourceGroupCount">0</b><span>Mẫu/màu nguồn</span></div>
-      <div><b id="matchedCount">0</b><span>Ghép đúng</span></div>
-      <div><b id="readyVariantCount">0</b><span>Biến thể sẵn sàng</span></div>
+      <div><b id="matchedCount">0</b><span>SP có dữ liệu</span></div>
+      <div><b id="readyVariantCount">0</b><span>Biến thể ghép</span></div>
     </section>
 
     <section class="toolbar">
@@ -59,12 +59,12 @@
 
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Sản phẩm Sapo</th><th>Nguồn ghép</th><th>Điểm</th><th>Size</th><th>Trạng thái</th></tr></thead>
+        <thead><tr><th>Sản phẩm Sapo</th><th>Nguồn ghép</th><th>Điểm</th><th>Size có tồn</th><th>Trạng thái</th></tr></thead>
         <tbody id="matchBody"></tbody>
       </table>
     </div>
 
-    <footer>Tool chạy ở thanh bên Chrome nên bạn có thể click qua lại trang web mà nó không tự biến mất.</footer>
+    <footer>Bản 0.9 ghép theo từng biến thể. Không cần đủ 130/130 mới tạo file; chỉ các dòng đã lấy được tồn nguồn mới được xuất.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
