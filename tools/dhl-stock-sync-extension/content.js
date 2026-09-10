@@ -3,6 +3,29 @@
   const core = globalThis.DHLStockCore;
   if (!core) return;
 
+  const TEAM_PATTERNS = [
+    ['bo dao nha','portugal'],['tay ban nha','spain'],['nhat ban','japan'],['nhat','japan'],['ha lan','netherlands'],
+    ['argentina','argentina'],['brazil','brazil'],['mexico','mexico'],['croatia','croatia'],['crotia','croatia'],['phap','france'],
+    ['duc','germany'],['anh','england'],['bi','belgium'],['y','italy']
+  ];
+
+  function plain(value) {
+    return String(value || '').toLowerCase().replace(/đ/g,'d').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+  }
+  function teamKey(value) {
+    const p = ` ${plain(value)} `;
+    for (const [pattern, key] of TEAM_PATTERNS) if (p.includes(` ${pattern} `)) return key;
+    return '';
+  }
+  function hintForTitle(title, hints) {
+    const key = teamKey(title);
+    return key ? (hints || []).find(h => h && h.team === key) || null : null;
+  }
+  function expectedCountFromHint(hint) {
+    if (!hint || !Array.isArray(hint.products)) return 0;
+    return hint.products.reduce((total, product) => total + new Set((product.sizes || []).filter(Boolean)).size, 0);
+  }
+
   function productTitleFromDocument(doc = document) {
     const candidates = [doc.querySelector('h1'), doc.querySelector('[itemprop="name"]'), doc.querySelector('.product-name'), doc.querySelector('.detail-title')].filter(Boolean);
     for (const el of candidates) { const text = core.normalizeText(el.textContent); if (text) return text; }
@@ -12,9 +35,7 @@
   function sourceParentFromVariantName(name, fallback = '') {
     const text = core.normalizeText(name);
     const parts = text.split(/\s+-\s+/).map(x => x.trim()).filter(Boolean);
-    if (parts.length >= 3 && /^(S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|2XL|3XL|4XL|5XL)$/i.test(parts[parts.length - 1])) {
-      return parts.slice(0, -2).join(' - ');
-    }
+    if (parts.length >= 3 && /^(S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|2XL|3XL|4XL|5XL)$/i.test(parts[parts.length - 1])) return parts.slice(0, -2).join(' - ');
     return core.normalizeText(fallback);
   }
 
@@ -65,35 +86,47 @@
     } finally { clearTimeout(timeout); }
   }
 
-  async function scanCurrentProduct(sendProgress) {
+  async function collectForProduct(parentId, parentName, sendProgress, expectedVariantCount = 0) {
+    const maxRequests = expectedVariantCount > 0 ? Math.min(220, Math.max(100, expectedVariantCount * 7)) : 100;
+    const maxDuplicateStreak = expectedVariantCount > 0 ? Math.min(35, Math.max(8, expectedVariantCount + 5)) : 3;
+    return core.collectVariants({
+      parentId, parentName, requestChild, maxRequests, delayMs: 150, maxDuplicateStreak, expectedVariantCount, onProgress: sendProgress
+    });
+  }
+
+  async function scanCurrentProduct(sendProgress, hints = []) {
     const parentId = core.extractParentIdFromHtml(document.documentElement.innerHTML, core.extractProductId(location.href));
     if (!parentId) throw new Error('Không xác định được ID sản phẩm cha');
     const preferred = productTitleFromDocument();
-    let result = await core.collectVariants({ parentId, parentName: preferred, requestChild, maxRequests: 80, delayMs: 160, maxDuplicateStreak: 3, onProgress: sendProgress });
+    const hint = hintForTitle(preferred, hints);
+    const expected = expectedCountFromHint(hint);
+    let result = await collectForProduct(parentId, preferred, sendProgress, expected);
     result = finalizeParentName(result, preferred);
-    return { ...result, validation: core.validateScanResult(result) };
+    return { ...result, expectedFromSapo: expected, hintTeam: hint ? hint.team : '', validation: core.validateScanResult(result) };
   }
 
-  async function scanProductDescriptor(descriptor, sendProgress) {
+  async function scanProductDescriptor(descriptor, sendProgress, hints = []) {
     const response = await fetch(descriptor.url, { credentials: 'include', cache: 'no-store' });
     if (!response.ok) throw new Error(`Không mở được sản phẩm: HTTP ${response.status}`);
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const parentId = core.extractParentIdFromHtml(html, descriptor.id);
-    // Tên ở trang danh mục là móc nối tốt hơn H1 của trang chi tiết (H1 có thể chỉ là tên khối/danh mục).
     const preferred = core.normalizeText(descriptor.title) || productTitleFromDocument(doc) || `#${parentId}`;
-    let result = await core.collectVariants({ parentId, parentName: preferred, requestChild, maxRequests: 100, delayMs: 150, maxDuplicateStreak: 3, onProgress: sendProgress });
+    const hint = hintForTitle(preferred, hints);
+    const expected = expectedCountFromHint(hint);
+    let result = await collectForProduct(parentId, preferred, sendProgress, expected);
     result = finalizeParentName(result, preferred);
-    return { ...result, validation: core.validateScanResult(result), sourceUrl: descriptor.url };
+    return { ...result, expectedFromSapo: expected, hintTeam: hint ? hint.team : '', validation: core.validateScanResult(result), sourceUrl: descriptor.url };
   }
 
-  async function scanDescriptors(links, sendProgress) {
+  async function scanDescriptors(links, sendProgress, hints = []) {
     const results = [];
     for (let i = 0; i < links.length; i += 1) {
       const descriptor = links[i];
-      sendProgress({ stage: 'product', productIndex: i + 1, productTotal: links.length, descriptor });
+      const hint = hintForTitle(descriptor.title, hints);
+      sendProgress({ stage: 'product', productIndex: i + 1, productTotal: links.length, descriptor, expected: expectedCountFromHint(hint) || null });
       try {
-        const result = await scanProductDescriptor(descriptor, p => sendProgress({ stage: 'variant', descriptor, ...p }));
+        const result = await scanProductDescriptor(descriptor, p => sendProgress({ stage: 'variant', descriptor, ...p }), hints);
         results.push(result);
       } catch (error) {
         results.push({ parentId: descriptor.id, parentName: descriptor.title || '', variants: [], errors: [{ message: error.message }], complete: false, sourceUrl: descriptor.url });
@@ -102,14 +135,14 @@
     return results;
   }
 
-  async function scanBatch(limit, sendProgress) {
+  async function scanBatch(limit, sendProgress, hints = []) {
     const links = findProductLinks(limit);
     if (!links.length) {
       const currentId = core.extractProductId(location.href);
-      if (currentId) return [await scanCurrentProduct(sendProgress)];
+      if (currentId) return [await scanCurrentProduct(sendProgress, hints)];
       throw new Error('Không tìm thấy link sản phẩm trên trang này');
     }
-    return scanDescriptors(links, sendProgress);
+    return scanDescriptors(links, sendProgress, hints);
   }
 
   async function discoverHd2026() {
@@ -123,24 +156,25 @@
     return links;
   }
 
-  async function scanHd2026(sendProgress) {
+  async function scanHd2026(sendProgress, hints = []) {
     const links = await discoverHd2026();
     sendProgress({ stage: 'discovered', productTotal: links.length });
-    return scanDescriptors(links, sendProgress);
+    return scanDescriptors(links, sendProgress, hints);
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!message || !message.type) return;
     const progress = data => chrome.runtime.sendMessage({ type: 'DHL_STOCK_PROGRESS', data }).catch(() => {});
+    const hints = Array.isArray(message.hints) ? message.hints : [];
     if (message.type === 'DHL_SCAN_CURRENT') {
-      scanCurrentProduct(progress).then(result => sendResponse({ ok: true, result })).catch(error => sendResponse({ ok: false, error: error.message })); return true;
+      scanCurrentProduct(progress, hints).then(result => sendResponse({ ok: true, result })).catch(error => sendResponse({ ok: false, error: error.message })); return true;
     }
     if (message.type === 'DHL_SCAN_BATCH') {
       const limit = Math.max(1, Math.min(50, Number(message.limit) || 10));
-      scanBatch(limit, progress).then(result => sendResponse({ ok: true, result })).catch(error => sendResponse({ ok: false, error: error.message })); return true;
+      scanBatch(limit, progress, hints).then(result => sendResponse({ ok: true, result })).catch(error => sendResponse({ ok: false, error: error.message })); return true;
     }
     if (message.type === 'DHL_SCAN_HD_2026') {
-      scanHd2026(progress).then(result => sendResponse({ ok: true, result })).catch(error => sendResponse({ ok: false, error: error.message })); return true;
+      scanHd2026(progress, hints).then(result => sendResponse({ ok: true, result })).catch(error => sendResponse({ ok: false, error: error.message })); return true;
     }
   });
 })();
