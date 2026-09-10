@@ -16,6 +16,11 @@
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
+    <section class="safety-note">
+      <b>CHỈ GHI ĐÈ TỒN KHO</b>
+      <span>Tên sản phẩm, ảnh, giá, SKU, mô tả và Id phiên bản được giữ nguyên từ file xuất Sapo. Nếu phát hiện các trường này bị đổi, tool sẽ chặn không cho tạo file.</span>
+    </section>
+
     <section class="steps">
       <div class="step">
         <b>1. Chọn file xuất Sapo</b>
@@ -56,11 +61,12 @@
       </table>
     </div>
 
-    <footer>Chỉ các sản phẩm ghép chắc chắn mới được ghi tồn kho vào file nhập.</footer>
+    <footer>Tool chạy ở thanh bên Chrome nên bạn có thể click qua lại trang web mà nó không tự biến mất.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
   <script src="xlsx-lite.js"></script>
+  <script src="xlsx-preserve.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
