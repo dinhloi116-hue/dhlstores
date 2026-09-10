@@ -17,7 +17,13 @@
 
   function flatten(results) {
     const list = Array.isArray(results) ? results : [results];
-    return list.flatMap((product) => (product.variants || []).map((variant) => ({ ...variant, parentName: product.parentName || '' })));
+    return list.flatMap((product) => (product.variants || []).map((variant) => ({
+      ...variant,
+      parentName: product.parentName || '',
+      confidence: product.confidence || 'low',
+      complete: product.complete === true,
+      stopReason: product.stopReason || '',
+    })));
   }
 
   function render() {
@@ -36,10 +42,18 @@
     return String(text || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   }
 
+  function productHasIssue(product) {
+    return Boolean(
+      (product.errors || []).length > 0 ||
+      product.complete !== true ||
+      (product.validation && product.validation.safeToSync === false)
+    );
+  }
+
   function updateStats(results) {
     const list = Array.isArray(results) ? results : [results];
     flatRows = flatten(list);
-    const errorCount = list.reduce((n, p) => n + ((p.errors || []).length || (p.validation && !p.validation.safeToSync) ? 1 : 0), 0);
+    const errorCount = list.reduce((n, product) => n + (productHasIssue(product) ? 1 : 0), 0);
     $('productCount').textContent = list.length;
     $('variantCount').textContent = flatRows.length;
     $('outCount').textContent = flatRows.filter((v) => v.available <= 0).length;
@@ -47,6 +61,20 @@
     $('copyJson').disabled = !flatRows.length;
     $('exportCsv').disabled = !flatRows.length;
     render();
+  }
+
+  function scanSummary(results) {
+    const list = Array.isArray(results) ? results : [results];
+    const complete = list.filter((p) => p.complete === true).length;
+    const failed = list.length - complete;
+    const reasons = {};
+    for (const product of list) {
+      if (product.complete === true) continue;
+      const key = product.stopReason || ((product.errors || []).length ? 'error' : 'unknown');
+      reasons[key] = (reasons[key] || 0) + 1;
+    }
+    const reasonText = Object.entries(reasons).map(([key, value]) => `${key}: ${value}`).join(', ');
+    return { complete, failed, reasonText };
   }
 
   async function send(type, extra = {}) {
@@ -66,8 +94,11 @@
       if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu');
       lastResults = Array.isArray(response.result) ? response.result : [response.result];
       updateStats(lastResults);
-      const failed = lastResults.filter((p) => !p.complete).length;
-      setStatus(`Quét xong ${lastResults.length} sản phẩm, ${flatRows.length} biến thể${failed ? `, ${failed} sản phẩm có lỗi` : ''}.`, failed > 0);
+      const summary = scanSummary(lastResults);
+      const suffix = summary.failed
+        ? ` Có ${summary.failed} sản phẩm chưa xác nhận đọc đủ${summary.reasonText ? ` (${summary.reasonText})` : ''}.`
+        : ' Tất cả sản phẩm đã quay đủ một vòng variant.';
+      setStatus(`Quét xong ${lastResults.length} sản phẩm, ${flatRows.length} biến thể.${suffix}`, summary.failed > 0);
       await chrome.storage.local.set({ dhlLastScan: lastResults, dhlLastScanAt: Date.now() });
     } catch (error) {
       setStatus(error.message || String(error), true);
@@ -83,11 +114,20 @@
   }
 
   function exportCsv() {
-    const header = ['parentId', 'product', 'variantId', 'sku', 'color', 'size', 'available', 'price'];
+    const header = ['parentId', 'product', 'variantId', 'sku', 'color', 'size', 'available', 'price', 'confidence', 'complete'];
     const lines = [header.join(',')];
     for (const row of flatRows) {
       lines.push([
-        row.parentId, row.parentName, row.id, row.sku, row.color, row.size, row.available, row.price,
+        row.parentId,
+        row.parentName,
+        row.id,
+        row.sku,
+        row.color,
+        row.size,
+        row.available,
+        row.price,
+        row.confidence,
+        row.complete,
       ].map(csvEscape).join(','));
     }
     const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
