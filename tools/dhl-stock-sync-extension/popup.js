@@ -9,9 +9,12 @@
   let templateBuffer = null;
   let sourceResults = [];
   let matches = [];
+  let sapoExportFileName = '';
+  let sapoTemplateFileName = '';
+  let lastStatusText = 'Chưa bắt đầu.';
 
   async function activeTab() { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); return tab; }
-  function setStatus(text, kind = '') { const el = $('statusBox'); el.textContent = text; el.classList.toggle('error', kind === 'error'); el.classList.toggle('ok', kind === 'ok'); }
+  function setStatus(text, kind = '') { const el = $('statusBox'); lastStatusText = String(text || ''); el.textContent = lastStatusText; el.classList.toggle('error', kind === 'error'); el.classList.toggle('ok', kind === 'ok'); }
   function escapeHtml(text) { return String(text || '').replace(/[&<>\"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
   function sourceGroups() { return matcher.groupSourceVariants(sourceResults); }
   function readyVariantCount() { return matches.reduce((n, m) => n + (m.complete ? m.variantMatches.length : 0), 0); }
@@ -59,6 +62,7 @@
 
   async function loadExport(file) {
     if (!file) return;
+    sapoExportFileName = file.name || '';
     setStatus('Đang đọc file xuất Sapo...');
     try {
       sapoData = await xlsx.parseSapoExport(await file.arrayBuffer());
@@ -74,6 +78,7 @@
 
   async function loadTemplate(file) {
     if (!file) return;
+    sapoTemplateFileName = file.name || '';
     setStatus('Đang kiểm tra file mẫu nhập...');
     try {
       const buffer = await file.arrayBuffer(), book = await xlsx.readFirstSheet(buffer), h = xlsx.headerMap(book.rows[0] || []), inv = Object.keys(h).find(k => /Tồn kho/i.test(k));
@@ -128,6 +133,134 @@
     finally { $('scanHd').disabled = false; $('scanCurrent').disabled = false; updateStats(); }
   }
 
+  function lineValue(value) {
+    if (value == null || value === '') return '—';
+    if (typeof value === 'object') {
+      try { return JSON.stringify(value); } catch (_) { return String(value); }
+    }
+    return String(value);
+  }
+
+  function buildErrorReport() {
+    const now = new Date();
+    const groups = sourceGroups();
+    const lines = [];
+    const add = (...parts) => lines.push(parts.join(''));
+    const hr = '============================================================';
+
+    add('DHL STOCK SYNC - BÁO CÁO LỖI / CHẨN ĐOÁN');
+    add(hr);
+    add(`Thời điểm: ${now.toLocaleString('vi-VN')}`);
+    add('Phiên bản tool: 0.7.0');
+    add(`Trạng thái hiện tại: ${lastStatusText}`);
+    add(`File xuất Sapo: ${sapoExportFileName || '(chưa chọn / không còn thông tin tên file)'}`);
+    add(`File mẫu nhập: ${sapoTemplateFileName || '(chưa chọn / không còn thông tin tên file)'}`);
+    add('');
+
+    add('1. TỔNG QUAN');
+    add(hr);
+    add(`Sản phẩm Sapo: ${sapoData ? sapoData.products.length : 0}`);
+    add(`Biến thể Sapo: ${sapoData ? sapoData.variants.length : 0}`);
+    add(`Size Sapo tự nhận: ${sapoData ? `${sapoData.sizeResolved}/${sapoData.sizeTotal}` : '0/0'}`);
+    add(`Sản phẩm nguồn quét được: ${sourceResults.length}`);
+    add(`Mẫu/màu nguồn gom được: ${groups.length}`);
+    add(`Sản phẩm ghép hoàn chỉnh: ${matches.filter(m => m.complete).length}/${sapoData ? sapoData.products.length : 0}`);
+    add(`Biến thể sẵn sàng: ${readyVariantCount()}/${sapoData ? sapoData.variants.length : 0}`);
+    add(`Đủ điều kiện tạo file nhập: ${fullMatchReady() ? 'CÓ' : 'KHÔNG'}`);
+    add('');
+
+    add('2. CẢNH BÁO CẤU TRÚC FILE SAPO');
+    add(hr);
+    if (sapoData && Array.isArray(sapoData.issues) && sapoData.issues.length) {
+      sapoData.issues.forEach((issue, i) => add(`${i + 1}. ${lineValue(issue)}`));
+    } else add('Không có cảnh báo cấu trúc được ghi nhận.');
+    add('');
+
+    add('3. CHI TIẾT NGUỒN ĐÃ QUÉT');
+    add(hr);
+    if (!sourceResults.length) add('Chưa có dữ liệu quét nguồn.');
+    sourceResults.forEach((product, index) => {
+      add(`\n[Nguồn ${index + 1}/${sourceResults.length}]`);
+      add(`Tên: ${lineValue(product.parentName)}`);
+      add(`Parent ID: ${lineValue(product.parentId)}`);
+      add(`URL: ${lineValue(product.sourceUrl)}`);
+      add(`Số variant đọc được: ${Array.isArray(product.variants) ? product.variants.length : 0}`);
+      add(`Complete: ${lineValue(product.complete)}`);
+      add(`Confidence: ${lineValue(product.confidence)}`);
+      add(`Stop reason: ${lineValue(product.stopReason)}`);
+      add(`Request count: ${lineValue(product.requestCount)}`);
+      if (product.validation) add(`Validation: ${lineValue(product.validation)}`);
+      if (Array.isArray(product.errors) && product.errors.length) {
+        add('Lỗi nguồn:');
+        product.errors.forEach((error, i) => add(`  - ${i + 1}: ${lineValue(error)}`));
+      }
+      const variants = Array.isArray(product.variants) ? product.variants : [];
+      if (variants.length) {
+        add('Variants:');
+        variants.forEach((v, i) => {
+          add(`  ${i + 1}. id=${lineValue(v.id)} | parent=${lineValue(v.parentId)} | sku=${lineValue(v.sku)} | màu=${lineValue(v.color)} | size=${lineValue(v.size)} | tồn=${lineValue(v.available)} | tên=${lineValue(v.name)}`);
+        });
+      }
+    });
+    add('');
+
+    add('4. CHI TIẾT GHÉP SAPO ↔ NGUỒN');
+    add(hr);
+    if (!matches.length) add('Chưa có kết quả ghép.');
+    matches.forEach((m, index) => {
+      const p = m.sapoProduct || {};
+      add(`\n[Sapo ${index + 1}/${matches.length}]`);
+      add(`Id sản phẩm: ${lineValue(p.productId)}`);
+      add(`Tên: ${lineValue(p.name)}`);
+      add(`SKU gốc: ${lineValue(p.skuBase)}`);
+      add(`Matched: ${m.matched ? 'CÓ' : 'KHÔNG'} | Complete: ${m.complete ? 'CÓ' : 'KHÔNG'} | Cách ghép: ${lineValue(m.linkMethod)}`);
+      if (m.best) add(`Ứng viên tốt nhất: ${lineValue(m.best.parentName)} / ${lineValue(m.best.color)} | điểm=${Math.round(Number(m.best.score || 0) * 100)}% | parentId=${lineValue(m.best.parentId)}`);
+      else add('Ứng viên tốt nhất: KHÔNG CÓ');
+      if (m.second) add(`Ứng viên thứ 2: ${lineValue(m.second.parentName)} / ${lineValue(m.second.color)} | điểm=${Math.round(Number(m.second.score || 0) * 100)}%`);
+      add(`Khoảng cách điểm: ${Math.round(Number(m.margin || 0) * 100)}%`);
+      const variants = Array.isArray(p.variants) ? p.variants : [];
+      add(`Size Sapo: ${variants.map(v => `${lineValue(v.size)}[${lineValue(v.sku)}]`).join(', ') || '—'}`);
+      const vm = Array.isArray(m.variantMatches) ? m.variantMatches : [];
+      if (vm.length) {
+        add('Ghép từng size:');
+        vm.forEach((item, i) => {
+          const s = item.sapo || {}, src = item.source;
+          add(`  ${i + 1}. Sapo size=${lineValue(s.size)} | SKU=${lineValue(s.sku)} | Id phiên bản=${lineValue(s.variantId)} | ${src ? `Nguồn size=${lineValue(src.size)} | SKU=${lineValue(src.sku)} | tồn=${lineValue(src.available)} | màu=${lineValue(src.color)}` : `KHÔNG GHÉP ĐƯỢC | reason=${lineValue(item.reason)}`}`);
+        });
+      } else add('Ghép từng size: chưa có vì sản phẩm chưa ghép được với mẫu/màu nguồn.');
+    });
+    add('');
+
+    add('5. DANH SÁCH MẪU/MÀU NGUỒN TOOL ĐANG NHÌN THẤY');
+    add(hr);
+    if (!groups.length) add('Không có mẫu/màu nguồn.');
+    groups.forEach((g, i) => {
+      const sizes = (g.variants || []).map(v => `${lineValue(v.size)}=${lineValue(v.available)}`).join(', ');
+      add(`${i + 1}. ${lineValue(g.parentName)} / ${lineValue(g.color)} | parentId=${lineValue(g.parentId)} | size/tồn: ${sizes || '—'}`);
+    });
+    add('');
+    add('HẾT BÁO CÁO');
+    return '\uFEFF' + lines.join('\r\n');
+  }
+
+  function downloadErrorReport() {
+    try {
+      const text = buildErrorReport();
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const d = new Date();
+      const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+      a.href = url;
+      a.download = `DHL_STOCK_SYNC_LOI_${stamp}.txt`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      setStatus('Đã tải báo cáo lỗi TXT. Gửi nguyên file này cho mình để kiểm tra scanner và ghép tên/màu/size.', 'ok');
+    } catch (error) {
+      setStatus(`Không xuất được báo cáo lỗi: ${error.message || error}`, 'error');
+    }
+  }
+
   async function makeImport() {
     if (!sapoData || !templateBuffer) return;
     if (!fullMatchReady()) { setStatus('Chưa ghép đủ toàn bộ sản phẩm và size; tool chặn tạo file để tránh cập nhật thiếu.', 'error'); return; }
@@ -149,6 +282,7 @@
   $('sapoTemplate').addEventListener('change', e => loadTemplate(e.target.files && e.target.files[0]));
   $('scanHd').addEventListener('click', () => runSourceScan('DHL_SCAN_HD_2026'));
   $('scanCurrent').addEventListener('click', () => runSourceScan('DHL_SCAN_CURRENT'));
+  $('exportErrorReport').addEventListener('click', downloadErrorReport);
   $('makeImport').addEventListener('click', makeImport);
   $('filter').addEventListener('input', renderMatches);
 
