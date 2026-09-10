@@ -1,173 +1,133 @@
 (() => {
   'use strict';
+  const $ = id => document.getElementById(id);
+  const matcher = globalThis.DHLMatchCore;
+  const xlsx = globalThis.DHLXlsxLite;
+  if (!matcher || !xlsx) return;
 
-  const $ = (id) => document.getElementById(id);
-  let lastResults = [];
-  let flatRows = [];
+  let sapoData = null;
+  let templateBuffer = null;
+  let sourceResults = [];
+  let matches = [];
 
-  async function activeTab() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    return tab;
+  async function activeTab() { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); return tab; }
+  function setStatus(text, kind = '') { const el = $('statusBox'); el.textContent = text; el.classList.toggle('error', kind === 'error'); el.classList.toggle('ok', kind === 'ok'); }
+  function escapeHtml(text) { return String(text || '').replace(/[&<>\"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+  function sourceGroups() { return matcher.groupSourceVariants(sourceResults); }
+  function readyVariantCount() { return matches.reduce((n, m) => n + (m.complete ? m.variantMatches.length : 0), 0); }
+
+  function updateStats() {
+    $('sapoProductCount').textContent = sapoData ? sapoData.products.length : 0;
+    $('sapoVariantCount').textContent = sapoData ? sapoData.variants.length : 0;
+    $('sourceGroupCount').textContent = sourceGroups().length;
+    $('matchedCount').textContent = matches.filter(m => m.complete).length;
+    $('readyVariantCount').textContent = readyVariantCount();
+    $('makeImport').disabled = !(sapoData && templateBuffer && readyVariantCount() > 0);
   }
 
-  function setStatus(text, error = false) {
-    $('statusBox').textContent = text;
-    $('statusBox').classList.toggle('error', error);
-  }
-
-  function flatten(results) {
-    const list = Array.isArray(results) ? results : [results];
-    return list.flatMap((product) => (product.variants || []).map((variant) => ({
-      ...variant,
-      parentName: product.parentName || '',
-      confidence: product.confidence || 'low',
-      complete: product.complete === true,
-      stopReason: product.stopReason || '',
-    })));
-  }
-
-  function render() {
+  function renderMatches() {
     const q = $('filter').value.trim().toLowerCase();
-    const rows = flatRows.filter((row) => !q || `${row.sku} ${row.name} ${row.color} ${row.size}`.toLowerCase().includes(q));
-    $('resultBody').innerHTML = rows.map((row) => `
-      <tr class="${row.available <= 0 ? 'out' : ''}">
-        <td title="${escapeHtml(row.name)}">${escapeHtml(row.sku || '—')}</td>
-        <td>${escapeHtml(row.color || '—')}</td>
-        <td>${escapeHtml(row.size || '—')}</td>
-        <td>${Number(row.available)}</td>
-      </tr>`).join('');
+    const rows = matches.filter(m => !q || `${m.sapoProduct.name} ${m.best ? m.best.parentName : ''} ${m.best ? m.best.color : ''}`.toLowerCase().includes(q));
+    $('matchBody').innerHTML = rows.map(m => {
+      const best = m.best ? `${m.best.parentName} / ${m.best.color}` : '—';
+      const sizesOk = m.variantMatches.filter(x => x.source).length;
+      const totalSizes = m.sapoProduct.variants.length;
+      const score = m.best ? Math.round(m.best.score * 100) : 0;
+      const cls = m.complete ? 'ok-row' : 'warn-row';
+      const pill = m.complete ? '<span class="pill ok">OK</span>' : '<span class="pill warn">Cần kiểm tra</span>';
+      return `<tr class="${cls}"><td>${escapeHtml(m.sapoProduct.name)}</td><td>${escapeHtml(best)}</td><td class="score">${score}%</td><td>${sizesOk}/${totalSizes}</td><td>${pill}</td></tr>`;
+    }).join('');
   }
 
-  function escapeHtml(text) {
-    return String(text || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-  }
-
-  function productHasIssue(product) {
-    return Boolean(
-      (product.errors || []).length > 0 ||
-      product.complete !== true ||
-      (product.validation && product.validation.safeToSync === false)
-    );
-  }
-
-  function updateStats(results) {
-    const list = Array.isArray(results) ? results : [results];
-    flatRows = flatten(list);
-    const errorCount = list.reduce((n, product) => n + (productHasIssue(product) ? 1 : 0), 0);
-    $('productCount').textContent = list.length;
-    $('variantCount').textContent = flatRows.length;
-    $('outCount').textContent = flatRows.filter((v) => v.available <= 0).length;
-    $('errorCount').textContent = errorCount;
-    $('copyJson').disabled = !flatRows.length;
-    $('exportCsv').disabled = !flatRows.length;
-    render();
-  }
-
-  function scanSummary(results) {
-    const list = Array.isArray(results) ? results : [results];
-    const complete = list.filter((p) => p.complete === true).length;
-    const failed = list.length - complete;
-    const reasons = {};
-    for (const product of list) {
-      if (product.complete === true) continue;
-      const key = product.stopReason || ((product.errors || []).length ? 'error' : 'unknown');
-      reasons[key] = (reasons[key] || 0) + 1;
+  function recomputeMatches() {
+    matches = sapoData && sourceResults.length ? matcher.matchSapoProducts(sapoData.products, sourceResults) : [];
+    updateStats(); renderMatches();
+    if (matches.length) {
+      const ok = matches.filter(m => m.complete).length, ready = readyVariantCount();
+      if (ok === sapoData.products.length) setStatus(`Ghép đủ ${ok}/${sapoData.products.length} sản phẩm, ${ready}/${sapoData.variants.length} biến thể sẵn sàng ghi tồn.`, 'ok');
+      else setStatus(`Ghép chắc chắn ${ok}/${sapoData.products.length} sản phẩm. Dòng chưa chắc chắn sẽ KHÔNG được ghi vào file nhập.`, 'error');
     }
-    const reasonText = Object.entries(reasons).map(([key, value]) => `${key}: ${value}`).join(', ');
-    return { complete, failed, reasonText };
   }
 
-  async function send(type, extra = {}) {
-    const tab = await activeTab();
-    if (!tab || !tab.id || !String(tab.url || '').startsWith('https://si.aobongda.net/')) {
-      throw new Error('Hãy mở si.aobongda.net trước khi quét.');
-    }
-    return chrome.tabs.sendMessage(tab.id, { type, ...extra });
-  }
-
-  async function runScan(type, extra = {}) {
-    $('scanCurrent').disabled = true;
-    $('scanBatch').disabled = true;
-    setStatus('Đang quét... giữ tab nguồn mở.');
+  async function loadExport(file) {
+    if (!file) return;
+    setStatus('Đang đọc file xuất Sapo...');
     try {
-      const response = await send(type, extra);
-      if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu');
-      lastResults = Array.isArray(response.result) ? response.result : [response.result];
-      updateStats(lastResults);
-      const summary = scanSummary(lastResults);
-      const suffix = summary.failed
-        ? ` Có ${summary.failed} sản phẩm chưa xác nhận đọc đủ${summary.reasonText ? ` (${summary.reasonText})` : ''}.`
-        : ' Tất cả sản phẩm đã quay đủ một vòng variant.';
-      setStatus(`Quét xong ${lastResults.length} sản phẩm, ${flatRows.length} biến thể.${suffix}`, summary.failed > 0);
-      await chrome.storage.local.set({ dhlLastScan: lastResults, dhlLastScanAt: Date.now() });
-    } catch (error) {
-      setStatus(error.message || String(error), true);
-    } finally {
-      $('scanCurrent').disabled = false;
-      $('scanBatch').disabled = false;
-    }
+      sapoData = await xlsx.parseSapoExport(await file.arrayBuffer());
+      $('exportState').textContent = `${sapoData.products.length} sản phẩm • ${sapoData.variants.length} biến thể`;
+      recomputeMatches();
+      if (!sourceResults.length) setStatus(`Đã đọc ${sapoData.products.length} sản phẩm. Bấm QUÉT KHO HD 2026.`, 'ok');
+    } catch (error) { sapoData = null; $('exportState').textContent = 'File không hợp lệ.'; updateStats(); setStatus(error.message || String(error), 'error'); }
   }
 
-  function csvEscape(value) {
-    const text = String(value == null ? '' : value);
-    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  async function loadTemplate(file) {
+    if (!file) return;
+    setStatus('Đang kiểm tra file mẫu nhập...');
+    try {
+      const buffer = await file.arrayBuffer(), book = await xlsx.readFirstSheet(buffer), h = xlsx.headerMap(book.rows[0] || []), inv = Object.keys(h).find(k => /Tồn kho/i.test(k));
+      if (!inv || h['Id phiên bản'] == null) throw new Error('Không đúng mẫu nhập Sapo: thiếu Tồn kho hoặc Id phiên bản.');
+      templateBuffer = buffer;
+      $('templateState').textContent = `Đúng mẫu • cột tồn: ${inv}`;
+      updateStats(); setStatus('File mẫu nhập hợp lệ.', 'ok');
+    } catch (error) { templateBuffer = null; $('templateState').textContent = 'Mẫu không hợp lệ.'; updateStats(); setStatus(error.message || String(error), 'error'); }
   }
 
-  function exportCsv() {
-    const header = ['parentId', 'product', 'variantId', 'sku', 'color', 'size', 'available', 'price', 'confidence', 'complete'];
-    const lines = [header.join(',')];
-    for (const row of flatRows) {
-      lines.push([
-        row.parentId,
-        row.parentName,
-        row.id,
-        row.sku,
-        row.color,
-        row.size,
-        row.available,
-        row.price,
-        row.confidence,
-        row.complete,
-      ].map(csvEscape).join(','));
-    }
-    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dhl-stock-scan-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setStatus(`Đã xuất ${flatRows.length} biến thể ra CSV.`);
+  async function send(type) {
+    const tab = await activeTab();
+    if (!tab || !tab.id || !String(tab.url || '').startsWith('https://si.aobongda.net/')) throw new Error('Hãy mở si.aobongda.net và đăng nhập trước.');
+    return chrome.tabs.sendMessage(tab.id, { type });
   }
 
-  $('scanCurrent').addEventListener('click', () => runScan('DHL_SCAN_CURRENT'));
-  $('scanBatch').addEventListener('click', () => runScan('DHL_SCAN_BATCH', { limit: Number($('batchLimit').value) || 10 }));
-  $('filter').addEventListener('input', render);
-  $('exportCsv').addEventListener('click', exportCsv);
-  $('copyJson').addEventListener('click', async () => {
-    await navigator.clipboard.writeText(JSON.stringify(lastResults, null, 2));
-    setStatus('Đã copy JSON kết quả quét.');
-  });
+  async function runSourceScan(type) {
+    $('scanHd').disabled = true; $('scanCurrent').disabled = true; $('makeImport').disabled = true;
+    setStatus(type === 'DHL_SCAN_HD_2026' ? 'Đang quét danh mục HD 2026... giữ tab nguồn mở.' : 'Đang test sản phẩm hiện tại...');
+    try {
+      const response = await send(type);
+      if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu nguồn');
+      sourceResults = Array.isArray(response.result) ? response.result : [response.result];
+      await chrome.storage.local.set({ dhlLastSourceResults: sourceResults, dhlLastSourceAt: Date.now() });
+      recomputeMatches();
+      if (!sapoData) setStatus(`Đã quét ${sourceResults.length} sản phẩm nguồn. Chọn file xuất Sapo để ghép.`, 'ok');
+    } catch (error) { setStatus(error.message || String(error), 'error'); }
+    finally { $('scanHd').disabled = false; $('scanCurrent').disabled = false; updateStats(); }
+  }
 
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message && message.type === 'DHL_STOCK_PROGRESS') {
-      const d = message.data || {};
-      if (d.stage === 'product') setStatus(`Đang quét sản phẩm ${d.productIndex}/${d.productTotal}...`);
-      else if (d.unique != null) setStatus(`Đang đọc biến thể... đã thấy ${d.unique} SKU.`);
-    }
+  async function makeImport() {
+    if (!sapoData || !templateBuffer) return;
+    const inventory = Object.create(null);
+    for (const m of matches) if (m.complete) for (const vm of m.variantMatches) inventory[String(vm.sapo.variantId)] = Number(vm.source.available);
+    const count = Object.keys(inventory).length;
+    if (!count) { setStatus('Chưa có biến thể nào ghép chắc chắn.', 'error'); return; }
+    try {
+      setStatus(`Đang tạo file nhập cho ${count} biến thể...`);
+      const out = await xlsx.buildSapoImport(templateBuffer, sapoData, inventory);
+      const blob = new Blob([out.bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      const d = new Date(), stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      a.href = url; a.download = `SAPO_NHAP_TON_KHO_${stamp}.xlsx`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1500);
+      setStatus(`Đã tạo file nhập ${out.rows} biến thể. Import vào Sapo và chọn ghi đè tồn kho.`, 'ok');
+    } catch (error) { setStatus(error.message || String(error), 'error'); }
+  }
+
+  $('sapoExport').addEventListener('change', e => loadExport(e.target.files && e.target.files[0]));
+  $('sapoTemplate').addEventListener('change', e => loadTemplate(e.target.files && e.target.files[0]));
+  $('scanHd').addEventListener('click', () => runSourceScan('DHL_SCAN_HD_2026'));
+  $('scanCurrent').addEventListener('click', () => runSourceScan('DHL_SCAN_CURRENT'));
+  $('makeImport').addEventListener('click', makeImport);
+  $('filter').addEventListener('input', renderMatches);
+
+  chrome.runtime.onMessage.addListener(message => {
+    if (!message || message.type !== 'DHL_STOCK_PROGRESS') return;
+    const d = message.data || {};
+    if (d.stage === 'discovered') setStatus(`Tìm thấy ${d.productTotal} sản phẩm ĐT 2026 HD. Bắt đầu đọc màu/size/tồn...`);
+    else if (d.stage === 'product') setStatus(`Đang quét ${d.productIndex}/${d.productTotal}: ${d.descriptor && d.descriptor.title ? d.descriptor.title : ''}`);
+    else if (d.unique != null) setStatus(`Đang đọc biến thể... đã thấy ${d.unique} SKU ở sản phẩm hiện tại.`);
   });
 
   (async () => {
-    const tab = await activeTab();
-    const ok = tab && String(tab.url || '').startsWith('https://si.aobongda.net/');
-    $('sourceState').textContent = ok ? 'Nguồn OK' : 'Mở web nguồn';
-    if (ok) $('sourceState').style.background = '#eaf8ef';
-    const stored = await chrome.storage.local.get(['dhlLastScan', 'dhlLastScanAt']);
-    if (stored.dhlLastScan) {
-      lastResults = stored.dhlLastScan;
-      updateStats(lastResults);
-      const time = stored.dhlLastScanAt ? new Date(stored.dhlLastScanAt).toLocaleString('vi-VN') : '';
-      setStatus(`Đã nạp lần quét gần nhất${time ? `: ${time}` : ''}.`);
-    }
-  })().catch((error) => setStatus(error.message, true));
+    const tab = await activeTab(), ok = tab && String(tab.url || '').startsWith('https://si.aobongda.net/');
+    $('sourceState').textContent = ok ? 'Nguồn OK' : 'Mở web nguồn'; if (ok) $('sourceState').style.background = '#eaf8ef';
+    const stored = await chrome.storage.local.get(['dhlLastSourceResults','dhlLastSourceAt']);
+    if (stored.dhlLastSourceResults) { sourceResults = stored.dhlLastSourceResults; updateStats(); const t = stored.dhlLastSourceAt ? new Date(stored.dhlLastSourceAt).toLocaleString('vi-VN') : ''; setStatus(`Đã nạp lần quét nguồn gần nhất${t ? `: ${t}` : ''}. Chọn file Sapo hoặc quét lại.`); }
+    else updateStats();
+  })().catch(error => setStatus(error.message || String(error), 'error'));
 })();
