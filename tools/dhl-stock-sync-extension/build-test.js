@@ -20,9 +20,9 @@ for(const file of ['background.js','stock-core.js','dom-stock-parser.js','conten
 const content=fs.readFileSync(path.join(dir,'content.js'),'utf8');
 assert.ok(content.includes('DHL_DISCOVER_HD_2026'));
 assert.ok(content.includes('DHL_SCAN_PAGE_DOM'));
-assert.ok(content.includes('ensureStockUi'));
-assert.ok(content.includes('colorControls'));
-assert.ok(content.includes('readStockRows'));
+assert.ok(content.includes('ensureStockRoot'));
+assert.ok(content.includes('controls(root)'));
+assert.ok(content.includes('readRows'));
 assert.ok(content.includes('dom-popup'));
 assert.ok(content.includes('/product/child?psId='),'Giữ 1 request API chỉ để lấy màu mặc định dự phòng');
 assert.ok(!content.includes('collectForProduct'),'Không được quay lại vòng lặp child API cũ');
