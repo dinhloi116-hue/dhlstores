@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "minimum_chrome_version": "116",
   "description": "Quét tồn kho si.aobongda.net và tạo file nhập Sapo chỉ thay đổi tồn kho.",
-  "permissions": ["storage", "activeTab", "tabs", "sidePanel"],
+  "permissions": ["storage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {
     "service_worker": "background.js"
