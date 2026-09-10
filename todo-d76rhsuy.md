@@ -1014,4 +1014,4 @@
 - [x] Bổ sung thao tác xóa SKU/biến thể chỉ cho owner, có xác nhận rõ ràng và bảo toàn lịch sử đơn hàng.
 - [x] Cập nhật cache/UI sau khi xóa, xử lý trường hợp SKU cuối cùng và lỗi thao tác.
 - [x] Viết hồi quy Vitest, chạy test mục tiêu, TypeScript, build và kiểm tra responsive.
-- [ ] Lưu checkpoint, phát hành website và push thay đổi lên GitHub `main`.
+- [x] Lưu checkpoint, phát hành website và push thay đổi lên GitHub `main`.
