@@ -9,6 +9,22 @@
     return core.normalizeText(doc.title).replace(/\s*[-|].*$/, '');
   }
 
+  function sourceParentFromVariantName(name, fallback = '') {
+    const text = core.normalizeText(name);
+    const parts = text.split(/\s+-\s+/).map(x => x.trim()).filter(Boolean);
+    if (parts.length >= 3 && /^(S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|2XL|3XL|4XL|5XL)$/i.test(parts[parts.length - 1])) {
+      return parts.slice(0, -2).join(' - ');
+    }
+    return core.normalizeText(fallback);
+  }
+
+  function finalizeParentName(result, preferred) {
+    const first = result && result.variants && result.variants[0];
+    const derived = first ? sourceParentFromVariantName(first.name, preferred) : '';
+    const parentName = core.normalizeText(preferred) || derived;
+    return { ...result, parentName: parentName || derived || result.parentName || '' };
+  }
+
   function findProductLinksInDocument(doc, baseUrl, limit = 50, predicate = null) {
     const base = new URL(baseUrl, location.href), seen = new Map();
     for (const a of doc.querySelectorAll('a[href]')) {
@@ -52,8 +68,9 @@
   async function scanCurrentProduct(sendProgress) {
     const parentId = core.extractParentIdFromHtml(document.documentElement.innerHTML, core.extractProductId(location.href));
     if (!parentId) throw new Error('Không xác định được ID sản phẩm cha');
-    const parentName = productTitleFromDocument();
-    const result = await core.collectVariants({ parentId, parentName, requestChild, maxRequests: 80, delayMs: 160, maxDuplicateStreak: 3, onProgress: sendProgress });
+    const preferred = productTitleFromDocument();
+    let result = await core.collectVariants({ parentId, parentName: preferred, requestChild, maxRequests: 80, delayMs: 160, maxDuplicateStreak: 3, onProgress: sendProgress });
+    result = finalizeParentName(result, preferred);
     return { ...result, validation: core.validateScanResult(result) };
   }
 
@@ -63,8 +80,10 @@
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const parentId = core.extractParentIdFromHtml(html, descriptor.id);
-    const parentName = productTitleFromDocument(doc) || descriptor.title || `#${parentId}`;
-    const result = await core.collectVariants({ parentId, parentName, requestChild, maxRequests: 100, delayMs: 150, maxDuplicateStreak: 3, onProgress: sendProgress });
+    // Tên ở trang danh mục là móc nối tốt hơn H1 của trang chi tiết (H1 có thể chỉ là tên khối/danh mục).
+    const preferred = core.normalizeText(descriptor.title) || productTitleFromDocument(doc) || `#${parentId}`;
+    let result = await core.collectVariants({ parentId, parentName: preferred, requestChild, maxRequests: 100, delayMs: 150, maxDuplicateStreak: 3, onProgress: sendProgress });
+    result = finalizeParentName(result, preferred);
     return { ...result, validation: core.validateScanResult(result), sourceUrl: descriptor.url };
   }
 
