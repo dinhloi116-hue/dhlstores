@@ -1,0 +1,48 @@
+name: DHL Stock Sync Extension
+
+on:
+  push:
+    branches:
+      - feature/dhl-stock-sync-extension
+    paths:
+      - 'tools/dhl-stock-sync-extension/**'
+      - '.github/workflows/dhl-stock-sync-extension.yml'
+  pull_request:
+    paths:
+      - 'tools/dhl-stock-sync-extension/**'
+      - '.github/workflows/dhl-stock-sync-extension.yml'
+  workflow_dispatch:
+
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/dhl-stock-sync-extension
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test extension
+        run: npm test
+
+      - name: Package Chrome extension
+        run: |
+          rm -rf dist
+          mkdir -p dist/dhl-stock-sync-extension
+          cp manifest.json stock-core.js content.js popup.html popup.css popup.js dist/dhl-stock-sync-extension/
+          cd dist
+          zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dhl-stock-sync-extension
+          path: tools/dhl-stock-sync-extension/dist/dhl-stock-sync-extension.zip
+          retention-days: 14
