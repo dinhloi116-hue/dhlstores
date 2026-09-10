@@ -5,10 +5,11 @@ const dir = __dirname;
 
 const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, '0.4.0');
+assert.strictEqual(manifest.version, '0.5.0');
 assert.ok(manifest.host_permissions.includes('https://si.aobongda.net/*'));
 assert.ok(!manifest.host_permissions.some(x => /sapo/i.test(x)), 'Extension không cần quyền truy cập Sapo trực tiếp');
 assert.ok(manifest.permissions.includes('sidePanel'), 'Thiếu quyền sidePanel');
+assert.ok(manifest.permissions.includes('scripting'), 'Thiếu quyền scripting để tự nối lại tab nguồn');
 assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.strictEqual(manifest.background.service_worker, 'background.js');
 assert.ok(!manifest.action.default_popup, 'Không dùng popup vì click ra ngoài sẽ tự đóng');
@@ -40,6 +41,8 @@ const popupJs = fs.readFileSync(path.join(dir, 'popup.js'), 'utf8');
 assert.ok(popupJs.includes('parseSapoExport'));
 assert.ok(popupJs.includes('matchSapoProducts'));
 assert.ok(popupJs.includes('buildSapoImport'));
+assert.ok(popupJs.includes('chrome.scripting.executeScript'));
+assert.ok(popupJs.includes('Could not establish connection'));
 
 const preserve = fs.readFileSync(path.join(dir, 'xlsx-preserve.js'), 'utf8');
 for (const field of ['Tên sản phẩm*','Mã SKU','Ảnh đại diện','Ảnh phiên bản','Giá','Giá so sánh','Giá vốn','Id phiên bản']) {
@@ -50,6 +53,7 @@ assert.ok(preserve.includes('chưa ghép đủ size'));
 console.log('BUILD PASS', {
   manifest: manifest.version,
   sidePanel: true,
+  autoReconnect: true,
   stockOnlyImport: true,
   sourceHost: manifest.host_permissions[0]
 });
