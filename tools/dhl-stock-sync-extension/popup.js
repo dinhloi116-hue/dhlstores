@@ -72,10 +72,32 @@
     } catch (error) { templateBuffer = null; $('templateState').textContent = 'Mẫu không hợp lệ.'; updateStats(); setStatus(error.message || String(error), 'error'); }
   }
 
+  function noReceiver(error) {
+    const text = String(error && error.message ? error.message : error || '');
+    return /Receiving end does not exist|Could not establish connection/i.test(text);
+  }
+
+  async function injectScanner(tabId) {
+    setStatus('Đang kết nối lại với trang nguồn...');
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['stock-core.js'] });
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+    await new Promise(resolve => setTimeout(resolve, 120));
+  }
+
   async function send(type) {
     const tab = await activeTab();
     if (!tab || !tab.id || !String(tab.url || '').startsWith('https://si.aobongda.net/')) throw new Error('Hãy mở si.aobongda.net và đăng nhập trước.');
-    return chrome.tabs.sendMessage(tab.id, { type });
+    try {
+      return await chrome.tabs.sendMessage(tab.id, { type });
+    } catch (error) {
+      if (!noReceiver(error)) throw error;
+      await injectScanner(tab.id);
+      try {
+        return await chrome.tabs.sendMessage(tab.id, { type });
+      } catch (retryError) {
+        throw new Error(`Không kết nối được với trang nguồn sau khi tự kết nối lại. Hãy F5 trang si.aobongda.net rồi thử lại. (${retryError.message || retryError})`);
+      }
+    }
   }
 
   async function runSourceScan(type) {
@@ -104,7 +126,7 @@
       const blob = new Blob([out.bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), url = URL.createObjectURL(blob), a = document.createElement('a');
       const d = new Date(), stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       a.href = url; a.download = `SAPO_NHAP_TON_KHO_${stamp}.xlsx`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1500);
-      setStatus(`Đã tạo file nhập ${out.rows} biến thể. Import vào Sapo và chọn ghi đè tồn kho.`, 'ok');
+      setStatus(`Đã tạo file nhập ${out.rows} biến thể. File chỉ lấy tồn mới; tên, ảnh, giá, SKU và Id phiên bản được giữ theo file xuất Sapo.`, 'ok');
     } catch (error) { setStatus(error.message || String(error), 'error'); }
   }
 
