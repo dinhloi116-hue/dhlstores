@@ -5,7 +5,7 @@ const dir = __dirname;
 
 const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, '0.6.0');
+assert.strictEqual(manifest.version, '0.7.0');
 assert.ok(manifest.host_permissions.includes('https://si.aobongda.net/*'));
 assert.ok(!manifest.host_permissions.some(x => /sapo/i.test(x)), 'Extension không cần quyền truy cập Sapo trực tiếp');
 assert.ok(manifest.permissions.includes('sidePanel'), 'Thiếu quyền sidePanel');
@@ -22,6 +22,8 @@ assert.ok(popup.includes('Chọn file xuất Sapo'));
 assert.ok(popup.includes('Chọn file mẫu nhập Sapo'));
 assert.ok(popup.includes('QUÉT KHO HD 2026'));
 assert.ok(popup.includes('TẠO FILE NHẬP SAPO'));
+assert.ok(popup.includes('XUẤT BÁO CÁO LỖI (.TXT)'));
+assert.ok(popup.includes('exportErrorReport'));
 assert.ok(popup.includes('CHỈ GHI ĐÈ TỒN KHO'));
 assert.ok(popup.includes('match-core.js'));
 assert.ok(popup.includes('xlsx-lite.js'));
@@ -47,6 +49,12 @@ assert.ok(popupJs.includes('buildScanHints'));
 assert.ok(popupJs.includes('fullMatchReady'));
 assert.ok(popupJs.includes('chrome.scripting.executeScript'));
 assert.ok(popupJs.includes('Could not establish connection'));
+assert.ok(popupJs.includes('buildErrorReport'));
+assert.ok(popupJs.includes('downloadErrorReport'));
+assert.ok(popupJs.includes('DHL_STOCK_SYNC_LOI_'));
+assert.ok(popupJs.includes('CHI TIẾT NGUỒN ĐÃ QUÉT'));
+assert.ok(popupJs.includes('CHI TIẾT GHÉP SAPO ↔ NGUỒN'));
+assert.ok(popupJs.includes('Phiên bản tool: 0.7.0'));
 
 const xlsx = fs.readFileSync(path.join(dir, 'xlsx-lite.js'), 'utf8');
 assert.ok(xlsx.includes('detectSizeDimension'));
@@ -71,6 +79,7 @@ console.log('BUILD PASS', {
   autoReconnect: true,
   fileDrivenLinks: true,
   dynamicSize: true,
+  txtDiagnostics: true,
   stockOnlyImport: true,
   sourceHost: manifest.host_permissions[0]
 });
