@@ -35,6 +35,10 @@
     return String(value || '').replace(/\s+/g, ' ').trim();
   }
 
+  function normalizeSku(value) {
+    return normalizeText(value).toUpperCase();
+  }
+
   function parseVariantName(fullName, parentName) {
     const full = normalizeText(fullName);
     const parent = normalizeText(parentName);
@@ -58,6 +62,7 @@
       id,
       parentId: Number(data.parentId || parentId) || Number(parentId) || null,
       sku: normalizeText(data.code),
+      skuKey: normalizeSku(data.code),
       name: normalizeText(data.name),
       color: parsed.color,
       size: parsed.size,
@@ -80,6 +85,7 @@
     if (!parentId) throw new Error('Thiếu parentId');
     if (typeof requestChild !== 'function') throw new Error('Thiếu requestChild');
 
+    const expectedParentId = Number(parentId);
     const byId = new Map();
     const errors = [];
     let duplicateStreak = 0;
@@ -91,21 +97,37 @@
       requestCount = index + 1;
       let payload;
       try {
-        payload = await requestChild(parentId, index);
+        payload = await requestChild(expectedParentId, index);
       } catch (error) {
         errors.push({ index, message: error && error.message ? error.message : String(error) });
-        if (errors.length >= 3) { stopReason = 'request-errors'; break; }
+        if (errors.length >= 3) {
+          stopReason = 'request-errors';
+          break;
+        }
         await sleep(delayMs);
         continue;
       }
 
       const raw = payload && payload.data ? payload.data : payload;
-      const variant = normalizeVariant(raw, parentId, parentName);
+      const variant = normalizeVariant(raw, expectedParentId, parentName);
       if (!variant) {
         errors.push({ index, message: 'Phản hồi không có variant hợp lệ' });
-        if (errors.length >= 3) { stopReason = 'invalid-responses'; break; }
+        if (errors.length >= 3) {
+          stopReason = 'invalid-responses';
+          break;
+        }
         await sleep(delayMs);
         continue;
+      }
+
+      if (variant.parentId && variant.parentId !== expectedParentId) {
+        errors.push({
+          index,
+          message: `Nguồn trả sai parentId: chờ ${expectedParentId}, nhận ${variant.parentId}`,
+          variantId: variant.id,
+        });
+        stopReason = 'parent-mismatch';
+        break;
       }
 
       if (firstSeenId == null) firstSeenId = variant.id;
@@ -120,28 +142,35 @@
         onProgress({ index: index + 1, unique: byId.size, variant, existed });
       }
 
-      // The source site appears to cycle through child variants for one parent.
-      // Stop when it loops back or when duplicates repeat several times.
-      if (existed && variant.id === firstSeenId && byId.size > 1) { stopReason = 'cycle'; break; }
-      if (duplicateStreak >= maxDuplicateStreak) { stopReason = 'duplicate-streak'; break; }
+      // Web nguồn đang trả lần lượt từng child variant khi gọi cùng parentId.
+      // Chỉ coi là đọc đủ khi đã thấy >1 variant và quay lại variant đầu tiên.
+      if (existed && variant.id === firstSeenId && byId.size > 1) {
+        stopReason = 'cycle';
+        break;
+      }
+      if (duplicateStreak >= maxDuplicateStreak) {
+        stopReason = 'duplicate-streak';
+        break;
+      }
       await sleep(delayMs);
     }
 
-    const confidence = stopReason === 'cycle' && byId.size > 1
+    const confidence = stopReason === 'cycle' && byId.size > 1 && errors.length === 0
       ? 'high'
-      : byId.size > 1 && errors.length < 3
+      : byId.size > 0 && errors.length < 3
         ? 'medium'
         : 'low';
 
     return {
-      parentId: Number(parentId),
+      parentId: expectedParentId,
       parentName: normalizeText(parentName),
       variants: [...byId.values()],
       errors,
       requestCount,
       stopReason,
       confidence,
-      complete: confidence !== 'low',
+      // Với đồng bộ tồn thật, chỉ high confidence mới được coi là quét hoàn chỉnh.
+      complete: confidence === 'high',
     };
   }
 
@@ -149,15 +178,32 @@
     const issues = [];
     const variants = (result && result.variants) || [];
     const skuMap = new Map();
+    const expectedParentId = Number(result && result.parentId) || null;
+
+    if (!variants.length) {
+      issues.push({ type: 'no-variants', message: 'Không đọc được biến thể nào' });
+    }
 
     for (const variant of variants) {
+      if (expectedParentId && Number(variant.parentId) !== expectedParentId) {
+        issues.push({
+          type: 'parent-mismatch',
+          variantId: variant.id,
+          message: `Variant ${variant.id} không thuộc parent ${expectedParentId}`,
+        });
+      }
       if (!variant.sku) {
         issues.push({ type: 'missing-sku', variantId: variant.id, message: 'Biến thể thiếu SKU/code' });
         continue;
       }
-      const key = variant.sku.toLowerCase();
+      const key = normalizeSku(variant.sku);
       if (skuMap.has(key) && skuMap.get(key) !== variant.id) {
-        issues.push({ type: 'duplicate-sku', sku: variant.sku, ids: [skuMap.get(key), variant.id], message: `SKU trùng: ${variant.sku}` });
+        issues.push({
+          type: 'duplicate-sku',
+          sku: variant.sku,
+          ids: [skuMap.get(key), variant.id],
+          message: `SKU trùng: ${variant.sku}`,
+        });
       } else {
         skuMap.set(key, variant.id);
       }
@@ -166,8 +212,13 @@
       }
     }
 
-    if (!result || result.confidence === 'low') {
-      issues.push({ type: 'low-confidence', message: 'Chưa xác nhận đã đọc đủ biến thể của sản phẩm' });
+    if (!result || result.confidence !== 'high' || result.complete !== true) {
+      issues.push({
+        type: 'not-complete',
+        confidence: result && result.confidence,
+        stopReason: result && result.stopReason,
+        message: 'Chưa xác nhận đã đọc đủ toàn bộ biến thể của sản phẩm',
+      });
     }
     if (result && Array.isArray(result.errors) && result.errors.length) {
       issues.push({ type: 'source-errors', count: result.errors.length, message: `Có ${result.errors.length} lỗi đọc nguồn` });
@@ -179,14 +230,25 @@
     };
   }
 
+  function buildSapoSkuIndex(sapoBySku) {
+    const index = {};
+    if (!sapoBySku) return index;
+    for (const [sku, value] of Object.entries(sapoBySku)) {
+      index[normalizeSku(sku)] = value;
+    }
+    return index;
+  }
+
   function diffInventory(sourceVariants, sapoBySku) {
     const rows = [];
+    const sapoIndex = buildSapoSkuIndex(sapoBySku);
     for (const variant of sourceVariants || []) {
-      const sapo = sapoBySku && variant.sku ? sapoBySku[variant.sku] : null;
+      const sapo = variant.sku ? sapoIndex[normalizeSku(variant.sku)] : null;
+      const sapoInventory = sapo && Number.isFinite(Number(sapo.inventory)) ? Number(sapo.inventory) : null;
       rows.push({
         ...variant,
-        sapoInventory: sapo && Number.isFinite(Number(sapo.inventory)) ? Number(sapo.inventory) : null,
-        delta: sapo && Number.isFinite(Number(sapo.inventory)) ? variant.available - Number(sapo.inventory) : null,
+        sapoInventory,
+        delta: sapoInventory == null ? null : variant.available - sapoInventory,
         matched: Boolean(sapo),
       });
     }
@@ -217,10 +279,12 @@
     extractProductId,
     extractParentIdFromHtml,
     normalizeText,
+    normalizeSku,
     parseVariantName,
     normalizeVariant,
     collectVariants,
     validateScanResult,
+    buildSapoSkuIndex,
     diffInventory,
     summarize,
   };
