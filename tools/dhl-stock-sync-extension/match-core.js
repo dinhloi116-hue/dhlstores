@@ -11,7 +11,7 @@
     ['duc','germany'],['anh','england'],['bi','belgium'],['y','italy'],['viet nam','vietnam'],['han quoc','korea'],['my','usa']
   ];
   const COLOR_WORDS=new Set(['do','trang','xanh','vang','den','be','sua','reu','cam','ngoc','than','soc','siu','la','duong','dam','nhat','hong','tim','ghi','xam']);
-  const STOP=new Set(['bo','quan','ao','bong','da','vai','thun','me','han','quoc','nhan','in','ten','so','dt','clb','hd','wc','world','cup','mau','san','nha','khach','tap','2026','26','2025','25','2024','24']);
+  const STOP=new Set(['bo','quan','ao','bong','da','vai','thun','me','han','quoc','nhan','in','ten','so','dt','clb','hd','wc','world','cup','mau','san','nha','khach','2026','26','2025','25','2024','24']);
 
   function plain(v){
     return String(v||'').toLowerCase().replace(/đ/g,'d').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
@@ -110,13 +110,15 @@
     const st=teamOf(sText),tt=teamOf(tText);
     if(st&&tt&&st!==tt)return 0;
     let score=0;
-    if(st&&tt&&st===tt)score+=.58;
+    if(st&&tt&&st===tt)score+=.54;
     else if(st||tt)score+=.04;
     const sy=yearOf(sText),ty=yearOf(tText);
     if(sy&&ty)score+=sy===ty?.08:-.10;
+    const sm=modeOf(sText),tm=modeOf(tText);
+    if(sm&&tm)score+=sm===tm?.12:-.08;
     const cs=colorScore(colorsOf(sText),colorsOf(`${sourceColor||''} ${tText}`));
-    score+=.27*cs;
-    score+=.07*jaccard(contentTokens(sText),contentTokens(tText));
+    score+=.22*cs;
+    score+=.08*jaccard(contentTokens(sText),contentTokens(tText));
     return Math.max(0,Math.min(1,score));
   }
 
@@ -163,7 +165,7 @@
     return result;
   }
 
-  function matchSapoProducts(sapoProducts,sourceResults,{minScore=.55}={}){
+  function matchSapoProducts(sapoProducts,sourceResults,{minScore=.52}={}){
     const products=sapoProducts||[],groups=groupSourceVariants(sourceResults),pairs=[];
     for(let pi=0;pi<products.length;pi++){
       const p=products[pi],base=productSkuBase(p);
