@@ -14,21 +14,31 @@
     'Giá',
     'Giá so sánh',
     'Giá vốn',
-    'Mô tả sản phẩm',
-    'Mô tả ngắn',
-    'Nhãn hiệu',
-    'Loại sản phẩm',
-    'Tags',
-    'Thuộc tính 1',
-    'Giá trị thuộc tính 1',
-    'Thuộc tính 2',
-    'Giá trị thuộc tính 2',
-    'Thuộc tính 3',
-    'Giá trị thuộc tính 3',
     'Id phiên bản'
   ];
 
+  const INHERIT_HEADERS = new Set([
+    'Đường dẫn/Alias',
+    'Tên sản phẩm*',
+    'Mô tả sản phẩm',
+    'Nhãn hiệu',
+    'Loại sản phẩm',
+    'Nhóm ngành nghề tính thuế GTGT, TNCN',
+    'Tags',
+    'Yêu cầu vận chuyển',
+    'Thuộc tính 1',
+    'Thuộc tính 2',
+    'Thuộc tính 3',
+    'Áp dụng thuế',
+    'Đơn vị tính',
+    'Mô tả ngắn',
+    'Quản lý kho',
+    'Đơn vị khối lượng',
+    'Cho phép tiếp tục mua khi hết hàng'
+  ]);
+
   const encoder = typeof TextEncoder !== 'undefined' ? new TextEncoder() : null;
+
   function encode(text) {
     if (encoder) return encoder.encode(String(text));
     return new Uint8Array(Buffer.from(String(text), 'utf8'));
@@ -53,6 +63,10 @@
     return `<c r="${ref}" t="inlineStr"><is><t${preserve}>${xmlEscape(text)}</t></is></c>`;
   }
 
+  function isBlank(value) {
+    return value == null || value === '';
+  }
+
   function sameValue(a, b) {
     return String(a == null ? '' : a) === String(b == null ? '' : b);
   }
@@ -61,81 +75,98 @@
     return Object.keys(headerMap).find((key) => /_Tồn kho$/i.test(key) || /Tồn kho/i.test(key));
   }
 
+  function productMap(sapoExport) {
+    const map = new Map();
+    for (const product of sapoExport.products || []) map.set(String(product.productId), product);
+    return map;
+  }
+
+  function valueFromExport(header, variant, firstVariant, exportHeaderMap) {
+    const col = exportHeaderMap[header];
+    if (col == null) return '';
+    const current = variant.raw ? variant.raw[col] : '';
+    if (!isBlank(current)) return current;
+    if (INHERIT_HEADERS.has(header) && firstVariant && firstVariant.raw) {
+      const inherited = firstVariant.raw[col];
+      if (!isBlank(inherited)) return inherited;
+    }
+    return '';
+  }
+
   async function buildSapoImportPreserving(templateBuffer, sapoExport, inventoryByVariantId) {
     const book = await base.readFirstSheet(templateBuffer);
     const templateRows = book.rows || [];
     const templateHeaders = templateRows[0] || [];
-    const th = base.headerMap(templateHeaders);
-    const invHeader = resolveInventoryHeader(th);
-    if (!invHeader) throw new Error('Mẫu nhập Sapo không có cột Tồn kho');
-    if (th['Id phiên bản'] == null) throw new Error('Mẫu nhập Sapo thiếu cột Id phiên bản');
+    const templateMap = base.headerMap(templateHeaders);
+    const inventoryHeader = resolveInventoryHeader(templateMap);
+    if (!inventoryHeader) throw new Error('Mẫu nhập Sapo không có cột Tồn kho');
+    if (templateMap['Id phiên bản'] == null) throw new Error('Mẫu nhập Sapo thiếu cột Id phiên bản');
 
     const exportRows = sapoExport.rows || [];
-    const eh = sapoExport.headerMap || base.headerMap(exportRows[0] || []);
-    const aliasCol = eh['Đường dẫn/Alias'];
-    const productIdCol = eh['Id sản phẩm'];
-    const variantIdCol = eh['Id phiên bản'];
-    if (variantIdCol == null) throw new Error('File xuất Sapo thiếu Id phiên bản');
+    const exportMap = sapoExport.headerMap || base.headerMap(exportRows[0] || []);
+    if (exportMap['Id phiên bản'] == null) throw new Error('File xuất Sapo thiếu Id phiên bản');
 
-    const allowedProductIds = new Set();
-    const allowedAliases = new Set();
+    const products = productMap(sapoExport);
+    const selected = [];
+    const seenIds = new Set();
+
     for (const variant of sapoExport.variants || []) {
       const key = String(variant.variantId);
       if (!Object.prototype.hasOwnProperty.call(inventoryByVariantId, key)) continue;
-      allowedProductIds.add(String(variant.productId));
-      if (aliasCol != null && variant.raw && variant.raw[aliasCol]) allowedAliases.add(String(variant.raw[aliasCol]));
+      if (seenIds.has(key)) throw new Error(`Id phiên bản ${key} bị trùng trong file xuất Sapo`);
+      const stock = Number(inventoryByVariantId[key]);
+      if (!Number.isFinite(stock) || stock < 0) throw new Error(`Tồn kho không hợp lệ cho Id phiên bản ${key}`);
+      seenIds.add(key);
+      selected.push({ variant, stock });
     }
-    if (!allowedProductIds.size && !allowedAliases.size) throw new Error('Không có sản phẩm nào đủ điều kiện tạo file nhập');
 
-    // Không cho tạo file nếu chỉ ghép được một phần biến thể của một sản phẩm.
-    for (const product of sapoExport.products || []) {
-      if (!allowedProductIds.has(String(product.productId))) continue;
-      const missing = (product.variants || []).filter((variant) => !Object.prototype.hasOwnProperty.call(inventoryByVariantId, String(variant.variantId)));
-      if (missing.length) throw new Error(`Sản phẩm "${product.name}" chưa ghép đủ size; dừng tạo file để tránh ghi đè sai.`);
-    }
+    if (!selected.length) throw new Error('Không có biến thể nào đủ điều kiện tạo file nhập');
 
     const outputRows = [];
-    const sourceRows = [];
-    let currentProductId = '';
-    let currentAlias = '';
+    const selectedProductIds = new Set();
 
-    for (let ri = 1; ri < exportRows.length; ri += 1) {
-      const source = exportRows[ri] || [];
-      if (productIdCol != null && source[productIdCol] != null && source[productIdCol] !== '') currentProductId = String(source[productIdCol]);
-      if (aliasCol != null && source[aliasCol]) currentAlias = String(source[aliasCol]);
-
-      const include = allowedProductIds.has(currentProductId) || (currentAlias && allowedAliases.has(currentAlias));
-      if (!include) continue;
-
+    for (const { variant, stock } of selected) {
+      const product = products.get(String(variant.productId));
+      const firstVariant = product && product.variants && product.variants.length ? product.variants[0] : variant;
       const out = new Array(templateHeaders.length).fill('');
-      for (let ci = 0; ci < templateHeaders.length; ci += 1) {
-        const header = templateHeaders[ci];
-        if (header && eh[header] != null) out[ci] = source[eh[header]] ?? '';
+
+      for (let colIndex = 0; colIndex < templateHeaders.length; colIndex += 1) {
+        const header = templateHeaders[colIndex];
+        if (!header) continue;
+        out[colIndex] = valueFromExport(header, variant, firstVariant, exportMap);
       }
 
-      const variantId = source[variantIdCol];
-      if (variantId != null && variantId !== '') {
-        const key = String(variantId);
-        if (!Object.prototype.hasOwnProperty.call(inventoryByVariantId, key)) {
-          throw new Error(`Biến thể ${variantId} thuộc sản phẩm đang ghi nhưng chưa có tồn nguồn; dừng để tránh ghi đè một phần.`);
+      if (templateMap['Tên sản phẩm*'] != null && isBlank(out[templateMap['Tên sản phẩm*']])) {
+        out[templateMap['Tên sản phẩm*']] = variant.name || (product && product.name) || '';
+      }
+
+      for (let index = 1; index <= 3; index += 1) {
+        const labelHeader = `Thuộc tính ${index}`;
+        const valueHeader = `Giá trị thuộc tính ${index}`;
+        if (templateMap[labelHeader] != null && isBlank(out[templateMap[labelHeader]])) {
+          out[templateMap[labelHeader]] = valueFromExport(labelHeader, firstVariant, firstVariant, exportMap);
         }
-        out[th[invHeader]] = Number(inventoryByVariantId[key]);
-        out[th['Id phiên bản']] = variantId;
+        if (templateMap[valueHeader] != null && isBlank(out[templateMap[valueHeader]])) {
+          out[templateMap[valueHeader]] = valueFromExport(valueHeader, variant, null, exportMap);
+        }
       }
 
-      // Kiểm tra các trường quan trọng phải giống file xuất Sapo trước khi đóng file.
+      out[templateMap[inventoryHeader]] = stock;
+      out[templateMap['Id phiên bản']] = variant.variantId;
+
       for (const header of PROTECTED_HEADERS) {
-        if (th[header] == null || eh[header] == null) continue;
-        if (!sameValue(out[th[header]], source[eh[header]])) {
-          throw new Error(`Chặn xuất file: trường "${header}" bị thay đổi ngoài ý muốn.`);
+        if (templateMap[header] == null || exportMap[header] == null) continue;
+        let expected = valueFromExport(header, variant, firstVariant, exportMap);
+        if (header === 'Tên sản phẩm*' && isBlank(expected)) expected = variant.name || (product && product.name) || '';
+        if (header === 'Id phiên bản') expected = variant.variantId;
+        if (!sameValue(out[templateMap[header]], expected)) {
+          throw new Error(`Chặn xuất file: trường "${header}" bị thay đổi ngoài ý muốn ở Id phiên bản ${variant.variantId}.`);
         }
       }
 
       outputRows.push(out);
-      sourceRows.push(source);
+      selectedProductIds.add(String(variant.productId));
     }
-
-    if (!outputRows.length) throw new Error('Không có dòng nào đủ điều kiện tạo file nhập');
 
     const original = book.xml;
     const sheetDataMatch = original.match(/<sheetData\b[^>]*>[\s\S]*?<\/sheetData>/);
@@ -157,9 +188,11 @@
     return {
       bytes: base.zipStore(book.files),
       rows: outputRows.length,
-      inventoryHeader: invHeader,
+      inventoryHeader,
       protectedHeaders: PROTECTED_HEADERS.slice(),
-      productCount: allowedProductIds.size
+      productCount: selectedProductIds.size,
+      variantCount: outputRows.length,
+      skippedVariantCount: Math.max(0, (sapoExport.variants || []).length - outputRows.length)
     };
   }
 
