@@ -1,51 +1,59 @@
-const fs=require('fs');
-const path=require('path');
-const assert=require('assert');
-const dir=__dirname;
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const dir = __dirname;
 
-const manifest=JSON.parse(fs.readFileSync(path.join(dir,'manifest.json'),'utf8'));
-assert.strictEqual(manifest.manifest_version,3);
-assert.strictEqual(manifest.version,'0.8.0');
+const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+assert.strictEqual(manifest.manifest_version, 3);
+assert.strictEqual(manifest.version, '0.9.0');
 assert.ok(manifest.host_permissions.includes('https://si.aobongda.net/*'));
-assert.ok(!manifest.host_permissions.some(x=>/sapo/i.test(x)));
+assert.ok(!manifest.host_permissions.some((x) => /sapo/i.test(x)), 'Extension không truy cập Sapo trực tiếp');
 assert.ok(manifest.permissions.includes('sidePanel'));
 assert.ok(manifest.permissions.includes('scripting'));
-assert.ok(manifest.permissions.includes('tabs'));
-assert.strictEqual(manifest.side_panel.default_path,'popup.html');
-assert.strictEqual(manifest.background.service_worker,'background.js');
+assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
-assert.deepStrictEqual(manifest.content_scripts[0].js,['stock-core.js','dom-stock-parser.js','content.js']);
-for(const file of ['background.js','stock-core.js','dom-stock-parser.js','content.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','popup.html','popup.css','popup.js'])assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
+for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
+for (const file of ['background.js','popup.html','popup.js','popup.css','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+  assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
+}
 
-const content=fs.readFileSync(path.join(dir,'content.js'),'utf8');
-assert.ok(content.includes('DHL_DISCOVER_HD_2026'));
-assert.ok(content.includes('DHL_SCAN_PAGE_DOM'));
-assert.ok(content.includes('ensureStockRoot'));
-assert.ok(content.includes('controls(root)'));
-assert.ok(content.includes('readRows'));
-assert.ok(content.includes('dom-popup'));
-assert.ok(content.includes('/product/child?psId='),'Giữ 1 request API chỉ để lấy màu mặc định dự phòng');
-assert.ok(!content.includes('collectForProduct'),'Không được quay lại vòng lặp child API cũ');
+const popupHtml = fs.readFileSync(path.join(dir, 'popup.html'), 'utf8');
+assert.ok(popupHtml.includes('Chọn file xuất Sapo'));
+assert.ok(popupHtml.includes('Chọn file mẫu nhập Sapo'));
+assert.ok(popupHtml.includes('QUÉT KHO HD 2026'));
+assert.ok(popupHtml.includes('TẠO FILE NHẬP SAPO'));
+assert.ok(popupHtml.includes('XUẤT BÁO CÁO LỖI (.TXT)'));
 
-const popupJs=fs.readFileSync(path.join(dir,'popup.js'),'utf8');
-assert.ok(popupJs.includes('scanHdViaTabs'));
-assert.ok(popupJs.includes("chrome.tabs.create({url:'about:blank',active:false})"));
-assert.ok(popupJs.includes('DHL_SCAN_PAGE_DOM'));
-assert.ok(popupJs.includes("files:['dom-stock-parser.js']"));
-assert.ok(popupJs.includes('fullMatchReady'));
-assert.ok(popupJs.includes('buildErrorReport'));
-assert.ok(popupJs.includes('DHL_STOCK_SYNC_LOI_'));
-assert.ok(popupJs.includes('Phiên bản tool: 0.8.0'));
-assert.ok(popupJs.includes('buildSapoImport'));
+const content = fs.readFileSync(path.join(dir, 'content.js'), 'utf8');
+assert.ok(content.includes('DHL_SCAN_HD_LIVE'));
+assert.ok(content.includes('openStockPopup'));
+assert.ok(content.includes('quickCandidates'));
+assert.ok(content.includes('scanHdLive'));
+assert.ok(content.includes('live-category-popup'));
+assert.ok(content.includes('/product/child?psId='), 'Chỉ giữ API làm fallback nhận màu mặc định');
 
-const xlsx=fs.readFileSync(path.join(dir,'xlsx-lite.js'),'utf8');
-assert.ok(xlsx.includes('detectSizeDimension'));
-assert.ok(xlsx.includes("label==='size'||label==='kichco'"));
-assert.ok(xlsx.includes('sizeFromSku'));
-assert.ok(xlsx.includes('skuBase'));
+const popupJs = fs.readFileSync(path.join(dir, 'popup.js'), 'utf8');
+assert.ok(popupJs.includes('ensureHdCategoryTab'));
+assert.ok(popupJs.includes('DHL_SCAN_HD_LIVE'));
+assert.ok(popupJs.includes('variantMatches'));
+assert.ok(popupJs.includes('readyVariantCount() > 0'));
+assert.ok(!popupJs.includes('fullMatchReady'), 'Không còn bắt buộc 130/130 mới xuất');
+assert.ok(popupJs.includes('dòng chưa có dữ liệu nguồn sẽ BỎ QUA'));
+assert.ok(popupJs.includes('Phiên bản tool: 0.9.0'));
 
-const preserve=fs.readFileSync(path.join(dir,'xlsx-preserve.js'),'utf8');
-for(const field of ['Tên sản phẩm*','Mã SKU','Ảnh đại diện','Ảnh phiên bản','Giá','Giá so sánh','Giá vốn','Id phiên bản'])assert.ok(preserve.includes(field),`Thiếu bảo vệ ${field}`);
-assert.ok(preserve.includes('chưa ghép đủ size'));
+const preserve = fs.readFileSync(path.join(dir, 'xlsx-preserve.js'), 'utf8');
+for (const field of ['Tên sản phẩm*','Mã SKU','Ảnh đại diện','Ảnh phiên bản','Giá','Giá so sánh','Giá vốn','Id phiên bản']) {
+  assert.ok(preserve.includes(field), `Thiếu bảo vệ trường ${field}`);
+}
+assert.ok(preserve.includes('selected.push'));
+assert.ok(preserve.includes('skippedVariantCount'));
+assert.ok(!preserve.includes('chưa ghép đủ size'), 'Bản 0.9 phải cho phép cập nhật từng biến thể độc lập');
 
-console.log('BUILD PASS',{version:manifest.version,scanner:'real DOM popup',backgroundTabs:true,dynamicColor:true,dynamicSize:true,txtDiagnostics:true,stockOnlyImport:true});
+console.log('BUILD PASS', {
+  version: manifest.version,
+  scanner: 'live category quick-buy popup',
+  variantLevelImport: true,
+  partialImport: true,
+  stockOnly: true,
+  sourceHost: manifest.host_permissions[0]
+});
