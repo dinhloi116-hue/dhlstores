@@ -11,43 +11,56 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>si.aobongda.net → chuẩn bị Sapo</p>
+        <p>File xuất Sapo → tồn si.aobongda.net → file nhập Sapo</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
-    <section class="controls">
-      <button id="scanCurrent" class="primary">Quét sản phẩm hiện tại</button>
-      <div class="row">
-        <label for="batchLimit">Quét nhanh</label>
-        <input id="batchLimit" type="number" min="1" max="50" value="10" />
-        <button id="scanBatch">Quét danh sách</button>
+    <section class="steps">
+      <div class="step">
+        <b>1. Chọn file xuất Sapo</b>
+        <input id="sapoExport" type="file" accept=".xlsx" />
+        <small id="exportState">Chưa chọn file.</small>
+      </div>
+      <div class="step">
+        <b>2. Chọn file mẫu nhập Sapo</b>
+        <input id="sapoTemplate" type="file" accept=".xlsx" />
+        <small id="templateState">Chưa chọn file.</small>
+      </div>
+      <div class="step actions">
+        <b>3. Quét kho nguồn</b>
+        <button id="scanHd" class="primary">QUÉT KHO HD 2026</button>
+        <button id="scanCurrent" class="secondary">Test sản phẩm đang mở</button>
       </div>
     </section>
 
-    <section id="statusBox" class="status">Chưa quét.</section>
+    <section id="statusBox" class="status">Chưa bắt đầu.</section>
 
-    <section class="stats">
-      <div><b id="productCount">0</b><span>Sản phẩm</span></div>
-      <div><b id="variantCount">0</b><span>Biến thể</span></div>
-      <div><b id="outCount">0</b><span>Hết hàng</span></div>
-      <div><b id="errorCount">0</b><span>Cần kiểm tra</span></div>
+    <section class="stats five">
+      <div><b id="sapoProductCount">0</b><span>SP Sapo</span></div>
+      <div><b id="sapoVariantCount">0</b><span>Biến thể Sapo</span></div>
+      <div><b id="sourceGroupCount">0</b><span>Mẫu/màu nguồn</span></div>
+      <div><b id="matchedCount">0</b><span>Ghép đúng</span></div>
+      <div><b id="readyVariantCount">0</b><span>Biến thể sẵn sàng</span></div>
     </section>
 
     <section class="toolbar">
-      <input id="filter" placeholder="Lọc SKU / màu / size..." />
-      <div class="toolbar-actions"><button id="exportCsv" disabled>Xuất CSV</button><button id="copyJson" disabled>Copy JSON</button></div>
+      <input id="filter" placeholder="Lọc tên sản phẩm / màu..." />
+      <button id="makeImport" class="success" disabled>TẠO FILE NHẬP SAPO</button>
     </section>
 
     <div class="table-wrap">
       <table>
-        <thead><tr><th>SKU</th><th>Màu</th><th>Size</th><th>Tồn</th></tr></thead>
-        <tbody id="resultBody"></tbody>
+        <thead><tr><th>Sản phẩm Sapo</th><th>Nguồn ghép</th><th>Điểm</th><th>Size</th><th>Trạng thái</th></tr></thead>
+        <tbody id="matchBody"></tbody>
       </table>
     </div>
 
-    <footer>Chưa ghi dữ liệu vào Sapo ở bản test này.</footer>
+    <footer>Chỉ các sản phẩm ghép chắc chắn mới được ghi tồn kho vào file nhập.</footer>
   </main>
+  <script src="stock-core.js"></script>
+  <script src="match-core.js"></script>
+  <script src="xlsx-lite.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
