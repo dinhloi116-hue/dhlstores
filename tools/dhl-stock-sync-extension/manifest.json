@@ -1,13 +1,19 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.1.0",
-  "description": "Quét tồn kho si.aobongda.net theo SKU/màu/size để chuẩn bị đồng bộ Sapo.",
-  "permissions": ["storage", "activeTab", "tabs"],
+  "version": "0.4.0",
+  "minimum_chrome_version": "116",
+  "description": "Quét tồn kho si.aobongda.net và tạo file nhập Sapo chỉ thay đổi tồn kho.",
+  "permissions": ["storage", "activeTab", "tabs", "sidePanel"],
   "host_permissions": ["https://si.aobongda.net/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_title": "DHL Stock Sync",
-    "default_popup": "popup.html"
+    "default_title": "Mở DHL Stock Sync"
+  },
+  "side_panel": {
+    "default_path": "popup.html"
   },
   "content_scripts": [
     {
