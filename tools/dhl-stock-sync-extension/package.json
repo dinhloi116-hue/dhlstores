@@ -3,6 +3,6 @@
   "private": true,
   "version": "0.6.0",
   "scripts": {
-    "test": "node test.js && node match-test.js && node sapo-link-test.js && node preserve-test.js && node build-test.js"
+    "test": "node test.js && node expected-count-test.js && node match-test.js && node sapo-link-test.js && node preserve-test.js && node build-test.js"
   }
 }
