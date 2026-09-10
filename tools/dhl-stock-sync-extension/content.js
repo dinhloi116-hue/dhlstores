@@ -255,7 +255,7 @@
   async function clickElement(el) {
     if (!el) return;
     try { el.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (_) {}
-    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup']) {
       try { el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window })); } catch (_) {}
     }
     try { el.click(); } catch (_) {}
