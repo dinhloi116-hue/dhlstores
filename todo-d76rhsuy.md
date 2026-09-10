@@ -1008,3 +1008,10 @@
 - [x] Cập nhật tài liệu cộng tác: sau khi test đạt, commit và push thay đổi lên `main`.
 - [x] Ghi rõ không force-push; phải fetch/pull và dừng khi có xung đột từ công cụ khác.
 - [x] Xác minh quy trình đã được lưu để các phiên sau áp dụng nhất quán.
+
+## Xóa SKU trong quản trị sản phẩm 2026-09-04
+- [x] Rà soát mô hình dữ liệu SKU/biến thể, procedure quản trị và UI chỉnh sửa sản phẩm.
+- [x] Bổ sung thao tác xóa SKU/biến thể chỉ cho owner, có xác nhận rõ ràng và bảo toàn lịch sử đơn hàng.
+- [x] Cập nhật cache/UI sau khi xóa, xử lý trường hợp SKU cuối cùng và lỗi thao tác.
+- [x] Viết hồi quy Vitest, chạy test mục tiêu, TypeScript, build và kiểm tra responsive.
+- [ ] Lưu checkpoint, phát hành website và push thay đổi lên GitHub `main`.
