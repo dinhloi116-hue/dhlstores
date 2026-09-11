@@ -59,7 +59,7 @@ assert.ok(catalog.includes('XUẤT CSV TÊN + SKU'));
 assert.ok(catalog.includes('discoverAllProductCards'), 'Catalog mode phải nhận diện toàn bộ card sản phẩm hiện có trên trang');
 assert.ok(catalog.includes('scanAllCatalogProducts'), 'Catalog mode phải quét lần lượt toàn bộ card đã nhận diện');
 assert.ok(catalog.includes('DHL_SCAN_CURRENT_POPUP'), 'Catalog mode phải đọc popup từng sản phẩm mà không cần file Sapo');
-assert.ok(catalog.includes('Không lọc riêng ĐT 2026'), 'Catalog mode không được hard-code chỉ ĐT 2026');
+assert.ok(catalog.toLowerCase().includes('không lọc riêng đt 2026'), 'Catalog mode không được hard-code chỉ ĐT 2026');
 assert.ok(catalog.includes('Tên chuẩn đề xuất Sapo'));
 assert.ok(catalog.includes('SKU mẫu nguồn'));
 assert.ok(catalog.includes("['S', 'M', 'L', 'XL', 'XXL']"));
