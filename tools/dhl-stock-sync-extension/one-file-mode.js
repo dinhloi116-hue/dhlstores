@@ -5,7 +5,8 @@
   const xlsx=globalThis.DHLXlsxLite;
   const stockImport=globalThis.DHLStockImportCore;
   const warehouse=globalThis.DHLWarehouseCore;
-  if(!matcher||!xlsx||!stockImport||!warehouse)return;
+  const shopRules=globalThis.DHLShopRules;
+  if(!matcher||!xlsx||!stockImport||!warehouse||!shopRules)return;
 
   let exportBuffer=null;
   let sapoData=null;
@@ -32,22 +33,61 @@
     return rows;
   }
 
+  function standardSourceName(row){
+    const best=row&&row.match&&row.match.best;
+    if(best){
+      const parent=String(best.parentName||'').trim();
+      const color=String(best.color||'').trim();
+      if(parent&&shopRules.skuBaseForStandardName(parent))return parent;
+      if(parent&&color&&color!=='(không màu)'){
+        const combined=`${parent} - ${color}`;
+        if(shopRules.skuBaseForStandardName(combined))return combined;
+      }
+    }
+    return String(row&&row.sapo&&row.sapo.name||'').trim();
+  }
+
+  function officialImportRows(){
+    const result=[];
+    const missing=[];
+    for(const row of matchedRows()){
+      const stock=Number(row.source.available);
+      if(!Number.isFinite(stock)||stock<0)continue;
+      const standard=standardSourceName(row);
+      const base=shopRules.skuBaseForStandardName(standard)||shopRules.skuBaseForStandardName(row.sapo.name);
+      if(!base){
+        missing.push(`${row.sapo.name} / ${row.sapo.size}`);
+        continue;
+      }
+      const size=matcher.normalizeSize(row.sapo.size);
+      const sku=`${base}-${size}`;
+      const variantName=String(row.sapo.rawProductLabel||`${row.sapo.name} Không in / ${size}`).trim();
+      result.push({variantName,sku,stock,standardName:standard,size});
+    }
+    return{rows:result,missing};
+  }
+
   function refreshButton(){
     const btn=document.getElementById('makeImportOneFile');
     if(!btn)return;
-    const rows=matchedRows();
-    btn.disabled=!(sapoData&&exportBuffer&&scanAfterFile&&rows.length);
+    const matched=matchedRows();
+    const prepared=officialImportRows();
+    btn.disabled=!(sapoData&&exportBuffer&&sapoData.inputType==='warehouse'&&scanAfterFile&&prepared.rows.length);
 
     if(!sapoData){
       setState('Chọn file Quản lý kho Sapo trước.');
+    }else if(sapoData.inputType!=='warehouse'){
+      setState('Hãy dùng file “Danh sách quản lý kho phiên bản sản phẩm”, không dùng file xuất sản phẩm thường.','error');
+    }else if(!sapoData.warehouseBranchName){
+      setState('Đã đọc file kho nhưng không thấy tên chi nhánh ở dòng phía trên cột Tồn kho.','error');
     }else if(!scanAfterFile){
-      const type=sapoData.inputType==='warehouse'?'file Quản lý kho':'file sản phẩm';
-      setState(`Đã nhận ${type}: ${sapoData.products.length} sản phẩm / ${sapoData.variants.length} biến thể. Bấm QUÉT KHO HD 2026.`,'ok');
-    }else if(rows.length){
-      const products=new Set(rows.map((row)=>String(row.sapo.productId))).size;
-      setState(`Sẵn sàng: ${rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm sẽ được cập nhật tồn.`,'ok');
+      setState(`Đã nhận file kho: ${sapoData.products.length} sản phẩm / ${sapoData.variants.length} biến thể • chi nhánh: ${sapoData.warehouseBranchName}. Bấm QUÉT KHO HD 2026.`,'ok');
+    }else if(prepared.rows.length){
+      const products=new Set(matched.map((row)=>String(row.sapo.productId))).size;
+      const missText=prepared.missing.length?` • ${prepared.missing.length} dòng thiếu map SKU sẽ bỏ qua`:'';
+      setState(`Sẵn sàng: ${prepared.rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm → xuất đúng mẫu nhập tồn kho Sapo.${missText}`,'ok');
     }else{
-      setState('Đã quét nhưng chưa ghép được biến thể nào. Không tạo file.','error');
+      setState('Đã quét nhưng chưa có dòng nào vừa ghép được tồn vừa xác định được SKU Sapo.','error');
     }
   }
 
@@ -58,6 +98,7 @@
       exportBuffer=buffer;
       exportName=file.name||'';
       sapoData=await xlsx.parseSapoExport(buffer.slice(0));
+      if(sapoData.inputType!=='warehouse')throw new Error('File này không phải “Danh sách quản lý kho phiên bản sản phẩm” của Sapo.');
       latestSource=[];
       scanAfterFile=false;
       refreshButton();
@@ -92,41 +133,29 @@
       btn.textContent='ĐANG TẠO FILE...';
     }
     try{
-      if(!sapoData||!exportBuffer)throw new Error('Chưa chọn file Sapo');
+      if(!sapoData||!exportBuffer)throw new Error('Chưa chọn file Quản lý kho Sapo');
+      if(sapoData.inputType!=='warehouse')throw new Error('Chỉ dùng file Quản lý kho Sapo');
+      if(!sapoData.warehouseBranchName)throw new Error('Không đọc được tên chi nhánh từ file kho');
       if(!scanAfterFile)throw new Error('Hãy bấm QUÉT KHO HD 2026 sau khi chọn file');
-      const rows=matchedRows();
-      if(!rows.length)throw new Error('Không có biến thể nào ghép chắc chắn với nguồn');
 
-      const inventory=Object.create(null);
-      for(const row of rows){
-        const stock=Number(row.source.available);
-        if(!Number.isFinite(stock)||stock<0)continue;
-        inventory[String(row.sapo.variantId)]=stock;
-      }
+      const prepared=officialImportRows();
+      if(!prepared.rows.length)throw new Error('Không có biến thể nào đủ điều kiện tạo file nhập tồn kho');
 
+      setState(`Đang tạo file nhập tồn kho chính thức cho ${prepared.rows.length} biến thể • chi nhánh “${sapoData.warehouseBranchName}”...`);
+      await new Promise((resolve)=>setTimeout(resolve,20));
+      const out=stockImport.buildOfficialInventoryWorkbook(xlsx,prepared.rows,sapoData.warehouseBranchName);
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
-      if(sapoData.inputType==='warehouse'){
-        setState(`Đang sửa trực tiếp cột Tồn kho cho ${Object.keys(inventory).length} biến thể trong chính file Quản lý kho...`);
-        await new Promise((resolve)=>setTimeout(resolve,20));
-        const out=await warehouse.updateWarehouseWorkbook(exportBuffer.slice(0),sapoData,inventory);
-        download(out.bytes,`DANH_SACH_QUAN_LY_KHO_DA_CAP_NHAT_TON_${stamp}.xlsx`);
-        setState(`ĐÃ XONG: sửa ${out.rows} dòng Tồn kho (${out.zeroCount} dòng về 0). File giữ nguyên đúng cấu trúc Quản lý kho Sapo; dòng trẻ em và dòng chưa ghép giữ nguyên.`,'ok');
-      }else{
-        setState(`Đang tạo file 36 cột đúng mẫu Sapo cho ${Object.keys(inventory).length} biến thể...`);
-        await new Promise((resolve)=>setTimeout(resolve,20));
-        const out=stockImport.buildInventoryWorkbook(xlsx,sapoData,inventory,'Cửa hàng chính');
-        download(out.bytes,`SAPO_NHAP_TON_KHO_${stamp}.xlsx`);
-        setState(`ĐÃ XONG: ${out.rows} dòng, đúng mẫu 36 cột; cột Cửa hàng chính_Tồn kho đã ghi tồn mới.`,'ok');
-      }
+      download(out.bytes,`SAPO_NHAP_TON_KHO_${stamp}.xlsx`);
+      const missingText=prepared.missing.length?` Bỏ qua ${prepared.missing.length} dòng chưa có mapping SKU.`:'';
+      setState(`ĐÃ XONG: ${out.rows} dòng (${out.zeroCount} dòng tồn = 0). File đúng mẫu “Cập nhật tồn kho phiên bản sản phẩm”: Tên phiên bản + SKU* + Mã lô + NSX + HSD + Tồn kho + Vị trí lưu kho; chi nhánh = “${out.branchName}”.${missingText}`,'ok');
     }catch(error){
       setState(`LỖI TẠO FILE: ${error.message||String(error)}`,'error');
     }finally{
       if(btn){
-        btn.textContent=oldText||'TẠO FILE KHO ĐÃ CẬP NHẬT TỒN';
-        const rows=matchedRows();
-        btn.disabled=!(sapoData&&exportBuffer&&scanAfterFile&&rows.length);
+        btn.textContent=oldText||'TẠO FILE NHẬP TỒN KHO SAPO';
+        const prepared=officialImportRows();
+        btn.disabled=!(sapoData&&exportBuffer&&sapoData.inputType==='warehouse'&&scanAfterFile&&prepared.rows.length);
       }
     }
   }
@@ -144,7 +173,7 @@
       btn.id='makeImportOneFile';
       btn.className='success';
       btn.disabled=true;
-      btn.textContent='TẠO FILE KHO ĐÃ CẬP NHẬT TỒN';
+      btn.textContent='TẠO FILE NHẬP TỒN KHO SAPO';
       toolbar.appendChild(btn);
       const state=document.createElement('small');
       state.id='oneFileState';
@@ -158,13 +187,13 @@
 
     const guide=document.getElementById('dailyGuide');
     if(guide){
-      guide.innerHTML='<b>DÙNG HẰNG NGÀY — FILE QUẢN LÝ KHO</b><span style="display:block;margin-top:5px">1) Xuất <b>Danh sách quản lý kho phiên bản sản phẩm</b> từ Sapo → 2) chọn file đó → 3) QUÉT KHO → 4) TẠO FILE KHO ĐÃ CẬP NHẬT TỒN → 5) nhập lại Sapo.</span>';
+      guide.innerHTML='<b>DÙNG HẰNG NGÀY — FILE QUẢN LÝ KHO</b><span style="display:block;margin-top:5px">1) Xuất <b>Danh sách quản lý kho phiên bản sản phẩm</b> → 2) chọn file → 3) QUÉT KHO → 4) <b>TẠO FILE NHẬP TỒN KHO SAPO</b> → 5) vào Quản lý kho / Tồn kho và nhập file vừa tạo.</span>';
     }
 
     const subtitle=document.querySelector('header p');
-    if(subtitle)subtitle.textContent='File Quản lý kho Sapo → quét nguồn → sửa trực tiếp cột Tồn kho';
+    if(subtitle)subtitle.textContent='File Quản lý kho → quét nguồn → xuất đúng mẫu Cập nhật tồn kho phiên bản sản phẩm';
     const footer=document.querySelector('footer');
-    if(footer)footer.textContent='File kho đầu ra giữ nguyên cấu trúc gốc; tool chỉ sửa cột Tồn kho của các size S/M/L/XL/XXL ghép chắc chắn.';
+    if(footer)footer.textContent='Đầu ra là mẫu nhập tồn kho chuyên dụng của Sapo, định danh bằng SKU*. Không nhập lại file Quản lý kho.';
 
     const exportInput=document.getElementById('sapoExport');
     if(exportInput){
