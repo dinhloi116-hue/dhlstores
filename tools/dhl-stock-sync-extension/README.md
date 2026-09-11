@@ -1,6 +1,6 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản ổn định hiện tại: **v0.14.0**.
+Phiên bản ổn định hiện tại: **v0.14.1**.
 
 Tool có 2 việc tách riêng:
 
@@ -23,16 +23,32 @@ Tool có 2 việc tách riêng:
 
 Phần **BẢO TRÌ NGUỒN** được thu gọn mặc định và không cần dùng mỗi ngày.
 
+Từ v0.14.1, phần bảo trì **không quét trực tiếp trên tab bạn đang xem** nữa. Tool tạo một tab nền cùng URL danh mục, quét ở tab đó rồi tự đóng. Link tên/ảnh sản phẩm bị loại khỏi danh sách phần tử được click; chỉ quick-action an toàn mới được dùng. Vì vậy tab nguồn chính không được phép nhảy sang trang chi tiết sản phẩm.
+
 Khi supplier có sản phẩm mới:
 
-1. Mở đúng danh mục supplier cần lấy hàng, ví dụ HD người lớn hoặc áo bóng đá trẻ em.
+1. Mở đúng **trang danh mục** supplier cần lấy hàng, ví dụ HD người lớn hoặc áo bóng đá trẻ em. Không đứng ở trang chi tiết một sản phẩm.
 2. Mở `BẢO TRÌ NGUỒN`.
-3. Bấm `QUÉT SẢN PHẨM TRANG ĐANG MỞ`.
-4. Tool lần lượt lấy tên sản phẩm, màu, toàn bộ size, tồn kho và link ảnh từ card sản phẩm.
-5. Bấm `TẠO FILE SẢN PHẨM SAPO (.XLSX)`.
-6. Tool tạo `SAPO_TAO_SAN_PHAM_MOI_YYYY-MM-DD.xlsx` theo form sản phẩm Sapo 36 cột, gồm các cột quan trọng như `Đường dẫn/Alias`, `Tên sản phẩm*`, thuộc tính Size, `Mã SKU`, `Ảnh đại diện`, `Ảnh phiên bản`, `Cửa hàng chính_Tồn kho` và `Id phiên bản`.
+3. Bấm `TEST NHANH 1 SP`. Tool chỉ kiểm tra một card trong tab nền. Nếu hiện `TEST OK` thì mới chạy full.
+4. Bấm `QUÉT TOÀN BỘ TRANG ĐANG MỞ`.
+5. Tool lần lượt lấy tên sản phẩm, màu, toàn bộ size, tồn kho và link ảnh từ card sản phẩm.
+6. Bấm `TẠO FILE SẢN PHẨM SAPO (.XLSX)`.
+7. Tool tạo `SAPO_TAO_SAN_PHAM_MOI_YYYY-MM-DD.xlsx` theo form sản phẩm Sapo 36 cột, gồm `Đường dẫn/Alias`, `Tên sản phẩm*`, thuộc tính Size, `Mã SKU`, `Ảnh đại diện`, `Ảnh phiên bản`, `Cửa hàng chính_Tồn kho` và `Id phiên bản`.
 
 Với sản phẩm đã có quy tắc SKU cũ, tool giữ SKU cũ. Với sản phẩm nguồn mới chưa từng có trong tool, tool tự tạo SKU ổn định dạng `ABDN-...` để lần sau vẫn nhận diện được đúng biến thể.
+
+## Test tool nhanh, không Add extension lại mỗi lần
+
+Cách nên dùng khi đang sửa tool:
+
+1. Clone repository bằng **GitHub Desktop** một lần.
+2. Checkout branch `feature/dhl-stock-sync-extension`.
+3. Trong Chrome mở `chrome://extensions` → Developer mode → `Load unpacked` và chọn đúng thư mục `tools/dhl-stock-sync-extension`. Chỉ làm bước này **một lần**.
+4. Mỗi khi có bản sửa mới: trong GitHub Desktop bấm `Fetch origin` / `Pull origin` để cập nhật chính thư mục đó.
+5. Mở side panel → `BẢO TRÌ NGUỒN` → bấm `NẠP LẠI TOOL SAU KHI PULL CODE`.
+6. Mở danh mục cần test → bấm `TEST NHANH 1 SP`. Không cần tải ZIP, giải nén hay Add extension lại.
+
+Nếu không dùng GitHub Desktop thì vẫn có thể tải ZIP build, nhưng workflow clone + Pull + Reload nhanh hơn nhiều trong giai đoạn test.
 
 ## Nguyên tắc an toàn
 
@@ -41,7 +57,7 @@ Với sản phẩm đã có quy tắc SKU cũ, tool giữ SKU cũ. Với sản p
 - Chỉ những biến thể ghép chắc chắn mới được đưa vào file nhập tồn kho.
 - File Quản lý kho đầu vào **không phải file đầu ra** và không được sửa để nhập ngược lại Sapo.
 - Tool không dùng API/token Sapo và không ghi trực tiếp vào hệ thống Sapo.
-- Scanner chỉ thao tác popup mua nhanh trên danh mục đang mở và chặn điều hướng nhầm sang trang chi tiết.
+- Bảo trì nguồn chạy trong tab nền và loại bỏ link sản phẩm khỏi quick-action để tránh điều hướng sang trang chi tiết.
 
 ## Backup / khôi phục
 
