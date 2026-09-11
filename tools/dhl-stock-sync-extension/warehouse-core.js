@@ -1,21 +1,41 @@
 (function(root,factory){
-  const api=factory(root.DHLXlsxLite);
+  const api=factory(root.DHLXlsxLite,root.DHLMatchCore);
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.DHLWarehouseCore=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(xlsx){
+})(typeof globalThis!=='undefined'?globalThis:this,function(xlsx,matcher){
   'use strict';
 
   function normalizeText(value){return String(value==null?'':value).trim();}
+  function plain(value){
+    return normalizeText(value).toLowerCase().replace(/đ/g,'d').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+  }
+
+  function canonicalWarehouseName(value){
+    const text=normalizeText(value);
+    const p=plain(text);
+    if(p==='dt y 2026 hd')return 'ĐT Ý 2026 HD - Xanh Dương';
+    if(p==='dt ha lan 2026 hd')return 'ĐT Hà Lan 2026 HD - Trắng';
+    if(p.includes('bo quan ao bong da y vang')&&p.includes('world cup 2026'))return 'ĐT Ý 2026 HD - Kem';
+    if(p.includes('bo dao nha')&&p.includes('siu')&&p.includes('2026'))return 'ĐT Bồ Đào Nha 2026 HD - Siu';
+    return text;
+  }
+
+  function warehouseColorHint(name){
+    const parts=String(name||'').split(/\s+-\s+/).map(x=>x.trim()).filter(Boolean);
+    if(parts.length>=2&&/^(ĐT|CLB)\b/i.test(parts[0]))return parts[parts.length-1];
+    return'';
+  }
 
   function parseAdultWarehouseLabel(label){
     const text=normalizeText(label);
     const match=text.match(/\s*\/\s*(S|M|L|XL|XXL)\s*$/i);
     if(!match)return null;
     const size=String(match[1]).toUpperCase();
-    let name=text.slice(0,match.index).trim();
-    name=name.replace(/\s+(?:Không in(?: tên số)?)\s*$/i,'').trim();
-    if(!name)return null;
-    return{name,size};
+    let rawName=text.slice(0,match.index).trim();
+    rawName=rawName.replace(/\s+(?:Không in(?: tên số)?)\s*$/i,'').trim();
+    if(!rawName)return null;
+    const name=canonicalWarehouseName(rawName);
+    return{name,rawName,size};
   }
 
   function findWarehouseHeader(rows){
@@ -49,7 +69,7 @@
 
       let product=productsByName.get(parsed.name);
       if(!product){
-        product={productId:nextProductId++,name:parsed.name,variants:[],skuBase:'',sizeAttribute:'Size'};
+        product={productId:nextProductId++,name:parsed.name,rawName:parsed.rawName,variants:[],skuBase:'',sizeAttribute:'Size',warehouse:true};
         productsByName.set(parsed.name,product);
       }
       const rowNumber=ri+1;
@@ -59,6 +79,7 @@
         productId:product.productId,
         variantId:rowNumber,
         name:parsed.name,
+        rawName:parsed.rawName,
         sku:'',
         skuBase:'',
         size:parsed.size,
@@ -66,7 +87,8 @@
         sizeFromSku:'',
         sizeAttribute:'Size',
         currentStock:Number.isFinite(stock)?stock:null,
-        raw:row
+        raw:row,
+        warehouse:true
       };
       variants.push(record);
       product.variants.push(record);
@@ -134,6 +156,33 @@
     return{bytes:xlsx.zipStore(book.files),rows:changed,zeroCount,stockHeader:'Tồn kho'};
   }
 
+  // File kho không có SKU. Tạo hint quét trực tiếp từ tên đã chuẩn hóa để scanner chỉ đọc đúng màu cần thiết.
+  if(matcher&&typeof matcher.buildScanHints==='function'&&!matcher.__warehouseHintsWrapped){
+    const originalBuildScanHints=matcher.buildScanHints.bind(matcher);
+    matcher.buildScanHints=function(products){
+      const list=products||[];
+      if(!list.some(p=>p&&p.warehouse===true))return originalBuildScanHints(list);
+      const byTeam=new Map();
+      for(const p of list){
+        const team=matcher.teamOf((p&&p.name)||'');
+        if(!team)continue;
+        if(!byTeam.has(team))byTeam.set(team,{team,products:[],colors:[]});
+        const colorHint=warehouseColorHint(p.name);
+        const item={
+          productId:p.productId,
+          name:p.name||'',
+          skuBase:'',
+          colorHint,
+          sizes:(p.variants||[]).map(v=>matcher.normalizeSize(v.size)).filter(Boolean)
+        };
+        byTeam.get(team).products.push(item);
+        if(colorHint&&!byTeam.get(team).colors.includes(colorHint))byTeam.get(team).colors.push(colorHint);
+      }
+      return[...byTeam.values()];
+    };
+    matcher.__warehouseHintsWrapped=true;
+  }
+
   // Bọc parser cũ để popup.js tự nhận cả file sản phẩm lẫn file Quản lý kho.
   if(xlsx&&typeof xlsx.parseSapoExport==='function'&&!xlsx.__warehouseWrapped){
     const original=xlsx.parseSapoExport.bind(xlsx);
@@ -147,5 +196,5 @@
     xlsx.__warehouseWrapped=true;
   }
 
-  return{parseAdultWarehouseLabel,findWarehouseHeader,parseWarehouseExport,updateWarehouseWorkbook};
+  return{normalizeText,plain,canonicalWarehouseName,warehouseColorHint,parseAdultWarehouseLabel,findWarehouseHeader,parseWarehouseExport,updateWarehouseWorkbook};
 });
