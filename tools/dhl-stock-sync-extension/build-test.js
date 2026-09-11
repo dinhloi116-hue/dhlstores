@@ -47,7 +47,8 @@ assert.ok(!popupJs.includes('fullMatchReady'));
 
 const domParser = fs.readFileSync(path.join(dir, 'dom-stock-parser.js'), 'utf8');
 assert.ok(domParser.includes('FREESIZE'));
-assert.ok(domParser.includes('[1-9]\\d'));
+assert.ok(domParser.includes('SIZE_TOKEN'));
+assert.ok(domParser.includes('1\\d\\d'));
 
 const genericWarehouse = fs.readFileSync(path.join(dir, 'generic-warehouse-mode.js'), 'utf8');
 assert.ok(genericWarehouse.includes('parseGenericWarehouse'));
