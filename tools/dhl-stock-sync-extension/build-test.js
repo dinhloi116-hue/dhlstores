@@ -52,16 +52,17 @@ assert.ok(popupJs.includes("const VERSION = '0.11.0'"));
 
 const oneFile = fs.readFileSync(path.join(dir, 'one-file-mode.js'), 'utf8');
 assert.ok(oneFile.includes('TẠO FILE SAPO ĐÃ CẬP NHẬT TỒN'));
-assert.ok(oneFile.includes('Không cần file mẫu nhập'));
+assert.ok(oneFile.includes('FILE CHƯA CÓ CỘT TỒN KHO'));
+assert.ok(oneFile.includes('Tùy chọn trường hiển thị'));
 assert.ok(oneFile.includes('direct.updateExportWorkbook'));
-assert.ok(oneFile.includes('Biến thể chưa ghép') || oneFile.includes('chưa ghép'));
 assert.ok(oneFile.includes('scanAfterFile'), 'Phải bắt quét tồn mới sau khi chọn file');
 
 const direct = fs.readFileSync(path.join(dir, 'direct-stock-core.js'), 'utf8');
 assert.ok(direct.includes('updateExportWorkbook'));
-assert.ok(direct.includes('resolveInventoryHeader'));
+assert.ok(direct.includes('resolveInventoryHeaders'));
 assert.ok(direct.includes('skippedVariantCount'));
 assert.ok(direct.includes('stock===0'), 'Tồn 0 thật phải được ghi 0');
+assert.ok(direct.includes('Tool không tự bịa/thêm tên chi nhánh nữa'), 'Không được tự thêm tên chi nhánh giả định');
 
 const catalog = fs.readFileSync(path.join(dir, 'catalog-mode.js'), 'utf8');
 assert.ok(catalog.includes('QUÉT TOÀN BỘ TRANG HD'));
@@ -92,6 +93,7 @@ console.log('BUILD PASS', {
   oneFileDailyWorkflow: true,
   exactDailyMatching: true,
   directStockEditOnExport: true,
+  requireRealSapoInventoryColumn: true,
   unmatchedKeepsOldStock: true,
   stockOnly: true,
   sourceHost: manifest.host_permissions[0]
