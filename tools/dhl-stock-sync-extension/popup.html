@@ -11,14 +11,14 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>Web nguồn → chuẩn hóa tên → ghép từng size → điền tồn vào file nhập Sapo</p>
+        <p>File xuất Sapo → quét tồn nguồn → sửa trực tiếp cột tồn → nhập lại Sapo</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
     <section class="safety-note">
-      <b>CHỈ GHI ĐÈ TỒN KHO</b>
-      <span>Ví dụ nguồn Mexico / S = 7 → dòng Mexico-S của Sapo nhận Tồn kho = 7. Tên, ảnh, giá, SKU, mô tả và Id phiên bản lấy từ file xuất Sapo; biến thể chưa đọc được nguồn sẽ bỏ qua, không tự ghi 0.</span>
+      <b>CHỈ SỬA TỒN KHO TRÊN FILE XUẤT SAPO</b>
+      <span>Ví dụ nguồn Mexico / S = 7 → đúng dòng Mexico-S trong file xuất Sapo được sửa Tồn kho = 7. Tên, ảnh, giá, SKU, mô tả, Alias, Id sản phẩm và Id phiên bản giữ nguyên. Biến thể chưa ghép được giữ nguyên tồn cũ, không tự ghi 0.</span>
     </section>
 
     <section class="steps">
@@ -27,13 +27,13 @@
         <input id="sapoExport" type="file" accept=".xlsx" />
         <small id="exportState">Chưa chọn file.</small>
       </div>
-      <div class="step" id="templateStep">
-        <b>2. Mẫu nhập Sapo — chỉ thiết lập 1 lần</b>
+      <div class="step" id="templateStep" style="display:none">
+        <b>Mẫu nhập Sapo cũ</b>
         <input id="sapoTemplate" type="file" accept=".xlsx" />
-        <small id="templateState">Chưa chọn file. Tool sẽ nhớ mẫu này cho các lần sau.</small>
+        <small id="templateState">Không còn cần dùng ở chế độ 1 file.</small>
       </div>
       <div class="step actions">
-        <b>3. Đồng bộ tồn hằng ngày</b>
+        <b>2. Lấy tồn kho nguồn</b>
         <button id="scanHd" class="primary">QUÉT KHO HD 2026</button>
         <button id="scanCurrent" class="secondary">TEST POPUP ĐANG MỞ</button>
       </div>
@@ -53,7 +53,7 @@
       <input id="filter" placeholder="Lọc tên sản phẩm / màu..." />
       <div class="tool-buttons">
         <button id="exportErrorReport" class="report">XUẤT BÁO CÁO LỖI (.TXT)</button>
-        <button id="makeImport" class="success" disabled>TẠO FILE NHẬP SAPO</button>
+        <button id="makeImport" class="success" disabled style="display:none">TẠO FILE NHẬP SAPO CŨ</button>
       </div>
     </section>
 
@@ -64,16 +64,18 @@
       </table>
     </div>
 
-    <footer>Quét danh sách nguồn + chuẩn hóa tên chỉ cần làm lần đầu hoặc khi thêm sản phẩm mới. Hằng ngày: chọn file xuất Sapo → quét kho → tạo file nhập tồn.</footer>
+    <footer>Hằng ngày chỉ cần 1 file xuất Sapo. Tool giữ nguyên dữ liệu và chỉ sửa tồn kho ở các biến thể ghép chắc chắn.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
   <script src="shop-rules.js"></script>
   <script src="xlsx-lite.js"></script>
   <script src="xlsx-preserve.js"></script>
+  <script src="direct-stock-core.js"></script>
   <script src="popup.js"></script>
   <script src="catalog-mode.js"></script>
   <script src="catalog-export-fix.js"></script>
   <script src="simple-mode.js"></script>
+  <script src="one-file-mode.js"></script>
 </body>
 </html>
