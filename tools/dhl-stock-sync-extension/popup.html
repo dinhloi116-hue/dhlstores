@@ -27,13 +27,13 @@
         <input id="sapoExport" type="file" accept=".xlsx" />
         <small id="exportState">Chưa chọn file.</small>
       </div>
-      <div class="step">
-        <b>2. Chọn file mẫu nhập Sapo</b>
+      <div class="step" id="templateStep">
+        <b>2. Mẫu nhập Sapo — chỉ thiết lập 1 lần</b>
         <input id="sapoTemplate" type="file" accept=".xlsx" />
-        <small id="templateState">Chưa chọn file.</small>
+        <small id="templateState">Chưa chọn file. Tool sẽ nhớ mẫu này cho các lần sau.</small>
       </div>
       <div class="step actions">
-        <b>3. Lấy tồn kho nguồn</b>
+        <b>3. Đồng bộ tồn hằng ngày</b>
         <button id="scanHd" class="primary">QUÉT KHO HD 2026</button>
         <button id="scanCurrent" class="secondary">TEST POPUP ĐANG MỞ</button>
       </div>
@@ -64,14 +64,16 @@
       </table>
     </div>
 
-    <footer>Bước 0 có thể quét danh sách nguồn mà không cần file Sapo. Sau khi chuẩn hóa tên Sapo theo danh sách nguồn, phần đồng bộ tồn sẽ ghép chắc chắn hơn.</footer>
+    <footer>Quét danh sách nguồn + chuẩn hóa tên chỉ cần làm lần đầu hoặc khi thêm sản phẩm mới. Hằng ngày: chọn file xuất Sapo → quét kho → tạo file nhập tồn.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
+  <script src="shop-rules.js"></script>
   <script src="xlsx-lite.js"></script>
   <script src="xlsx-preserve.js"></script>
   <script src="popup.js"></script>
   <script src="catalog-mode.js"></script>
   <script src="catalog-export-fix.js"></script>
+  <script src="simple-mode.js"></script>
 </body>
 </html>
