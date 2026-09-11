@@ -14,7 +14,7 @@ assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','exact-name-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -25,6 +25,7 @@ assert.ok(popupHtml.includes('QUÉT KHO TRANG ĐANG MỞ'));
 assert.ok(popupHtml.includes('ĐẦU RA = FILE NHẬP TỒN KHO CHÍNH THỨC SAPO'));
 assert.ok(popupHtml.includes('generic-shop-rules.js'));
 assert.ok(popupHtml.includes('generic-warehouse-mode.js'));
+assert.ok(popupHtml.includes('kids-product-size-mode.js'));
 assert.ok(popupHtml.includes('product-create-core.js'));
 assert.ok(popupHtml.includes('catalog-ui-shell.js'), 'Phải dùng UI shell không có redirect HD');
 assert.ok(!popupHtml.includes('<script src="catalog-mode.js"></script>'), 'Không được load scanner legacy ép tab sang HD');
@@ -32,9 +33,6 @@ assert.ok(popupHtml.includes('catalog-generic-mode.js'));
 assert.ok(popupHtml.includes('catalog-api-mode.js'));
 assert.ok(popupHtml.indexOf('catalog-ui-shell.js') < popupHtml.indexOf('catalog-generic-mode.js'), 'UI shell phải mount trước scanner danh mục an toàn');
 assert.ok(popupHtml.indexOf('catalog-generic-mode.js') < popupHtml.indexOf('catalog-api-mode.js'), 'API mode phải override scanner cũ sau cùng');
-assert.ok(popupHtml.includes('exact-name-mode.js'), 'Phải bật chế độ tên trùng chính xác');
-assert.ok(popupHtml.indexOf('simple-mode.js') < popupHtml.indexOf('exact-name-mode.js'), 'Exact-name mode phải override matcher cũ');
-assert.ok(popupHtml.indexOf('exact-name-mode.js') < popupHtml.indexOf('one-file-mode.js'), 'Matcher exact-name phải chạy trước bộ tạo file tồn');
 assert.ok(popupHtml.includes('one-file-mode.js'));
 assert.ok(popupHtml.includes('maintenance-ui.js'));
 
@@ -45,13 +43,6 @@ assert.ok(catalogShell.includes('QUÉT TOÀN BỘ TRANG ĐANG MỞ'));
 assert.ok(catalogShell.includes('không tự chuyển sang danh mục khác'));
 assert.ok(!catalogShell.includes('chrome.tabs.update'), 'UI shell tuyệt đối không được đổi URL tab nguồn');
 assert.ok(!catalogShell.includes('/hd-pc36029.html'), 'UI shell không được khóa cứng HD người lớn');
-
-const exactName = fs.readFileSync(path.join(dir, 'exact-name-mode.js'), 'utf8');
-assert.ok(exactName.includes('matchByExactNameOnly'));
-assert.ok(exactName.includes("'tên chính xác + size chính xác'"));
-assert.ok(exactName.includes('bỏ qua: tên không trùng chính xác'));
-assert.ok(!exactName.includes('scoreProductMatch'), 'Exact-name mode không được đoán tên gần giống');
-assert.ok(!exactName.includes('targetNameForProduct'), 'Exact-name mode không được dùng bảng map tên cũ');
 
 const safeGuard = fs.readFileSync(path.join(dir, 'safe-category-guard.js'), 'utf8');
 assert.ok(safeGuard.includes('data-dhl-safe-action'));
@@ -103,12 +94,14 @@ assert.ok(productCreate.includes('buildWorkbook'));
 
 const oneFile = fs.readFileSync(path.join(dir, 'one-file-mode.js'), 'utf8');
 assert.ok(oneFile.includes('TẠO FILE NHẬP TỒN KHO SAPO'));
-assert.ok(oneFile.includes("sapoData.inputType==='warehouse'"));
+assert.ok(oneFile.includes('products_export'), 'Luồng tạo file phải yêu cầu file Sapo có SKU');
+assert.ok(oneFile.includes('hasOriginalSku'), 'Nút tạo file phải kiểm tra SKU gốc thay vì inputType warehouse');
+assert.ok(!oneFile.includes("sapoData.inputType==='warehouse'"), 'Không được khóa nút chỉ vì file không phải warehouse export');
 assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
 assert.ok(oneFile.includes("row.sapo&&row.sapo.sku"), 'File tồn phải dùng SKU gốc từ Sapo');
 assert.ok(!oneFile.includes('skuBaseForStandardName'), 'Không được tự map/sinh SKU khi cập nhật tồn');
-assert.ok(oneFile.includes('không ghép được sẽ BỎ QUA'));
 assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
+assert.ok(oneFile.includes('branchNameOneFile'), 'Phải có ô chi nhánh để product export vẫn tạo được file tồn chuẩn');
 
 const catalogApi = fs.readFileSync(path.join(dir, 'catalog-api-mode.js'), 'utf8');
 assert.ok(catalogApi.includes('/product/child?psId='));
@@ -131,10 +124,10 @@ console.log('BUILD PASS', {
   scanner: 'current category + no legacy HD redirect + dynamic text/numeric sizes',
   matching: 'exact normalized product name + exact size; unmatched rows skipped',
   inventorySku: 'original Sapo SKU only',
+  inventoryInput: 'product export with original SKU; warehouse export may supply branch only',
   maintenanceScan: 'API /product/child sequential scan, zero clicks, zero worker tabs',
   quickTest: 'one product via API only',
   devReload: 'pull code then chrome.runtime.reload',
-  dailyInput: 'Sapo warehouse export',
   inventoryOutput: 'official Sapo inventory import template',
   newProductOutput: 'Sapo product import template + image links + stock',
   sourceHost: manifest.host_permissions[0]
