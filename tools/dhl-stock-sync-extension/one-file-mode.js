@@ -78,13 +78,20 @@
     const a=document.createElement('a');
     a.href=url;
     a.download=fileName;
+    a.style.display='none';
+    document.body.appendChild(a);
     a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
   }
 
   async function makeOneFileImport(){
     const btn=document.getElementById('makeImportOneFile');
-    if(btn)btn.disabled=true;
+    const oldText=btn?btn.textContent:'';
+    if(btn){
+      btn.disabled=true;
+      btn.textContent='ĐANG TẠO FILE...';
+    }
     try{
       if(!sapoData||!exportBuffer)throw new Error('Chưa chọn file xuất Sapo');
       if(!scanAfterFile)throw new Error('Hãy bấm QUÉT KHO HD 2026 sau khi chọn file');
@@ -98,16 +105,22 @@
         inventory[String(row.sapo.variantId)]=stock;
       }
 
-      setState(`Đang sửa cột tồn kho của ${Object.keys(inventory).length} biến thể trong chính file xuất Sapo...`);
+      setState(`Đang tạo file từ chính file xuất Sapo: ${Object.keys(inventory).length} biến thể có tồn mới...`);
+      await new Promise((resolve)=>setTimeout(resolve,20));
       const out=await direct.updateExportWorkbook(xlsx,exportBuffer.slice(0),sapoData,inventory);
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_XUAT_DA_CAP_NHAT_TON_${stamp}.xlsx`);
-      setState(`Đã tạo file: sửa đúng ${out.rows} ô tồn kho (${out.zeroCount} ô về 0). Các dòng chưa ghép giữ nguyên như file xuất. Tên, SKU, ảnh, giá, mô tả, Alias và ID không bị sửa.`,'ok');
+      const added=out.addedInventoryColumn?' Đã tự thêm cột Cửa hàng chính_Tồn kho vì file xuất Sapo không có cột này.':'';
+      setState(`ĐÃ XONG: sửa ${out.rows} biến thể (${out.zeroCount} biến thể về 0).${added} Các biến thể chưa ghép để trống cột tồn, không tự ghi 0. Tên, SKU, ảnh, giá, mô tả, Alias và ID giữ nguyên.`,'ok');
     }catch(error){
-      setState(`Lỗi: ${error.message||String(error)}`,'error');
+      setState(`LỖI TẠO FILE: ${error.message||String(error)}`,'error');
     }finally{
-      refreshButton();
+      if(btn){
+        btn.textContent=oldText||'TẠO FILE SAPO ĐÃ CẬP NHẬT TỒN';
+        const rows=matchedRows();
+        btn.disabled=!(sapoData&&exportBuffer&&scanAfterFile&&rows.length);
+      }
     }
   }
 
