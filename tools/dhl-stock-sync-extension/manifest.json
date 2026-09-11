@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "minimum_chrome_version": "116",
-  "description": "Quét đúng các màu cần dùng và 5 size S/M/L/XL/XXL từ si.aobongda.net, rồi tạo file nhập Sapo chỉ thay đổi tồn kho.",
+  "description": "Quét tuần tự toàn bộ popup tồn trên trang danh mục HD, lấy đúng S/M/L/XL/XXL và tạo file nhập tồn kho Sapo.",
   "permissions": ["storage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {"service_worker": "background.js"},
