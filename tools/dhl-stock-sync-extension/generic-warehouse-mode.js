@@ -15,11 +15,30 @@
     return null;
   }
 
+  // File Quản lý kho trẻ em thường ghi kiểu:
+  //   Size 5 (20-25kg), Size 7 (26-29kg), Size 9 (30-34kg),
+  //   Size 11 (35-39kg), Size 13 (40-44kg), Size 15 dưới 50kg.
+  // Không được normalize cả chuỗi thành SIZE52025KG / SIZE134044KG.
+  // Nếu có chữ "Size" + số thì số đó mới là size thật cần đối chiếu với popup nguồn.
+  function normalizeWarehouseSize(value){
+    const raw=text(value);
+    if(!raw)return'';
+
+    const explicit=raw.match(/(?:^|\b)size\s*[:\-]?\s*(\d{1,3})(?=\D|$)/i);
+    if(explicit)return matcher.normalizeSize(explicit[1]);
+
+    const numeric=raw.match(/^\s*(\d{1,3})\s*$/);
+    if(numeric)return matcher.normalizeSize(numeric[1]);
+
+    return matcher.normalizeSize(raw);
+  }
+
   function parseLabel(label){
     const raw=text(label);
-    const hit=raw.match(/\s*\/\s*([^/]{1,16})\s*$/);
+    // Cho phép phần size dài hơn vì size trẻ em có kèm cân nặng trong ngoặc/chữ.
+    const hit=raw.match(/\s*\/\s*([^/]{1,48})\s*$/);
     if(!hit)return null;
-    const size=matcher.normalizeSize(hit[1]);
+    const size=normalizeWarehouseSize(hit[1]);
     if(!size)return null;
     let rawName=raw.slice(0,hit.index).trim();
     rawName=rawName.replace(/\s+(?:Không in(?: tên số)?)\s*$/i,'').trim();
@@ -92,6 +111,6 @@
     return previous(buffer.slice?buffer.slice(0):buffer);
   };
 
-  globalThis.DHLGenericWarehouse={parseLabel,parseGenericWarehouse};
+  globalThis.DHLGenericWarehouse={parseLabel,parseGenericWarehouse,normalizeWarehouseSize};
   xlsx.__genericWarehouseV1=true;
 })();
