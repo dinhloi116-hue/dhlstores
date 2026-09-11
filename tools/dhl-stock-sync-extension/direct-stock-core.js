@@ -51,6 +51,17 @@
     });
   }
 
+  function shiftCellRefsRight(xlsx,xml,startColIndex){
+    // Sapo's official import layout places *_Tồn kho BEFORE "Id phiên bản".
+    // Product export usually ends at Id phiên bản. Shift that column (and any later
+    // cells) one place to the right, then insert the stock column in the freed slot.
+    return String(xml||'').replace(/(<(?:[A-Za-z_][\w.-]*:)?c\b[^>]*\br=")([A-Z]+)(\d+)(")/g,(whole,prefix,col,row,suffix)=>{
+      const index=xlsx.colToIndex(col);
+      if(index<startColIndex)return whole;
+      return `${prefix}${xlsx.indexToCol(index+1)}${row}${suffix}`;
+    });
+  }
+
   async function updateExportWorkbook(xlsx,exportBuffer,sapoData,inventoryByVariantId){
     if(!xlsx||typeof xlsx.readFirstSheet!=='function')throw new Error('Thiếu bộ đọc Excel');
     if(!sapoData)throw new Error('Chưa đọc file xuất Sapo');
@@ -62,21 +73,29 @@
     let inventoryHeader=resolveInventoryHeader(map);
     let inventoryColIndex;
     let addedInventoryColumn=false;
+    let insertedBeforeVariantId=false;
 
     if(inventoryHeader){
       inventoryColIndex=Number(map[inventoryHeader]);
     }else{
-      // File XUẤT sản phẩm của Sapo thường không có cột tồn kho.
-      // Ta dùng chính file đó làm file NHẬP bằng cách thêm cột tồn kho ở cuối,
-      // không xê dịch hay sửa bất kỳ cột dữ liệu gốc nào.
       inventoryHeader=DEFAULT_INVENTORY_HEADER;
-      const occupied=Object.values(map).filter((v)=>Number.isInteger(v));
-      inventoryColIndex=Math.max((sapoData.headers||[]).length,occupied.length?Math.max(...occupied)+1:0);
-      const col=xlsx.indexToCol(inventoryColIndex);
-      const headerResult=setTextCell(xml,1,col,inventoryHeader);
+      const variantIdColIndex=Number(map['Id phiên bản']);
+      if(!Number.isInteger(variantIdColIndex))throw new Error('Không xác định được vị trí cột Id phiên bản');
+
+      // IMPORTANT: do NOT append stock after Id phiên bản. Sapo accepts the file,
+      // but its product importer can ignore fields placed after Id phiên bản.
+      // Insert stock immediately before Id phiên bản instead.
+      xml=shiftCellRefsRight(xlsx,xml,variantIdColIndex);
+      inventoryColIndex=variantIdColIndex;
+      const stockCol=xlsx.indexToCol(inventoryColIndex);
+      const headerResult=setTextCell(xml,1,stockCol,inventoryHeader);
       if(!headerResult.changed)throw new Error('Không thêm được cột Tồn kho vào file xuất Sapo');
-      xml=extendDimension(headerResult.xml,col);
+      xml=headerResult.xml;
+
+      const oldLast=Math.max((sapoData.headers||[]).length-1,...Object.values(map).filter((v)=>Number.isInteger(v)));
+      xml=extendDimension(xml,xlsx.indexToCol(oldLast+1));
       addedInventoryColumn=true;
+      insertedBeforeVariantId=true;
     }
 
     const col=xlsx.indexToCol(inventoryColIndex);
@@ -111,10 +130,11 @@
       inventoryHeader,
       inventoryCol:col,
       addedInventoryColumn,
+      insertedBeforeVariantId,
       changedIds,
       skippedVariantCount:Math.max(0,(sapoData.variants||[]).length-changed)
     };
   }
 
-  return{DEFAULT_INVENTORY_HEADER,resolveInventoryHeader,setNumericCell,setTextCell,extendDimension,updateExportWorkbook};
+  return{DEFAULT_INVENTORY_HEADER,resolveInventoryHeader,setNumericCell,setTextCell,extendDimension,shiftCellRefsRight,updateExportWorkbook};
 });
