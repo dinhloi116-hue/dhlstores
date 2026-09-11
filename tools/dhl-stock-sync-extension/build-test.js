@@ -9,6 +9,7 @@ assert.ok(manifest.host_permissions.includes('https://si.aobongda.net/*'));
 assert.ok(!manifest.host_permissions.some((x) => /sapo/i.test(x)), 'Extension không truy cập Sapo trực tiếp');
 assert.ok(manifest.permissions.includes('sidePanel'));
 assert.ok(manifest.permissions.includes('scripting'));
+assert.ok(manifest.permissions.includes('tabs'));
 assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
@@ -77,22 +78,32 @@ assert.ok(oneFile.includes('skuBaseForStandardName'));
 assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
 
 const catalogGeneric = fs.readFileSync(path.join(dir, 'catalog-generic-mode.js'), 'utf8');
-assert.ok(catalogGeneric.includes('QUÉT SẢN PHẨM TRANG ĐANG MỞ'));
+assert.ok(catalogGeneric.includes('QUÉT TOÀN BỘ TRANG ĐANG MỞ'));
+assert.ok(catalogGeneric.includes('TEST NHANH 1 SP'));
 assert.ok(catalogGeneric.includes('TẠO FILE SẢN PHẨM SAPO (.XLSX)'));
 assert.ok(catalogGeneric.includes('imageUrl'));
 assert.ok(catalogGeneric.includes('DHL_SCAN_CURRENT_POPUP'));
+assert.ok(catalogGeneric.includes('chrome.tabs.create({url:sourceTab.url,active:false})'), 'Bảo trì phải quét trong tab nền');
+assert.ok(catalogGeneric.includes('isProductDetailUrl'), 'Phải chặn bắt đầu quét từ trang chi tiết');
+assert.ok(catalogGeneric.includes('safe-quick-action-not-found'), 'Không được fallback click link sản phẩm');
+assert.ok(catalogGeneric.includes("['pointerdown','mousedown','mouseup','click','auxclick','touchstart']"), 'Phải chặn event điều hướng ở capture phase');
+assert.ok(catalogGeneric.includes('removeWorkerTab'), 'Tab nền phải được đóng sau khi quét');
 
 const maintenanceUi = fs.readFileSync(path.join(dir, 'maintenance-ui.js'), 'utf8');
 assert.ok(maintenanceUi.includes('BẢO TRÌ NGUỒN'));
 assert.ok(maintenanceUi.includes('Chỉ dùng khi web có sản phẩm / màu mới'));
 assert.ok(maintenanceUi.includes('body.hidden = true'));
+assert.ok(maintenanceUi.includes('NẠP LẠI TOOL SAU KHI PULL CODE'));
+assert.ok(maintenanceUi.includes('chrome.runtime.reload()'));
 
 console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'current category + dynamic text/numeric sizes + no product-detail navigation',
+  maintenanceScan: 'background worker tab + strict safe quick-action only',
+  quickTest: 'one product only',
+  devReload: 'pull code then chrome.runtime.reload',
   dailyInput: 'Sapo warehouse export',
   inventoryOutput: 'official Sapo inventory import template',
   newProductOutput: 'Sapo product import template + image links + stock',
-  maintenanceCatalog: 'collapsed by default',
   sourceHost: manifest.host_permissions[0]
 });
