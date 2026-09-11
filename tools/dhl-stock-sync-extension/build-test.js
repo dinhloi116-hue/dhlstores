@@ -12,8 +12,9 @@ assert.ok(manifest.permissions.includes('scripting'));
 assert.ok(manifest.permissions.includes('tabs'));
 assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
+assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','popup.html','popup.js','popup.css','catalog-mode.js','catalog-generic-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-mode.js','catalog-generic-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -28,6 +29,13 @@ assert.ok(popupHtml.includes('product-create-core.js'));
 assert.ok(popupHtml.includes('catalog-generic-mode.js'));
 assert.ok(popupHtml.includes('one-file-mode.js'));
 assert.ok(popupHtml.includes('maintenance-ui.js'));
+
+const safeGuard = fs.readFileSync(path.join(dir, 'safe-category-guard.js'), 'utf8');
+assert.ok(safeGuard.includes('data-dhl-safe-action'));
+assert.ok(safeGuard.includes("anchor.setAttribute('href', 'javascript:void(0)')"));
+assert.ok(safeGuard.includes('event.preventDefault()'));
+assert.ok(!safeGuard.includes('stopImmediatePropagation'), 'Guard không được chặn AJAX/delegated handler của web nguồn');
+assert.ok(safeGuard.includes('MutationObserver'), 'Sản phẩm lazy-load cũng phải được bảo vệ');
 
 const content = fs.readFileSync(path.join(dir, 'content.js'), 'utf8');
 assert.ok(content.includes('DHL_SCAN_HD_LIVE'));
@@ -86,7 +94,6 @@ assert.ok(catalogGeneric.includes('DHL_SCAN_CURRENT_POPUP'));
 assert.ok(catalogGeneric.includes('chrome.tabs.create({url:sourceTab.url,active:false})'), 'Bảo trì phải quét trong tab nền');
 assert.ok(catalogGeneric.includes('isProductDetailUrl'), 'Phải chặn bắt đầu quét từ trang chi tiết');
 assert.ok(catalogGeneric.includes('safe-quick-action-not-found'), 'Không được fallback click link sản phẩm');
-assert.ok(catalogGeneric.includes("['pointerdown','mousedown','mouseup','click','auxclick','touchstart']"), 'Phải chặn event điều hướng ở capture phase');
 assert.ok(catalogGeneric.includes('removeWorkerTab'), 'Tab nền phải được đóng sau khi quét');
 
 const maintenanceUi = fs.readFileSync(path.join(dir, 'maintenance-ui.js'), 'utf8');
@@ -99,7 +106,7 @@ assert.ok(maintenanceUi.includes('chrome.runtime.reload()'));
 console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'current category + dynamic text/numeric sizes + no product-detail navigation',
-  maintenanceScan: 'background worker tab + strict safe quick-action only',
+  maintenanceScan: 'background worker tab + safe add-to-cart href neutralization',
   quickTest: 'one product only',
   devReload: 'pull code then chrome.runtime.reload',
   dailyInput: 'Sapo warehouse export',
