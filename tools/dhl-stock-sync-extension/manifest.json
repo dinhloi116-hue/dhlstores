@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.13.4",
+  "version": "0.13.5",
   "minimum_chrome_version": "116",
-  "description": "Dùng file Quản lý kho chỉ để đối chiếu; quét tồn nguồn và luôn tạo file mới theo đúng mẫu nhập tồn kho chính thức của Sapo.",
+  "description": "Dùng file Quản lý kho chỉ để đối chiếu; quét tồn nguồn và luôn tạo file mới theo đúng mẫu nhập tồn kho chính thức của Sapo. Danh sách nguồn chỉ quét lại khi web có sản phẩm/màu mới.",
   "permissions": ["storage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {"service_worker": "background.js"},
