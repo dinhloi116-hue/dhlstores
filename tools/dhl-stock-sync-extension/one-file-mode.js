@@ -43,7 +43,7 @@
       setState(`Đã nhận ${sapoData.products.length} sản phẩm / ${sapoData.variants.length} biến thể. Bấm QUÉT KHO HD 2026 để lấy tồn mới.`,'ok');
     }else if(rows.length){
       const products=new Set(rows.map((row)=>String(row.sapo.productId))).size;
-      setState(`Sẵn sàng: ${rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm. Có thể tạo file nhập tồn kho ngay.`,'ok');
+      setState(`Sẵn sàng: ${rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm. Có thể tạo file đúng mẫu nhập Sapo.`,'ok');
     }else{
       setState('Đã quét nhưng chưa ghép được biến thể nào. Không tạo file.','error');
     }
@@ -102,18 +102,18 @@
         inventory[String(row.sapo.variantId)]=stock;
       }
 
-      setState(`Đang tạo file nhập tồn kho riêng cho ${Object.keys(inventory).length} biến thể...`);
+      setState(`Đang tạo file 36 cột đúng mẫu Sapo cho ${Object.keys(inventory).length} biến thể...`);
       await new Promise((resolve)=>setTimeout(resolve,20));
       const out=stockImport.buildInventoryWorkbook(xlsx,sapoData,inventory,'Cửa hàng chính');
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_NHAP_TON_KHO_${stamp}.xlsx`);
-      setState(`ĐÃ XONG: tạo ${out.rows} dòng tồn kho (${out.zeroCount} dòng tồn = 0). Nhập file này tại QUẢN LÝ KHO → TỒN KHO → NHẬP FILE. Sapo nhận theo SKU; không nhập ở màn Danh sách sản phẩm.`,'ok');
+      setState(`ĐÃ XONG: ${out.rows} dòng, đúng mẫu 36 cột; cột “Cửa hàng chính_Tồn kho” đã ghi tồn mới, cột cuối là Id phiên bản. Nhập lại ở Danh sách sản phẩm → Nhập file → Sản phẩm thường → Ghi đè → Xác định theo ID.`,'ok');
     }catch(error){
       setState(`LỖI TẠO FILE: ${error.message||String(error)}`,'error');
     }finally{
       if(btn){
-        btn.textContent=oldText||'TẠO FILE NHẬP TỒN KHO SAPO';
+        btn.textContent=oldText||'TẠO FILE TỒN KHO THEO MẪU SAPO';
         const rows=matchedRows();
         btn.disabled=!(sapoData&&exportBuffer&&scanAfterFile&&rows.length);
       }
@@ -133,7 +133,7 @@
       btn.id='makeImportOneFile';
       btn.className='success';
       btn.disabled=true;
-      btn.textContent='TẠO FILE NHẬP TỒN KHO SAPO';
+      btn.textContent='TẠO FILE TỒN KHO THEO MẪU SAPO';
       toolbar.appendChild(btn);
       const state=document.createElement('small');
       state.id='oneFileState';
@@ -147,13 +147,13 @@
 
     const guide=document.getElementById('dailyGuide');
     if(guide){
-      guide.innerHTML='<b>DÙNG HẰNG NGÀY — CHỈ 1 FILE</b><span style="display:block;margin-top:5px">1) Xuất sản phẩm từ Sapo → 2) chọn file xuất → 3) QUÉT KHO → 4) TẠO FILE NHẬP TỒN KHO → 5) vào <b>Quản lý kho → Tồn kho → Nhập file</b>. Không cần file xuất có sẵn cột tồn kho.</span>';
+      guide.innerHTML='<b>DÙNG HẰNG NGÀY — CHỈ 1 FILE XUẤT SAPO</b><span style="display:block;margin-top:5px">1) Xuất sản phẩm từ Sapo → 2) chọn file xuất → 3) QUÉT KHO → 4) TẠO FILE TỒN KHO THEO MẪU SAPO → 5) nhập lại tại <b>Danh sách sản phẩm → Nhập file</b>, chọn Sản phẩm thường + Ghi đè + Xác định theo ID.</span>';
     }
 
     const subtitle=document.querySelector('header p');
-    if(subtitle)subtitle.textContent='File xuất Sapo → quét nguồn → tạo file nhập tồn kho riêng theo SKU';
+    if(subtitle)subtitle.textContent='File xuất Sapo → quét nguồn → tạo file 36 cột đúng mẫu Sapo';
     const footer=document.querySelector('footer');
-    if(footer)footer.textContent='File đầu vào chỉ cần là file xuất Sapo có SKU. File đầu ra dành riêng cho Quản lý kho → Tồn kho → Nhập file.';
+    if(footer)footer.textContent='Đầu ra đúng mẫu nhập sản phẩm Sapo: Cửa hàng chính_Tồn kho ở cột 35, Id phiên bản ở cột 36.';
 
     const exportInput=document.getElementById('sapoExport');
     if(exportInput){
