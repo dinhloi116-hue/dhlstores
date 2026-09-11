@@ -11,14 +11,14 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>File xuất Sapo → quét tồn nguồn → sửa trực tiếp cột tồn → nhập lại Sapo</p>
+        <p>File xuất Sapo → quét nguồn → tạo file nhập tồn kho riêng theo SKU</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
     <section class="safety-note">
-      <b>CHỈ SỬA TỒN KHO TRÊN FILE XUẤT SAPO</b>
-      <span>Ví dụ nguồn Mexico / S = 7 → đúng dòng Mexico-S trong file xuất Sapo được sửa Tồn kho = 7. Tên, ảnh, giá, SKU, mô tả, Alias, Id sản phẩm và Id phiên bản giữ nguyên. Biến thể chưa ghép được giữ nguyên tồn cũ, không tự ghi 0.</span>
+      <b>CẬP NHẬT TỒN KHO BẰNG FILE CHUYÊN DỤNG</b>
+      <span>Tool dùng SKU của từng biến thể trong file xuất Sapo để tạo file nhập tồn kho riêng. Chỉ các biến thể ghép chắc chắn mới được xuất; tồn 0 thật vẫn ghi 0. Không sửa tên, ảnh, giá, mô tả hay ID.</span>
     </section>
 
     <section class="steps">
@@ -30,7 +30,7 @@
       <div class="step" id="templateStep" style="display:none">
         <b>Mẫu nhập Sapo cũ</b>
         <input id="sapoTemplate" type="file" accept=".xlsx" />
-        <small id="templateState">Không còn cần dùng ở chế độ 1 file.</small>
+        <small id="templateState">Không còn cần dùng.</small>
       </div>
       <div class="step actions">
         <b>2. Lấy tồn kho nguồn</b>
@@ -64,7 +64,7 @@
       </table>
     </div>
 
-    <footer>Hằng ngày chỉ cần 1 file xuất Sapo. Tool giữ nguyên dữ liệu và chỉ sửa tồn kho ở các biến thể ghép chắc chắn.</footer>
+    <footer>File đầu ra nhập tại Quản lý kho → Tồn kho → Nhập file. Sapo nhận diện theo SKU.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
@@ -72,6 +72,7 @@
   <script src="xlsx-lite.js"></script>
   <script src="xlsx-preserve.js"></script>
   <script src="direct-stock-core.js"></script>
+  <script src="stock-import-core.js"></script>
   <script src="popup.js"></script>
   <script src="catalog-mode.js"></script>
   <script src="catalog-export-fix.js"></script>
