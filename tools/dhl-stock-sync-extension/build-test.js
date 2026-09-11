@@ -14,7 +14,7 @@ assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -94,14 +94,18 @@ assert.ok(productCreate.includes('buildWorkbook'));
 
 const oneFile = fs.readFileSync(path.join(dir, 'one-file-mode.js'), 'utf8');
 assert.ok(oneFile.includes('TẠO FILE NHẬP TỒN KHO SAPO'));
-assert.ok(oneFile.includes('products_export'), 'Luồng tạo file phải yêu cầu file Sapo có SKU');
-assert.ok(oneFile.includes('hasOriginalSku'), 'Nút tạo file phải kiểm tra SKU gốc thay vì inputType warehouse');
-assert.ok(!oneFile.includes("sapoData.inputType==='warehouse'"), 'Không được khóa nút chỉ vì file không phải warehouse export');
-assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
-assert.ok(oneFile.includes("row.sapo&&row.sapo.sku"), 'File tồn phải dùng SKU gốc từ Sapo');
+assert.ok(oneFile.includes('file TỒN KHO'), 'Luồng hằng ngày phải lấy file tồn kho làm gốc');
+assert.ok(oneFile.includes('file DANH SÁCH'), 'Luồng phải có file danh sách riêng để tra SKU');
+assert.ok(oneFile.includes('skuCatalogFile'), 'UI phải có input thứ hai cho products_export có SKU');
+assert.ok(oneFile.includes("parsed.inputType!=='warehouse'"), 'Input chính phải xác nhận đúng file tồn kho');
+assert.ok(oneFile.includes("parsed.inputType==='warehouse'"), 'File danh sách phải từ chối nếu người dùng chọn nhầm file tồn kho');
+assert.ok(oneFile.includes('catalogSkuIndex'), 'Phải tạo bảng tra SKU riêng từ products_export');
+assert.ok(oneFile.includes('rowKey(variant.name,displaySize(variant))'), 'SKU phải ghép theo Tên + Size');
+assert.ok(oneFile.includes('coverage.matched!==coverage.total'), 'Không được xuất nếu 2 file chưa nối SKU đầy đủ');
+assert.ok(oneFile.includes('lookup.sku'), 'File nhập phải lấy SKU gốc từ file danh sách');
 assert.ok(!oneFile.includes('skuBaseForStandardName'), 'Không được tự map/sinh SKU khi cập nhật tồn');
+assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
 assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
-assert.ok(oneFile.includes('branchNameOneFile'), 'Phải có ô chi nhánh để product export vẫn tạo được file tồn chuẩn');
 
 const catalogApi = fs.readFileSync(path.join(dir, 'catalog-api-mode.js'), 'utf8');
 assert.ok(catalogApi.includes('/product/child?psId='));
@@ -122,12 +126,12 @@ assert.ok(maintenanceUi.includes('chrome.runtime.reload()'));
 console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'current category + no legacy HD redirect + dynamic text/numeric sizes',
-  matching: 'exact normalized product name + exact size; unmatched rows skipped',
-  inventorySku: 'original Sapo SKU only',
-  inventoryInput: 'product export with original SKU; warehouse export may supply branch only',
+  matching: 'warehouse primary; products_export supplies original SKU by exact normalized name + display size',
+  inventorySku: 'original Sapo SKU only; never generated',
   maintenanceScan: 'API /product/child sequential scan, zero clicks, zero worker tabs',
   quickTest: 'one product via API only',
   devReload: 'pull code then chrome.runtime.reload',
+  dailyInput: 'warehouse export + products_export SKU catalog',
   inventoryOutput: 'official Sapo inventory import template',
   newProductOutput: 'Sapo product import template + image links + stock',
   sourceHost: manifest.host_permissions[0]
