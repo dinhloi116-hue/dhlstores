@@ -11,14 +11,14 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>File Quản lý kho Sapo → quét nguồn → sửa trực tiếp Tồn kho → xuất lại đúng file kho</p>
+        <p>File Quản lý kho → quét nguồn → xuất đúng mẫu Cập nhật tồn kho phiên bản sản phẩm</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
     <section class="safety-note">
-      <b>DÙNG TRỰC TIẾP FILE QUẢN LÝ KHO SAPO</b>
-      <span>Tool nhận file “Danh sách quản lý kho phiên bản sản phẩm”. Chỉ lấy 26 sản phẩm người lớn size S/M/L/XL/XXL, quét tồn nguồn rồi sửa đúng cột Tồn kho. Dòng trẻ em và dòng chưa ghép được giữ nguyên.</span>
+      <b>ĐẦU RA = FILE NHẬP TỒN KHO CHÍNH THỨC SAPO</b>
+      <span>Tool dùng file “Danh sách quản lý kho phiên bản sản phẩm” làm đầu vào, tự đọc tên chi nhánh, quét tồn nguồn và tạo file nhập gồm: Tên phiên bản sản phẩm, SKU*, Mã lô, Ngày sản xuất, Hạn sử dụng, Tồn kho, Vị trí lưu kho. Không nhập lại file Quản lý kho.</span>
     </section>
 
     <section class="steps">
@@ -64,7 +64,7 @@
       </table>
     </div>
 
-    <footer>Đầu ra giữ nguyên cấu trúc file Quản lý kho Sapo và chỉ sửa cột Tồn kho ở các biến thể ghép chắc chắn.</footer>
+    <footer>File đầu ra là mẫu nhập tồn kho chuyên dụng của Sapo và được định danh bằng SKU*.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
