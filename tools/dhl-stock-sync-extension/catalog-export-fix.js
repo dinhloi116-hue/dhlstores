@@ -4,7 +4,7 @@
   const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
   function plain(value) {
-    return String(value || '').toLowerCase().replace(/đ/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return String(value || '').toLowerCase().replace(/đ/g,'d').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
   }
 
   function sampleColor(sampleName) {
@@ -25,16 +25,7 @@
       const sample = (sampleSkuByParent || {})[String(product.parentId)] || {};
       const refColor = sampleColor(sample.name);
       if (!byColor.size) {
-        rows.push({
-          parentId: product.parentId,
-          parentName: product.parentName,
-          color: '',
-          standardName: product.parentName,
-          sampleSku: sample.code || '',
-          sampleColor: refColor,
-          sampleSkuMatchesColor: false,
-          stock: {}
-        });
+        rows.push({ parentId: product.parentId, parentName: product.parentName, color: '', standardName: product.parentName, sampleSku: sample.code || '', sampleColor: refColor, sampleSkuMatchesColor: false, stock: {} });
         continue;
       }
       for (const group of byColor.values()) {
@@ -94,17 +85,23 @@
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
 
-  function replaceExportButton() {
-    const oldBtn = document.getElementById('exportCatalogSource');
-    if (!oldBtn || oldBtn.dataset.splitColumnsFixed === '1') return;
-    const btn = oldBtn.cloneNode(true);
+  function upgradeExportButton() {
+    const btn = document.getElementById('exportCatalogSource');
+    if (!btn || btn.dataset.splitColumnsFixed === '1') return;
+
+    // Giữ nguyên chính nút mà catalog-mode.js đang quản lý disabled/enabled.
+    // Bản trước clone nút, khiến catalog-mode bật nút cũ đã bị gỡ còn nút mới vẫn disabled.
     btn.dataset.splitColumnsFixed = '1';
     btn.textContent = 'XUẤT CSV TÁCH CỘT';
-    oldBtn.replaceWith(btn);
-    btn.addEventListener('click', exportSplitColumns);
+
+    btn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      await exportSplitColumns();
+    }, true);
   }
 
-  replaceExportButton();
-  const observer = new MutationObserver(replaceExportButton);
+  upgradeExportButton();
+  const observer = new MutationObserver(upgradeExportButton);
   observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
