@@ -54,9 +54,12 @@ assert.ok(popupJs.includes('dòng chưa chắc chắn sẽ BỎ QUA, không ghi 
 assert.ok(popupJs.includes("const VERSION = '0.11.0'"));
 
 const catalog = fs.readFileSync(path.join(dir, 'catalog-mode.js'), 'utf8');
-assert.ok(catalog.includes('QUÉT DANH SÁCH NGUỒN'));
+assert.ok(catalog.includes('QUÉT TOÀN BỘ TRANG HD'));
 assert.ok(catalog.includes('XUẤT CSV TÊN + SKU'));
-assert.ok(catalog.includes("{ type: 'DHL_SCAN_HD_LIVE', hints: [] }"), 'Catalog mode phải chạy không cần file Sapo');
+assert.ok(catalog.includes('discoverAllProductCards'), 'Catalog mode phải nhận diện toàn bộ card sản phẩm hiện có trên trang');
+assert.ok(catalog.includes('scanAllCatalogProducts'), 'Catalog mode phải quét lần lượt toàn bộ card đã nhận diện');
+assert.ok(catalog.includes('DHL_SCAN_CURRENT_POPUP'), 'Catalog mode phải đọc popup từng sản phẩm mà không cần file Sapo');
+assert.ok(catalog.includes('Không lọc riêng ĐT 2026'), 'Catalog mode không được hard-code chỉ ĐT 2026');
 assert.ok(catalog.includes('Tên chuẩn đề xuất Sapo'));
 assert.ok(catalog.includes('SKU mẫu nguồn'));
 assert.ok(catalog.includes("['S', 'M', 'L', 'XL', 'XXL']"));
@@ -73,6 +76,7 @@ console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'Sapo-target colors + exactly S/M/L/XL/XXL + AJAX wait',
   catalogModeWithoutSapo: true,
+  catalogScansAllVisibleCards: true,
   catalogCsv: true,
   strictColorMapping: true,
   ignoresExtraSizes: true,
