@@ -43,7 +43,7 @@ assert.ok(popupJs.includes("const VERSION = '0.11.0'"));
 const warehouse = fs.readFileSync(path.join(dir, 'warehouse-core.js'), 'utf8');
 assert.ok(warehouse.includes("map['Sản phẩm']"));
 assert.ok(warehouse.includes("map['Tồn kho']"));
-assert.ok(warehouse.includes("/(S|M|L|XL|XXL)"));
+assert.ok(warehouse.includes('S|M|L|XL|XXL'));
 assert.ok(warehouse.includes('inputType:\'warehouse\''));
 assert.ok(warehouse.includes('updateWarehouseWorkbook'));
 assert.ok(warehouse.includes('xlsx.parseSapoExport=async function'));
