@@ -5,7 +5,7 @@ const dir = __dirname;
 
 const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, '0.10.0');
+assert.strictEqual(manifest.version, '0.11.0');
 assert.ok(manifest.host_permissions.includes('https://si.aobongda.net/*'));
 assert.ok(!manifest.host_permissions.some((x) => /sapo/i.test(x)), 'Extension không truy cập Sapo trực tiếp');
 assert.ok(manifest.permissions.includes('sidePanel'));
@@ -13,6 +13,7 @@ assert.ok(manifest.permissions.includes('scripting'));
 assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
+assert.ok(manifest.content_scripts[0].js.includes('match-core.js'), 'Content script phải có match-core để chọn đúng màu theo file Sapo');
 for (const file of ['background.js','popup.html','popup.js','popup.css','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
@@ -30,11 +31,17 @@ assert.ok(content.includes('openStockPopup'));
 assert.ok(content.includes('quickCandidates'));
 assert.ok(content.includes('scanHdLive'));
 assert.ok(content.includes("const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL']"));
-assert.ok(content.includes("root.querySelectorAll('input[type=\"radio\"]')"), 'Màu phải lấy từ radio thật trong popup');
-assert.ok(content.includes('Đủ đúng S/M/L/XL/XXL thì chuyển màu ngay'));
+assert.ok(content.includes('selectTargetControls'), 'Scanner phải chỉ chọn màu mà file Sapo đang cần');
+assert.ok(content.includes('switchColorAndRead'), 'Scanner phải chờ AJAX đổi màu trước khi đọc tồn');
+assert.ok(content.includes('elapsed >= 650'), 'Không được đọc ngay bảng tồn của màu cũ');
 assert.ok(content.includes("ignoredSizes: ['XXXL', 'XXXXL', 'XXXXXL']"));
-assert.ok(!content.includes("'[class*=\"quick\"]'"), 'Không được lấy cả quick wrapper làm popup tồn');
+assert.ok(content.includes('missingColorHints'));
 assert.ok(content.includes('/product/child?psId='), 'Chỉ giữ API làm fallback nhận màu mặc định');
+
+const matchCore = fs.readFileSync(path.join(dir, 'match-core.js'), 'utf8');
+assert.ok(matchCore.includes('colorCompatibility'));
+assert.ok(matchCore.includes("'kem'"), 'Kem phải được coi là họ màu be/sữa');
+assert.ok(matchCore.includes('màu tương thích'), 'Ghép phải chặn màu không tương thích');
 
 const popupJs = fs.readFileSync(path.join(dir, 'popup.js'), 'utf8');
 assert.ok(popupJs.includes('ensureHdCategoryTab'));
@@ -54,7 +61,8 @@ assert.ok(!preserve.includes('chưa ghép đủ size'), 'Phải cho phép cập 
 
 console.log('BUILD PASS', {
   version: manifest.version,
-  scanner: 'strict popup colors + exactly S/M/L/XL/XXL',
+  scanner: 'Sapo-target colors + exactly S/M/L/XL/XXL + AJAX wait',
+  strictColorMapping: true,
   ignoresExtraSizes: true,
   variantLevelImport: true,
   partialImport: true,
