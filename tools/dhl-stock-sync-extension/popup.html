@@ -11,14 +11,14 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>File Quản lý kho → quét nguồn → xuất đúng mẫu Cập nhật tồn kho phiên bản sản phẩm</p>
+        <p>File Quản lý kho → quét danh mục đang mở → xuất đúng mẫu nhập tồn kho Sapo</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
     <section class="safety-note">
       <b>ĐẦU RA = FILE NHẬP TỒN KHO CHÍNH THỨC SAPO</b>
-      <span>Tool dùng file “Danh sách quản lý kho phiên bản sản phẩm” làm đầu vào, tự đọc tên chi nhánh, quét tồn nguồn và tạo file nhập gồm: Tên phiên bản sản phẩm, SKU*, Mã lô, Ngày sản xuất, Hạn sử dụng, Tồn kho, Vị trí lưu kho. Không nhập lại file Quản lý kho.</span>
+      <span>Mở đúng danh mục nguồn cần đồng bộ (HD, trẻ em, CLB/ĐT...), chọn file Quản lý kho Sapo rồi quét. Tool lấy đúng sản phẩm/màu/size trên trang đang mở và tạo file nhập tồn kho mới; không sửa file Quản lý kho gốc.</span>
     </section>
 
     <section class="steps">
@@ -34,7 +34,7 @@
       </div>
       <div class="step actions">
         <b>2. Lấy tồn kho nguồn</b>
-        <button id="scanHd" class="primary">QUÉT KHO HD 2026</button>
+        <button id="scanHd" class="primary">QUÉT KHO TRANG ĐANG MỞ</button>
         <button id="scanCurrent" class="secondary">TEST POPUP ĐANG MỞ</button>
       </div>
     </section>
@@ -64,19 +64,22 @@
       </table>
     </div>
 
-    <footer>File đầu ra là mẫu nhập tồn kho chuyên dụng của Sapo và được định danh bằng SKU*.</footer>
+    <footer>Phần BẢO TRÌ NGUỒN ở cuối chỉ cần dùng khi web có sản phẩm/màu mới.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
   <script src="shop-rules.js"></script>
+  <script src="generic-shop-rules.js"></script>
   <script src="xlsx-lite.js"></script>
   <script src="warehouse-core.js"></script>
+  <script src="generic-warehouse-mode.js"></script>
   <script src="xlsx-preserve.js"></script>
   <script src="direct-stock-core.js"></script>
   <script src="stock-import-core.js"></script>
+  <script src="product-create-core.js"></script>
   <script src="popup.js"></script>
   <script src="catalog-mode.js"></script>
-  <script src="catalog-export-fix.js"></script>
+  <script src="catalog-generic-mode.js"></script>
   <script src="maintenance-ui.js"></script>
   <script src="simple-mode.js"></script>
   <script src="one-file-mode.js"></script>
