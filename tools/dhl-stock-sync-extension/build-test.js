@@ -14,7 +14,7 @@ assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-mode.js','catalog-generic-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -27,6 +27,8 @@ assert.ok(popupHtml.includes('generic-shop-rules.js'));
 assert.ok(popupHtml.includes('generic-warehouse-mode.js'));
 assert.ok(popupHtml.includes('product-create-core.js'));
 assert.ok(popupHtml.includes('catalog-generic-mode.js'));
+assert.ok(popupHtml.includes('catalog-api-mode.js'));
+assert.ok(popupHtml.indexOf('catalog-generic-mode.js') < popupHtml.indexOf('catalog-api-mode.js'), 'API mode phải override scanner cũ sau cùng');
 assert.ok(popupHtml.includes('one-file-mode.js'));
 assert.ok(popupHtml.includes('maintenance-ui.js'));
 
@@ -85,16 +87,14 @@ assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
 assert.ok(oneFile.includes('skuBaseForStandardName'));
 assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
 
-const catalogGeneric = fs.readFileSync(path.join(dir, 'catalog-generic-mode.js'), 'utf8');
-assert.ok(catalogGeneric.includes('QUÉT TOÀN BỘ TRANG ĐANG MỞ'));
-assert.ok(catalogGeneric.includes('TEST NHANH 1 SP'));
-assert.ok(catalogGeneric.includes('TẠO FILE SẢN PHẨM SAPO (.XLSX)'));
-assert.ok(catalogGeneric.includes('imageUrl'));
-assert.ok(catalogGeneric.includes('DHL_SCAN_CURRENT_POPUP'));
-assert.ok(catalogGeneric.includes('chrome.tabs.create({url:sourceTab.url,active:false})'), 'Bảo trì phải quét trong tab nền');
-assert.ok(catalogGeneric.includes('isProductDetailUrl'), 'Phải chặn bắt đầu quét từ trang chi tiết');
-assert.ok(catalogGeneric.includes('safe-quick-action-not-found'), 'Không được fallback click link sản phẩm');
-assert.ok(catalogGeneric.includes('removeWorkerTab'), 'Tab nền phải được đóng sau khi quét');
+const catalogApi = fs.readFileSync(path.join(dir, 'catalog-api-mode.js'), 'utf8');
+assert.ok(catalogApi.includes('/product/child?psId='));
+assert.ok(catalogApi.includes('api-child-sequential-no-click'));
+assert.ok(catalogApi.includes('TEST NHANH 1 SP'));
+assert.ok(catalogApi.includes('KHÔNG click'));
+assert.ok(catalogApi.includes('replaceButton'));
+assert.ok(catalogApi.includes('scanProductApi'));
+assert.ok(!catalogApi.includes('chrome.tabs.create('), 'API maintenance scan không được tạo tab nền');
 
 const maintenanceUi = fs.readFileSync(path.join(dir, 'maintenance-ui.js'), 'utf8');
 assert.ok(maintenanceUi.includes('BẢO TRÌ NGUỒN'));
@@ -105,9 +105,9 @@ assert.ok(maintenanceUi.includes('chrome.runtime.reload()'));
 
 console.log('BUILD PASS', {
   version: manifest.version,
-  scanner: 'current category + dynamic text/numeric sizes + no product-detail navigation',
-  maintenanceScan: 'background worker tab + safe add-to-cart href neutralization',
-  quickTest: 'one product only',
+  scanner: 'current category + dynamic text/numeric sizes',
+  maintenanceScan: 'API /product/child sequential scan, zero clicks, zero worker tabs',
+  quickTest: 'one product via API only',
   devReload: 'pull code then chrome.runtime.reload',
   dailyInput: 'Sapo warehouse export',
   inventoryOutput: 'official Sapo inventory import template',
