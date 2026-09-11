@@ -11,19 +11,19 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>File xuất Sapo → quét nguồn → tạo file 36 cột đúng mẫu Sapo</p>
+        <p>File Quản lý kho Sapo → quét nguồn → sửa trực tiếp Tồn kho → xuất lại đúng file kho</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
     <section class="safety-note">
-      <b>ĐẦU RA ĐÚNG MẪU NHẬP SAPO</b>
-      <span>Tool tự dựng đúng 36 cột giống file mẫu bạn đưa. Cột 35 là Cửa hàng chính_Tồn kho, cột 36 là Id phiên bản. Chỉ các biến thể ghép chắc chắn mới được xuất; tồn 0 thật vẫn ghi 0.</span>
+      <b>DÙNG TRỰC TIẾP FILE QUẢN LÝ KHO SAPO</b>
+      <span>Tool nhận file “Danh sách quản lý kho phiên bản sản phẩm”. Chỉ lấy 26 sản phẩm người lớn size S/M/L/XL/XXL, quét tồn nguồn rồi sửa đúng cột Tồn kho. Dòng trẻ em và dòng chưa ghép được giữ nguyên.</span>
     </section>
 
     <section class="steps">
       <div class="step">
-        <b>1. Chọn file xuất Sapo</b>
+        <b>1. Chọn file Quản lý kho Sapo</b>
         <input id="sapoExport" type="file" accept=".xlsx" />
         <small id="exportState">Chưa chọn file.</small>
       </div>
@@ -64,12 +64,13 @@
       </table>
     </div>
 
-    <footer>Nhập file đầu ra tại Danh sách sản phẩm → Nhập file → Sản phẩm thường → Ghi đè → Xác định theo ID.</footer>
+    <footer>Đầu ra giữ nguyên cấu trúc file Quản lý kho Sapo và chỉ sửa cột Tồn kho ở các biến thể ghép chắc chắn.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
   <script src="shop-rules.js"></script>
   <script src="xlsx-lite.js"></script>
+  <script src="warehouse-core.js"></script>
   <script src="xlsx-preserve.js"></script>
   <script src="direct-stock-core.js"></script>
   <script src="stock-import-core.js"></script>
