@@ -1,7 +1,7 @@
 {
   "name": "dhl-stock-sync-extension",
   "private": true,
-  "version": "0.14.0",
+  "version": "0.14.1",
   "scripts": {
     "test": "node build-runtime-patch.js && node build-generic-category-patch.js && node dom-parser-test.js && node test.js && node expected-count-test.js && node match-test.js && node sapo-link-test.js && node preserve-test.js && node shop-rules-test.js && node direct-stock-test.js && node direct-stock-export-test.js && node stock-import-test.js && node warehouse-test.js && node product-create-test.js && node build-test.js"
   }
