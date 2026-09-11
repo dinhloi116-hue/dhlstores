@@ -10,7 +10,7 @@
     ['argentina','argentina'],['brazil','brazil'],['mexico','mexico'],['croatia','croatia'],['crotia','croatia'],['phap','france'],
     ['duc','germany'],['anh','england'],['bi','belgium'],['y','italy'],['viet nam','vietnam'],['han quoc','korea'],['my','usa']
   ];
-  const COLOR_WORDS=new Set(['do','trang','xanh','vang','den','be','sua','reu','cam','ngoc','than','soc','siu','la','duong','dam','nhat','hong','tim','ghi','xam']);
+  const COLOR_WORDS=new Set(['do','trang','xanh','vang','den','be','sua','kem','reu','cam','ngoc','than','soc','siu','la','duong','dam','nhat','hong','tim','ghi','xam']);
   const STOP=new Set(['bo','quan','ao','bong','da','vai','thun','me','han','quoc','nhan','in','ten','so','dt','clb','hd','wc','world','cup','mau','san','nha','khach','2026','26','2025','25','2024','24']);
 
   function plain(v){
@@ -55,28 +55,36 @@
     const f=new Set();
     for(const t of tokens){
       if(t==='den'||t==='than'||t==='xam'||t==='ghi')f.add('dark');
-      if(t==='xanh'||t==='reu'||t==='la'||t==='ngoc')f.add('greenblue');
+      if(t==='xanh'||t==='reu'||t==='la'||t==='ngoc'||t==='duong')f.add('greenblue');
       if(t==='trang')f.add('white');
       if(t==='do'||t==='hong')f.add('red');
       if(t==='vang')f.add('yellow');
-      if(t==='be'||t==='sua')f.add('beige');
+      if(t==='be'||t==='sua'||t==='kem')f.add('beige');
       if(t==='cam')f.add('orange');
       if(t==='siu')f.add('siu');
     }
     return f;
   }
 
-  function colorScore(a,b){
-    if(!a.size||!b.size)return 0;
+  function colorCompatibility(a,b){
+    const as=a instanceof Set?a:colorsOf(a);
+    const bs=b instanceof Set?b:colorsOf(b);
+    if(!as.size||!bs.size)return 0;
+
     let inter=0;
-    for(const x of a)if(b.has(x))inter++;
+    for(const x of as)if(bs.has(x))inter++;
     if(inter>0){
-      const precision=inter/Math.max(1,Math.min(a.size,b.size));
-      return Math.min(1,.65+.35*precision);
+      const precision=inter/Math.max(1,Math.min(as.size,bs.size));
+      return Math.min(1,.78+.22*precision);
     }
-    const af=colorFamilies(a),bf=colorFamilies(b);
-    for(const x of af)if(bf.has(x))return .48;
+
+    const af=colorFamilies(as),bf=colorFamilies(bs);
+    for(const x of af)if(bf.has(x))return .58;
     return 0;
+  }
+
+  function scoreColorHint(hint,sourceColor){
+    return colorCompatibility(colorsOf(hint),colorsOf(sourceColor));
   }
 
   function productSkuBase(product){
@@ -109,15 +117,23 @@
     const tText=`${sourceName||''} ${sourceColor||''}`;
     const st=teamOf(sText),tt=teamOf(tText);
     if(st&&tt&&st!==tt)return 0;
+
+    const sapoColors=colorsOf(sText);
+    const sourceColors=colorsOf(sourceColor||tText);
+    const compatibility=colorCompatibility(sapoColors,sourceColors);
+    if(sapoColors.size&&sourceColors.size&&!compatibility)return 0;
+
     let score=0;
     if(st&&tt&&st===tt)score+=.54;
     else if(st||tt)score+=.04;
+
     const sy=yearOf(sText),ty=yearOf(tText);
     if(sy&&ty)score+=sy===ty?.08:-.10;
+
     const sm=modeOf(sText),tm=modeOf(tText);
     if(sm&&tm)score+=sm===tm?.12:-.08;
-    const cs=colorScore(colorsOf(sText),colorsOf(`${sourceColor||''} ${tText}`));
-    score+=.22*cs;
+
+    score+=.22*compatibility;
     score+=.08*jaccard(contentTokens(sText),contentTokens(tText));
     return Math.max(0,Math.min(1,score));
   }
@@ -169,14 +185,23 @@
     const products=sapoProducts||[],groups=groupSourceVariants(sourceResults),pairs=[];
     for(let pi=0;pi<products.length;pi++){
       const p=products[pi],base=productSkuBase(p);
+      const pText=`${p.name||''} ${base}`;
+      const pColors=colorsOf(pText);
+
       for(let gi=0;gi<groups.length;gi++){
         const g=groups[gi];
-        const score=scoreProductMatch(p.name,base,sourceIdentity(g),g.color);
-        const pt=teamOf(`${p.name} ${base}`),gt=teamOf(sourceIdentity(g));
+        const identity=sourceIdentity(g);
+        const pt=teamOf(pText),gt=teamOf(identity);
         if(pt&&gt&&pt!==gt)continue;
+
+        const gColors=colorsOf(g.color||identity);
+        if(pColors.size&&gColors.size&&colorCompatibility(pColors,gColors)===0)continue;
+
+        const score=scoreProductMatch(p.name,base,identity,g.color);
         pairs.push({pi,gi,score});
       }
     }
+
     pairs.sort((a,b)=>b.score-a.score);
     const assignedP=new Map(),assignedG=new Set();
     for(const pair of pairs){
@@ -198,7 +223,7 @@
       const complete=matched&&variantMatches.length>0&&variantMatches.every(x=>x.source);
       return{
         sapoProduct:p,matched,best,second,margin,variantMatches,complete,
-        linkMethod:matched?'team + SKU gốc/màu + size chính xác':'unmatched'
+        linkMethod:matched?'team + màu tương thích + size chính xác':'unmatched'
       };
     });
   }
@@ -224,7 +249,13 @@
       const base=productSkuBase(p),team=teamOf(`${p.name||''} ${base}`);
       if(!team)continue;
       if(!byTeam.has(team))byTeam.set(team,{team,products:[],colors:[]});
-      const item={productId:p.productId,name:p.name||'',skuBase:base,colorHint:colorHintFromProduct(p),sizes:(p.variants||[]).map(v=>normalizeSize(v.size)).filter(Boolean)};
+      const item={
+        productId:p.productId,
+        name:p.name||'',
+        skuBase:base,
+        colorHint:colorHintFromProduct(p),
+        sizes:(p.variants||[]).map(v=>normalizeSize(v.size)).filter(Boolean)
+      };
       byTeam.get(team).products.push(item);
       if(item.colorHint&&!byTeam.get(team).colors.includes(item.colorHint))byTeam.get(team).colors.push(item.colorHint);
     }
@@ -232,7 +263,7 @@
   }
 
   return{
-    plain,teamOf,modeOf,yearOf,colorsOf,scoreProductMatch,normalizeSize,skuBase,productSkuBase,
+    plain,teamOf,modeOf,yearOf,colorsOf,colorCompatibility,scoreColorHint,scoreProductMatch,normalizeSize,skuBase,productSkuBase,
     groupSourceVariants,matchSapoProducts,buildScanHints,colorHintFromProduct,sourceIdentity
   };
 });
