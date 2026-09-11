@@ -43,8 +43,43 @@
     'tay ban nha do 26 hd':'ĐT Tây Ban Nha 2026 HD - Đỏ'
   };
 
+  const STANDARD_SKU_ENTRIES=[
+    ['ĐT Bỉ 2026 HD - Đỏ','Bỉ đỏ 26 HD'],
+    ['ĐT Argentina 2026 HD - Trắng Sọc Xanh','Argentina trắng xanh 26 HD'],
+    ['ĐT Đức 2026 HD - Xanh Đen','Đức đen 26 HD'],
+    ['ĐT Ý 2026 HD - Xanh Dương','Ý xanh 26 HD'],
+    ['ĐT Ý 2026 HD - Kem','Ý vàng 26 HD'],
+    ['ĐT Đức 2026 HD - Trắng Đỏ','Đức trắng wc 26 HD'],
+    ['ĐT Nhật 2026 HD - Trắng','Nhật trắng 26 HD'],
+    ['ĐT Đức 2026 HD - Trắng','Đức trắng tập 26 HD'],
+    ['ĐT Pháp 2026 HD - Xanh Ngọc','Pháp trắng xanh 26 HD'],
+    ['ĐT Bồ Đào Nha 2026 HD - Đỏ','Bồ đào nha đỏ 26 HD'],
+    ['ĐT Bồ Đào Nha 2026 HD - Siu','Bồ đào nha Siu 26 HD'],
+    ['ĐT Hà Lan 2026 HD - Trắng','Hà lan trắng 26 HD'],
+    ['ĐT Anh 2026 HD - Đỏ','Anh đỏ 26 HD'],
+    ['ĐT Brazil 2026 HD - Vàng','Brazil vàng HD'],
+    ['ĐT Pháp 2026 HD - Xanh Đen','Pháp xanh 26 HD'],
+    ['ĐT Bồ Đào Nha 2026 HD - Trắng Ngọc','Bồ đào nha trắng 26 HD'],
+    ['ĐT Brazil 2026 HD - Xanh Đen','Brazil đen HD'],
+    ['ĐT Tây Ban Nha 2026 HD - Kem','Tây Ban Nha be 26 HD'],
+    ['ĐT Argentina 2026 HD - Đen','Argentina đen 26 HD'],
+    ['ĐT Anh 2026 HD - Vàng Kem','Anh be HD'],
+    ['ĐT Anh 2026 HD - Trắng','Anh trắng HD'],
+    ['ĐT Croatia 2026 HD - Đỏ Trắng','Crotia đỏ 26 HD'],
+    ['ĐT Bồ Đào Nha 2026 HD - Xanh Rêu','Bồ đào nha rêu 26 HD'],
+    ['ĐT Mexico 2026 HD - Rêu','Mexico xanh 26 HD'],
+    ['ĐT Tây Ban Nha 2026 HD - Đỏ','Tây Ban Nha đỏ 26 HD'],
+    ['ĐT Nhật 2026 HD - Xanh Dương','Nhật xanh 26 HD']
+  ];
+  const STANDARD_NAME_TO_SKU_BASE=Object.create(null);
+  for(const [name,base] of STANDARD_SKU_ENTRIES)STANDARD_NAME_TO_SKU_BASE[plain(name)]=base;
+
   function sourceNameFromSkuBase(base){
     return SKU_BASE_TO_SOURCE_NAME[plain(skuBase(base))]||'';
+  }
+
+  function skuBaseForStandardName(name){
+    return STANDARD_NAME_TO_SKU_BASE[plain(name)]||'';
   }
 
   function sourceColorFromStandardName(name){
@@ -71,6 +106,7 @@
   }
 
   return{
-    plain,skuBase,SKU_BASE_TO_SOURCE_NAME,sourceNameFromSkuBase,sourceColorFromStandardName,sourceBaseNameFromStandardName,targetNameForProduct
+    plain,skuBase,SKU_BASE_TO_SOURCE_NAME,STANDARD_SKU_ENTRIES,STANDARD_NAME_TO_SKU_BASE,
+    sourceNameFromSkuBase,skuBaseForStandardName,sourceColorFromStandardName,sourceBaseNameFromStandardName,targetNameForProduct
   };
 });
