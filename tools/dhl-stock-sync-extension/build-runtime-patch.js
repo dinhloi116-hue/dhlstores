@@ -1,144 +1,54 @@
 const fs=require('fs');
 const path=require('path');
 
-const file=path.join(__dirname,'content.js');
-let source=fs.readFileSync(file,'utf8');
 const applied=[];
 
-if(!source.includes('async function waitForStockClosed(')){
-  const oldBlock=`  async function closeStockPopup(root) {
-    const container = modalContainer(root);
-    if (!container) return;
-    const candidates = [...container.querySelectorAll('button,a,[role="button"],[aria-label],[title],[class*="close"]')]
-      .filter(visible)
-      .map((el) => {
-        const p = plain(\`${'${text(el)} ${el.getAttribute(\'aria-label\') || \'\'} ${el.getAttribute(\'title\') || \'\'} ${el.className || \'\'}'}\`);
-        let score = 0;
-        if (/dong|close|btn close/.test(p)) score += 100;
-        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 120;
-        if (String(el.className || '').toLowerCase().includes('close')) score += 70;
-        return { el, score };
-      })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score);
-    if (candidates[0]) await clickElement(candidates[0].el);
-    else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
-    await sleep(100);
+// 1) Fix XLSX parser: Sapo warehouse row 2 contains self-closing blank cells before E2.
+// Old regex accidentally swallowed E2 into A2, so branch name "dhl sport" became numeric 1.
+{
+  const file=path.join(__dirname,'xlsx-lite.js');
+  let source=fs.readFileSync(file,'utf8');
+  const oldBlock=`      const cellRe=/<(?:[A-Za-z_][\\w.-]*:)?c\\b([^>]*)>([\\s\\S]*?)<\\/(?:[A-Za-z_][\\w.-]*:)?c>/g;\n      while((cm=cellRe.exec(rm[2]))){\n        const attrs=cm[1],refMatch=attrs.match(/\\br=\"([A-Z]+)\\d+\"/);\n        if(!refMatch)continue;\n        const ci=colToIndex(refMatch[1]),type=(attrs.match(/\\bt=\"([^\"]+)\"/)||[])[1]||'';\n        let value='';\n        if(type==='inlineStr'){\n          value=[...cm[2].matchAll(/<(?:[A-Za-z_][\\w.-]*:)?t\\b[^>]*>([\\s\\S]*?)<\\/(?:[A-Za-z_][\\w.-]*:)?t>/g)].map(x=>xmlUnescape(x[1])).join('');\n        }else{\n          const vm=cm[2].match(/<(?:[A-Za-z_][\\w.-]*:)?v\\b[^>]*>([\\s\\S]*?)<\\/(?:[A-Za-z_][\\w.-]*:)?v>/);`;
+  const newBlock=`      const cellRe=/<(?:[A-Za-z_][\\w.-]*:)?c\\b([^>]*?)(?:\\/>|>([\\s\\S]*?)<\\/(?:[A-Za-z_][\\w.-]*:)?c>)/g;\n      while((cm=cellRe.exec(rm[2]))){\n        const attrs=cm[1],inner=cm[2]||'',refMatch=attrs.match(/\\br=\"([A-Z]+)\\d+\"/);\n        if(!refMatch)continue;\n        const ci=colToIndex(refMatch[1]),type=(attrs.match(/\\bt=\"([^\"]+)\"/)||[])[1]||'';\n        let value='';\n        if(type==='inlineStr'){\n          value=[...inner.matchAll(/<(?:[A-Za-z_][\\w.-]*:)?t\\b[^>]*>([\\s\\S]*?)<\\/(?:[A-Za-z_][\\w.-]*:)?t>/g)].map(x=>xmlUnescape(x[1])).join('');\n        }else{\n          const vm=inner.match(/<(?:[A-Za-z_][\\w.-]*:)?v\\b[^>]*>([\\s\\S]*?)<\\/(?:[A-Za-z_][\\w.-]*:)?v>/);`;
+  if(source.includes(oldBlock)){
+    source=source.replace(oldBlock,newBlock);
+    fs.writeFileSync(file,source,'utf8');
+    applied.push('đọc đúng ô rỗng self-closing trong XLSX');
+  }else if(!source.includes("inner=cm[2]||''")){
+    throw new Error('RUNTIME PATCH FAILED: không tìm thấy parser cell cũ trong xlsx-lite.js');
   }
-
-  async function openStockPopup(descriptor) {
-    const existing = findStockRoot();
-    if (existing) await closeStockPopup(existing);
-    const card = cardForDescriptor(descriptor);
-    const candidates = quickCandidates(descriptor, card);
-    for (const candidate of candidates) {
-      await clickElement(candidate.el);
-      const root = await waitForStockRoot(1500);
-      if (root) return { root, cardFound: !!card, candidateCount: candidates.length };
-    }
-    const error = new Error(\`Không mở được popup tồn cho ${'${descriptor.title}'}. Tool đã thử ${'${candidates.length}'} nút mua nhanh.\`);
-    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length };
-    throw error;
-  }
-`;
-
-  const newBlock=`  async function waitForStockClosed(timeout = 1800) {
-    const started = Date.now();
-    while (Date.now() - started < timeout) {
-      if (!findStockRoot()) return true;
-      await sleep(80);
-    }
-    return !findStockRoot();
-  }
-
-  async function closeStockPopup(root) {
-    const container = modalContainer(root);
-    if (!container) return true;
-    const candidates = [...container.querySelectorAll('button,a,[role="button"],[aria-label],[title],[class*="close"]')]
-      .filter(visible)
-      .map((el) => {
-        const p = plain(\`${'${text(el)} ${el.getAttribute(\'aria-label\') || \'\'} ${el.getAttribute(\'title\') || \'\'} ${el.className || \'\'}'}\`);
-        let score = 0;
-        if (/dong|close|btn close/.test(p)) score += 100;
-        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 120;
-        if (String(el.className || '').toLowerCase().includes('close')) score += 70;
-        return { el, score };
-      })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score);
-    if (candidates[0]) await clickElement(candidates[0].el);
-    else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
-
-    let closed = await waitForStockClosed(1800);
-    if (!closed) {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
-      closed = await waitForStockClosed(900);
-    }
-    await sleep(120);
-    return closed;
-  }
-
-  async function openStockPopup(descriptor) {
-    const existing = findStockRoot();
-    if (existing) {
-      const closed = await closeStockPopup(existing);
-      if (!closed) {
-        const error = new Error(\`Popup sản phẩm trước chưa đóng xong; dừng để tránh đọc nhầm tồn cho ${'${descriptor.title}'}.\`);
-        error.diagnostics = { stalePopupBlocked: true };
-        throw error;
-      }
-    }
-    const card = cardForDescriptor(descriptor);
-    const candidates = quickCandidates(descriptor, card);
-    for (const candidate of candidates) {
-      await clickElement(candidate.el);
-      await sleep(180);
-      const root = await waitForStockRoot(1800);
-      if (root) return { root, cardFound: !!card, candidateCount: candidates.length };
-    }
-    const error = new Error(\`Không mở được popup tồn cho ${'${descriptor.title}'}. Tool đã thử ${'${candidates.length}'} nút mua nhanh.\`);
-    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length };
-    throw error;
-  }
-`;
-
-  if(!source.includes(oldBlock))throw new Error('RUNTIME PATCH FAILED: không tìm thấy khối close/open popup cũ trong content.js');
-  source=source.replace(oldBlock,newBlock);
-  applied.push('chờ popup cũ đóng hẳn');
 }
 
-if(!source.includes('single-color-fallback')){
-  const oldFallback=`    const allControls = colorControls(root);
-    const targetSelection = selectTargetControls(allControls, hint);
-    let controls = targetSelection.controls;
-    if (!controls.length && !expectedColorHints(hint).length && fallbackColor) {
-      controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
-    }
-`;
-  const newFallback=`    const allControls = colorControls(root);
-    const targetSelection = selectTargetControls(allControls, hint);
-    let controls = targetSelection.controls;
-    const fallbackWanted = expectedColorHints(hint);
-    // single-color-fallback: popup một màu có thể không render radio màu; dùng màu từ /product/child nếu khớp hint Sapo.
-    if (!controls.length && fallbackColor) {
-      if (!fallbackWanted.length) {
-        controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
-      } else {
-        const ranked = fallbackWanted
-          .map((wanted) => ({ hint: wanted, score: matcher.scoreColorHint(wanted, fallbackColor) }))
-          .sort((a, b) => b.score - a.score);
-        const best = ranked[0];
-        if (best && best.score >= 0.5) {
-          controls = [{ name: fallbackColor, el: null, hint: best.hint, hintScore: best.score }];
-          targetSelection.missingHints = (targetSelection.missingHints || []).filter((value) => value !== best.hint);
-        }
-      }
-    }
-`;
-  if(!source.includes(oldFallback))throw new Error('RUNTIME PATCH FAILED: không tìm thấy khối fallback màu cũ trong content.js');
-  source=source.replace(oldFallback,newFallback);
-  applied.push('fallback popup một màu không có radio');
+// 2) Fix popup lifecycle: after the first product, site modal sometimes does not fully close.
+{
+  const file=path.join(__dirname,'content.js');
+  let source=fs.readFileSync(file,'utf8');
+
+  const oldBlock=`  async function closeStockPopup(root) {\n    const container = modalContainer(root);\n    if (!container) return;\n    const candidates = [...container.querySelectorAll('button,a,[role=\"button\"],[aria-label],[title],[class*=\"close\"]')]\n      .filter(visible)\n      .map((el) => {\n        const p = plain(\`${'${text(el)} ${el.getAttribute(\'aria-label\') || \'\'} ${el.getAttribute(\'title\') || \'\'} ${el.className || \'\'}'}\`);\n        let score = 0;\n        if (/dong|close|btn close/.test(p)) score += 100;\n        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 120;\n        if (String(el.className || '').toLowerCase().includes('close')) score += 70;\n        return { el, score };\n      })\n      .filter((item) => item.score > 0)\n      .sort((a, b) => b.score - a.score);\n    if (candidates[0]) await clickElement(candidates[0].el);\n    else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));\n    await sleep(100);\n  }\n\n  async function openStockPopup(descriptor) {\n    const existing = findStockRoot();\n    if (existing) await closeStockPopup(existing);\n    const card = cardForDescriptor(descriptor);\n    const candidates = quickCandidates(descriptor, card);\n    for (const candidate of candidates) {\n      await clickElement(candidate.el);\n      const root = await waitForStockRoot(1500);\n      if (root) return { root, cardFound: !!card, candidateCount: candidates.length };\n    }\n    const error = new Error(\`Không mở được popup tồn cho ${'${descriptor.title}'}. Tool đã thử ${'${candidates.length}'} nút mua nhanh.\`);\n    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length };\n    throw error;\n  }\n`;
+
+  const oldPatchedBlock=`  async function waitForStockClosed(timeout = 1800) {\n    const started = Date.now();\n    while (Date.now() - started < timeout) {\n      if (!findStockRoot()) return true;\n      await sleep(80);\n    }\n    return !findStockRoot();\n  }\n\n  async function closeStockPopup(root) {\n    const container = modalContainer(root);\n    if (!container) return true;\n    const candidates = [...container.querySelectorAll('button,a,[role=\"button\"],[aria-label],[title],[class*=\"close\"]')]\n      .filter(visible)\n      .map((el) => {\n        const p = plain(\`${'${text(el)} ${el.getAttribute(\'aria-label\') || \'\'} ${el.getAttribute(\'title\') || \'\'} ${el.className || \'\'}'}\`);\n        let score = 0;\n        if (/dong|close|btn close/.test(p)) score += 100;\n        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 120;\n        if (String(el.className || '').toLowerCase().includes('close')) score += 70;\n        return { el, score };\n      })\n      .filter((item) => item.score > 0)\n      .sort((a, b) => b.score - a.score);\n    if (candidates[0]) await clickElement(candidates[0].el);\n    else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));\n\n    let closed = await waitForStockClosed(1800);\n    if (!closed) {\n      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));\n      closed = await waitForStockClosed(900);\n    }\n    await sleep(120);\n    return closed;\n  }\n\n  async function openStockPopup(descriptor) {\n    const existing = findStockRoot();\n    if (existing) {\n      const closed = await closeStockPopup(existing);\n      if (!closed) {\n        const error = new Error(\`Popup sản phẩm trước chưa đóng xong; dừng để tránh đọc nhầm tồn cho ${'${descriptor.title}'}.\`);\n        error.diagnostics = { stalePopupBlocked: true };\n        throw error;\n      }\n    }\n    const card = cardForDescriptor(descriptor);\n    const candidates = quickCandidates(descriptor, card);\n    for (const candidate of candidates) {\n      await clickElement(candidate.el);\n      await sleep(180);\n      const root = await waitForStockRoot(1800);\n      if (root) return { root, cardFound: !!card, candidateCount: candidates.length };\n    }\n    const error = new Error(\`Không mở được popup tồn cho ${'${descriptor.title}'}. Tool đã thử ${'${candidates.length}'} nút mua nhanh.\`);\n    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length };\n    throw error;\n  }\n`;
+
+  const newBlock=`  async function waitForStockClosed(timeout = 1400) {\n    const started = Date.now();\n    while (Date.now() - started < timeout) {\n      if (!findStockRoot()) return true;\n      await sleep(70);\n    }\n    return !findStockRoot();\n  }\n\n  function forceCloseStaleStockPopup(container) {\n    try {\n      if (container && typeof container.close === 'function' && String(container.tagName || '').toLowerCase() === 'dialog') container.close();\n    } catch (_) {}\n    try {\n      if (container && window.jQuery && typeof window.jQuery === 'function') {\n        const jq = window.jQuery(container);\n        if (jq && typeof jq.modal === 'function') jq.modal('hide');\n      }\n    } catch (_) {}\n    try {\n      if (container) {\n        container.classList.remove('show', 'in', 'open', 'active');\n        container.setAttribute('aria-hidden', 'true');\n        container.style.display = 'none';\n      }\n      for (const backdrop of document.querySelectorAll('.modal-backdrop,.offcanvas-backdrop,[class*=\"modal-backdrop\"],[class*=\"backdrop\"]')) {\n        try { if (visible(backdrop)) backdrop.remove(); } catch (_) {}\n      }\n      document.body.classList.remove('modal-open', 'overflow-hidden');\n      document.documentElement.classList.remove('modal-open', 'overflow-hidden');\n      document.body.style.removeProperty('overflow');\n      document.body.style.removeProperty('padding-right');\n    } catch (_) {}\n  }\n\n  async function closeStockPopup(root) {\n    const container = modalContainer(root);\n    if (!container) return true;\n    const selector = 'button,a,[role=\"button\"],[aria-label],[title],[class*=\"close\"],[data-dismiss=\"modal\"],[data-bs-dismiss=\"modal\"],.btn-close,.close';\n    const candidates = [...container.querySelectorAll(selector)]\n      .filter(visible)\n      .map((el) => {\n        const p = plain(\`${'${text(el)} ${el.getAttribute(\'aria-label\') || \'\'} ${el.getAttribute(\'title\') || \'\'} ${el.className || \'\'}'}\`);\n        let score = 0;\n        if (el.matches('[data-dismiss=\"modal\"],[data-bs-dismiss=\"modal\"],.btn-close,.close')) score += 180;\n        if (/dong|close|btn close/.test(p)) score += 120;\n        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 150;\n        if (String(el.className || '').toLowerCase().includes('close')) score += 80;\n        return { el, score };\n      })\n      .filter((item) => item.score > 0)\n      .sort((a, b) => b.score - a.score);\n\n    if (candidates[0]) await clickElement(candidates[0].el);\n    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));\n\n    let closed = await waitForStockClosed(900);\n    if (!closed) {\n      forceCloseStaleStockPopup(container);\n      await sleep(180);\n      closed = !findStockRoot();\n    }\n    await sleep(120);\n    return closed;\n  }\n\n  async function openStockPopup(descriptor) {\n    const existing = findStockRoot();\n    if (existing) {\n      let closed = await closeStockPopup(existing);\n      if (!closed) {\n        forceCloseStaleStockPopup(modalContainer(existing));\n        await sleep(180);\n        closed = !findStockRoot();\n      }\n      if (!closed) {\n        const error = new Error(\`Không dọn được popup cũ trước khi quét ${'${descriptor.title}'}.\`);\n        error.diagnostics = { stalePopupBlocked: true };\n        throw error;\n      }\n    }\n    const card = cardForDescriptor(descriptor);\n    const candidates = quickCandidates(descriptor, card);\n    for (const candidate of candidates) {\n      await clickElement(candidate.el);\n      await sleep(180);\n      const root = await waitForStockRoot(1800);\n      if (root) return { root, cardFound: !!card, candidateCount: candidates.length };\n    }\n    const error = new Error(\`Không mở được popup tồn cho ${'${descriptor.title}'}. Tool đã thử ${'${candidates.length}'} nút mua nhanh.\`);\n    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length };\n    throw error;\n  }\n`;
+
+  if(source.includes(oldBlock)){
+    source=source.replace(oldBlock,newBlock);
+    applied.push('đóng popup cũ nhiều lớp + dọn backdrop');
+  }else if(source.includes(oldPatchedBlock)){
+    source=source.replace(oldPatchedBlock,newBlock);
+    applied.push('nâng cấp đóng popup cũ nhiều lớp + dọn backdrop');
+  }else if(!source.includes('forceCloseStaleStockPopup')){
+    throw new Error('RUNTIME PATCH FAILED: không tìm thấy khối popup cần nâng cấp trong content.js');
+  }
+
+  if(!source.includes('single-color-fallback')){
+    const oldFallback=`    const allControls = colorControls(root);\n    const targetSelection = selectTargetControls(allControls, hint);\n    let controls = targetSelection.controls;\n    if (!controls.length && !expectedColorHints(hint).length && fallbackColor) {\n      controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];\n    }\n`;
+    const newFallback=`    const allControls = colorControls(root);\n    const targetSelection = selectTargetControls(allControls, hint);\n    let controls = targetSelection.controls;\n    const fallbackWanted = expectedColorHints(hint);\n    // single-color-fallback: popup một màu có thể không render radio màu; dùng màu từ /product/child nếu khớp hint Sapo.\n    if (!controls.length && fallbackColor) {\n      if (!fallbackWanted.length) {\n        controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];\n      } else {\n        const ranked = fallbackWanted\n          .map((wanted) => ({ hint: wanted, score: matcher.scoreColorHint(wanted, fallbackColor) }))\n          .sort((a, b) => b.score - a.score);\n        const best = ranked[0];\n        if (best && best.score >= 0.5) {\n          controls = [{ name: fallbackColor, el: null, hint: best.hint, hintScore: best.score }];\n          targetSelection.missingHints = (targetSelection.missingHints || []).filter((value) => value !== best.hint);\n        }\n      }\n    }\n`;
+    if(!source.includes(oldFallback))throw new Error('RUNTIME PATCH FAILED: không tìm thấy khối fallback màu cũ trong content.js');
+    source=source.replace(oldFallback,newFallback);
+    applied.push('fallback popup một màu không có radio');
+  }
+
+  fs.writeFileSync(file,source,'utf8');
 }
 
-fs.writeFileSync(file,source,'utf8');
 console.log('RUNTIME PATCH PASS:',applied.length?applied.join(' + '):'đã có đủ patch');
