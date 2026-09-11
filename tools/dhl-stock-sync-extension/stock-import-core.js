@@ -16,7 +16,7 @@
   function cellXml(xlsx,colIndex,rowIndex,value,styleId=0){
     const ref=`${xlsx.indexToCol(colIndex)}${rowIndex}`;
     const style=styleId?` s="${styleId}"`:'';
-    if(value==null||value==='')return`<c r="${ref}"${style}/>`;
+    if(value==null||value==='')return'';
     if(typeof value==='number'&&Number.isFinite(value))return`<c r="${ref}"${style}><v>${value}</v></c>`;
     const text=String(value);
     const preserve=/^\s|\s$|\n/.test(text)?' xml:space="preserve"':'';
@@ -29,7 +29,7 @@
     const lastRow=Math.max(4,dataRows.length+4);
     const rowXml=[];
     rowXml.push(`<row r="1" ht="31.5" customHeight="1">${cellXml(xlsx,0,1,'Cập nhật tồn kho phiên bản sản phẩm',1)}</row>`);
-    rowXml.push(`<row r="3">${cellXml(xlsx,5,3,branch,2)}${cellXml(xlsx,6,3,'',2)}</row>`);
+    rowXml.push(`<row r="3">${cellXml(xlsx,5,3,branch,2)}</row>`);
     rowXml.push(`<row r="4">${INVENTORY_HEADERS.map((v,i)=>cellXml(xlsx,i,4,v,3)).join('')}</row>`);
     dataRows.forEach((row,index)=>{
       const ri=index+5;
