@@ -36,12 +36,13 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist/dhl-stock-sync-extension
-          cp manifest.json background.js stock-core.js dom-stock-parser.js content.js match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js maintenance-ui.js simple-mode.js one-file-mode.js dist/dhl-stock-sync-extension/
+          cp manifest.json background.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js maintenance-ui.js simple-mode.js one-file-mode.js dist/dhl-stock-sync-extension/
           cd dist
           zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
 
       - name: Verify packaged files
         run: |
+          test -f dist/dhl-stock-sync-extension/safe-category-guard.js
           test -f dist/dhl-stock-sync-extension/dom-stock-parser.js
           test -f dist/dhl-stock-sync-extension/content.js
           test -f dist/dhl-stock-sync-extension/match-core.js
