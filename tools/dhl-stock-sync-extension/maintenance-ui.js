@@ -24,8 +24,23 @@
     if (oldTitle) oldTitle.textContent = 'LÀM MỚI DANH SÁCH NGUỒN';
     const oldDesc = body.querySelector('span');
     if (oldDesc) {
-      oldDesc.textContent = 'Chỉ chạy khi web nguồn vừa thêm sản phẩm, đổi tên hoặc thêm màu mới. Không cần chạy mỗi ngày. Sau khi quét có thể xuất Excel để kiểm tra/chuẩn hóa lại dữ liệu.';
+      oldDesc.textContent = 'Chỉ chạy khi web nguồn vừa thêm sản phẩm, đổi tên hoặc thêm màu mới. Không cần chạy mỗi ngày. Nên TEST NHANH 1 SP trước rồi mới quét toàn bộ.';
     }
+
+    const devBox = document.createElement('div');
+    devBox.style.marginTop = '10px';
+    devBox.style.paddingTop = '10px';
+    devBox.style.borderTop = '1px dashed #cbd5e1';
+    devBox.innerHTML = `
+      <small style="display:block;margin-bottom:6px"><b>TEST NHANH KHI ĐANG SỬA TOOL</b><br>Load extension từ một thư mục cố định/GitHub clone một lần. Sau khi Pull code mới, chỉ cần bấm nút dưới để Chrome nạp lại code — không cần Add extension lại.</small>
+      <button id="reloadExtensionDev" type="button" class="secondary" style="width:100%">NẠP LẠI TOOL SAU KHI PULL CODE</button>`;
+    body.appendChild(devBox);
+
+    const reloadBtn = devBox.querySelector('#reloadExtensionDev');
+    reloadBtn.addEventListener('click', () => {
+      reloadBtn.textContent = 'ĐANG NẠP LẠI...';
+      setTimeout(() => chrome.runtime.reload(), 120);
+    });
 
     const toggle = document.createElement('button');
     toggle.id = 'toggleCatalogMaintenance';
