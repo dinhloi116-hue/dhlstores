@@ -49,7 +49,8 @@ assert.ok(popupJs.includes('DHL_SCAN_HD_LIVE'));
 assert.ok(popupJs.includes('variantMatches'));
 assert.ok(popupJs.includes('readyVariantCount() > 0'));
 assert.ok(!popupJs.includes('fullMatchReady'), 'Không còn bắt buộc 130/130 mới xuất');
-assert.ok(popupJs.includes('dòng chưa có dữ liệu nguồn sẽ BỎ QUA'));
+assert.ok(popupJs.includes('dòng chưa chắc chắn sẽ BỎ QUA, không ghi 0'));
+assert.ok(popupJs.includes("const VERSION = '0.11.0'"));
 
 const preserve = fs.readFileSync(path.join(dir, 'xlsx-preserve.js'), 'utf8');
 for (const field of ['Tên sản phẩm*','Mã SKU','Ảnh đại diện','Ảnh phiên bản','Giá','Giá so sánh','Giá vốn','Id phiên bản']) {
