@@ -57,6 +57,8 @@
 
     const productCol=header.map['Sản phẩm'];
     const stockCol=header.map['Tồn kho'];
+    const branchRow=rows[Math.max(0,header.rowIndex-1)]||[];
+    const branchName=normalizeText(branchRow[stockCol]);
     const productsByName=new Map();
     const variants=[];
     const issues=[];
@@ -64,8 +66,9 @@
 
     for(let ri=header.rowIndex+1;ri<rows.length;ri++){
       const row=rows[ri]||[];
-      const parsed=parseAdultWarehouseLabel(row[productCol]);
-      if(!parsed)continue; // bỏ size trẻ em / dòng không phải S-M-L-XL-XXL
+      const rawProductLabel=normalizeText(row[productCol]);
+      const parsed=parseAdultWarehouseLabel(rawProductLabel);
+      if(!parsed)continue;
 
       let product=productsByName.get(parsed.name);
       if(!product){
@@ -80,6 +83,7 @@
         variantId:rowNumber,
         name:parsed.name,
         rawName:parsed.rawName,
+        rawProductLabel,
         sku:'',
         skuBase:'',
         size:parsed.size,
@@ -110,7 +114,8 @@
       sizeResolved:variants.length,
       sizeTotal:variants.length,
       warehouseStockCol:stockCol,
-      warehouseStockHeader:'Tồn kho'
+      warehouseStockHeader:'Tồn kho',
+      warehouseBranchName:branchName
     };
   }
 
@@ -156,7 +161,6 @@
     return{bytes:xlsx.zipStore(book.files),rows:changed,zeroCount,stockHeader:'Tồn kho'};
   }
 
-  // File kho không có SKU. Tạo hint quét trực tiếp từ tên đã chuẩn hóa để scanner chỉ đọc đúng màu cần thiết.
   if(matcher&&typeof matcher.buildScanHints==='function'&&!matcher.__warehouseHintsWrapped){
     const originalBuildScanHints=matcher.buildScanHints.bind(matcher);
     matcher.buildScanHints=function(products){
@@ -183,7 +187,6 @@
     matcher.__warehouseHintsWrapped=true;
   }
 
-  // Bọc parser cũ để popup.js tự nhận cả file sản phẩm lẫn file Quản lý kho.
   if(xlsx&&typeof xlsx.parseSapoExport==='function'&&!xlsx.__warehouseWrapped){
     const original=xlsx.parseSapoExport.bind(xlsx);
     xlsx.parseSapoExport=async function(buffer){
