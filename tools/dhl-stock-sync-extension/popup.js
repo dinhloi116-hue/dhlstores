@@ -6,7 +6,9 @@
   const xlsx = globalThis.DHLXlsxLite;
   if (!matcher || !xlsx) return;
 
+  const VERSION = '0.11.0';
   const HD_URL = 'https://si.aobongda.net/hd-pc36029.html';
+
   let sapoData = null;
   let templateBuffer = null;
   let sourceResults = [];
@@ -28,8 +30,8 @@
     el.classList.toggle('ok', kind === 'ok');
   }
 
-  function escapeHtml(text) {
-    return String(text || '').replace(/[&<>\"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>\"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   }
 
   function sourceGroups() {
@@ -70,8 +72,8 @@
   function renderMatches() {
     const query = $('filter').value.trim().toLowerCase();
     const rows = matches.filter((match) => {
-      const text = `${match.sapoProduct.name} ${match.sapoProduct.skuBase || ''} ${match.best ? match.best.parentName : ''} ${match.best ? match.best.color : ''}`.toLowerCase();
-      return !query || text.includes(query);
+      const haystack = `${match.sapoProduct.name} ${match.sapoProduct.skuBase || ''} ${match.best ? match.best.parentName : ''} ${match.best ? match.best.color : ''}`.toLowerCase();
+      return !query || haystack.includes(query);
     });
 
     $('matchBody').innerHTML = rows.map((match) => {
@@ -110,9 +112,9 @@
 
     if (ready > 0) {
       const missing = Math.max(0, total - ready);
-      setStatus(`Đã ghép ${ready}/${total} biến thể thuộc ${productReady}/${sapoData.products.length} sản phẩm. Nguồn thấy ${groups} mẫu/màu. Có thể tạo file cho ${ready} dòng; ${missing} dòng chưa có dữ liệu nguồn sẽ BỎ QUA, không ghi 0.`, ready === total ? 'ok' : '');
+      setStatus(`Đã ghép an toàn ${ready}/${total} biến thể thuộc ${productReady}/${sapoData.products.length} sản phẩm. Nguồn thấy ${groups} mẫu/màu. Có thể tạo file cho ${ready} dòng; ${missing} dòng chưa chắc chắn sẽ BỎ QUA, không ghi 0.`, ready === total ? 'ok' : '');
     } else {
-      setStatus(`Chưa ghép được biến thể nào. Nguồn đang thấy ${groups} mẫu/màu. Xuất báo cáo lỗi nếu quét xong vẫn là 0.`, 'error');
+      setStatus(`Chưa ghép an toàn được biến thể nào. Nguồn đang thấy ${groups} mẫu/màu. Xuất báo cáo lỗi nếu quét xong vẫn là 0.`, 'error');
     }
   }
 
@@ -146,7 +148,7 @@
       templateBuffer = buffer;
       $('templateState').textContent = `Đúng mẫu • cột tồn: ${inventoryHeader}`;
       updateStats();
-      setStatus('File mẫu nhập hợp lệ. Tool sẽ dùng nó làm khuôn cột, không dùng các dòng Iphone mẫu.', 'ok');
+      setStatus('File mẫu nhập hợp lệ. Tool chỉ dùng nó làm khuôn cột.', 'ok');
     } catch (error) {
       templateBuffer = null;
       $('templateState').textContent = 'Mẫu không hợp lệ.';
@@ -160,9 +162,9 @@
   }
 
   async function injectScanner(tabId) {
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['stock-core.js'] });
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['dom-stock-parser.js'] });
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+    for (const file of ['stock-core.js', 'dom-stock-parser.js', 'match-core.js', 'content.js']) {
+      await chrome.scripting.executeScript({ target: { tabId }, files: [file] });
+    }
     await new Promise((resolve) => setTimeout(resolve, 180));
   }
 
@@ -202,7 +204,7 @@
     }
     const current = new URL(tab.url);
     if (current.pathname !== '/hd-pc36029.html') {
-      setStatus('Đang chuyển tab nguồn sang danh mục HD để quét trực tiếp popup mua nhanh...');
+      setStatus('Đang chuyển tab nguồn sang danh mục HD...');
       await chrome.tabs.update(tab.id, { url: HD_URL, active: true });
       await waitTabComplete(tab.id);
       await new Promise((resolve) => setTimeout(resolve, 900));
@@ -215,10 +217,10 @@
     $('scanCurrent').disabled = true;
     $('makeImport').disabled = true;
     try {
-      if (!sapoData) throw new Error('Chọn file xuất Sapo trước để tool biết cần tìm đội/màu/size nào.');
+      if (!sapoData) throw new Error('Chọn file xuất Sapo trước để tool biết chính xác màu và size nào cần lấy.');
       const hints = matcher.buildScanHints(sapoData.products);
       const tab = await ensureHdCategoryTab();
-      setStatus('Đang quét trực tiếp danh mục HD. Tool sẽ lần lượt bấm nút mua của từng sản phẩm, đọc popup màu → size → tồn. Không click chuột trên trang cho tới khi xong.');
+      setStatus('Đang quét: chỉ lấy các màu mà file Sapo cần; mỗi màu chỉ đọc S/M/L/XL/XXL rồi chuyển ngay.');
       const response = await sendToTab(tab.id, { type: 'DHL_SCAN_HD_LIVE', hints });
       if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu nguồn');
       sourceResults = Array.isArray(response.result) ? response.result : [];
@@ -259,7 +261,7 @@
     if (!sapoData || !templateBuffer) return;
     const rows = variantMatches();
     if (!rows.length) {
-      setStatus('Chưa có biến thể nào ghép được với tồn nguồn.', 'error');
+      setStatus('Chưa có biến thể nào ghép an toàn với tồn nguồn.', 'error');
       return;
     }
 
@@ -267,7 +269,7 @@
     for (const row of rows) inventory[String(row.sapo.variantId)] = Number(row.source.available);
 
     try {
-      setStatus(`Đang tạo file nhập cho ${rows.length} biến thể đã ghép...`);
+      setStatus(`Đang tạo file nhập cho ${rows.length} biến thể đã ghép an toàn...`);
       const out = await xlsx.buildSapoImport(templateBuffer, sapoData, inventory);
       const blob = new Blob([out.bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
@@ -278,7 +280,7 @@
       a.download = `SAPO_NHAP_TON_KHO_${stamp}.xlsx`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
-      setStatus(`Đã tạo ${out.rows} dòng cập nhật tồn. Ví dụ nếu Mexico / S nguồn = 7 thì đúng dòng Mexico-S trong file nhập sẽ có Tồn kho = 7. Các biến thể chưa đọc được nguồn không xuất vào file.`, 'ok');
+      setStatus(`Đã tạo ${out.rows} dòng. Chỉ các màu/size ghép chắc chắn mới được xuất; dòng chưa chắc chắn bị bỏ qua.`, 'ok');
     } catch (error) {
       setStatus(error.message || String(error), 'error');
     }
@@ -301,25 +303,28 @@
     add('DHL STOCK SYNC - BÁO CÁO LỖI / CHẨN ĐOÁN');
     add('============================================================');
     add(`Thời điểm: ${new Date().toLocaleString('vi-VN')}`);
-    add('Phiên bản tool: 0.9.0');
+    add(`Phiên bản tool: ${VERSION}`);
     add(`Trạng thái: ${lastStatusText}`);
     add(`File xuất Sapo: ${sapoExportFileName || '—'}`);
     add(`File mẫu nhập: ${sapoTemplateFileName || '—'}`);
     add('');
     add(`SAPO: ${sapoData ? sapoData.products.length : 0} sản phẩm | ${sapoData ? sapoData.variants.length : 0} biến thể | size ${sapoData ? `${sapoData.sizeResolved}/${sapoData.sizeTotal}` : '0/0'}`);
     add(`NGUỒN: ${sourceResults.length} sản phẩm | ${groups.length} mẫu/màu`);
-    add(`GHÉP BIẾN THỂ: ${ready}/${sapoData ? sapoData.variants.length : 0} | SP có dữ liệu: ${matchedProductCount()}/${sapoData ? sapoData.products.length : 0}`);
+    add(`GHÉP AN TOÀN: ${ready}/${sapoData ? sapoData.variants.length : 0} | SP có dữ liệu: ${matchedProductCount()}/${sapoData ? sapoData.products.length : 0}`);
     add('');
     add('1. CHI TIẾT QUÉT POPUP NGUỒN');
     add('============================================================');
+
     sourceResults.forEach((product, index) => {
       add(`\n[Nguồn ${index + 1}/${sourceResults.length}] ${val(product.parentName)}`);
       add(`URL: ${val(product.sourceUrl)}`);
       add(`Parent ID: ${val(product.parentId)} | method=${val(product.scanMethod)} | complete=${val(product.complete)} | confidence=${val(product.confidence)} | stop=${val(product.stopReason)}`);
       const d = product.domDiagnostics || {};
       add(`Card tìm thấy: ${val(d.cardFound)}`);
-      add(`Nút đã thử: ${val(d.quickCandidates)}`);
-      add(`Màu control thấy: ${val(d.colorControls)}`);
+      add(`Màu nguồn thấy: ${val(d.allColorControls || d.colorControls)}`);
+      add(`Màu Sapo cần: ${val(d.targetColorHints)}`);
+      add(`Màu tool chọn quét: ${val(d.selectedColorControls)}`);
+      add(`Màu Sapo còn thiếu: ${val(d.missingColorHints)}`);
       add(`Số màu đọc: ${val(d.colorsRead)} / cần: ${val(d.expectedColorCount)}`);
       add(`Size cần: ${val(d.expectedSizes)}`);
       add(`Size/màu còn thiếu: ${val(d.missingSizes)}`);
@@ -327,16 +332,19 @@
       for (const variant of product.variants || []) add(`  ${variant.color} | ${variant.size} | tồn=${variant.available} | sku=${variant.sku}`);
       if (d.snapshots && d.snapshots.length) {
         add('Snapshot từng màu:');
-        for (const snapshot of d.snapshots) add(`  ${snapshot.color}: ${(snapshot.rows || []).map((row) => `${row.size}=${row.stock}`).join(', ') || 'KHÔNG ĐỌC ĐƯỢC'}`);
+        for (const snapshot of d.snapshots) {
+          add(`  ${snapshot.color} [hint=${snapshot.hint || '—'}]: ${(snapshot.rows || []).map((row) => `${row.size}=${row.stock}`).join(', ') || 'KHÔNG ĐỌC ĐƯỢC'}`);
+        }
       }
     });
+
     add('\n2. GHÉP TỪNG BIẾN THỂ SAPO ↔ NGUỒN');
     add('============================================================');
     matches.forEach((match, index) => {
       const p = match.sapoProduct || {};
       const best = match.best ? `${match.best.parentName} / ${match.best.color} (${Math.round((match.best.score || 0) * 100)}%)` : 'KHÔNG CÓ';
       add(`\n[Sapo ${index + 1}/${matches.length}] ${p.name}`);
-      add(`SKU gốc: ${p.skuBase || '—'} | Best: ${best}`);
+      add(`SKU gốc: ${p.skuBase || '—'} | Best: ${best} | Method: ${match.linkMethod || '—'}`);
       for (const vm of match.variantMatches || []) {
         add(`  ${vm.sapo.size} | ${vm.sapo.sku} | Id=${vm.sapo.variantId} → ${vm.source ? `${vm.source.color}/${vm.source.size}/tồn=${vm.source.available}` : `CHƯA CÓ DỮ LIỆU (${vm.reason})`}`);
       }
@@ -368,9 +376,9 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (!message || message.type !== 'DHL_STOCK_PROGRESS') return;
     const d = message.data || {};
-    if (d.stage === 'discovered') setStatus(`Tìm thấy ${d.productTotal} sản phẩm nguồn. Bắt đầu bấm popup từng sản phẩm...`);
+    if (d.stage === 'discovered') setStatus(`Tìm thấy ${d.productTotal} sản phẩm nguồn. Bắt đầu quét màu cần dùng...`);
     else if (d.stage === 'product') setStatus(`Đang quét ${d.productIndex}/${d.productTotal}: ${d.descriptor && d.descriptor.title ? d.descriptor.title : ''}`);
-    else if (d.stage === 'dom-color') setStatus(`Đang đọc ${d.descriptor && d.descriptor.title ? d.descriptor.title : ''} → màu ${d.color} (${d.colorIndex}/${d.colorTotal}) → thấy ${d.rows} size.`);
+    else if (d.stage === 'dom-color') setStatus(`Đang đọc ${d.descriptor && d.descriptor.title ? d.descriptor.title : ''} → màu ${d.color} (${d.colorIndex}/${d.colorTotal}) → ${d.rows}/5 size.`);
   });
 
   (async () => {
