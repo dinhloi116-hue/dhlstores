@@ -32,6 +32,10 @@ assert.ok(content.includes('openStockPopup'));
 assert.ok(content.includes("const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL']"));
 assert.ok(content.includes('switchColorAndRead'));
 assert.ok(content.includes('elapsed >= 650'));
+assert.ok(content.includes('navigation-guard-v1'), 'Scanner phải có guard chống nhảy trang chi tiết');
+assert.ok(content.includes('inertActionHref'), 'Scanner phải loại link điều hướng thật');
+assert.ok(content.includes('clickQuickCandidate'), 'Scanner phải click quick action với preventDefault');
+assert.ok(content.includes("location.pathname !== HD_PATH"), 'Scanner phải dừng nếu rời danh mục HD');
 
 const popupJs = fs.readFileSync(path.join(dir, 'popup.js'), 'utf8');
 assert.ok(popupJs.includes('ensureHdCategoryTab'));
@@ -76,11 +80,12 @@ assert.ok(catalog.includes('SKU mẫu nguồn'));
 
 console.log('BUILD PASS', {
   version: manifest.version,
-  scanner: 'S/M/L/XL/XXL + AJAX wait',
+  scanner: 'S/M/L/XL/XXL + AJAX wait + no navigation',
   dailyInput: 'Sapo warehouse export',
   branchReadFromWarehouse: true,
   skuMappedFromStandardProduct: true,
   output: 'official Sapo inventory import template',
   requiredSkuColumn: 'SKU*',
+  staysOnHdCategory: true,
   sourceHost: manifest.host_permissions[0]
 });
