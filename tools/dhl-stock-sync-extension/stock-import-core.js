@@ -5,16 +5,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
 
-  const DEFAULT_BRANCH='Cửa hàng chính';
-  const SAPO_HEADERS=[
-    'Đường dẫn/Alias','Tên sản phẩm*','Mô tả sản phẩm','Nhãn hiệu','Loại sản phẩm',
-    'Nhóm ngành nghề tính thuế GTGT, TNCN','Tags','Yêu cầu vận chuyển','Hiển thị*',
-    'Thuộc tính 1','Giá trị thuộc tính 1','Thuộc tính 2','Giá trị thuộc tính 2','Thuộc tính 3','Giá trị thuộc tính 3',
-    'Áp dụng thuế','Mã SKU','Barcode','Đơn vị tính','Ảnh đại diện','Chú thích ảnh',
-    'Thẻ tiêu đề(SEO Title)','Thẻ mô tả(SEO Description)','Mô tả ngắn','Quản lý kho','Quản lý lô - HSD',
-    'Số ngày cảnh báo trước hết hạn','Khối lượng','Đơn vị khối lượng','Ảnh phiên bản',
-    'Cho phép tiếp tục mua khi hết hàng','Giá','Giá so sánh','Giá vốn','Cửa hàng chính_Tồn kho','Id phiên bản'
-  ];
+  const INVENTORY_HEADERS=['Tên phiên bản sản phẩm','SKU*','Mã lô','Ngày sản xuất','Hạn sử dụng','Tồn kho','Vị trí lưu kho'];
 
   function xmlEscape(value){
     return String(value==null?'':value)
@@ -22,31 +13,46 @@
       .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
   }
 
-  function cellXml(xlsx,colIndex,rowIndex,value){
+  function cellXml(xlsx,colIndex,rowIndex,value,styleId=0){
     const ref=`${xlsx.indexToCol(colIndex)}${rowIndex}`;
-    if(value==null||value==='')return'';
-    if(typeof value==='number'&&Number.isFinite(value))return`<c r="${ref}"><v>${value}</v></c>`;
-    if(typeof value==='boolean')return`<c r="${ref}" t="b"><v>${value?1:0}</v></c>`;
+    const style=styleId?` s="${styleId}"`:'';
+    if(value==null||value==='')return`<c r="${ref}"${style}/>`;
+    if(typeof value==='number'&&Number.isFinite(value))return`<c r="${ref}"${style}><v>${value}</v></c>`;
     const text=String(value);
     const preserve=/^\s|\s$|\n/.test(text)?' xml:space="preserve"':'';
-    return`<c r="${ref}" t="inlineStr"><is><t${preserve}>${xmlEscape(text)}</t></is></c>`;
+    return`<c r="${ref}"${style} t="inlineStr"><is><t${preserve}>${xmlEscape(text)}</t></is></c>`;
   }
 
-  function makeXlsx(xlsx,headers,dataRows,sheetName='Mẫu file nhập'){
-    const lastCol=xlsx.indexToCol(Math.max(0,headers.length-1));
+  function makeOfficialInventoryXlsx(xlsx,dataRows,branchName){
+    const branch=String(branchName||'').trim();
+    if(!branch)throw new Error('Không đọc được tên chi nhánh từ file Quản lý kho Sapo');
+    const lastRow=Math.max(4,dataRows.length+4);
     const rowXml=[];
-    rowXml.push(`<row r="1">${headers.map((v,i)=>cellXml(xlsx,i,1,v)).join('')}</row>`);
+    rowXml.push(`<row r="1" ht="31.5" customHeight="1">${cellXml(xlsx,0,1,'Cập nhật tồn kho phiên bản sản phẩm',1)}</row>`);
+    rowXml.push(`<row r="3">${cellXml(xlsx,5,3,branch,2)}${cellXml(xlsx,6,3,'',2)}</row>`);
+    rowXml.push(`<row r="4">${INVENTORY_HEADERS.map((v,i)=>cellXml(xlsx,i,4,v,3)).join('')}</row>`);
     dataRows.forEach((row,index)=>{
-      const ri=index+2;
-      rowXml.push(`<row r="${ri}">${row.map((v,i)=>cellXml(xlsx,i,ri,v)).join('')}</row>`);
+      const ri=index+5;
+      const values=[row.variantName||'',row.sku||'',row.lot||'',row.manufactureDate||'',row.expiryDate||'',Number(row.stock),row.storageLocation||''];
+      rowXml.push(`<row r="${ri}">${values.map((v,i)=>cellXml(xlsx,i,ri,v,0)).join('')}</row>`);
     });
 
     const sheetXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
       `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`+
-      `<dimension ref="A1:${lastCol}${dataRows.length+1}"/>`+
-      `<sheetViews><sheetView workbookViewId="0"/></sheetViews>`+
-      `<sheetFormatPr defaultRowHeight="15"/>`+
+      `<dimension ref="A1:G${lastRow}"/>`+
+      `<sheetViews><sheetView tabSelected="1" workbookViewId="0"/></sheetViews>`+
+      `<sheetFormatPr defaultColWidth="14.42578125" defaultRowHeight="15" customHeight="1"/>`+
+      `<cols>`+
+      `<col min="1" max="1" width="63.5703125" customWidth="1"/>`+
+      `<col min="2" max="2" width="24.5703125" customWidth="1"/>`+
+      `<col min="3" max="3" width="15.7109375" customWidth="1"/>`+
+      `<col min="4" max="4" width="14.28515625" customWidth="1"/>`+
+      `<col min="5" max="5" width="19" customWidth="1"/>`+
+      `<col min="6" max="6" width="21.42578125" customWidth="1"/>`+
+      `<col min="7" max="7" width="19" customWidth="1"/>`+
+      `</cols>`+
       `<sheetData>${rowXml.join('')}</sheetData>`+
+      `<mergeCells count="1"><mergeCell ref="A1:G1"/></mergeCells>`+
       `</worksheet>`;
 
     const contentTypes=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
@@ -63,7 +69,7 @@
       `</Relationships>`;
     const workbook=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
       `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`+
-      `<sheets><sheet name="${xmlEscape(sheetName)}" sheetId="1" r:id="rId1"/></sheets>`+
+      `<bookViews><workbookView/></bookViews><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>`+
       `</workbook>`;
     const workbookRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
       `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
@@ -72,11 +78,20 @@
       `</Relationships>`;
     const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
       `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`+
-      `<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>`+
-      `<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>`+
-      `<borders count="1"><border/></borders>`+
+      `<fonts count="3">`+
+      `<font><sz val="11"/><name val="Calibri"/></font>`+
+      `<font><b/><sz val="16"/><name val="Calibri"/></font>`+
+      `<font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>`+
+      `</fonts>`+
+      `<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9EAF7"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF4472C4"/><bgColor indexed="64"/></patternFill></fill></fills>`+
+      `<borders count="2"><border/><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/></border></borders>`+
       `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>`+
-      `<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>`+
+      `<cellXfs count="4">`+
+      `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>`+
+      `<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="center"/></xf>`+
+      `<xf numFmtId="0" fontId="0" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>`+
+      `<xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>`+
+      `</cellXfs>`+
       `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>`+
       `</styleSheet>`;
 
@@ -86,56 +101,37 @@
     ]));
   }
 
-  function nonBlank(value){return value!==undefined&&value!==null&&value!=='';}
-
-  function buildInventoryWorkbook(xlsx,sapoExport,inventoryByVariantId,branchName=DEFAULT_BRANCH){
-    if(!xlsx||typeof xlsx.zipStore!=='function')throw new Error('Thiếu bộ tạo Excel');
-    if(!sapoExport)throw new Error('Chưa có dữ liệu file xuất Sapo');
-
-    const branch=String(branchName||DEFAULT_BRANCH).trim()||DEFAULT_BRANCH;
-    if(branch!==DEFAULT_BRANCH)throw new Error('Bản này đang theo đúng mẫu Sapo của shop: Cửa hàng chính_Tồn kho');
-    const stockHeader='Cửa hàng chính_Tồn kho';
-    const exportH=sapoExport.headerMap||{};
-    const rows=[];
+  function buildOfficialInventoryWorkbook(xlsx,rows,branchName){
+    const clean=[];
     let zeroCount=0;
-
-    const productBase=new Map();
-    for(const p of sapoExport.products||[]){
-      const first=(p.variants||[])[0];
-      if(first)productBase.set(String(p.productId),first.raw||[]);
-    }
-
-    for(const variant of sapoExport.variants||[]){
-      const key=String(variant.variantId);
-      if(!Object.prototype.hasOwnProperty.call(inventoryByVariantId||{},key))continue;
-      const stock=Number(inventoryByVariantId[key]);
-      if(!Number.isFinite(stock)||stock<0)throw new Error(`Tồn kho không hợp lệ cho Id phiên bản ${key}`);
-
-      const base=productBase.get(String(variant.productId))||[];
-      const out=SAPO_HEADERS.map((header)=>{
-        if(header===stockHeader)return stock;
-        if(header==='Id phiên bản')return variant.variantId;
-        if(header==='Tên sản phẩm*')return variant.name||'';
-        const ci=exportH[header];
-        if(ci==null)return'';
-        const rowValue=(variant.raw||[])[ci];
-        if(nonBlank(rowValue))return rowValue;
-        const baseValue=base[ci];
-        return nonBlank(baseValue)?baseValue:'';
-      });
-      rows.push(out);
+    for(const row of rows||[]){
+      const sku=String(row&&row.sku||'').trim();
+      const stock=Number(row&&row.stock);
+      if(!sku)throw new Error('Thiếu SKU* ở một biến thể. Sapo bắt buộc SKU để nhập tồn kho.');
+      if(!Number.isFinite(stock)||stock<0)throw new Error(`Tồn kho không hợp lệ cho SKU ${sku}`);
+      clean.push({...row,sku,stock});
       if(stock===0)zeroCount++;
     }
-
-    if(!rows.length)throw new Error('Không có biến thể nào đủ điều kiện tạo file nhập tồn kho');
+    if(!clean.length)throw new Error('Không có biến thể nào đủ điều kiện tạo file nhập tồn kho');
     return{
-      bytes:makeXlsx(xlsx,SAPO_HEADERS,rows,'Mẫu file nhập'),
-      rows:rows.length,
+      bytes:makeOfficialInventoryXlsx(xlsx,clean,branchName),
+      rows:clean.length,
       zeroCount,
-      stockHeader,
-      headers:SAPO_HEADERS.slice()
+      branchName:String(branchName||'').trim(),
+      headers:INVENTORY_HEADERS.slice()
     };
   }
 
-  return{DEFAULT_BRANCH,SAPO_HEADERS,makeXlsx,buildInventoryWorkbook};
+  function buildInventoryWorkbook(xlsx,sapoExport,inventoryByVariantId,branchName){
+    const rows=[];
+    for(const variant of (sapoExport&&sapoExport.variants)||[]){
+      const key=String(variant.variantId);
+      if(!Object.prototype.hasOwnProperty.call(inventoryByVariantId||{},key))continue;
+      if(!variant.sku)throw new Error(`Biến thể ${key} chưa có SKU`);
+      rows.push({variantName:[variant.name,variant.size].filter(Boolean).join(' - '),sku:variant.sku,stock:Number(inventoryByVariantId[key])});
+    }
+    return buildOfficialInventoryWorkbook(xlsx,rows,branchName);
+  }
+
+  return{INVENTORY_HEADERS,makeOfficialInventoryXlsx,buildOfficialInventoryWorkbook,buildInventoryWorkbook};
 });
