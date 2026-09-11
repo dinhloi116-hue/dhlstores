@@ -43,7 +43,6 @@ replaceBetween(
     const selectors = 'button,[role="button"],[onclick],[data-id],[data-product-id],[data-product],[data-psid],[data-variant-id],[class*="cart"],[class*="buy"],[class*="quick"],[class*="add"],a[href]';
     const pools = [];
     if (card) pools.push(...card.querySelectorAll(selectors));
-    // Chỉ cho phép phần tử toàn trang khi nó tự mang đúng product id.
     pools.push(...document.querySelectorAll(`[data-id="${CSS.escape(id)}"],[data-product-id="${CSS.escape(id)}"],[data-product="${CSS.escape(id)}"],[data-psid="${CSS.escape(id)}"]`));
 
     const out = [];
@@ -60,7 +59,6 @@ replaceBetween(
         try { hrefProductId = core.extractProductId(new URL(el.getAttribute('href'), location.href).href) || 0; } catch (_) {}
       }
       const actionish = /them vao gio|them gio|chon mua|chon size|dat hang|add.?to.?cart|addcart|cart|quick.?buy|quick.?view|buy.?now|order/.test(p);
-      // Tuyệt đối loại link tên/ảnh sản phẩm. Anchor chỉ được dùng nếu bản thân nó là nút quick/cart.
       if (isAnchor && hrefProductId && !actionish) continue;
 
       let score = 0;
@@ -69,7 +67,7 @@ replaceBetween(
       if (/add.?to.?cart|addcart|cart|quick.?buy|quick.?view|buy.?now|order/.test(p)) score += 120;
       if (card && card.contains(el)) score += 45;
       if (el.matches && el.matches('button,[role="button"],[onclick]')) score += 25;
-      if (!visible(el)) score -= 10; // nút hover vẫn có thể click bằng JS.
+      if (!visible(el)) score -= 10;
       if (score >= 80) out.push({ el, score });
     }
     out.sort((a, b) => b.score - a.score);
@@ -170,7 +168,6 @@ replaceBetween(
       results.push(await scanOneDescriptor(descriptor, hints, progress));
       await sleep(140);
     }
-    // Chỉ đóng popup một lần sau khi đã chạy hết 13 parent sản phẩm.
     try { const root = findStockRoot(); if (root) await closeStockPopup(root); } catch (_) {}
     return results;
   }`,
@@ -179,4 +176,10 @@ replaceBetween(
 
 if(!source.includes('REUSE-POPUP-LOOP')||!source.includes('NO-DETAIL-NAV'))throw new Error('CATEGORY LOOP PATCH FAILED: marker missing');
 fs.writeFileSync(file,source,'utf8');
-console.log('CATEGORY LOOP PATCH PASS: quét tuần tự toàn bộ card, tái sử dụng popup, không mở trang chi tiết');
+
+const popupFile=path.join(__dirname,'popup.js');
+let popup=fs.readFileSync(popupFile,'utf8');
+popup=popup.replace(/const VERSION = '[^']+';/,"const VERSION = '0.13.3';");
+fs.writeFileSync(popupFile,popup,'utf8');
+
+console.log('CATEGORY LOOP PATCH PASS: quét tuần tự toàn bộ card, tái sử dụng popup, không mở trang chi tiết, version 0.13.3');
