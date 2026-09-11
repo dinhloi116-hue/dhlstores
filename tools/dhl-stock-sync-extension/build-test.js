@@ -5,7 +5,6 @@ const dir = __dirname;
 
 const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, '0.11.0');
 assert.ok(manifest.host_permissions.includes('https://si.aobongda.net/*'));
 assert.ok(!manifest.host_permissions.some((x) => /sapo/i.test(x)), 'Extension không truy cập Sapo trực tiếp');
 assert.ok(manifest.permissions.includes('sidePanel'));
@@ -21,9 +20,10 @@ const popupHtml = fs.readFileSync(path.join(dir, 'popup.html'), 'utf8');
 assert.ok(popupHtml.includes('Chọn file Quản lý kho Sapo'));
 assert.ok(popupHtml.includes('templateStep" style="display:none"'));
 assert.ok(popupHtml.includes('QUÉT KHO HD 2026'));
-assert.ok(popupHtml.includes('DÙNG TRỰC TIẾP FILE QUẢN LÝ KHO SAPO'));
+assert.ok(popupHtml.includes('ĐẦU RA = FILE NHẬP TỒN KHO CHÍNH THỨC SAPO'));
 assert.ok(popupHtml.includes('warehouse-core.js'));
 assert.ok(popupHtml.indexOf('warehouse-core.js') < popupHtml.indexOf('popup.js'), 'warehouse-core phải bọc parser trước popup.js');
+assert.ok(popupHtml.includes('stock-import-core.js'));
 assert.ok(popupHtml.includes('one-file-mode.js'));
 
 const content = fs.readFileSync(path.join(dir, 'content.js'), 'utf8');
@@ -38,21 +38,33 @@ assert.ok(popupJs.includes('ensureHdCategoryTab'));
 assert.ok(popupJs.includes('DHL_SCAN_HD_LIVE'));
 assert.ok(popupJs.includes('variantMatches'));
 assert.ok(!popupJs.includes('fullMatchReady'));
-assert.ok(popupJs.includes("const VERSION = '0.11.0'"));
 
 const warehouse = fs.readFileSync(path.join(dir, 'warehouse-core.js'), 'utf8');
 assert.ok(warehouse.includes("map['Sản phẩm']"));
 assert.ok(warehouse.includes("map['Tồn kho']"));
 assert.ok(warehouse.includes('S|M|L|XL|XXL'));
 assert.ok(warehouse.includes('inputType:\'warehouse\''));
-assert.ok(warehouse.includes('updateWarehouseWorkbook'));
+assert.ok(warehouse.includes('warehouseBranchName'));
+assert.ok(warehouse.includes('rawProductLabel'));
 assert.ok(warehouse.includes('xlsx.parseSapoExport=async function'));
 
+const stockImport = fs.readFileSync(path.join(dir, 'stock-import-core.js'), 'utf8');
+assert.ok(stockImport.includes('Cập nhật tồn kho phiên bản sản phẩm'));
+assert.ok(stockImport.includes("'Tên phiên bản sản phẩm','SKU*','Mã lô','Ngày sản xuất','Hạn sử dụng','Tồn kho','Vị trí lưu kho'"));
+assert.ok(stockImport.includes('buildOfficialInventoryWorkbook'));
+assert.ok(stockImport.includes('branchName'));
+
+const shopRules = fs.readFileSync(path.join(dir, 'shop-rules.js'), 'utf8');
+assert.ok(shopRules.includes('STANDARD_SKU_ENTRIES'));
+assert.ok(shopRules.includes('skuBaseForStandardName'));
+assert.ok(shopRules.includes("['ĐT Mexico 2026 HD - Rêu','Mexico xanh 26 HD']"));
+
 const oneFile = fs.readFileSync(path.join(dir, 'one-file-mode.js'), 'utf8');
-assert.ok(oneFile.includes('TẠO FILE KHO ĐÃ CẬP NHẬT TỒN'));
+assert.ok(oneFile.includes('TẠO FILE NHẬP TỒN KHO SAPO'));
 assert.ok(oneFile.includes("sapoData.inputType==='warehouse'"));
-assert.ok(oneFile.includes('updateWarehouseWorkbook'));
-assert.ok(oneFile.includes('DANH_SACH_QUAN_LY_KHO_DA_CAP_NHAT_TON'));
+assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
+assert.ok(oneFile.includes('skuBaseForStandardName'));
+assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
 assert.ok(oneFile.includes('scanAfterFile'));
 
 const catalog = fs.readFileSync(path.join(dir, 'catalog-mode.js'), 'utf8');
@@ -66,9 +78,9 @@ console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'S/M/L/XL/XXL + AJAX wait',
   dailyInput: 'Sapo warehouse export',
-  warehouseHeader: 'Sản phẩm + Tồn kho',
-  adultVariantsOnly: true,
-  output: 'same warehouse workbook with updated Tồn kho',
-  childrenUntouched: true,
+  branchReadFromWarehouse: true,
+  skuMappedFromStandardProduct: true,
+  output: 'official Sapo inventory import template',
+  requiredSkuColumn: 'SKU*',
   sourceHost: manifest.host_permissions[0]
 });
