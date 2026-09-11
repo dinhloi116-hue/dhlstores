@@ -48,6 +48,8 @@ function numCell(ref,value){return `<c r="${ref}"><v>${Number(value)}</v></c>`;}
   assert.strictEqual(parsed.products[0].name,'ĐT Mexico 2026 HD - Rêu');
   assert.deepStrictEqual(parsed.products[0].variants.map(v=>v.size),['S','M']);
   assert.strictEqual(parsed.warehouseStockCol,4);
+  assert.strictEqual(parsed.warehouseBranchName,'dhl sport');
+  assert.strictEqual(parsed.variants[0].rawProductLabel,'ĐT Mexico 2026 HD - Rêu Không in / S');
 
   const out=await warehouse.updateWarehouseWorkbook(input,parsed,{'4':7,'5':19});
   assert.strictEqual(out.rows,2);
@@ -57,5 +59,5 @@ function numCell(ref,value){return `<c r="${ref}"><v>${Number(value)}</v></c>`;}
   assert.strictEqual(check.rows[3][5],99,'Chỉ sửa cột Tồn kho, giữ Có thể bán');
   assert.strictEqual(check.rows[5][4],5,'Dòng trẻ em giữ nguyên');
 
-  console.log('WAREHOUSE PASS',{products:parsed.products.length,variants:parsed.variants.length,canonicalLegacyNames:true,warehouseColorHints:true,stockUpdated:true,childrenUntouched:true});
+  console.log('WAREHOUSE PASS',{products:parsed.products.length,variants:parsed.variants.length,branch:parsed.warehouseBranchName,canonicalLegacyNames:true,warehouseColorHints:true,childrenUntouched:true});
 })().catch((error)=>{console.error(error);process.exit(1);});
