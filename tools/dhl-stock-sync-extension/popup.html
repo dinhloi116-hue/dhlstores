@@ -11,7 +11,7 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>Web nguồn → ghép từng size → điền tồn vào file nhập Sapo</p>
+        <p>Web nguồn → chuẩn hóa tên → ghép từng size → điền tồn vào file nhập Sapo</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
@@ -64,12 +64,13 @@
       </table>
     </div>
 
-    <footer>Bản 0.9 ghép theo từng biến thể. Không cần đủ 130/130 mới tạo file; chỉ các dòng đã lấy được tồn nguồn mới được xuất.</footer>
+    <footer>Bước 0 có thể quét danh sách nguồn mà không cần file Sapo. Sau khi chuẩn hóa tên Sapo theo danh sách nguồn, phần đồng bộ tồn sẽ ghép chắc chắn hơn.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
   <script src="xlsx-lite.js"></script>
   <script src="xlsx-preserve.js"></script>
   <script src="popup.js"></script>
+  <script src="catalog-mode.js"></script>
 </body>
 </html>
