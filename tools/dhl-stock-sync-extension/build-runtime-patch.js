@@ -3,13 +3,10 @@ const path=require('path');
 
 const file=path.join(__dirname,'content.js');
 let source=fs.readFileSync(file,'utf8');
+const applied=[];
 
-if(source.includes('async function waitForStockClosed(')){
-  console.log('RUNTIME PATCH: scanner popup wait already applied');
-  process.exit(0);
-}
-
-const oldBlock=`  async function closeStockPopup(root) {
+if(!source.includes('async function waitForStockClosed(')){
+  const oldBlock=`  async function closeStockPopup(root) {
     const container = modalContainer(root);
     if (!container) return;
     const candidates = [...container.querySelectorAll('button,a,[role="button"],[aria-label],[title],[class*="close"]')]
@@ -45,7 +42,7 @@ const oldBlock=`  async function closeStockPopup(root) {
   }
 `;
 
-const newBlock=`  async function waitForStockClosed(timeout = 1800) {
+  const newBlock=`  async function waitForStockClosed(timeout = 1800) {
     const started = Date.now();
     while (Date.now() - started < timeout) {
       if (!findStockRoot()) return true;
@@ -105,10 +102,43 @@ const newBlock=`  async function waitForStockClosed(timeout = 1800) {
   }
 `;
 
-if(!source.includes(oldBlock)){
-  throw new Error('RUNTIME PATCH FAILED: không tìm thấy khối close/open popup cũ trong content.js');
+  if(!source.includes(oldBlock))throw new Error('RUNTIME PATCH FAILED: không tìm thấy khối close/open popup cũ trong content.js');
+  source=source.replace(oldBlock,newBlock);
+  applied.push('chờ popup cũ đóng hẳn');
 }
 
-source=source.replace(oldBlock,newBlock);
+if(!source.includes('single-color-fallback')){
+  const oldFallback=`    const allControls = colorControls(root);
+    const targetSelection = selectTargetControls(allControls, hint);
+    let controls = targetSelection.controls;
+    if (!controls.length && !expectedColorHints(hint).length && fallbackColor) {
+      controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
+    }
+`;
+  const newFallback=`    const allControls = colorControls(root);
+    const targetSelection = selectTargetControls(allControls, hint);
+    let controls = targetSelection.controls;
+    const fallbackWanted = expectedColorHints(hint);
+    // single-color-fallback: popup một màu có thể không render radio màu; dùng màu từ /product/child nếu khớp hint Sapo.
+    if (!controls.length && fallbackColor) {
+      if (!fallbackWanted.length) {
+        controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
+      } else {
+        const ranked = fallbackWanted
+          .map((wanted) => ({ hint: wanted, score: matcher.scoreColorHint(wanted, fallbackColor) }))
+          .sort((a, b) => b.score - a.score);
+        const best = ranked[0];
+        if (best && best.score >= 0.5) {
+          controls = [{ name: fallbackColor, el: null, hint: best.hint, hintScore: best.score }];
+          targetSelection.missingHints = (targetSelection.missingHints || []).filter((value) => value !== best.hint);
+        }
+      }
+    }
+`;
+  if(!source.includes(oldFallback))throw new Error('RUNTIME PATCH FAILED: không tìm thấy khối fallback màu cũ trong content.js');
+  source=source.replace(oldFallback,newFallback);
+  applied.push('fallback popup một màu không có radio');
+}
+
 fs.writeFileSync(file,source,'utf8');
-console.log('RUNTIME PATCH PASS: chờ popup cũ đóng hẳn trước khi đọc sản phẩm kế tiếp');
+console.log('RUNTIME PATCH PASS:',applied.length?applied.join(' + '):'đã có đủ patch');
