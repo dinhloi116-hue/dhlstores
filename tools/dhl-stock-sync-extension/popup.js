@@ -6,8 +6,7 @@
   const xlsx = globalThis.DHLXlsxLite;
   if (!matcher || !xlsx) return;
 
-  const VERSION = '0.11.0';
-  const HD_URL = 'https://si.aobongda.net/hd-pc36029.html';
+  const VERSION = '0.14.6';
 
   let sapoData = null;
   let templateBuffer = null;
@@ -106,7 +105,7 @@
     const groups = sourceGroups().length;
 
     if (!sourceResults.length) {
-      setStatus(`Đã đọc file Sapo: ${sapoData.products.length} sản phẩm, ${total} biến thể. Bấm QUÉT KHO HD 2026.`, 'ok');
+      setStatus(`Đã đọc file Sapo: ${sapoData.products.length} sản phẩm, ${total} biến thể. Bấm QUÉT KHO TRANG ĐANG MỞ.`, 'ok');
       return;
     }
 
@@ -197,30 +196,23 @@
     });
   }
 
-  async function ensureHdCategoryTab() {
-    const tab = await activeTab();
-    if (!tab || !tab.id || !String(tab.url || '').startsWith('https://si.aobongda.net/')) {
-      throw new Error('Hãy mở si.aobongda.net và đăng nhập trước.');
-    }
-    const current = new URL(tab.url);
-    if (current.pathname !== '/hd-pc36029.html') {
-      setStatus('Đang chuyển tab nguồn sang danh mục HD...');
-      await chrome.tabs.update(tab.id, { url: HD_URL, active: true });
-      await waitTabComplete(tab.id);
-      await new Promise((resolve) => setTimeout(resolve, 900));
-    }
-    return chrome.tabs.get(tab.id);
+  async function ensureCurrentCategoryTab() {
+    const tab=await activeTab();
+    if(!tab||!tab.id||!String(tab.url||'').startsWith('https://si.aobongda.net/'))throw new Error('Hãy mở danh mục cần quét trên si.aobongda.net trước.');
+    const current=new URL(tab.url);
+    if(/-p\d+(?:\.html)?$/i.test(current.pathname))throw new Error('Bạn đang ở trang chi tiết sản phẩm. Hãy mở một trang danh mục rồi quét.');
+    return tab;
   }
 
-  async function runHdScan() {
+    async function runHdScan() {
     $('scanHd').disabled = true;
     $('scanCurrent').disabled = true;
     $('makeImport').disabled = true;
     try {
       if (!sapoData) throw new Error('Chọn file xuất Sapo trước để tool biết chính xác màu và size nào cần lấy.');
       const hints = matcher.buildScanHints(sapoData.products);
-      const tab = await ensureHdCategoryTab();
-      setStatus('Đang quét: chỉ lấy các màu mà file Sapo cần; mỗi màu chỉ đọc S/M/L/XL/XXL rồi chuyển ngay.');
+      const tab = await ensureCurrentCategoryTab();
+      setStatus('Đang quét trang danh mục hiện tại: lấy đúng màu và toàn bộ size mà file Sapo cần.');
       const response = await sendToTab(tab.id, { type: 'DHL_SCAN_HD_LIVE', hints });
       if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu nguồn');
       sourceResults = Array.isArray(response.result) ? response.result : [];

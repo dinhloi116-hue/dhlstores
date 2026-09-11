@@ -7,7 +7,6 @@
   if (!core || !dom || !matcher) return;
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const HD_PATH = '/hd-pc36029.html';
   const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
   const TEAM_PATTERNS = [
     ['bo dao nha', 'portugal'], ['tay ban nha', 'spain'], ['nhat ban', 'japan'], ['nhat', 'japan'],
@@ -44,17 +43,40 @@
   }
 
   function targetSizesForHint(hint) {
-    const requested = new Set();
-    for (const product of (hint && hint.products) || []) {
-      for (const value of product.sizes || []) {
-        const size = dom.normalizeSize(value);
-        if (TARGET_SIZES.includes(size)) requested.add(size);
+    const requested=[];
+    const seen=new Set();
+    for(const product of (hint&&hint.products)||[]){
+      for(const value of product.sizes||[]){
+        const size=dom.normalizeSize(value);
+        if(size&&!seen.has(size)){seen.add(size);requested.push(size);}
       }
     }
-    return TARGET_SIZES.filter((size) => requested.size === 0 || requested.has(size));
+    return requested;
   }
 
-  function productTitleFromDocument(doc = document) {
+  function detectedSizesFromRoot(root){
+    const out=[],seen=new Set();
+    if(!root)return out;
+    for(const tr of root.querySelectorAll('tr,[role="row"]')){
+      if(!visible(tr))continue;
+      const hit=dom.extractSizeStock(text(tr));
+      if(!hit)continue;
+      const size=dom.normalizeSize(hit.size);
+      if(size&&!seen.has(size)){seen.add(size);out.push(size);}
+    }
+    if(!out.length){
+      for(const el of root.querySelectorAll('li,div,p,span')){
+        if(!visible(el)||el.childElementCount>10)continue;
+        const hit=dom.extractSizeStock(text(el));
+        if(!hit)continue;
+        const size=dom.normalizeSize(hit.size);
+        if(size&&!seen.has(size)){seen.add(size);out.push(size);}
+      }
+    }
+    return out;
+  }
+
+    function productTitleFromDocument(doc = document) {
     for (const selector of ['h1', '[itemprop="name"]', '.product-name', '.detail-title', '[class*="product-name"]', '[class*="product-title"]']) {
       const el = doc.querySelector(selector);
       if (el) {
@@ -65,38 +87,36 @@
     return core.normalizeText(doc.title).replace(/\s*[-|].*$/, '');
   }
 
-  function findProductLinksInDocument(doc = document, baseUrl = location.href) {
-    const base = new URL(baseUrl, location.href);
-    const seen = new Map();
-    for (const a of doc.querySelectorAll('a[href]')) {
-      try {
-        const url = new URL(a.getAttribute('href'), base);
-        if (url.host !== location.host) continue;
-        const id = core.extractProductId(url.href);
-        const title = core.normalizeText(a.textContent);
-        if (!id || seen.has(id) || !/(?:^|\s)ĐT\s+.+2026\s+HD/i.test(title)) continue;
-        seen.set(id, { id, url: url.href, title });
-      } catch (_) {}
-    }
-    return [...seen.values()];
+  function titleForProductAnchor(a) {
+    const direct=core.normalizeText(a&&a.textContent);
+    if(direct&&direct.length>2&&direct.length<200&&!/^(đăng nhập ngay|xem chi tiết|mua ngay)$/i.test(direct))return direct;
+    const img=a&&a.querySelector&&a.querySelector('img');
+    const alt=core.normalizeText(img&&(img.alt||img.title));
+    return alt&&alt.length<200?alt:'';
   }
 
-  async function discoverHd2026() {
-    if (location.pathname === HD_PATH) {
-      const live = findProductLinksInDocument(document, location.href);
-      if (live.length) return live;
+  function findProductLinksInDocument(doc=document,baseUrl=location.href){
+    const base=new URL(baseUrl,location.href),seen=new Map();
+    for(const a of doc.querySelectorAll('a[href]')){
+      try{
+        const url=new URL(a.getAttribute('href'),base);
+        if(url.host!==location.host)continue;
+        const id=core.extractProductId(url.href),title=titleForProductAnchor(a);
+        if(!id||!title)continue;
+        const current=seen.get(id);
+        if(!current||title.length>current.title.length)seen.set(id,{id,url:url.href,title,categoryPath:location.pathname});
+      }catch(_){}
     }
-    const url = new URL(HD_PATH, location.origin).href;
-    const response = await fetch(url, { credentials: 'include', cache: 'no-store' });
-    if (!response.ok) throw new Error(`Không mở được danh mục HD: HTTP ${response.status}`);
-    const html = await response.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const links = findProductLinksInDocument(doc, url);
-    if (!links.length) throw new Error('Không tìm thấy sản phẩm ĐT 2026 HD trong danh mục nguồn');
+    return[...seen.values()];
+  }
+
+  async function discoverCurrentCategory(){
+    const links=findProductLinksInDocument(document,location.href);
+    if(!links.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục đang mở');
     return links;
   }
 
-  function stockMarker(value) {
+    function stockMarker(value) {
     return /nhap so luong cho tung size|ten size|tinh trang ton|con hang|het hang|ton kho/.test(plain(value));
   }
 
@@ -146,38 +166,33 @@
     return null;
   }
 
-  function readTargetRows(root, targetSizes) {
-    if (!root) return [];
-    const wanted = new Set((targetSizes || TARGET_SIZES).map(dom.normalizeSize));
-    const rows = [];
-
-    for (const tr of root.querySelectorAll('tr,[role="row"]')) {
-      if (!visible(tr)) continue;
-      const hit = dom.extractSizeStock(text(tr));
-      if (!hit) continue;
-      const size = dom.normalizeSize(hit.size);
-      if (wanted.has(size)) rows.push({ size, stock: Number(hit.stock), raw: text(tr) });
+  function readTargetRows(root,targetSizes){
+    if(!root)return[];
+    const order=(targetSizes&&targetSizes.length?targetSizes:detectedSizesFromRoot(root)).map(dom.normalizeSize).filter(Boolean);
+    const wanted=new Set(order),rows=[];
+    for(const tr of root.querySelectorAll('tr,[role="row"]')){
+      if(!visible(tr))continue;
+      const hit=dom.extractSizeStock(text(tr));if(!hit)continue;
+      const size=dom.normalizeSize(hit.size);
+      if(!wanted.size||wanted.has(size))rows.push({size,stock:Number(hit.stock),raw:text(tr)});
     }
-
-    if (!rows.length) {
-      const values = [];
-      for (const el of root.querySelectorAll('li,div,p,span')) {
-        if (!visible(el) || el.childElementCount > 10) continue;
-        const value = text(el);
-        if (value && value.length <= 220 && dom.extractSizeStock(value)) values.push(value);
+    if(!rows.length){
+      const values=[];
+      for(const el of root.querySelectorAll('li,div,p,span')){
+        if(!visible(el)||el.childElementCount>10)continue;
+        const value=text(el);if(value&&value.length<=220&&dom.extractSizeStock(value))values.push(value);
       }
-      for (const row of dom.parseRowTexts(values)) {
-        const size = dom.normalizeSize(row.size);
-        if (wanted.has(size)) rows.push({ ...row, size });
+      for(const row of dom.parseRowTexts(values)){
+        const size=dom.normalizeSize(row.size);
+        if(!wanted.size||wanted.has(size))rows.push({...row,size});
       }
     }
-
-    const unique = new Map();
-    for (const row of rows) if (!unique.has(row.size)) unique.set(row.size, row);
-    return TARGET_SIZES.filter((size) => wanted.has(size) && unique.has(size)).map((size) => unique.get(size));
+    const unique=new Map();for(const row of rows)if(!unique.has(row.size))unique.set(row.size,row);
+    const finalOrder=order.length?order:[...unique.keys()];
+    return finalOrder.filter(size=>unique.has(size)).map(size=>unique.get(size));
   }
 
-  function rowsSignature(rows) {
+    function rowsSignature(rows) {
     return JSON.stringify((rows || []).map((row) => [row.size, Number(row.stock)]));
   }
 
@@ -400,36 +415,81 @@
 
   async function closeStockPopup(root) {
     const container = modalContainer(root);
-    if (!container) return;
-    const candidates = [...container.querySelectorAll('button,a,[role="button"],[aria-label],[title],[class*="close"]')]
+    if (!container) return true;
+    const candidates = [...container.querySelectorAll('button,a,[role="button"],[aria-label],[title],[class*="close"],[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close')]
       .filter(visible)
       .map((el) => {
         const p = plain(`${text(el)} ${el.getAttribute('aria-label') || ''} ${el.getAttribute('title') || ''} ${el.className || ''}`);
         let score = 0;
-        if (/dong|close|btn close/.test(p)) score += 100;
-        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 120;
-        if (String(el.className || '').toLowerCase().includes('close')) score += 70;
+        if (el.matches('[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close')) score += 180;
+        if (/dong|close/.test(p)) score += 120;
+        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 150;
         return { el, score };
       })
       .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score);
     if (candidates[0]) await clickElement(candidates[0].el);
     else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
-    await sleep(100);
+    await sleep(260);
+    return !findStockRoot();
+  }
+
+  function popupFingerprint(root) {
+    if (!root) return '';
+    const rows = readTargetRows(root, detectedSizesFromRoot(root));
+    const colors = colorControls(root).map((x) => dom.colorKey(x.name));
+    const marker = String(root.innerHTML || '').replace(/\s+/g, ' ').slice(0, 12000);
+    return JSON.stringify({ rows: rows.map((r) => [r.size, Number(r.stock)]), colors, marker });
+  }
+
+  // navigation-guard-v1
+  function inertActionHref(el) {
+    if (!el || !el.matches || !el.matches('a[href]')) return false;
+    try {
+      const url = new URL(el.getAttribute('href'), location.href);
+      return url.host === location.host && Boolean(core.extractProductId(url.href));
+    } catch (_) { return false; }
+  }
+
+  async function clickQuickCandidate(el) {
+    if (!el) return;
+    if (el.matches && el.matches('a[href]')) {
+      const guard = (event) => event.preventDefault();
+      el.addEventListener('click', guard, { capture: true, once: true });
+    }
+    await clickElement(el);
+  }
+
+  async function waitForPopupRefresh(beforeFingerprint, expectedPath, timeout = 3200) {
+    const started = Date.now();
+    while (Date.now() - started < timeout) {
+      await sleep(90);
+      if (expectedPath && location.pathname !== expectedPath) throw new Error('Trang nguồn đã rời danh mục đang quét; dừng để tránh sai dữ liệu.');
+      const root = findStockRoot();
+      if (!root) continue;
+      const fp = popupFingerprint(root);
+      if (!beforeFingerprint || (fp && fp !== beforeFingerprint)) {
+        await sleep(220);
+        return findStockRoot() || root;
+      }
+    }
+    return null;
   }
 
   async function openStockPopup(descriptor) {
+    const expectedPath=descriptor.categoryPath||location.pathname;
+    if (location.pathname !== expectedPath) throw new Error('Tool chỉ quét trên đúng trang danh mục đang mở.');
     const existing = findStockRoot();
-    if (existing) await closeStockPopup(existing);
+    const before = popupFingerprint(existing);
     const card = cardForDescriptor(descriptor);
-    const candidates = quickCandidates(descriptor, card);
+    const candidates = quickCandidates(descriptor, card).filter((item) => !inertActionHref(item.el));
     for (const candidate of candidates) {
-      await clickElement(candidate.el);
-      const root = await waitForStockRoot(1500);
-      if (root) return { root, cardFound: !!card, candidateCount: candidates.length };
+      await clickQuickCandidate(candidate.el);
+      const root = await waitForPopupRefresh(before, expectedPath, 3200);
+      if (root) return { root, cardFound: !!card, candidateCount: candidates.length, reusedPopup: !!existing };
     }
-    const error = new Error(`Không mở được popup tồn cho ${descriptor.title}. Tool đã thử ${candidates.length} nút mua nhanh.`);
-    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length };
+    const error = new Error(`Không bật được popup tồn cho ${descriptor.title} ngay trên trang danh mục.`);
+    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length, categoryOnly: true };
     throw error;
   }
 
@@ -460,7 +520,7 @@
       price: 0,
       image: '',
       status: Number(row.stock) > 0 ? 2 : 0,
-      scanMethod: 'sapo-target-color-5-size'
+      scanMethod: 'category-target-color-size'
     };
   }
 
@@ -471,15 +531,27 @@
     const parentId = Number(descriptor.id || core.extractProductId(location.href));
     const parentName = core.normalizeText(descriptor.title || productTitleFromDocument() || `#${parentId}`);
     const hint = hintForTitle(parentName, hints);
-    const neededSizes = targetSizesForHint(hint);
+    const hintedSizes = targetSizesForHint(hint);
+    const neededSizes = hintedSizes.length ? hintedSizes : detectedSizesFromRoot(root);
     const first = await firstVariant(parentId, parentName);
     const fallbackColor = first && first.color ? first.color : '';
 
     const allControls = colorControls(root);
     const targetSelection = selectTargetControls(allControls, hint);
     let controls = targetSelection.controls;
-    if (!controls.length && !expectedColorHints(hint).length && fallbackColor) {
-      controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
+    const fallbackWanted = expectedColorHints(hint);
+    // single-color-fallback
+    if (!controls.length && fallbackColor) {
+      if (!fallbackWanted.length) {
+        controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
+      } else {
+        const ranked = fallbackWanted.map((wanted) => ({ hint: wanted, score: matcher.scoreColorHint(wanted, fallbackColor) })).sort((a, b) => b.score - a.score);
+        const best = ranked[0];
+        if (best && best.score >= 0.5) {
+          controls = [{ name: fallbackColor, el: null, hint: best.hint, hintScore: best.score }];
+          targetSelection.missingHints = (targetSelection.missingHints || []).filter((value) => value !== best.hint);
+        }
+      }
     }
 
     const variants = [];
@@ -540,7 +612,7 @@
       stopReason: complete ? 'target-colors-5-size-complete' : 'target-colors-5-size-partial',
       confidence: list.length ? (complete ? 'high' : 'medium') : 'low',
       complete,
-      scanMethod: 'sapo-target-color-5-size',
+      scanMethod: 'category-target-color-size',
       sourceUrl: location.href,
       expectedFromSapo: expectedHints.length * neededSizes.length,
       domDiagnostics: {
@@ -554,7 +626,7 @@
         colorsRead: colorKeys.length,
         expectedColorCount: expectedHints.length,
         expectedSizes: neededSizes,
-        ignoredSizes: ['XXXL', 'XXXXL', 'XXXXXL'],
+        ignoredSizes: [],
         missingSizes: missing,
         snapshots
       }
@@ -567,11 +639,8 @@
     let openInfo = null;
     try {
       openInfo = await openStockPopup(descriptor);
-      const result = await readOpenedPopup(descriptor, hints, progress, openInfo);
-      await closeStockPopup(findStockRoot() || openInfo.root);
-      return result;
+      return await readOpenedPopup(descriptor, hints, progress, openInfo);
     } catch (error) {
-      if (findStockRoot()) await closeStockPopup(findStockRoot());
       return {
         parentId: Number(descriptor.id),
         parentName: descriptor.title || '',
@@ -579,7 +648,7 @@
         variants: [],
         complete: false,
         confidence: 'low',
-        scanMethod: 'sapo-target-color-5-size',
+        scanMethod: 'category-target-color-size',
         stopReason: 'popup-open-error',
         errors: [{ message: error.message || String(error) }],
         domDiagnostics: error.diagnostics || {}
@@ -587,20 +656,25 @@
     }
   }
 
-  async function scanHdLive(hints, progress) {
-    const links = await discoverHd2026();
-    progress({ stage: 'discovered', productTotal: links.length });
-    const results = [];
-    for (let i = 0; i < links.length; i += 1) {
-      const descriptor = links[i];
-      progress({ stage: 'product', productIndex: i + 1, productTotal: links.length, descriptor });
-      results.push(await scanOneDescriptor(descriptor, hints, progress));
-      await sleep(100);
+  async function scanHdLive(hints,progress){
+    const categoryPath=location.pathname;
+    const links=await discoverCurrentCategory();
+    links.forEach(item=>{item.categoryPath=categoryPath;});
+    progress({stage:'discovered',productTotal:links.length,categoryPath});
+    const results=[];
+    const stale=findStockRoot();if(stale)await closeStockPopup(stale);
+    for(let i=0;i<links.length;i+=1){
+      if(location.pathname!==categoryPath)throw new Error('Trang nguồn đã rời danh mục đang quét.');
+      const descriptor=links[i];
+      progress({stage:'product',productIndex:i+1,productTotal:links.length,descriptor});
+      results.push(await scanOneDescriptor(descriptor,hints,progress));
+      await sleep(180);
     }
+    const finalPopup=findStockRoot();if(finalPopup)await closeStockPopup(finalPopup);
     return results;
   }
 
-  async function scanCurrentPopup(hints, progress) {
+    async function scanCurrentPopup(hints, progress) {
     const root = findStockRoot();
     if (!root) throw new Error('Hãy mở popup chọn màu/size của một sản phẩm trước rồi bấm Test popup đang mở.');
     const parentId = core.extractParentIdFromHtml(document.documentElement.innerHTML, core.extractProductId(location.href));

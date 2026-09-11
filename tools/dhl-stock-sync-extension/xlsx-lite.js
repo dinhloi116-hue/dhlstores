@@ -117,16 +117,16 @@
     const rowRe=/<(?:[A-Za-z_][\w.-]*:)?row\b[^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/(?:[A-Za-z_][\w.-]*:)?row>/g;
     while((rm=rowRe.exec(xml))){
       const rowIndex=Number(rm[1]),values=[];let cm;
-      const cellRe=/<(?:[A-Za-z_][\w.-]*:)?c\b([^>]*)>([\s\S]*?)<\/(?:[A-Za-z_][\w.-]*:)?c>/g;
+      const cellRe=/<(?:[A-Za-z_][\w.-]*:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[A-Za-z_][\w.-]*:)?c>)/g;
       while((cm=cellRe.exec(rm[2]))){
-        const attrs=cm[1],refMatch=attrs.match(/\br="([A-Z]+)\d+"/);
+        const attrs=cm[1],inner=cm[2]||'',refMatch=attrs.match(/\br="([A-Z]+)\d+"/);
         if(!refMatch)continue;
         const ci=colToIndex(refMatch[1]),type=(attrs.match(/\bt="([^"]+)"/)||[])[1]||'';
         let value='';
         if(type==='inlineStr'){
-          value=[...cm[2].matchAll(/<(?:[A-Za-z_][\w.-]*:)?t\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z_][\w.-]*:)?t>/g)].map(x=>xmlUnescape(x[1])).join('');
+          value=[...inner.matchAll(/<(?:[A-Za-z_][\w.-]*:)?t\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z_][\w.-]*:)?t>/g)].map(x=>xmlUnescape(x[1])).join('');
         }else{
-          const vm=cm[2].match(/<(?:[A-Za-z_][\w.-]*:)?v\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z_][\w.-]*:)?v>/);
+          const vm=inner.match(/<(?:[A-Za-z_][\w.-]*:)?v\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z_][\w.-]*:)?v>/);
           if(vm){
             if(type==='s')value=shared[Number(vm[1])]??'';
             else if(type==='b')value=vm[1]==='1';
