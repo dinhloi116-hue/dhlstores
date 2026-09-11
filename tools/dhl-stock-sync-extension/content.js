@@ -3,7 +3,8 @@
 
   const core = globalThis.DHLStockCore;
   const dom = globalThis.DHLDomStockParser;
-  if (!core || !dom) return;
+  const matcher = globalThis.DHLMatchCore;
+  if (!core || !dom || !matcher) return;
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const HD_PATH = '/hd-pc36029.html';
@@ -103,8 +104,6 @@
     return /chon mau|mau sac|chon mau sac/.test(plain(value));
   }
 
-  // Quan trọng: lấy đúng khung popup nhỏ nhất có bảng tồn. Không dùng selector "quick"
-  // vì ở trang danh mục nó có thể ôm cả hàng chục card sản phẩm và khiến tool tưởng có 50-60 màu.
   function findStockRoot() {
     const tables = [...document.querySelectorAll('table,[role="table"]')]
       .filter((table) => visible(table) && /ten size|tinh trang ton|con hang|het hang/.test(plain(text(table))));
@@ -124,9 +123,9 @@
       return colorContainer || best;
     }
 
-    const modalSelectors = ['[role="dialog"]', 'dialog', '.modal.show', '.modal.in', '.modal', '.modal-content', '[class*="modal"]', '[class*="popup"]', '[class*="dialog"]'];
+    const selectors = ['[role="dialog"]', 'dialog', '.modal.show', '.modal.in', '.modal', '.modal-content', '[class*="modal"]', '[class*="popup"]', '[class*="dialog"]'];
     const candidates = [];
-    for (const selector of modalSelectors) {
+    for (const selector of selectors) {
       for (const el of document.querySelectorAll(selector)) {
         if (!visible(el)) continue;
         const value = text(el);
@@ -160,7 +159,6 @@
       if (wanted.has(size)) rows.push({ size, stock: Number(hit.stock), raw: text(tr) });
     }
 
-    // Fallback cho giao diện không dùng <tr>.
     if (!rows.length) {
       const values = [];
       for (const el of root.querySelectorAll('li,div,p,span')) {
@@ -179,26 +177,31 @@
     return TARGET_SIZES.filter((size) => wanted.has(size) && unique.has(size)).map((size) => unique.get(size));
   }
 
-  async function stableTargetRows(root, targetSizes, timeout = 1800) {
+  function rowsSignature(rows) {
+    return JSON.stringify((rows || []).map((row) => [row.size, Number(row.stock)]));
+  }
+
+  function hasAllTargetRows(rows, targetSizes) {
     const wanted = new Set((targetSizes || TARGET_SIZES).map(dom.normalizeSize));
+    return rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size));
+  }
+
+  async function stableTargetRows(root, targetSizes, timeout = 1500) {
     let best = [];
     let previous = '';
     let stable = 0;
     const started = Date.now();
-
     while (Date.now() - started < timeout) {
       await sleep(90);
       const currentRoot = findStockRoot() || root;
       const rows = readTargetRows(currentRoot, targetSizes);
-      const signature = JSON.stringify(rows.map((row) => [row.size, row.stock]));
+      const signature = rowsSignature(rows);
       if (rows.length > best.length) best = rows;
       if (signature && signature === previous) stable += 1;
       else stable = 0;
       previous = signature;
-
-      // Đủ đúng S/M/L/XL/XXL thì chuyển màu ngay, không đọc XXXL và không thử thêm.
-      if (rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size))) return rows;
-      if (rows.length > 0 && stable >= 2) return rows;
+      if (hasAllTargetRows(rows, targetSizes) && stable >= 1) return rows;
+      if (rows.length > 0 && stable >= 3) return rows;
     }
     return best;
   }
@@ -213,7 +216,9 @@
     const own = input.closest('label');
     if (own) candidates.push(text(own));
     for (const el of [input.nextElementSibling, input.previousElementSibling, input.parentElement]) if (el) candidates.push(text(el));
-    for (const value of [input.dataset && input.dataset.color, input.dataset && input.dataset.name, input.title, input.getAttribute('aria-label')]) if (value) candidates.push(core.normalizeText(value));
+    for (const value of [input.dataset && input.dataset.color, input.dataset && input.dataset.name, input.title, input.getAttribute('aria-label')]) {
+      if (value) candidates.push(core.normalizeText(value));
+    }
 
     for (const candidate of candidates) {
       const clean = core.normalizeText(candidate);
@@ -222,13 +227,12 @@
     return '';
   }
 
-  // Chỉ coi radio trong chính popup là biến thể màu. Đây là sửa chính cho lỗi 38/62, 61/62 trong video.
   function colorControls(root) {
     if (!root) return [];
     const radios = [];
     const seen = new Set();
+
     for (const input of root.querySelectorAll('input[type="radio"]')) {
-      if (!visible(input)) continue;
       const name = labelForInput(input, root);
       const key = dom.colorKey(name);
       if (!name || !key || seen.has(key)) continue;
@@ -237,22 +241,50 @@
     }
     if (radios.length) return radios;
 
-    // Fallback rất hẹp cho trường hợp website đổi radio thành data-color.
-    const fallback = [];
     for (const el of root.querySelectorAll('[data-color]')) {
-      if (!visible(el)) continue;
       const name = core.normalizeText(el.getAttribute('data-color'));
       const key = dom.colorKey(name);
       if (!name || !key || seen.has(key) || !dom.looksLikeColorName(name)) continue;
       seen.add(key);
-      fallback.push({ name, el });
+      radios.push({ name, el });
     }
-    return fallback;
+    return radios;
   }
 
   function findColorControl(name, root) {
     const key = dom.colorKey(name);
     return colorControls(root).find((item) => dom.colorKey(item.name) === key) || null;
+  }
+
+  function expectedColorHints(hint) {
+    return [...new Set(((hint && hint.colors) || []).map((value) => core.normalizeText(value)).filter(Boolean))];
+  }
+
+  function selectTargetControls(allControls, hint) {
+    const wanted = expectedColorHints(hint);
+    if (!wanted.length) return { controls: allControls, missingHints: [] };
+
+    const pairs = [];
+    for (let hi = 0; hi < wanted.length; hi += 1) {
+      for (let ci = 0; ci < allControls.length; ci += 1) {
+        const score = matcher.scoreColorHint(wanted[hi], allControls[ci].name);
+        if (score > 0) pairs.push({ hi, ci, score });
+      }
+    }
+    pairs.sort((a, b) => b.score - a.score);
+
+    const usedHints = new Set();
+    const usedControls = new Set();
+    const selected = [];
+    for (const pair of pairs) {
+      if (pair.score < 0.5 || usedHints.has(pair.hi) || usedControls.has(pair.ci)) continue;
+      usedHints.add(pair.hi);
+      usedControls.add(pair.ci);
+      selected.push({ ...allControls[pair.ci], hint: wanted[pair.hi], hintScore: pair.score });
+    }
+
+    const missingHints = wanted.filter((_, index) => !usedHints.has(index));
+    return { controls: selected, missingHints };
   }
 
   async function clickElement(el) {
@@ -265,10 +297,41 @@
     }
   }
 
-  async function clickColorControl(control) {
-    if (!control || !control.el) return;
-    await clickElement(control.el);
-    await sleep(140);
+  function isSelectedColor(name, root) {
+    const control = findColorControl(name, root);
+    if (!control || !control.el) return false;
+    if ('checked' in control.el) return Boolean(control.el.checked);
+    return control.el.getAttribute('aria-checked') === 'true' || /\b(active|selected|checked)\b/i.test(String(control.el.className || ''));
+  }
+
+  async function switchColorAndRead(name, root, targetSizes, previousSignature = '') {
+    let currentRoot = findStockRoot() || root;
+    const control = findColorControl(name, currentRoot);
+    if (!control) return [];
+
+    const alreadySelected = isSelectedColor(name, currentRoot);
+    if (!alreadySelected) await clickElement(control.el);
+
+    const started = Date.now();
+    let best = [];
+    let seenSelected = alreadySelected;
+    while (Date.now() - started < 2600) {
+      await sleep(110);
+      currentRoot = findStockRoot() || currentRoot;
+      if (isSelectedColor(name, currentRoot)) seenSelected = true;
+      const rows = readTargetRows(currentRoot, targetSizes);
+      if (rows.length > best.length) best = rows;
+      const signature = rowsSignature(rows);
+      const elapsed = Date.now() - started;
+
+      if (seenSelected && hasAllTargetRows(rows, targetSizes)) {
+        if (alreadySelected || signature !== previousSignature || elapsed >= 650) {
+          await sleep(120);
+          return stableTargetRows(currentRoot, targetSizes, 700);
+        }
+      }
+    }
+    return best;
   }
 
   function productAnchors(descriptor) {
@@ -397,7 +460,7 @@
       price: 0,
       image: '',
       status: Number(row.stock) > 0 ? 2 : 0,
-      scanMethod: 'target-5-size-popup'
+      scanMethod: 'sapo-target-color-5-size'
     };
   }
 
@@ -409,32 +472,43 @@
     const parentName = core.normalizeText(descriptor.title || productTitleFromDocument() || `#${parentId}`);
     const hint = hintForTitle(parentName, hints);
     const neededSizes = targetSizesForHint(hint);
-    const expectedColorCount = hint && hint.products ? hint.products.length : 0;
     const first = await firstVariant(parentId, parentName);
     const fallbackColor = first && first.color ? first.color : '';
 
-    let controls = colorControls(root);
-    let names = dom.dedupeColorNames(controls.map((item) => item.name));
-    if (!names.length && fallbackColor) names = [fallbackColor];
-    if (!names.length) names = ['(không màu)'];
+    const allControls = colorControls(root);
+    const targetSelection = selectTargetControls(allControls, hint);
+    let controls = targetSelection.controls;
+    if (!controls.length && !expectedColorHints(hint).length && fallbackColor) {
+      controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
+    }
 
     const variants = [];
     const snapshots = [];
-    for (let index = 0; index < names.length; index += 1) {
-      const name = names[index];
-      let currentRoot = findStockRoot() || root;
-      const control = findColorControl(name, currentRoot);
-      if (control) await clickColorControl(control);
-      currentRoot = findStockRoot() || currentRoot;
+    let previousSignature = '';
 
-      const rows = await stableTargetRows(currentRoot, neededSizes);
-      snapshots.push({ color: name, rows });
+    for (let index = 0; index < controls.length; index += 1) {
+      const target = controls[index];
+      let rows = [];
+      let currentRoot = findStockRoot() || root;
+      if (target.el) {
+        rows = await switchColorAndRead(target.name, currentRoot, neededSizes, previousSignature);
+      } else {
+        rows = await stableTargetRows(currentRoot, neededSizes);
+      }
+      previousSignature = rowsSignature(rows);
+
+      snapshots.push({ color: target.name, hint: target.hint || '', hintScore: target.hintScore || 0, rows });
       progress({
-        stage: 'dom-color', descriptor, color: name, colorIndex: index + 1, colorTotal: names.length,
-        rows: rows.length, targetRows: neededSizes.length, targetSizes: neededSizes
+        stage: 'dom-color',
+        descriptor,
+        color: target.name,
+        colorIndex: index + 1,
+        colorTotal: controls.length,
+        rows: rows.length,
+        targetRows: neededSizes.length,
+        targetSizes: neededSizes
       });
-      rows.forEach((row) => variants.push(makeVariant(parentId, parentName, name, row, variants.length)));
-      // Không quét thêm size ngoài S/M/L/XL/XXL. Đủ 5 size thì vòng lặp đi màu tiếp ngay.
+      rows.forEach((row) => variants.push(makeVariant(parentId, parentName, target.name, row, variants.length)));
     }
 
     const unique = new Map();
@@ -442,6 +516,7 @@
       const key = `${dom.colorKey(variant.color)}|${dom.normalizeSize(variant.size)}`;
       if (!unique.has(key)) unique.set(key, variant);
     }
+
     const list = [...unique.values()];
     const colorKeys = [...new Set(list.map((variant) => dom.colorKey(variant.color)).filter(Boolean))];
     const missing = [];
@@ -451,28 +526,33 @@
       }
     }
 
-    const expectedVariantCount = expectedColorCount ? expectedColorCount * neededSizes.length : 0;
-    const complete = Boolean(list.length) && (!expectedVariantCount || list.length >= expectedVariantCount) && missing.length === 0;
+    const expectedHints = expectedColorHints(hint);
+    const complete = expectedHints.length
+      ? targetSelection.missingHints.length === 0 && colorKeys.length === expectedHints.length && missing.length === 0
+      : Boolean(list.length) && missing.length === 0;
+
     const result = {
       parentId,
       parentName,
       variants: list,
       errors: [],
       requestCount: 1,
-      stopReason: complete ? 'target-5-size-complete' : 'target-5-size-partial',
+      stopReason: complete ? 'target-colors-5-size-complete' : 'target-colors-5-size-partial',
       confidence: list.length ? (complete ? 'high' : 'medium') : 'low',
       complete,
-      scanMethod: 'target-5-size-popup',
+      scanMethod: 'sapo-target-color-5-size',
       sourceUrl: location.href,
-      expectedFromSapo: expectedVariantCount,
+      expectedFromSapo: expectedHints.length * neededSizes.length,
       domDiagnostics: {
         stockUiFound: true,
         cardFound: openInfo ? openInfo.cardFound : null,
         candidateCount: openInfo ? openInfo.candidateCount : null,
-        strictRadioColors: controls.length,
-        colorControls: names,
+        allColorControls: allControls.map((item) => item.name),
+        targetColorHints: expectedHints,
+        selectedColorControls: controls.map((item) => item.name),
+        missingColorHints: targetSelection.missingHints,
         colorsRead: colorKeys.length,
-        expectedColorCount,
+        expectedColorCount: expectedHints.length,
         expectedSizes: neededSizes,
         ignoredSizes: ['XXXL', 'XXXXL', 'XXXXXL'],
         missingSizes: missing,
@@ -493,9 +573,16 @@
     } catch (error) {
       if (findStockRoot()) await closeStockPopup(findStockRoot());
       return {
-        parentId: Number(descriptor.id), parentName: descriptor.title || '', sourceUrl: descriptor.url || location.href,
-        variants: [], complete: false, confidence: 'low', scanMethod: 'target-5-size-popup', stopReason: 'popup-open-error',
-        errors: [{ message: error.message || String(error) }], domDiagnostics: error.diagnostics || {}
+        parentId: Number(descriptor.id),
+        parentName: descriptor.title || '',
+        sourceUrl: descriptor.url || location.href,
+        variants: [],
+        complete: false,
+        confidence: 'low',
+        scanMethod: 'sapo-target-color-5-size',
+        stopReason: 'popup-open-error',
+        errors: [{ message: error.message || String(error) }],
+        domDiagnostics: error.diagnostics || {}
       };
     }
   }
