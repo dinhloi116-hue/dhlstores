@@ -36,7 +36,7 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist/dhl-stock-sync-extension
-          cp manifest.json background.js stock-core.js dom-stock-parser.js content.js match-core.js xlsx-lite.js xlsx-preserve.js popup.html popup.css popup.js catalog-mode.js catalog-export-fix.js dist/dhl-stock-sync-extension/
+          cp manifest.json background.js stock-core.js dom-stock-parser.js content.js match-core.js shop-rules.js xlsx-lite.js xlsx-preserve.js popup.html popup.css popup.js catalog-mode.js catalog-export-fix.js simple-mode.js dist/dhl-stock-sync-extension/
           cd dist
           zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
 
@@ -45,11 +45,13 @@ jobs:
           test -f dist/dhl-stock-sync-extension/dom-stock-parser.js
           test -f dist/dhl-stock-sync-extension/content.js
           test -f dist/dhl-stock-sync-extension/match-core.js
+          test -f dist/dhl-stock-sync-extension/shop-rules.js
           test -f dist/dhl-stock-sync-extension/xlsx-lite.js
           test -f dist/dhl-stock-sync-extension/xlsx-preserve.js
           test -f dist/dhl-stock-sync-extension/background.js
           test -f dist/dhl-stock-sync-extension/catalog-mode.js
           test -f dist/dhl-stock-sync-extension/catalog-export-fix.js
+          test -f dist/dhl-stock-sync-extension/simple-mode.js
 
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
