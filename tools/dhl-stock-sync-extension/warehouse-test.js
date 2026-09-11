@@ -32,7 +32,8 @@ function numCell(ref,value){return `<c r="${ref}"><v>${Number(value)}</v></c>`;}
   assert.ok(portugal&&portugal.colors.includes('Siu'),'File kho phải truyền màu Siu nếu sản phẩm tồn tại');
 
   const title=`<row r="1">${inlineCell('A1','Quản lý kho phiên bản sản phẩm')}</row>`;
-  const branch=`<row r="2">${inlineCell('E2','dhl sport')}</row>`;
+  // Mô phỏng đúng file Sapo thật: các ô A2:D2/F2:J2 rỗng dạng self-closing, E2 chứa tên chi nhánh.
+  const branch=`<row r="2"><c r="A2"/><c r="B2"/><c r="C2"/><c r="D2"/>${inlineCell('E2','dhl sport')}<c r="F2"/><c r="G2"/><c r="H2"/><c r="I2"/><c r="J2"/></row>`;
   const headers=['STT','Sản phẩm','Giá bán','Giá vốn','Tồn kho','Có thể bán','Đang giao dịch','Đang về kho','Đang đóng gói','Không thể bán'];
   const h=`<row r="3">${headers.map((v,i)=>inlineCell(`${xlsx.indexToCol(i)}3`,v)).join('')}</row>`;
   const r4=`<row r="4">${numCell('A4',1)}${inlineCell('B4','ĐT Mexico 2026 HD - Rêu Không in / S')}${numCell('E4',99)}${numCell('F4',99)}</row>`;
@@ -48,7 +49,7 @@ function numCell(ref,value){return `<c r="${ref}"><v>${Number(value)}</v></c>`;}
   assert.strictEqual(parsed.products[0].name,'ĐT Mexico 2026 HD - Rêu');
   assert.deepStrictEqual(parsed.products[0].variants.map(v=>v.size),['S','M']);
   assert.strictEqual(parsed.warehouseStockCol,4);
-  assert.strictEqual(parsed.warehouseBranchName,'dhl sport');
+  assert.strictEqual(parsed.warehouseBranchName,'dhl sport','Phải đọc đúng E2 dù trước đó có các cell self-closing');
   assert.strictEqual(parsed.variants[0].rawProductLabel,'ĐT Mexico 2026 HD - Rêu Không in / S');
 
   const out=await warehouse.updateWarehouseWorkbook(input,parsed,{'4':7,'5':19});
@@ -59,5 +60,5 @@ function numCell(ref,value){return `<c r="${ref}"><v>${Number(value)}</v></c>`;}
   assert.strictEqual(check.rows[3][5],99,'Chỉ sửa cột Tồn kho, giữ Có thể bán');
   assert.strictEqual(check.rows[5][4],5,'Dòng trẻ em giữ nguyên');
 
-  console.log('WAREHOUSE PASS',{products:parsed.products.length,variants:parsed.variants.length,branch:parsed.warehouseBranchName,canonicalLegacyNames:true,warehouseColorHints:true,childrenUntouched:true});
+  console.log('WAREHOUSE PASS',{products:parsed.products.length,variants:parsed.variants.length,branch:parsed.warehouseBranchName,sparseBranchRow:true,canonicalLegacyNames:true,warehouseColorHints:true,childrenUntouched:true});
 })().catch((error)=>{console.error(error);process.exit(1);});
