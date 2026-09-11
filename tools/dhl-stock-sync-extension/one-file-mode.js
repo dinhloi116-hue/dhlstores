@@ -75,17 +75,17 @@
     btn.disabled=!(sapoData&&exportBuffer&&sapoData.inputType==='warehouse'&&scanAfterFile&&prepared.rows.length);
 
     if(!sapoData){
-      setState('Chọn file Quản lý kho Sapo trước.');
+      setState('Chọn file Quản lý kho Sapo gốc. File này CHỈ dùng để đối chiếu tên/size, không dùng làm file đầu ra.');
     }else if(sapoData.inputType!=='warehouse'){
-      setState('Hãy dùng file “Danh sách quản lý kho phiên bản sản phẩm”, không dùng file xuất sản phẩm thường.','error');
+      setState('Hãy dùng file “Danh sách quản lý kho phiên bản sản phẩm” của Sapo.','error');
     }else if(!sapoData.warehouseBranchName){
       setState('Đã đọc file kho nhưng không thấy tên chi nhánh ở dòng phía trên cột Tồn kho.','error');
     }else if(!scanAfterFile){
-      setState(`Đã nhận file kho: ${sapoData.products.length} sản phẩm / ${sapoData.variants.length} biến thể • chi nhánh: ${sapoData.warehouseBranchName}. Bấm QUÉT KHO HD 2026.`,'ok');
+      setState(`Đã nhận file đối chiếu: ${sapoData.products.length} sản phẩm / ${sapoData.variants.length} biến thể • chi nhánh: ${sapoData.warehouseBranchName}. Bấm QUÉT KHO HD 2026.`,'ok');
     }else if(prepared.rows.length){
       const products=new Set(matched.map((row)=>String(row.sapo.productId))).size;
       const missText=prepared.missing.length?` • ${prepared.missing.length} dòng thiếu map SKU sẽ bỏ qua`:'';
-      setState(`Sẵn sàng: ${prepared.rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm → xuất đúng mẫu nhập tồn kho Sapo.${missText}`,'ok');
+      setState(`Sẵn sàng: ${prepared.rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm. Nút xanh sẽ tạo FILE MỚI theo đúng mẫu nhập tồn kho Sapo, không sửa file gốc.${missText}`,'ok');
     }else{
       setState('Đã quét nhưng chưa có dòng nào vừa ghép được tồn vừa xác định được SKU Sapo.','error');
     }
@@ -130,25 +130,26 @@
     const oldText=btn?btn.textContent:'';
     if(btn){
       btn.disabled=true;
-      btn.textContent='ĐANG TẠO FILE...';
+      btn.textContent='ĐANG TẠO FILE MẪU SAPO...';
     }
     try{
       if(!sapoData||!exportBuffer)throw new Error('Chưa chọn file Quản lý kho Sapo');
-      if(sapoData.inputType!=='warehouse')throw new Error('Chỉ dùng file Quản lý kho Sapo');
+      if(sapoData.inputType!=='warehouse')throw new Error('Chỉ dùng file Quản lý kho Sapo làm dữ liệu đối chiếu');
       if(!sapoData.warehouseBranchName)throw new Error('Không đọc được tên chi nhánh từ file kho');
       if(!scanAfterFile)throw new Error('Hãy bấm QUÉT KHO HD 2026 sau khi chọn file');
 
       const prepared=officialImportRows();
       if(!prepared.rows.length)throw new Error('Không có biến thể nào đủ điều kiện tạo file nhập tồn kho');
 
-      setState(`Đang tạo file nhập tồn kho chính thức cho ${prepared.rows.length} biến thể • chi nhánh “${sapoData.warehouseBranchName}”...`);
+      setState(`Đang dựng FILE MỚI theo mẫu “Cập nhật tồn kho phiên bản sản phẩm” cho ${prepared.rows.length} biến thể • chi nhánh “${sapoData.warehouseBranchName}”...`);
       await new Promise((resolve)=>setTimeout(resolve,20));
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,prepared.rows,sapoData.warehouseBranchName);
+      if(out.templateSignature!=='SAPO-INVENTORY-TEMPLATE-V2')throw new Error('Bộ tạo file mẫu Sapo chưa đúng phiên bản');
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_NHAP_TON_KHO_${stamp}.xlsx`);
       const missingText=prepared.missing.length?` Bỏ qua ${prepared.missing.length} dòng chưa có mapping SKU.`:'';
-      setState(`ĐÃ XONG: ${out.rows} dòng (${out.zeroCount} dòng tồn = 0). File đúng mẫu “Cập nhật tồn kho phiên bản sản phẩm”: Tên phiên bản + SKU* + Mã lô + NSX + HSD + Tồn kho + Vị trí lưu kho; chi nhánh = “${out.branchName}”.${missingText}`,'ok');
+      setState(`ĐÃ XONG: tạo FILE MỚI đúng mẫu nhập tồn kho Sapo • ${out.rows} dòng (${out.zeroCount} dòng tồn = 0) • chi nhánh “${out.branchName}”. File Quản lý kho gốc không bị sửa.${missingText}`,'ok');
     }catch(error){
       setState(`LỖI TẠO FILE: ${error.message||String(error)}`,'error');
     }finally{
@@ -180,20 +181,20 @@
       state.style.display='block';
       state.style.width='100%';
       state.style.marginTop='6px';
-      state.textContent='Chọn file Quản lý kho Sapo trước.';
+      state.textContent='Chọn file Quản lý kho Sapo gốc để đối chiếu.';
       toolbar.parentElement.appendChild(state);
       btn.addEventListener('click',makeOneFileImport);
     }
 
     const guide=document.getElementById('dailyGuide');
     if(guide){
-      guide.innerHTML='<b>DÙNG HẰNG NGÀY — FILE QUẢN LÝ KHO</b><span style="display:block;margin-top:5px">1) Xuất <b>Danh sách quản lý kho phiên bản sản phẩm</b> → 2) chọn file → 3) QUÉT KHO → 4) <b>TẠO FILE NHẬP TỒN KHO SAPO</b> → 5) vào Quản lý kho / Tồn kho và nhập file vừa tạo.</span>';
+      guide.innerHTML='<b>DÙNG HẰNG NGÀY — 1 FILE ĐỐI CHIẾU</b><span style="display:block;margin-top:5px">1) Xuất <b>Danh sách quản lý kho phiên bản sản phẩm</b> → 2) chọn file đó <b>chỉ để đối chiếu</b> → 3) QUÉT KHO → 4) tool tự tạo <b>FILE MỚI đúng mẫu nhập tồn kho Sapo</b> → 5) nhập file mới vào Sapo.</span>';
     }
 
     const subtitle=document.querySelector('header p');
-    if(subtitle)subtitle.textContent='File Quản lý kho → quét nguồn → xuất đúng mẫu Cập nhật tồn kho phiên bản sản phẩm';
+    if(subtitle)subtitle.textContent='File Quản lý kho chỉ để đối chiếu → đầu ra luôn là FILE MỚI theo mẫu nhập tồn kho Sapo';
     const footer=document.querySelector('footer');
-    if(footer)footer.textContent='Đầu ra là mẫu nhập tồn kho chuyên dụng của Sapo, định danh bằng SKU*. Không nhập lại file Quản lý kho.';
+    if(footer)footer.textContent='Không xuất lại file Quản lý kho. Đầu ra luôn là mẫu “Cập nhật tồn kho phiên bản sản phẩm” với Tên phiên bản, SKU*, Tồn kho và chi nhánh.';
 
     const exportInput=document.getElementById('sapoExport');
     if(exportInput){
