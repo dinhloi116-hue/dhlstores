@@ -1,29 +1,50 @@
 # DHL Stock Sync – Chrome Extension
 
-Mục tiêu của bản 0.9 rất đơn giản: đọc tồn kho từ `si.aobongda.net` theo **đội/mẫu → màu → size**, ghép với đúng biến thể trong **file xuất Sapo**, rồi tạo file nhập Sapo trong đó **chỉ thay đổi tồn kho**.
+Phiên bản ổn định hiện tại: **v0.13.5**.
 
-Ví dụ: nguồn đọc được `ĐT Mexico 2026 HD / Rêu / S = 7` thì tool tìm biến thể Sapo tương ứng `Mexico xanh 26 HD-S` và điền `Cửa hàng chính_Tồn kho = 7` cho đúng `Id phiên bản` đó.
+Tool dùng file **Danh sách quản lý kho phiên bản sản phẩm** của Sapo chỉ để nhận diện đúng sản phẩm/size/chi nhánh, quét tồn kho từ `si.aobongda.net`, rồi tạo **một file mới hoàn toàn** theo đúng mẫu nhập tồn kho chính thức của Sapo.
 
-## Luồng dùng
+## Dùng hằng ngày
 
 1. Đăng nhập `si.aobongda.net` trên Chrome.
-2. Mở side panel `DHL Stock Sync`.
-3. Chọn file xuất Sapo.
-4. Chọn file mẫu nhập Sapo.
-5. Bấm `QUÉT KHO HD 2026`.
-6. Tool tự chuyển tab nguồn tới danh mục HD, lần lượt bấm nút mua nhanh của từng sản phẩm, mở popup và đọc từng màu + từng size + số tồn.
-7. Tool ghép **từng biến thể**. Không còn yêu cầu phải đủ 26/26 sản phẩm hoặc 130/130 size mới tạo file.
-8. Bấm `TẠO FILE NHẬP SAPO`. Chỉ những biến thể đã có dữ liệu nguồn mới được đưa vào file; dòng chưa đọc được nguồn bị bỏ qua, tuyệt đối không tự coi là 0.
+2. Từ Sapo xuất **Danh sách quản lý kho phiên bản sản phẩm**.
+3. Mở side panel `DHL Stock Sync` và chọn file kho vừa xuất.
+4. Bấm `QUÉT KHO HD 2026`.
+5. Tool quét nguồn trên trang danh mục HD, chỉ lấy size S/M/L/XL/XXL và ghép với sản phẩm trong file kho.
+6. Bấm `TẠO FILE NHẬP TỒN KHO SAPO`.
+7. Tool sinh file mới dạng `SAPO_NHAP_TON_KHO_YYYY-MM-DD.xlsx` với các cột: `Tên phiên bản sản phẩm`, `SKU*`, `Mã lô`, `Ngày sản xuất`, `Hạn sử dụng`, `Tồn kho`, `Vị trí lưu kho`.
+8. Nhập file mới đó vào chức năng cập nhật tồn kho của Sapo.
 
-## Hai file Sapo được dùng thế nào
+## Bảo trì danh sách nguồn
 
-- **File xuất Sapo** là dữ liệu thật của shop: tên, SKU, size, ảnh, giá, Id sản phẩm, Id phiên bản. Đây là nơi tool tìm đúng biến thể cần cập nhật.
-- **File mẫu nhập Sapo** chỉ dùng làm khuôn cột, đặc biệt là `Cửa hàng chính_Tồn kho` và `Id phiên bản`. Các dòng Iphone mẫu trong file này không được dùng để ghép sản phẩm.
+Phần **BẢO TRÌ NGUỒN** trong giao diện được thu gọn mặc định. Chỉ mở phần này khi web nguồn có sản phẩm mới, đổi tên sản phẩm hoặc thêm màu mới. Không cần quét danh sách nguồn mỗi ngày.
+
+Khi cần bảo trì:
+
+1. Mở `BẢO TRÌ NGUỒN`.
+2. Bấm `QUÉT TOÀN BỘ TRANG HD`.
+3. Xuất Excel danh sách nguồn để kiểm tra/chuẩn hóa lại nếu cần.
 
 ## Nguyên tắc an toàn
 
-- Không đọc được nguồn ≠ tồn bằng 0.
-- Tồn `0` chỉ được ghi khi popup nguồn thực sự hiển thị hết hàng/0.
-- Tool giữ tên, SKU, ảnh, giá và Id phiên bản theo file xuất Sapo.
-- Có thể tạo file từ một phần biến thể đã ghép; các biến thể chưa có dữ liệu không xuất vào file.
-- Không dùng API/token Sapo và không ghi trực tiếp vào Sapo.
+- Không đọc được nguồn **không được coi là tồn = 0**.
+- Chỉ ghi `0` khi nguồn thực sự trả về tồn 0/hết hàng.
+- Chỉ những biến thể ghép chắc chắn mới được đưa vào file nhập tồn kho.
+- File Quản lý kho đầu vào **không phải file đầu ra** và không được sửa để nhập ngược lại Sapo.
+- Tool không dùng API/token Sapo và không ghi trực tiếp vào hệ thống Sapo.
+- Scanner phải ở trang danh mục HD, không điều hướng sang trang chi tiết sản phẩm.
+
+## Backup / khôi phục
+
+Mã nguồn được lưu trong GitHub repository:
+
+- Repository: `dinhloi116-hue/dhlstores`
+- Branch ổn định đang dùng: `feature/dhl-stock-sync-extension`
+- Thư mục dự án: `tools/dhl-stock-sync-extension`
+- GitHub Actions workflow: `.github/workflows/dhl-stock-sync-extension.yml`
+
+Mỗi lần có commit vào branch trên, GitHub Actions sẽ tự chạy test và đóng gói file ZIP cài extension. Artifact ZIP được giữ 14 ngày, còn **toàn bộ mã nguồn và lịch sử commit vẫn nằm trên GitHub** để khôi phục lâu dài.
+
+Nếu máy bị mất tool, chỉ cần lấy lại thư mục `tools/dhl-stock-sync-extension` từ branch trên, hoặc tải ZIP từ lần build GitHub Actions gần nhất, giải nén và vào `chrome://extensions` → bật Developer mode → `Load unpacked`.
+
+Không nên xóa branch `feature/dhl-stock-sync-extension` khi chưa merge dự án vào nhánh chính.
