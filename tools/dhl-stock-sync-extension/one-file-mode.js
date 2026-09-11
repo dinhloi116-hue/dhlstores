@@ -11,10 +11,8 @@
   let latestSource=[];
   let exportName='';
   let scanAfterFile=false;
-
-  function escapeHtml(value){
-    return String(value||'').replace(/[&<>\"]/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-  }
+  let inventoryHeader='';
+  let inventoryHeaders=[];
 
   function setState(text,kind=''){
     const el=document.getElementById('oneFileState');
@@ -39,14 +37,17 @@
     const btn=document.getElementById('makeImportOneFile');
     if(!btn)return;
     const rows=matchedRows();
-    btn.disabled=!(sapoData&&exportBuffer&&scanAfterFile&&rows.length);
+    btn.disabled=!(sapoData&&exportBuffer&&inventoryHeader&&scanAfterFile&&rows.length);
+
     if(!sapoData){
       setState('Chọn file xuất Sapo trước.');
+    }else if(!inventoryHeader){
+      setState('FILE CHƯA CÓ CỘT TỒN KHO. Xuất lại từ Sapo và bật trường Tồn kho trong “Tùy chọn trường hiển thị”. Tool chỉ sửa cột tồn do chính Sapo xuất ra, không tự thêm cột nữa.','error');
     }else if(!scanAfterFile){
-      setState(`Đã nhận ${sapoData.products.length} sản phẩm / ${sapoData.variants.length} biến thể. Bấm QUÉT KHO HD 2026 để lấy tồn mới.`,'ok');
+      setState(`Đã nhận ${sapoData.products.length} sản phẩm / ${sapoData.variants.length} biến thể. Cột tồn dùng: ${inventoryHeader}. Bấm QUÉT KHO HD 2026 để lấy tồn mới.`,'ok');
     }else if(rows.length){
       const products=new Set(rows.map((row)=>String(row.sapo.productId))).size;
-      setState(`Sẵn sàng: ${rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm sẽ được sửa tồn trong chính file xuất Sapo.`,'ok');
+      setState(`Sẵn sàng: ${rows.length}/${sapoData.variants.length} biến thể thuộc ${products}/${sapoData.products.length} sản phẩm sẽ được sửa trong cột “${inventoryHeader}”.`,'ok');
     }else{
       setState('Đã quét nhưng chưa ghép được biến thể nào. Không tạo file.','error');
     }
@@ -59,6 +60,8 @@
       exportBuffer=buffer;
       exportName=file.name||'';
       sapoData=await xlsx.parseSapoExport(buffer.slice(0));
+      inventoryHeaders=direct.resolveInventoryHeaders(sapoData.headerMap||{});
+      inventoryHeader=inventoryHeaders[0]||'';
       latestSource=[];
       scanAfterFile=false;
       refreshButton();
@@ -67,6 +70,8 @@
       sapoData=null;
       latestSource=[];
       scanAfterFile=false;
+      inventoryHeader='';
+      inventoryHeaders=[];
       setState(`File xuất Sapo không hợp lệ: ${error.message||String(error)}`,'error');
       refreshButton();
     }
@@ -94,6 +99,7 @@
     }
     try{
       if(!sapoData||!exportBuffer)throw new Error('Chưa chọn file xuất Sapo');
+      if(!inventoryHeader)throw new Error('File xuất chưa có cột [Tên chi nhánh]_Tồn kho. Hãy xuất lại từ Sapo với trường Tồn kho được bật.');
       if(!scanAfterFile)throw new Error('Hãy bấm QUÉT KHO HD 2026 sau khi chọn file');
       const rows=matchedRows();
       if(!rows.length)throw new Error('Không có biến thể nào ghép chắc chắn với nguồn');
@@ -105,21 +111,20 @@
         inventory[String(row.sapo.variantId)]=stock;
       }
 
-      setState(`Đang tạo file từ chính file xuất Sapo: ${Object.keys(inventory).length} biến thể có tồn mới...`);
+      setState(`Đang sửa ${Object.keys(inventory).length} biến thể trong cột “${inventoryHeader}” của chính file Sapo...`);
       await new Promise((resolve)=>setTimeout(resolve,20));
-      const out=await direct.updateExportWorkbook(xlsx,exportBuffer.slice(0),sapoData,inventory);
+      const out=await direct.updateExportWorkbook(xlsx,exportBuffer.slice(0),sapoData,inventory,inventoryHeader);
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      download(out.bytes,`SAPO_XUAT_DA_CAP_NHAT_TON_${stamp}.xlsx`);
-      const added=out.addedInventoryColumn?' Đã tự thêm cột Cửa hàng chính_Tồn kho vì file xuất Sapo không có cột này.':'';
-      setState(`ĐÃ XONG: sửa ${out.rows} biến thể (${out.zeroCount} biến thể về 0).${added} Các biến thể chưa ghép để trống cột tồn, không tự ghi 0. Tên, SKU, ảnh, giá, mô tả, Alias và ID giữ nguyên.`,'ok');
+      download(out.bytes,`SAPO_CAP_NHAT_TON_${stamp}.xlsx`);
+      setState(`ĐÃ XONG: sửa ${out.rows} biến thể (${out.zeroCount} biến thể về 0) trong đúng cột “${out.inventoryHeader}” do Sapo xuất. Các biến thể chưa ghép giữ nguyên tồn cũ.`,'ok');
     }catch(error){
       setState(`LỖI TẠO FILE: ${error.message||String(error)}`,'error');
     }finally{
       if(btn){
         btn.textContent=oldText||'TẠO FILE SAPO ĐÃ CẬP NHẬT TỒN';
         const rows=matchedRows();
-        btn.disabled=!(sapoData&&exportBuffer&&scanAfterFile&&rows.length);
+        btn.disabled=!(sapoData&&exportBuffer&&inventoryHeader&&scanAfterFile&&rows.length);
       }
     }
   }
@@ -151,13 +156,13 @@
 
     const guide=document.getElementById('dailyGuide');
     if(guide){
-      guide.innerHTML='<b>DÙNG HẰNG NGÀY — CHỈ 1 FILE</b><span style="display:block;margin-top:5px">1) Xuất sản phẩm từ Sapo → 2) chọn file xuất → 3) QUÉT KHO HD 2026 → 4) TẠO FILE SAPO ĐÃ CẬP NHẬT TỒN → 5) nhập chính file đó lại Sapo. Không cần file mẫu nhập.</span>';
+      guide.innerHTML='<b>DÙNG HẰNG NGÀY — CHỈ 1 FILE</b><span style="display:block;margin-top:5px">Khi XUẤT từ Sapo, nhớ bật trường <b>Tồn kho</b>. Sau đó: chọn file xuất → QUÉT KHO → TẠO FILE → nhập lại Sapo và tích Ghi đè. Tool không tự thêm tên chi nhánh/tồn kho nữa.</span>';
     }
 
     const subtitle=document.querySelector('header p');
-    if(subtitle)subtitle.textContent='File xuất Sapo → quét tồn nguồn → sửa trực tiếp cột tồn → nhập lại Sapo';
+    if(subtitle)subtitle.textContent='File xuất Sapo có cột Tồn kho → quét nguồn → sửa đúng cột tồn → nhập lại Sapo';
     const footer=document.querySelector('footer');
-    if(footer)footer.textContent='Hằng ngày chỉ cần 1 file xuất Sapo. Tool giữ nguyên toàn bộ dữ liệu và chỉ sửa tồn kho ở các biến thể ghép chắc chắn.';
+    if(footer)footer.textContent='Bắt buộc file xuất Sapo phải có cột [Tên chi nhánh]_Tồn kho. Tool chỉ sửa cột Sapo đã xuất ra.';
 
     const exportInput=document.getElementById('sapoExport');
     if(exportInput){
@@ -167,7 +172,7 @@
     chrome.storage.onChanged.addListener((changes,area)=>{
       if(area!=='local'||!changes.dhlLastSourceResults)return;
       latestSource=Array.isArray(changes.dhlLastSourceResults.newValue)?changes.dhlLastSourceResults.newValue:[];
-      scanAfterFile=Boolean(sapoData&&exportBuffer);
+      scanAfterFile=Boolean(sapoData&&exportBuffer&&inventoryHeader);
       refreshButton();
     });
 
