@@ -12,7 +12,7 @@ assert.ok(manifest.permissions.includes('scripting'));
 assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','popup.html','popup.js','popup.css','catalog-mode.js','catalog-export-fix.js','simple-mode.js','one-file-mode.js','warehouse-core.js','stock-import-core.js','shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','popup.html','popup.js','popup.css','catalog-mode.js','catalog-export-fix.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','stock-import-core.js','shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -25,6 +25,7 @@ assert.ok(popupHtml.includes('warehouse-core.js'));
 assert.ok(popupHtml.indexOf('warehouse-core.js') < popupHtml.indexOf('popup.js'), 'warehouse-core phải bọc parser trước popup.js');
 assert.ok(popupHtml.includes('stock-import-core.js'));
 assert.ok(popupHtml.includes('one-file-mode.js'));
+assert.ok(popupHtml.includes('maintenance-ui.js'));
 
 const content = fs.readFileSync(path.join(dir, 'content.js'), 'utf8');
 assert.ok(content.includes('DHL_SCAN_HD_LIVE'));
@@ -78,6 +79,11 @@ assert.ok(catalog.includes('DHL_SCAN_CURRENT_POPUP'));
 assert.ok(catalog.includes('Tên chuẩn đề xuất Sapo'));
 assert.ok(catalog.includes('SKU mẫu nguồn'));
 
+const maintenanceUi = fs.readFileSync(path.join(dir, 'maintenance-ui.js'), 'utf8');
+assert.ok(maintenanceUi.includes('BẢO TRÌ NGUỒN'));
+assert.ok(maintenanceUi.includes('Chỉ dùng khi web có sản phẩm / màu mới'));
+assert.ok(maintenanceUi.includes('body.hidden = true'));
+
 console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'S/M/L/XL/XXL + AJAX wait + no navigation',
@@ -85,6 +91,7 @@ console.log('BUILD PASS', {
   branchReadFromWarehouse: true,
   skuMappedFromStandardProduct: true,
   output: 'official Sapo inventory import template',
+  maintenanceCatalog: 'collapsed by default',
   requiredSkuColumn: 'SKU*',
   staysOnHdCategory: true,
   sourceHost: manifest.host_permissions[0]
