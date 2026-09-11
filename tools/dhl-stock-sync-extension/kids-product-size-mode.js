@@ -29,9 +29,31 @@
     return /\btre em\b/.test(p) && !/\bstrivend\b/.test(p);
   }
 
+  function displaySizeFromValue(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const explicit = raw.match(/(?:^|\b)size\s*[:\-]?\s*(\d{1,3})(?=\D|$)/i);
+    if (explicit) return explicit[1];
+    const numeric = raw.match(/^\s*(\d{1,3})\s*$/);
+    return numeric ? numeric[1] : '';
+  }
+
+  // Sapo chỉ ghi "Thuộc tính = Size" ở dòng biến thể đầu tiên của sản phẩm.
+  // Các dòng sau vẫn có "Giá trị thuộc tính = Size 7: ..." nhưng ô Thuộc tính bị để trống.
+  // Vì vậy phải nhận diện trực tiếp từ GIÁ TRỊ, không phụ thuộc label ở cùng dòng.
   function sizeValueFromRawRow(variant, headerMap) {
     const row = (variant && variant.raw) || [];
     const h = headerMap || {};
+
+    // Ưu tiên bất kỳ cột Giá trị thuộc tính nào có nội dung bắt đầu bằng "Size <số>".
+    for (let i = 1; i <= 3; i += 1) {
+      const valueCol = h[`Giá trị thuộc tính ${i}`];
+      if (valueCol == null) continue;
+      const value = String(row[valueCol] || '').trim();
+      if (displaySizeFromValue(value)) return value;
+    }
+
+    // Fallback cho file có label Size nhưng giá trị chỉ là số thuần.
     for (let i = 1; i <= 3; i += 1) {
       const labelCol = h[`Thuộc tính ${i}`];
       const valueCol = h[`Giá trị thuộc tính ${i}`];
@@ -40,15 +62,6 @@
       if (label === 'size' || label === 'kich co' || label === 'co') return String(row[valueCol] || '').trim();
     }
     return '';
-  }
-
-  function displaySizeFromValue(value) {
-    const raw = String(value || '').trim();
-    if (!raw) return '';
-    const explicit = raw.match(/(?:^|\b)size\s*[:\-]?\s*(\d{1,3})(?=\D|$)/i);
-    if (explicit) return explicit[1];
-    const numeric = raw.match(/^\s*(\d{1,3})\s*$/);
-    return numeric ? numeric[1] : '';
   }
 
   function sourceMatchSize(productName, displaySize) {
@@ -61,6 +74,7 @@
   function patchParsedExport(parsed) {
     if (!parsed || parsed.inputType === 'warehouse' || !Array.isArray(parsed.products)) return parsed;
     const byProduct = new Map((parsed.products || []).map((p) => [String(p.productId), p]));
+    let remapped = 0;
 
     for (const variant of parsed.variants || []) {
       const product = byProduct.get(String(variant.productId));
@@ -74,6 +88,7 @@
       variant.sourceMatchSize = matchSize;
       variant.size = matchSize;
       variant.sizeFromAttribute = matchSize;
+      remapped += 1;
     }
 
     for (const product of parsed.products || []) {
@@ -81,6 +96,7 @@
       product.displaySizeSet = [...new Set((product.variants || []).map((v) => v.displaySize || v.size).filter(Boolean))];
     }
 
+    parsed.kidsSourceSizeRemapped = remapped;
     return parsed;
   }
 
@@ -94,6 +110,7 @@
     AGE_TO_SOURCE_SIZE,
     displaySizeFromValue,
     sourceMatchSize,
+    sizeValueFromRawRow,
     patchParsedExport,
     isKidsNonStrivend
   };
