@@ -14,7 +14,7 @@ assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 assert.ok(manifest.content_scripts[0].js.includes('match-core.js'), 'Content script phải có match-core để chọn đúng màu theo file Sapo');
-for (const file of ['background.js','popup.html','popup.js','popup.css','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','popup.html','popup.js','popup.css','catalog-mode.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -24,6 +24,7 @@ assert.ok(popupHtml.includes('Chọn file mẫu nhập Sapo'));
 assert.ok(popupHtml.includes('QUÉT KHO HD 2026'));
 assert.ok(popupHtml.includes('TẠO FILE NHẬP SAPO'));
 assert.ok(popupHtml.includes('XUẤT BÁO CÁO LỖI (.TXT)'));
+assert.ok(popupHtml.includes('catalog-mode.js'), 'Side panel phải nạp chế độ quét danh sách nguồn');
 
 const content = fs.readFileSync(path.join(dir, 'content.js'), 'utf8');
 assert.ok(content.includes('DHL_SCAN_HD_LIVE'));
@@ -52,6 +53,14 @@ assert.ok(!popupJs.includes('fullMatchReady'), 'Không còn bắt buộc 130/130
 assert.ok(popupJs.includes('dòng chưa chắc chắn sẽ BỎ QUA, không ghi 0'));
 assert.ok(popupJs.includes("const VERSION = '0.11.0'"));
 
+const catalog = fs.readFileSync(path.join(dir, 'catalog-mode.js'), 'utf8');
+assert.ok(catalog.includes('QUÉT DANH SÁCH NGUỒN'));
+assert.ok(catalog.includes('XUẤT CSV TÊN + SKU'));
+assert.ok(catalog.includes("{ type: 'DHL_SCAN_HD_LIVE', hints: [] }"), 'Catalog mode phải chạy không cần file Sapo');
+assert.ok(catalog.includes('Tên chuẩn đề xuất Sapo'));
+assert.ok(catalog.includes('SKU mẫu nguồn'));
+assert.ok(catalog.includes("['S', 'M', 'L', 'XL', 'XXL']"));
+
 const preserve = fs.readFileSync(path.join(dir, 'xlsx-preserve.js'), 'utf8');
 for (const field of ['Tên sản phẩm*','Mã SKU','Ảnh đại diện','Ảnh phiên bản','Giá','Giá so sánh','Giá vốn','Id phiên bản']) {
   assert.ok(preserve.includes(field), `Thiếu bảo vệ trường ${field}`);
@@ -63,6 +72,8 @@ assert.ok(!preserve.includes('chưa ghép đủ size'), 'Phải cho phép cập 
 console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'Sapo-target colors + exactly S/M/L/XL/XXL + AJAX wait',
+  catalogModeWithoutSapo: true,
+  catalogCsv: true,
   strictColorMapping: true,
   ignoresExtraSizes: true,
   variantLevelImport: true,
