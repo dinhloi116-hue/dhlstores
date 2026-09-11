@@ -14,7 +14,7 @@ assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -26,11 +26,22 @@ assert.ok(popupHtml.includes('ĐẦU RA = FILE NHẬP TỒN KHO CHÍNH THỨC SA
 assert.ok(popupHtml.includes('generic-shop-rules.js'));
 assert.ok(popupHtml.includes('generic-warehouse-mode.js'));
 assert.ok(popupHtml.includes('product-create-core.js'));
+assert.ok(popupHtml.includes('catalog-ui-shell.js'), 'Phải dùng UI shell không có redirect HD');
+assert.ok(!popupHtml.includes('<script src="catalog-mode.js"></script>'), 'Không được load scanner legacy ép tab sang HD');
 assert.ok(popupHtml.includes('catalog-generic-mode.js'));
 assert.ok(popupHtml.includes('catalog-api-mode.js'));
+assert.ok(popupHtml.indexOf('catalog-ui-shell.js') < popupHtml.indexOf('catalog-generic-mode.js'), 'UI shell phải mount trước scanner danh mục an toàn');
 assert.ok(popupHtml.indexOf('catalog-generic-mode.js') < popupHtml.indexOf('catalog-api-mode.js'), 'API mode phải override scanner cũ sau cùng');
 assert.ok(popupHtml.includes('one-file-mode.js'));
 assert.ok(popupHtml.includes('maintenance-ui.js'));
+
+const catalogShell = fs.readFileSync(path.join(dir, 'catalog-ui-shell.js'), 'utf8');
+assert.ok(catalogShell.includes('scanCatalogSource'));
+assert.ok(catalogShell.includes('exportCatalogSource'));
+assert.ok(catalogShell.includes('QUÉT TOÀN BỘ TRANG ĐANG MỞ'));
+assert.ok(catalogShell.includes('không tự chuyển sang danh mục khác'));
+assert.ok(!catalogShell.includes('chrome.tabs.update'), 'UI shell tuyệt đối không được đổi URL tab nguồn');
+assert.ok(!catalogShell.includes('/hd-pc36029.html'), 'UI shell không được khóa cứng HD người lớn');
 
 const safeGuard = fs.readFileSync(path.join(dir, 'safe-category-guard.js'), 'utf8');
 assert.ok(safeGuard.includes('data-dhl-safe-action'));
@@ -105,7 +116,7 @@ assert.ok(maintenanceUi.includes('chrome.runtime.reload()'));
 
 console.log('BUILD PASS', {
   version: manifest.version,
-  scanner: 'current category + dynamic text/numeric sizes',
+  scanner: 'current category + no legacy HD redirect + dynamic text/numeric sizes',
   maintenanceScan: 'API /product/child sequential scan, zero clicks, zero worker tabs',
   quickTest: 'one product via API only',
   devReload: 'pull code then chrome.runtime.reload',
