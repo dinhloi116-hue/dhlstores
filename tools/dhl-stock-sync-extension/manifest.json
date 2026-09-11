@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "minimum_chrome_version": "116",
-  "description": "Quét tồn từ bất kỳ danh mục đang mở trên si.aobongda.net, chạy bảo trì ở tab nền để không nhảy trang chi tiết; hỗ trợ size chữ/size số và tạo file Sapo có link ảnh.",
+  "description": "Quét tồn từ bất kỳ danh mục đang mở trên si.aobongda.net; chặn link Thêm vào giỏ điều hướng sang trang chi tiết, hỗ trợ size chữ/size số và tạo file Sapo có link ảnh.",
   "permissions": ["storage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {"service_worker": "background.js"},
@@ -12,7 +12,7 @@
   "content_scripts": [
     {
       "matches": ["https://si.aobongda.net/*"],
-      "js": ["stock-core.js", "dom-stock-parser.js", "match-core.js", "content.js"],
+      "js": ["safe-category-guard.js", "stock-core.js", "dom-stock-parser.js", "match-core.js", "content.js"],
       "run_at": "document_idle"
     }
   ]
