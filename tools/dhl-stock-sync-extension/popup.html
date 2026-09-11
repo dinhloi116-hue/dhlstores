@@ -11,14 +11,14 @@
     <header>
       <div>
         <h1>DHL STOCK SYNC</h1>
-        <p>File xuất Sapo → quét nguồn → tạo file nhập tồn kho riêng theo SKU</p>
+        <p>File xuất Sapo → quét nguồn → tạo file 36 cột đúng mẫu Sapo</p>
       </div>
       <span id="sourceState" class="badge">Đang kiểm tra</span>
     </header>
 
     <section class="safety-note">
-      <b>CẬP NHẬT TỒN KHO BẰNG FILE CHUYÊN DỤNG</b>
-      <span>Tool dùng SKU của từng biến thể trong file xuất Sapo để tạo file nhập tồn kho riêng. Chỉ các biến thể ghép chắc chắn mới được xuất; tồn 0 thật vẫn ghi 0. Không sửa tên, ảnh, giá, mô tả hay ID.</span>
+      <b>ĐẦU RA ĐÚNG MẪU NHẬP SAPO</b>
+      <span>Tool tự dựng đúng 36 cột giống file mẫu bạn đưa. Cột 35 là Cửa hàng chính_Tồn kho, cột 36 là Id phiên bản. Chỉ các biến thể ghép chắc chắn mới được xuất; tồn 0 thật vẫn ghi 0.</span>
     </section>
 
     <section class="steps">
@@ -64,7 +64,7 @@
       </table>
     </div>
 
-    <footer>File đầu ra nhập tại Quản lý kho → Tồn kho → Nhập file. Sapo nhận diện theo SKU.</footer>
+    <footer>Nhập file đầu ra tại Danh sách sản phẩm → Nhập file → Sản phẩm thường → Ghi đè → Xác định theo ID.</footer>
   </main>
   <script src="stock-core.js"></script>
   <script src="match-core.js"></script>
