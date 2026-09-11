@@ -1,6 +1,8 @@
 const assert=require('assert');
 const xlsx=require('./xlsx-lite.js');
+const matcher=require('./match-core.js');
 globalThis.DHLXlsxLite=xlsx;
+globalThis.DHLMatchCore=matcher;
 const warehouse=require('./warehouse-core.js');
 
 function inlineCell(ref,value){
@@ -10,6 +12,25 @@ function inlineCell(ref,value){
 function numCell(ref,value){return `<c r="${ref}"><v>${Number(value)}</v></c>`;}
 
 (async()=>{
+  assert.strictEqual(warehouse.parseAdultWarehouseLabel('ĐT Ý 2026 HD Không in / S').name,'ĐT Ý 2026 HD - Xanh Dương');
+  assert.strictEqual(warehouse.parseAdultWarehouseLabel('ĐT Hà Lan 2026 HD Không in / M').name,'ĐT Hà Lan 2026 HD - Trắng');
+  assert.strictEqual(warehouse.parseAdultWarehouseLabel('Bộ Quần Áo Bóng Đá Ý Vàng Sân Khách World Cup 2026, Vải Thun Mè Hàn Quốc, Nhận In Tên Số Không in / L').name,'ĐT Ý 2026 HD - Kem');
+  assert.strictEqual(warehouse.parseAdultWarehouseLabel('Bộ Quần Áo Bóng Đá Bồ Đào Nha Thế Siu World Cup 2026, Vải Thun Mè Hàn Quốc, Nhận In Tên Số Không in / XL').name,'ĐT Bồ Đào Nha 2026 HD - Siu');
+
+  const hintProducts=[
+    {productId:1,name:'ĐT Ý 2026 HD - Xanh Dương',warehouse:true,variants:[{size:'S'}]},
+    {productId:2,name:'ĐT Ý 2026 HD - Kem',warehouse:true,variants:[{size:'M'}]},
+    {productId:3,name:'ĐT Hà Lan 2026 HD - Trắng',warehouse:true,variants:[{size:'L'}]},
+    {productId:4,name:'ĐT Bồ Đào Nha 2026 HD - Siu',warehouse:true,variants:[{size:'XL'}]}
+  ];
+  const hints=matcher.buildScanHints(hintProducts);
+  const italy=hints.find(x=>x.team==='italy');
+  const netherlands=hints.find(x=>x.team==='netherlands');
+  const portugal=hints.find(x=>x.team==='portugal');
+  assert.ok(italy&&italy.colors.includes('Xanh Dương')&&italy.colors.includes('Kem'),'File kho phải truyền đúng 2 màu Ý cho scanner');
+  assert.ok(netherlands&&netherlands.colors.includes('Trắng'),'File kho phải truyền màu Trắng của Hà Lan');
+  assert.ok(portugal&&portugal.colors.includes('Siu'),'File kho phải truyền màu Siu nếu sản phẩm tồn tại');
+
   const title=`<row r="1">${inlineCell('A1','Quản lý kho phiên bản sản phẩm')}</row>`;
   const branch=`<row r="2">${inlineCell('E2','dhl sport')}</row>`;
   const headers=['STT','Sản phẩm','Giá bán','Giá vốn','Tồn kho','Có thể bán','Đang giao dịch','Đang về kho','Đang đóng gói','Không thể bán'];
@@ -36,5 +57,5 @@ function numCell(ref,value){return `<c r="${ref}"><v>${Number(value)}</v></c>`;}
   assert.strictEqual(check.rows[3][5],99,'Chỉ sửa cột Tồn kho, giữ Có thể bán');
   assert.strictEqual(check.rows[5][4],5,'Dòng trẻ em giữ nguyên');
 
-  console.log('WAREHOUSE PASS',{products:parsed.products.length,variants:parsed.variants.length,stockUpdated:true,childrenUntouched:true});
+  console.log('WAREHOUSE PASS',{products:parsed.products.length,variants:parsed.variants.length,canonicalLegacyNames:true,warehouseColorHints:true,stockUpdated:true,childrenUntouched:true});
 })().catch((error)=>{console.error(error);process.exit(1);});
