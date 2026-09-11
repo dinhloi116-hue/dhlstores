@@ -36,7 +36,7 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist/dhl-stock-sync-extension
-          cp manifest.json background.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js catalog-api-mode.js maintenance-ui.js simple-mode.js one-file-mode.js dist/dhl-stock-sync-extension/
+          cp manifest.json background.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js catalog-api-mode.js catalog-api-v2-mode.js maintenance-ui.js simple-mode.js one-file-mode.js dist/dhl-stock-sync-extension/
           cd dist
           zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
 
@@ -59,6 +59,7 @@ jobs:
           test -f dist/dhl-stock-sync-extension/catalog-mode.js
           test -f dist/dhl-stock-sync-extension/catalog-generic-mode.js
           test -f dist/dhl-stock-sync-extension/catalog-api-mode.js
+          test -f dist/dhl-stock-sync-extension/catalog-api-v2-mode.js
           test -f dist/dhl-stock-sync-extension/maintenance-ui.js
           test -f dist/dhl-stock-sync-extension/simple-mode.js
           test -f dist/dhl-stock-sync-extension/one-file-mode.js
