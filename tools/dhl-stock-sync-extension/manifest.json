@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.14.6",
+  "version": "0.15.0",
   "minimum_chrome_version": "116",
-  "description": "Quét tồn đúng trang danh mục đang mở trên si.aobongda.net; không tự chuyển về HD người lớn; bảo trì nguồn đọc popup trực tiếp và không suy đoán tồn 0.",
-  "permissions": ["storage", "activeTab", "tabs", "sidePanel", "scripting"],
+  "description": "Lưu hồ sơ Sapo theo từng nhóm hàng trên máy; chọn hồ sơ, quét đúng tab danh mục đang mở và tạo file nhập tồn kho mà không phải nạp lại Excel mỗi lần.",
+  "permissions": ["storage", "unlimitedStorage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {"service_worker": "background.js"},
   "action": {"default_title": "Mở DHL Stock Sync"},
