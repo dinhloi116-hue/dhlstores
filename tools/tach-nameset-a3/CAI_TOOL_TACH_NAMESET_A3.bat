@@ -3,10 +3,19 @@ setlocal EnableExtensions
 chcp 65001 >nul
 title Cai tool Tach Nameset A3 cho CorelDRAW
 set "DHL_SELF=%~f0"
+set "DHL_LATEST=%TEMP%CAI_TOOL_TACH_NAMESET_A3_LATEST.bat"
+
+if /I not "%~1"=="--from-git" (
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat' -OutFile $env:DHL_LATEST; exit 0 } catch { exit 1 }"
+  if not errorlevel 1 (
+    start "" "%DHL_LATEST%" --from-git
+    exit /b
+  )
+)
 
 fltmc >nul 2>&1
 if not "%errorlevel%"=="0" (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:DHL_SELF -Verb RunAs"
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:DHL_SELF -ArgumentList '--from-git' -Verb RunAs"
   exit /b
 )
 
