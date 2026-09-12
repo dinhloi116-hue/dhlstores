@@ -10,11 +10,12 @@ assert.ok(!manifest.host_permissions.some((x) => /sapo/i.test(x)), 'Extension kh
 assert.ok(manifest.permissions.includes('sidePanel'));
 assert.ok(manifest.permissions.includes('scripting'));
 assert.ok(manifest.permissions.includes('tabs'));
+assert.ok(manifest.permissions.includes('unlimitedStorage'), 'Hồ sơ Excel lưu local cần unlimitedStorage');
 assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','saved-profiles-mode.js','profile-tabs-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -35,6 +36,9 @@ assert.ok(popupHtml.indexOf('catalog-ui-shell.js') < popupHtml.indexOf('catalog-
 assert.ok(popupHtml.indexOf('catalog-generic-mode.js') < popupHtml.indexOf('catalog-api-mode.js'), 'API mode phải override scanner cũ sau cùng');
 assert.ok(popupHtml.includes('one-file-mode.js'));
 assert.ok(popupHtml.includes('maintenance-ui.js'));
+assert.ok(popupHtml.includes('saved-profiles-mode.js'), 'Phải load hồ sơ lưu local');
+assert.ok(popupHtml.includes('profile-tabs-mode.js'), 'Phải load thanh tab chọn nhóm luôn hiển thị');
+assert.ok(popupHtml.indexOf('saved-profiles-mode.js') < popupHtml.indexOf('profile-tabs-mode.js'), 'Tab nhanh phải chạy sau module hồ sơ');
 
 const catalogShell = fs.readFileSync(path.join(dir, 'catalog-ui-shell.js'), 'utf8');
 assert.ok(catalogShell.includes('scanCatalogSource'));
@@ -107,6 +111,21 @@ assert.ok(!oneFile.includes('skuBaseForStandardName'), 'Không được tự map
 assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
 assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
 
+const savedProfiles = fs.readFileSync(path.join(dir, 'saved-profiles-mode.js'), 'utf8');
+assert.doesNotThrow(() => new Function(savedProfiles), 'saved-profiles-mode.js phải đúng cú pháp');
+assert.ok(savedProfiles.includes('dhlSavedStockProfilesV1'));
+assert.ok(savedProfiles.includes('warehouseBase64'));
+assert.ok(savedProfiles.includes('catalogBase64'));
+assert.ok(savedProfiles.includes('QUÉT KHO TAB ĐANG MỞ'));
+assert.ok(savedProfiles.includes('TẠO FILE NHẬP SAPO'));
+
+const profileTabs = fs.readFileSync(path.join(dir, 'profile-tabs-mode.js'), 'utf8');
+assert.doesNotThrow(() => new Function(profileTabs), 'profile-tabs-mode.js phải đúng cú pháp');
+for (const label of ['HD','Trẻ em','Wika','Strivend']) assert.ok(profileTabs.includes(label), `Thiếu tab mặc định ${label}`);
+assert.ok(profileTabs.includes('+ HỒ SƠ KHÁC'));
+assert.ok(profileTabs.includes('profileManageBody'));
+assert.ok(profileTabs.includes('dhlSavedStockProfilesV1'));
+
 const catalogApi = fs.readFileSync(path.join(dir, 'catalog-api-mode.js'), 'utf8');
 assert.ok(catalogApi.includes('/product/child?psId='));
 assert.ok(catalogApi.includes('api-child-sequential-no-click'));
@@ -128,10 +147,11 @@ console.log('BUILD PASS', {
   scanner: 'current category + no legacy HD redirect + dynamic text/numeric sizes',
   matching: 'warehouse primary; products_export supplies original SKU by exact normalized name + display size',
   inventorySku: 'original Sapo SKU only; never generated',
+  savedProfiles: 'local Chrome profiles + always-visible HD/Kids/Wika/Strivend tabs',
   maintenanceScan: 'API /product/child sequential scan, zero clicks, zero worker tabs',
   quickTest: 'one product via API only',
   devReload: 'pull code then chrome.runtime.reload',
-  dailyInput: 'warehouse export + products_export SKU catalog',
+  dailyInput: 'saved warehouse export + products_export SKU catalog',
   inventoryOutput: 'official Sapo inventory import template',
   newProductOutput: 'Sapo product import template + image links + stock',
   sourceHost: manifest.host_permissions[0]
