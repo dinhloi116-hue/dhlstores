@@ -3,19 +3,10 @@ setlocal EnableExtensions
 chcp 65001 >nul
 title Cai tool Tach Nameset A3 cho CorelDRAW
 set "DHL_SELF=%~f0"
-set "DHL_LATEST=%TEMP%CAI_TOOL_TACH_NAMESET_A3_LATEST.bat"
-
-if /I not "%~1"=="--from-git" (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat' -OutFile $env:DHL_LATEST; exit 0 } catch { exit 1 }"
-  if not errorlevel 1 (
-    start "" "%DHL_LATEST%" --from-git
-    exit /b
-  )
-)
 
 fltmc >nul 2>&1
 if not "%errorlevel%"=="0" (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:DHL_SELF -ArgumentList '--from-git' -Verb RunAs"
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:DHL_SELF -Verb RunAs"
   exit /b
 )
 
@@ -91,11 +82,27 @@ if (-not (Test-Path -LiteralPath $html)) { throw 'Khong ghi duoc giao dien tool.
 
 $desktop = [Environment]::GetFolderPath('Desktop')
 $updater = Join-Path $desktop 'CAP_NHAT_TOOL_NAMESET_A3.bat'
-Copy-Item -LiteralPath $env:DHL_SELF -Destination $updater -Force
+$updaterText = @'
+@echo off
+setlocal EnableExtensions
+chcp 65001 >nul
+title Cap nhat tool Nameset A3 tu GitHub
+set "DHL_UPDATE=%TEMP%\CAI_TOOL_TACH_NAMESET_A3_LATEST.bat"
+echo Dang tai ban moi nhat tu GitHub...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat' -OutFile $env:DHL_UPDATE; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
+if errorlevel 1 (
+  echo.
+  echo KHONG TAI DUOC BAN CAP NHAT. HAY KIEM TRA INTERNET.
+  pause
+  exit /b 1
+)
+call "%DHL_UPDATE%"
+'@
+[IO.File]::WriteAllText($updater, $updaterText, (New-Object Text.UTF8Encoding($false)))
 Unblock-File -LiteralPath $updater
 
 Write-Host ''
-Write-Host 'DA CAI XONG TOOL TACH NAMESET A3 - BAN V6.1' -ForegroundColor Green
+Write-Host 'DA CAI XONG TOOL TACH NAMESET A3 - BAN V6.2' -ForegroundColor Green
 Write-Host 'Mo CorelDRAW > Window > Dockers > Tach Nameset A3.'
 Write-Host 'Keo bang tool sat canh phai de ghim, hoac keo ra ngoai de dung dang noi.'
 Write-Host 'Da tao file CAP_NHAT_TOOL_NAMESET_A3.bat ngoai Desktop.'
