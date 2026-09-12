@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "minimum_chrome_version": "116",
-  "description": "Lưu hồ sơ Sapo theo từng nhóm hàng trên máy; chọn hồ sơ, quét đúng tab danh mục đang mở và tạo file nhập tồn kho mà không phải nạp lại Excel mỗi lần.",
+  "description": "Lưu hồ sơ Sapo theo từng nhóm hàng trên máy; quét nguồn bằng tên chuẩn hóa nhưng nối SKU/ID bằng đúng tên gốc Sapo, không cần nạp lại Excel mỗi lần.",
   "permissions": ["storage", "unlimitedStorage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {"service_worker": "background.js"},
