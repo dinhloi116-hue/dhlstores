@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta http-equiv="MSThemeCompatible" content="yes" />
+<title>Tách Nameset A3</title>
+<style>
+*{box-sizing:border-box!important}html,body{margin:0!important;min-height:100%!important;background:#eef1f4!important;color:#1b232b!important;font:12px "Segoe UI",Arial,sans-serif!important}body{padding:7px!important}.card{background:#fff!important;border:1px solid #d5dbe1!important;border-radius:6px!important;padding:8px!important;margin:0 0 7px!important}.top{display:table!important;width:100%!important;margin-bottom:6px!important}.top>div{display:table-cell!important;vertical-align:middle!important}.title{font-size:16px!important;font-weight:800!important;color:#b51f2c!important;white-space:nowrap!important}.ver{font-size:10px!important;color:#7a838c!important;margin-left:4px!important}.gitcell{text-align:right!important}.gitbtn{width:auto!important;padding:5px 9px!important;margin:0!important;background:#26323d!important;color:#fff!important;font-size:11px!important;border-radius:5px!important}.section-title{font-size:13px!important;font-weight:800!important;margin:0 0 6px!important;color:#26313b!important}.status,.note{border:1px solid #d7dde2!important;border-left:4px solid #758391!important;border-radius:4px!important;padding:6px 7px!important;background:#f6f8fa!important;line-height:1.3!important;margin:5px 0!important}.status.ok,.note.ok{border-left-color:#239653!important;background:#eef8f2!important;color:#17673a!important}.status.bad,.note.bad{border-left-color:#d5313e!important;background:#fff2f3!important;color:#92202a!important}.row{display:table!important;width:100%!important;table-layout:fixed!important;margin-top:6px!important}.cell{display:table-cell!important;vertical-align:top!important;padding-right:5px!important}.cell:last-child{padding-right:0!important}.label{display:block!important;font-weight:700!important;margin:0 0 3px!important;color:#34414c!important}.mini{display:block!important;font-size:10px!important;color:#68747f!important;margin-bottom:2px!important}select,input[type=file],input[type=number]{width:100%!important;min-height:29px!important;padding:4px 6px!important;border:1px solid #adb8c2!important;border-radius:4px!important;background:#fff!important;color:#17212b!important;font:12px "Segoe UI",Arial,sans-serif!important}.radios{background:#f7f8fa!important;border:1px solid #dde2e7!important;border-radius:4px!important;padding:5px 7px!important;line-height:1.65!important}.radios label{margin-right:10px!important;white-space:nowrap!important}.check{display:block!important;background:#fff6f7!important;border:1px solid #efc8cc!important;border-radius:4px!important;padding:6px 7px!important;margin-top:6px!important;cursor:pointer!important}.check input{vertical-align:middle!important;margin:0 5px 0 0!important}button{width:100%!important;border:0!important;border-radius:5px!important;padding:8px 6px!important;font:700 12px "Segoe UI",Arial,sans-serif!important;cursor:pointer!important}.buttons{display:table!important;width:100%!important;table-layout:fixed!important;margin-top:7px!important}.buttons>div{display:table-cell!important;padding-right:5px!important}.buttons>div:last-child{padding-right:0!important}#run{background:#c92b39!important;color:#fff!important}#undo{background:#e7ebef!important;color:#26323d!important}#excelRun{background:#23834a!important;color:#fff!important;margin-top:7px!important}.excel{border-top:4px solid #23834a!important}.muted{font-size:10px!important;color:#6d7882!important;line-height:1.3!important;margin-top:4px!important}.footer{font-size:10px!important;color:#68747f!important;text-align:center!important;padding:1px 3px 3px!important}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top">
+    <div><span class="title">TÁCH NAMESET A3</span><span class="ver">v6.4</span></div>
+    <div class="gitcell"><button class="gitbtn" type="button" onclick="reloadFromGit()">↻ Reload Git</button></div>
+  </div>
+  <div id="selectionStatus" class="status">Đang đọc vùng chọn…</div>
+  <div class="row">
+    <div class="cell">
+      <label class="label" for="mode">Nhận từng bộ</label>
+      <select id="mode">
+        <option value="auto">Tự ghép tên trên + số dưới</option>
+        <option value="group">Mỗi Group là một bộ</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="cell">
+      <span class="label">Giấy A3</span>
+      <div class="radios">
+        <label><input type="radio" name="orientation" value="portrait" checked="checked"/> Dọc 297×420</label>
+        <label><input type="radio" name="orientation" value="landscape"/> Ngang 420×297</label>
+      </div>
+    </div>
+  </div>
+  <label class="check" for="mirror"><input id="mirror" type="checkbox"/><b>Lật gương ngang</b></label>
+  <div class="buttons"><div><button id="run" type="button">TẠO TRANG A3</button></div><div><button id="undo" type="button">Hoàn tác</button></div></div>
+  <div id="result" class="note">Trang A3 tạo từ Page 1; trang nguồn giữ ở cuối.</div>
+</div>
+
+<div class="card excel">
+  <div class="section-title">TẠO NAMESET TỪ EXCEL</div>
+  <label class="label" for="excelFile">File Excel / CSV / TXT</label>
+  <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,.txt"/>
+  <div class="muted">Mẫu cột: <b>Họ tên</b> | <b>Số áo</b>. Mỗi dòng là 1 bộ nameset.</div>
+  <div class="row">
+    <div class="cell"><span class="mini">Rộng (mm)</span><input id="sheetWidth" type="number" value="580" min="50"/></div>
+    <div class="cell"><span class="mini">Cao (mm)</span><input id="sheetHeight" type="number" value="2000" min="50"/></div>
+    <div class="cell"><span class="mini">Cách (mm)</span><input id="sheetGap" type="number" value="10" min="0"/></div>
+  </div>
+  <label class="check" for="excelMirror"><input id="excelMirror" type="checkbox"/><b>Lật gương cả trang in</b></label>
+  <button id="excelRun" type="button">ĐỌC EXCEL VÀ DÀN TRANG</button>
+  <div id="excelResult" class="note">Chọn đúng 1 bộ mẫu tên + số còn là Text trong Corel trước khi chạy.</div>
+</div>
+<div class="footer">DHL Nameset A3 · giao diện gọn</div>
+<script src="main.js" type="text/javascript"></script>
+<script type="text/javascript">
+function reloadFromGit(){
+  try{
+    var sh=new ActiveXObject("WScript.Shell");
+    var desktop=sh.SpecialFolders("Desktop");
+    var file=desktop+"\\RELOAD_TOOL_NAMESET_A3.bat";
+    var rc=sh.Run('"'+file+'"',1,true);
+    if(rc===0){ window.location.reload(true); }
+    else{ alert("Reload Git chưa hoàn tất. Mã lỗi: "+rc); }
+  }catch(e){ alert("Không chạy được Reload Git: "+e.message+"\nHãy chạy file RELOAD_TOOL_NAMESET_A3.bat ngoài Desktop."); }
+}
+</script>
+</body>
+</html>
