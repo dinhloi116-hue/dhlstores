@@ -1,8 +1,8 @@
 {
   "name": "dhl-stock-sync-extension",
   "private": true,
-  "version": "0.15.0",
+  "version": "0.15.1",
   "scripts": {
-    "test": "node ensure-materialized-runtime.js && node dom-parser-test.js && node generic-warehouse-size-test.js && node kids-product-size-test.js && node test.js && node expected-count-test.js && node match-test.js && node sapo-link-test.js && node preserve-test.js && node shop-rules-test.js && node direct-stock-test.js && node direct-stock-export-test.js && node stock-import-test.js && node warehouse-test.js && node product-create-test.js && node --check saved-profiles-mode.js && node build-test.js"
+    "test": "node ensure-materialized-runtime.js && node dom-parser-test.js && node generic-warehouse-size-test.js && node kids-product-size-test.js && node warehouse-sku-link-test.js && node test.js && node expected-count-test.js && node match-test.js && node sapo-link-test.js && node preserve-test.js && node shop-rules-test.js && node direct-stock-test.js && node direct-stock-export-test.js && node stock-import-test.js && node warehouse-test.js && node product-create-test.js && node --check saved-profiles-mode.js && node build-test.js"
   }
 }
