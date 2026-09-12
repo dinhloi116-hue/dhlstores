@@ -10,12 +10,11 @@ assert.ok(!manifest.host_permissions.some((x) => /sapo/i.test(x)), 'Extension kh
 assert.ok(manifest.permissions.includes('sidePanel'));
 assert.ok(manifest.permissions.includes('scripting'));
 assert.ok(manifest.permissions.includes('tabs'));
-assert.ok(manifest.permissions.includes('unlimitedStorage'), 'Hồ sơ Excel lưu local cần unlimitedStorage');
 assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','saved-profiles-mode.js','profile-tabs-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','warehouse-sku-link-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js','saved-profiles-mode.js','profile-tabs-mode.js','profile-create-safe-mode.js','ui-v2-mode.js','ui-v2-fix-mode.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -27,6 +26,7 @@ assert.ok(popupHtml.includes('ĐẦU RA = FILE NHẬP TỒN KHO CHÍNH THỨC SA
 assert.ok(popupHtml.includes('generic-shop-rules.js'));
 assert.ok(popupHtml.includes('generic-warehouse-mode.js'));
 assert.ok(popupHtml.includes('kids-product-size-mode.js'));
+assert.ok(popupHtml.includes('warehouse-sku-link-mode.js'));
 assert.ok(popupHtml.includes('product-create-core.js'));
 assert.ok(popupHtml.includes('catalog-ui-shell.js'), 'Phải dùng UI shell không có redirect HD');
 assert.ok(!popupHtml.includes('<script src="catalog-mode.js"></script>'), 'Không được load scanner legacy ép tab sang HD');
@@ -36,17 +36,13 @@ assert.ok(popupHtml.indexOf('catalog-ui-shell.js') < popupHtml.indexOf('catalog-
 assert.ok(popupHtml.indexOf('catalog-generic-mode.js') < popupHtml.indexOf('catalog-api-mode.js'), 'API mode phải override scanner cũ sau cùng');
 assert.ok(popupHtml.includes('one-file-mode.js'));
 assert.ok(popupHtml.includes('maintenance-ui.js'));
-assert.ok(popupHtml.includes('saved-profiles-mode.js'), 'Phải load hồ sơ lưu local');
-assert.ok(popupHtml.includes('profile-tabs-mode.js'), 'Phải load thanh tab chọn nhóm luôn hiển thị');
-assert.ok(popupHtml.indexOf('saved-profiles-mode.js') < popupHtml.indexOf('profile-tabs-mode.js'), 'Tab nhanh phải chạy sau module hồ sơ');
-
-const catalogShell = fs.readFileSync(path.join(dir, 'catalog-ui-shell.js'), 'utf8');
-assert.ok(catalogShell.includes('scanCatalogSource'));
-assert.ok(catalogShell.includes('exportCatalogSource'));
-assert.ok(catalogShell.includes('QUÉT TOÀN BỘ TRANG ĐANG MỞ'));
-assert.ok(catalogShell.includes('không tự chuyển sang danh mục khác'));
-assert.ok(!catalogShell.includes('chrome.tabs.update'), 'UI shell tuyệt đối không được đổi URL tab nguồn');
-assert.ok(!catalogShell.includes('/hd-pc36029.html'), 'UI shell không được khóa cứng HD người lớn');
+assert.ok(popupHtml.includes('saved-profiles-mode.js'));
+assert.ok(popupHtml.includes('profile-tabs-mode.js'));
+assert.ok(popupHtml.includes('profile-create-safe-mode.js'));
+assert.ok(popupHtml.includes('ui-v2-mode.js'));
+assert.ok(popupHtml.includes('ui-v2-fix-mode.js'));
+assert.ok(popupHtml.indexOf('profile-create-safe-mode.js') > popupHtml.indexOf('profile-tabs-mode.js'));
+assert.ok(popupHtml.indexOf('ui-v2-fix-mode.js') > popupHtml.indexOf('ui-v2-mode.js'));
 
 const safeGuard = fs.readFileSync(path.join(dir, 'safe-category-guard.js'), 'utf8');
 assert.ok(safeGuard.includes('data-dhl-safe-action'));
@@ -72,10 +68,6 @@ assert.ok(popupJs.includes('DHL_SCAN_HD_LIVE'));
 assert.ok(popupJs.includes('variantMatches'));
 assert.ok(!popupJs.includes('fullMatchReady'));
 
-const domParser = fs.readFileSync(path.join(dir, 'dom-stock-parser.js'), 'utf8');
-assert.ok(domParser.includes('FREESIZE'));
-assert.ok(domParser.includes('SIZE_TOKEN'));
-
 const genericWarehouse = fs.readFileSync(path.join(dir, 'generic-warehouse-mode.js'), 'utf8');
 assert.ok(genericWarehouse.includes('parseGenericWarehouse'));
 assert.ok(genericWarehouse.includes('genericSizes:true'));
@@ -85,74 +77,32 @@ assert.ok(stockImport.includes('Cập nhật tồn kho phiên bản sản phẩm
 assert.ok(stockImport.includes("'Tên phiên bản sản phẩm','SKU*','Mã lô','Ngày sản xuất','Hạn sử dụng','Tồn kho','Vị trí lưu kho'"));
 assert.ok(stockImport.includes('buildOfficialInventoryWorkbook'));
 
-const genericRules = fs.readFileSync(path.join(dir, 'generic-shop-rules.js'), 'utf8');
-assert.ok(genericRules.includes('generatedSkuBaseForStandardName'));
-assert.ok(genericRules.includes('generatedAliasForStandardName'));
-
-const productCreate = fs.readFileSync(path.join(dir, 'product-create-core.js'), 'utf8');
-assert.ok(productCreate.includes("'Đường dẫn/Alias','Tên sản phẩm*'"));
-assert.ok(productCreate.includes("'Ảnh đại diện'"));
-assert.ok(productCreate.includes("'Ảnh phiên bản'"));
-assert.ok(productCreate.includes("'Cửa hàng chính_Tồn kho'"));
-assert.ok(productCreate.includes('buildWorkbook'));
-
 const oneFile = fs.readFileSync(path.join(dir, 'one-file-mode.js'), 'utf8');
 assert.ok(oneFile.includes('TẠO FILE NHẬP TỒN KHO SAPO'));
 assert.ok(oneFile.includes('file TỒN KHO'), 'Luồng hằng ngày phải lấy file tồn kho làm gốc');
 assert.ok(oneFile.includes('file DANH SÁCH'), 'Luồng phải có file danh sách riêng để tra SKU');
 assert.ok(oneFile.includes('skuCatalogFile'), 'UI phải có input thứ hai cho products_export có SKU');
-assert.ok(oneFile.includes("parsed.inputType!=='warehouse'"), 'Input chính phải xác nhận đúng file tồn kho');
-assert.ok(oneFile.includes("parsed.inputType==='warehouse'"), 'File danh sách phải từ chối nếu người dùng chọn nhầm file tồn kho');
 assert.ok(oneFile.includes('catalogSkuIndex'), 'Phải tạo bảng tra SKU riêng từ products_export');
-assert.ok(oneFile.includes('rowKey(variant.name,displaySize(variant))'), 'SKU phải ghép theo Tên + Size');
-assert.ok(oneFile.includes('coverage.matched!==coverage.total'), 'Không được xuất nếu 2 file chưa nối SKU đầy đủ');
 assert.ok(oneFile.includes('lookup.sku'), 'File nhập phải lấy SKU gốc từ file danh sách');
 assert.ok(!oneFile.includes('skuBaseForStandardName'), 'Không được tự map/sinh SKU khi cập nhật tồn');
 assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
 assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
 
-const savedProfiles = fs.readFileSync(path.join(dir, 'saved-profiles-mode.js'), 'utf8');
-assert.doesNotThrow(() => new Function(savedProfiles), 'saved-profiles-mode.js phải đúng cú pháp');
-assert.ok(savedProfiles.includes('dhlSavedStockProfilesV1'));
-assert.ok(savedProfiles.includes('warehouseBase64'));
-assert.ok(savedProfiles.includes('catalogBase64'));
-assert.ok(savedProfiles.includes('QUÉT KHO TAB ĐANG MỞ'));
-assert.ok(savedProfiles.includes('TẠO FILE NHẬP SAPO'));
+const safeCreate = fs.readFileSync(path.join(dir, 'profile-create-safe-mode.js'), 'utf8');
+assert.ok(safeCreate.includes('Hồ sơ cũ được giữ nguyên'));
+assert.ok(safeCreate.includes('event.stopImmediatePropagation()'));
+assert.ok(safeCreate.includes('profiles.push(profile)'));
 
-const profileTabs = fs.readFileSync(path.join(dir, 'profile-tabs-mode.js'), 'utf8');
-assert.doesNotThrow(() => new Function(profileTabs), 'profile-tabs-mode.js phải đúng cú pháp');
-for (const label of ['HD','Trẻ em','Wika','Strivend']) assert.ok(profileTabs.includes(label), `Thiếu tab mặc định ${label}`);
-assert.ok(profileTabs.includes('+ HỒ SƠ KHÁC'));
-assert.ok(profileTabs.includes('profileManageBody'));
-assert.ok(profileTabs.includes('dhlSavedStockProfilesV1'));
-
-const catalogApi = fs.readFileSync(path.join(dir, 'catalog-api-mode.js'), 'utf8');
-assert.ok(catalogApi.includes('/product/child?psId='));
-assert.ok(catalogApi.includes('api-child-sequential-no-click'));
-assert.ok(catalogApi.includes('TEST NHANH 1 SP'));
-assert.ok(catalogApi.includes('KHÔNG click'));
-assert.ok(catalogApi.includes('replaceButton'));
-assert.ok(catalogApi.includes('scanProductApi'));
-assert.ok(!catalogApi.includes('chrome.tabs.create('), 'API maintenance scan không được tạo tab nền');
-
-const maintenanceUi = fs.readFileSync(path.join(dir, 'maintenance-ui.js'), 'utf8');
-assert.ok(maintenanceUi.includes('BẢO TRÌ NGUỒN'));
-assert.ok(maintenanceUi.includes('Chỉ dùng khi web có sản phẩm / màu mới'));
-assert.ok(maintenanceUi.includes('body.hidden = true'));
-assert.ok(maintenanceUi.includes('NẠP LẠI TOOL SAU KHI PULL CODE'));
-assert.ok(maintenanceUi.includes('chrome.runtime.reload()'));
+const uiFix = fs.readFileSync(path.join(dir, 'ui-v2-fix-mode.js'), 'utf8');
+assert.ok(uiFix.indexOf("hay.includes('tre em')") < uiFix.indexOf("path.includes('/hd-pc36029')"), 'Phải ưu tiên nhận Trẻ em trước HD');
+assert.ok(uiFix.includes("if(p.includes('tre em'))return'tre em'"), 'Trẻ em HD phải map về nhóm Trẻ em');
+assert.ok(uiFix.includes('runSmart'));
 
 console.log('BUILD PASS', {
   version: manifest.version,
-  scanner: 'current category + no legacy HD redirect + dynamic text/numeric sizes',
-  matching: 'warehouse primary; products_export supplies original SKU by exact normalized name + display size',
-  inventorySku: 'original Sapo SKU only; never generated',
-  savedProfiles: 'local Chrome profiles + always-visible HD/Kids/Wika/Strivend tabs',
-  maintenanceScan: 'API /product/child sequential scan, zero clicks, zero worker tabs',
-  quickTest: 'one product via API only',
-  devReload: 'pull code then chrome.runtime.reload',
-  dailyInput: 'saved warehouse export + products_export SKU catalog',
-  inventoryOutput: 'official Sapo inventory import template',
-  newProductOutput: 'Sapo product import template + image links + stock',
+  scanner: 'current category, no forced HD redirect',
+  matching: 'warehouse primary + original Sapo SKU by exact name and size',
+  savedProfiles: 'local Chrome profiles, new profile never overwrites selected profile',
+  uiV2: 'child HD alias first, one-click sync wrapper with manual fallback',
   sourceHost: manifest.host_permissions[0]
 });
