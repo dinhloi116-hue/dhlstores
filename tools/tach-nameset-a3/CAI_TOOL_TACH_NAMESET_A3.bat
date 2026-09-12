@@ -1,19 +1,14 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-title Cai tool Tach Nameset A3 cho CorelDRAW - Hotfix V6.3
-
-rem ============================================================
-rem HOTFIX V6.3
-rem Sua loi bam file BAT chi roi ve dau nhac D:\OneDrive\DOWNLOADS>
-rem Khong Start-Process truc tiep file .bat nua.
-rem Neu chua co quyen admin, mo cmd.exe bang RunAs roi chay lai chinh file nay.
-rem Khi da co quyen admin, nap payload V6.2 tu commit co dinh va cai truc tiep.
-rem ============================================================
+title Cai tool Tach Nameset A3 cho CorelDRAW - V6.4
 
 set "DHL_SELF=%~f0"
 set "DHL_PAYLOAD=%TEMP%\DHL_NAMESET_A3_V62_PAYLOAD.bat"
-set "DHL_URL=https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/f176332b86db8f5575007d5d930c32887e8dfda4/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat"
+set "DHL_PAYLOAD_URL=https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/f176332b86db8f5575007d5d930c32887e8dfda4/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat"
+set "DHL_UI_URL=https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/src/DockerUI.html"
+set "DHL_LATEST_URL=https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat"
+if /i "%~1"=="--reload-ui" set "DHL_RELOAD_UI=1"
 
 fltmc >nul 2>&1
 if errorlevel 1 goto :ELEVATE
@@ -31,41 +26,72 @@ pause
 exit /b %DHL_EXIT%
 
 :ADMIN
+if "%DHL_RELOAD_UI%"=="1" goto :RELOAD_UI
+
 echo.
 echo ================================================
-echo   TACH NAMESET A3 - HOTFIX V6.3
+echo   TACH NAMESET A3 - V6.4
 echo ================================================
 echo Da co quyen Administrator.
-echo Dang nap bo cai V6.2 da dong goi...
+echo Dang cai bo chuc nang Nameset A3...
 
 if exist "%DHL_PAYLOAD%" del /q "%DHL_PAYLOAD%" >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri $env:DHL_URL -OutFile $env:DHL_PAYLOAD; exit 0 } catch { Write-Host ''; Write-Host 'KHONG TAI DUOC BO CAI TU GITHUB:' -ForegroundColor Red; Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri $env:DHL_PAYLOAD_URL -OutFile $env:DHL_PAYLOAD; exit 0 } catch { Write-Host ''; Write-Host 'KHONG TAI DUOC BO CAI TU GITHUB:' -ForegroundColor Red; Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }"
 if errorlevel 1 goto :DOWNLOAD_FAIL
-
 if not exist "%DHL_PAYLOAD%" goto :MISSING_PAYLOAD
-
 for %%I in ("%DHL_PAYLOAD%") do set "DHL_SIZE=%%~zI"
 if %DHL_SIZE% LSS 40000 goto :BAD_PAYLOAD
 
-echo Da tai xong. Bat dau cai...
-echo.
 call "%DHL_PAYLOAD%"
 set "DHL_EXIT=%errorlevel%"
 del /q "%DHL_PAYLOAD%" >nul 2>&1
+if not "%DHL_EXIT%"=="0" goto :INSTALL_FAIL
 
-if "%DHL_EXIT%"=="0" goto :SUCCESS
-echo.
-echo BO CAI KET THUC VOI MA LOI %DHL_EXIT%.
-exit /b %DHL_EXIT%
+call :UPDATE_COMPACT_UI
+if errorlevel 1 goto :UI_FAIL
+call :CREATE_RELOAD_HELPER
 
-:SUCCESS
 echo.
-echo HOTFIX V6.3: BO CAI DA CHAY XONG.
+echo DA CAI XONG TOOL TACH NAMESET A3 - BAN V6.4
+echo Giao dien da thu gon va co nut RELOAD GIT.
+echo Mo CorelDRAW ^> Window ^> Dockers ^> Tach Nameset A3.
+echo.
+pause
+exit /b 0
+
+:RELOAD_UI
+echo.
+echo Dang Reload giao dien moi tu GitHub...
+call :UPDATE_COMPACT_UI
+if errorlevel 1 exit /b 1
+echo DA RELOAD XONG GIAO DIEN TU GITHUB.
+exit /b 0
+
+:UPDATE_COMPACT_UI
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $pf=[Environment]::GetFolderPath('ProgramFiles'); $preferred=@('2024','2025','2026','2023','2022')|ForEach-Object{Join-Path $pf ('Corel\CorelDRAW Graphics Suite '+$_+'\Programs64\CorelDRW.exe')}; $exe=$preferred|Where-Object{Test-Path -LiteralPath $_}|Select-Object -First 1; if(-not $exe){$root=Join-Path $pf 'Corel'; if(Test-Path -LiteralPath $root){$exe=Get-ChildItem -LiteralPath $root -Filter CorelDRW.exe -File -Recurse -ErrorAction SilentlyContinue|Select-Object -ExpandProperty FullName -First 1}}; if(-not $exe){throw 'Khong tim thay CorelDRAW 64-bit'}; $target=Join-Path (Split-Path -Parent $exe) 'Addons\DHL_A3_Nameset'; if(-not(Test-Path -LiteralPath $target)){throw 'Chua tim thay tool DHL_A3_Nameset. Hay cai tool 1 lan truoc.'}; $tmp=Join-Path $env:TEMP 'DockerUI_DHL_A3.html'; Invoke-WebRequest -UseBasicParsing -Uri $env:DHL_UI_URL -OutFile $tmp; if((Get-Item -LiteralPath $tmp).Length -lt 3000){throw 'File giao dien tai ve khong day du'}; Copy-Item -LiteralPath $tmp -Destination (Join-Path $target 'DockerUI.html') -Force; Unblock-File -LiteralPath (Join-Path $target 'DockerUI.html'); Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue"
+exit /b %errorlevel%
+
+:CREATE_RELOAD_HELPER
+for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"') do set "DHL_DESKTOP=%%D"
+set "DHL_HELPER=%DHL_DESKTOP%\RELOAD_TOOL_NAMESET_A3.bat"
+>"%DHL_HELPER%" echo @echo off
+>>"%DHL_HELPER%" echo setlocal EnableExtensions
+>>"%DHL_HELPER%" echo chcp 65001 ^>nul
+>>"%DHL_HELPER%" echo title Reload Nameset A3 tu GitHub
+>>"%DHL_HELPER%" echo set "DHL_TMP=%%TEMP%%\CAI_TOOL_TACH_NAMESET_A3_LATEST.bat"
+>>"%DHL_HELPER%" echo set "DHL_RELOAD_UI=1"
+>>"%DHL_HELPER%" echo powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri '%DHL_LATEST_URL%' -OutFile $env:DHL_TMP; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
+>>"%DHL_HELPER%" echo if errorlevel 1 exit /b 1
+>>"%DHL_HELPER%" echo call "%%DHL_TMP%%"
+>>"%DHL_HELPER%" echo set "DHL_RC=%%errorlevel%%"
+>>"%DHL_HELPER%" echo del /q "%%DHL_TMP%%" ^>nul 2^>^&1
+>>"%DHL_HELPER%" echo exit /b %%DHL_RC%%
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -LiteralPath $env:DHL_HELPER -ErrorAction SilentlyContinue"
 exit /b 0
 
 :DOWNLOAD_FAIL
 echo.
-echo HAY KIEM TRA INTERNET ROI CHAY LAI FILE NAY.
+echo KHONG TAI DUOC BO CAI. HAY KIEM TRA INTERNET.
 pause
 exit /b 1
 
@@ -81,3 +107,16 @@ echo LOI: FILE CAI TAI VE KHONG DAY DU ^(%DHL_SIZE% bytes^).
 del /q "%DHL_PAYLOAD%" >nul 2>&1
 pause
 exit /b 3
+
+:INSTALL_FAIL
+echo.
+echo BO CAI KET THUC VOI MA LOI %DHL_EXIT%.
+pause
+exit /b %DHL_EXIT%
+
+:UI_FAIL
+echo.
+echo TOOL DA CAI NHUNG KHONG TAI DUOC GIAO DIEN V6.4.
+echo Hay chay lai khi co Internet.
+pause
+exit /b 5
