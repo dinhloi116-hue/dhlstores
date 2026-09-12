@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/dhl-stock-sync-extension
+      - feature/dhl-stock-sync-ui-v2
     paths:
       - 'tools/dhl-stock-sync-extension/**'
       - '.github/workflows/dhl-stock-sync-extension.yml'
@@ -50,7 +51,7 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist/dhl-stock-sync-extension
-          cp manifest.json background.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js catalog-api-mode.js catalog-api-v2-mode.js catalog-popup-v3-mode.js product-branch-mode.js maintenance-ui.js simple-mode.js exact-name-mode.js one-file-mode.js saved-profiles-mode.js profile-tabs-mode.js dist/dhl-stock-sync-extension/
+          cp manifest.json background.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js catalog-api-mode.js catalog-api-v2-mode.js catalog-popup-v3-mode.js product-branch-mode.js maintenance-ui.js simple-mode.js exact-name-mode.js one-file-mode.js saved-profiles-mode.js profile-tabs-mode.js ui-v2-mode.js dist/dhl-stock-sync-extension/
           cd dist
           zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
 
@@ -84,6 +85,7 @@ jobs:
           test -f dist/dhl-stock-sync-extension/one-file-mode.js
           test -f dist/dhl-stock-sync-extension/saved-profiles-mode.js
           test -f dist/dhl-stock-sync-extension/profile-tabs-mode.js
+          test -f dist/dhl-stock-sync-extension/ui-v2-mode.js
 
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
