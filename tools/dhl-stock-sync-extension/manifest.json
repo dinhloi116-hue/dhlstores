@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.16.1",
+  "version": "0.16.2",
   "minimum_chrome_version": "116",
-  "description": "UI v2: tự nhận đúng HD/Trẻ em/Wika/Strivend, tạo hồ sơ mới không ghi đè hồ sơ cũ, đồng bộ 1 nút; core ghép SKU/tồn kho giữ nguyên bản ổn.",
+  "description": "UI v3: giao diện gọn hơn, hiển thị sức khỏe hồ sơ và lịch sử đồng bộ; tự nhận đúng HD/Trẻ em/Wika/Strivend; core ghép SKU/tồn kho giữ nguyên bản ổn.",
   "permissions": ["storage", "unlimitedStorage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {"service_worker": "background.js"},
