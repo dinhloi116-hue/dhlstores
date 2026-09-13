@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-title Cai tool Tach Nameset A3 cho CorelDRAW - V7.0
+title Cai tool Tach Nameset A3 cho CorelDRAW - V7.1
 
 set "DHL_SELF=%~f0"
 set "DHL_ARGS=%*"
@@ -30,7 +30,7 @@ if "%DHL_RELOAD_UI%"=="1" goto :RELOAD_UI
 
 echo.
 echo ================================================
-echo   TACH NAMESET A3 - V7.0
+echo   TACH NAMESET A3 - V7.1
 echo ================================================
 echo Da co quyen Administrator.
 echo Dang cai bo chuc nang Nameset A3...
@@ -51,9 +51,8 @@ call :UPDATE_COMPACT_UI
 if errorlevel 1 goto :UI_FAIL
 
 echo.
-echo DA CAI XONG TOOL TACH NAMESET A3 - BAN V7.0
-echo Giao dien co nut chon VI / EN va tu nho ngon ngu da chon.
-echo Nut RELOAD nam ngay tren dau tool.
+echo DA CAI XONG TOOL TACH NAMESET A3 - BAN V7.1
+echo Co chu da can theo giao dien Corel, giu VI / EN va nut Reload.
 echo Hay dong va mo lai Docker neu no dang mo.
 echo.
 pause
@@ -61,14 +60,32 @@ exit /b 0
 
 :RELOAD_UI
 echo.
-echo Dang Reload giao dien V7.0 tu GitHub...
+echo Dang Reload giao dien V7.1 tu GitHub...
 call :UPDATE_COMPACT_UI
 if errorlevel 1 exit /b 1
-echo DA RELOAD XONG GIAO DIEN V7.0 TU GITHUB.
+echo DA RELOAD XONG GIAO DIEN V7.1 TU GITHUB.
 exit /b 0
 
 :UPDATE_COMPACT_UI
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';$stamp=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$url=$env:DHL_UI_URL+'?v=70&t='+$stamp;$tmp=Join-Path $env:TEMP 'DockerUI_DHL_A3_V70.html';Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tmp;$raw=[IO.File]::ReadAllText($tmp);if($raw -notmatch 'DHL_UI_VERSION=7\.0'){throw 'GitHub chua tra ve giao dien V7.0'};$targets=New-Object System.Collections.Generic.List[string];$roots=@();$pf=[Environment]::GetFolderPath('ProgramFiles');if($pf){$roots+=Join-Path $pf 'Corel'};if($env:APPDATA){$roots+=Join-Path $env:APPDATA 'Corel'};if($env:LOCALAPPDATA){$roots+=Join-Path $env:LOCALAPPDATA 'Corel'};foreach($root in $roots){if(-not(Test-Path -LiteralPath $root)){continue};Get-ChildItem -LiteralPath $root -Directory -Filter 'DHL_A3_Nameset' -Recurse -ErrorAction SilentlyContinue|ForEach-Object{if(Test-Path -LiteralPath (Join-Path $_.FullName 'DockerUI.html')){$targets.Add($_.FullName)}}};if($targets.Count -eq 0){throw 'Khong tim thay thu muc DHL_A3_Nameset nao dang duoc cai'};$uniq=$targets|Sort-Object -Unique;foreach($target in $uniq){$dst=Join-Path $target 'DockerUI.html';Copy-Item -LiteralPath $tmp -Destination $dst -Force;Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue;$check=[IO.File]::ReadAllText($dst);if($check -notmatch 'DHL_UI_VERSION=7\.0'){throw ('Ghi giao dien that bai: '+$dst)};Write-Host ('DA CAP NHAT: '+$dst) -ForegroundColor Green};Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;Write-Host ('Tong so noi da cap nhat: '+$uniq.Count) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';$stamp=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$url=$env:DHL_UI_URL+'?v=71&t='+$stamp;$tmp=Join-Path $env:TEMP 'DockerUI_DHL_A3_V71.html';Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tmp;$raw=[IO.File]::ReadAllText($tmp);if($raw -notmatch 'DHL_UI_VERSION=7\.0'){throw 'GitHub chua tra ve giao dien goc V7.0'};$raw=$raw.Replace('DHL_UI_VERSION=7.0','DHL_UI_VERSION=7.1').Replace('v7.0','v7.1');$css=@'
+<style id="dhl-font-match-corel">
+html,body{font-size:12px!important;line-height:1.4!important}
+.title{font-size:16px!important}
+.ver{font-size:10px!important}
+.langbtn{font-size:10px!important;min-width:29px!important;padding:5px 6px!important}
+.gitbtn{font-size:11px!important;padding:6px 8px!important}
+.status,.note{font-size:11px!important;line-height:1.4!important;min-height:30px!important;padding:7px 8px!important}
+.label{font-size:12px!important;line-height:1.35!important;margin-top:8px!important}
+.mini,.muted,.saved,.footer{font-size:10px!important;line-height:1.35!important}
+select,input[type=file],input[type=number]{font-size:12px!important;min-height:32px!important;line-height:1.35!important}
+.radios,.check{font-size:11px!important;line-height:1.5!important}
+button{font-size:12px!important;line-height:1.3!important;padding-top:8px!important;padding-bottom:8px!important}
+.sectionname{font-size:14px!important}
+.collapsebtn,.quickbtn,.smallbtn{font-size:10px!important;line-height:1.3!important;padding-top:6px!important;padding-bottom:6px!important}
+.sectionbar>div{padding-top:7px!important;padding-bottom:7px!important}
+.card{padding:10px!important}
+</style>
+'@;$raw=$raw.Replace('</head>',$css+'</head>');[IO.File]::WriteAllText($tmp,$raw,(New-Object Text.UTF8Encoding($false)));$verify=[IO.File]::ReadAllText($tmp);if($verify -notmatch 'DHL_UI_VERSION=7\.1' -or $verify -notmatch 'dhl-font-match-corel'){throw 'Khong tao duoc giao dien V7.1'};$targets=New-Object System.Collections.Generic.List[string];$roots=@();$pf=[Environment]::GetFolderPath('ProgramFiles');if($pf){$roots+=Join-Path $pf 'Corel'};if($env:APPDATA){$roots+=Join-Path $env:APPDATA 'Corel'};if($env:LOCALAPPDATA){$roots+=Join-Path $env:LOCALAPPDATA 'Corel'};foreach($root in $roots){if(-not(Test-Path -LiteralPath $root)){continue};Get-ChildItem -LiteralPath $root -Directory -Filter 'DHL_A3_Nameset' -Recurse -ErrorAction SilentlyContinue|ForEach-Object{if(Test-Path -LiteralPath (Join-Path $_.FullName 'DockerUI.html')){$targets.Add($_.FullName)}}};if($targets.Count -eq 0){throw 'Khong tim thay thu muc DHL_A3_Nameset nao dang duoc cai'};$uniq=$targets|Sort-Object -Unique;foreach($target in $uniq){$dst=Join-Path $target 'DockerUI.html';Copy-Item -LiteralPath $tmp -Destination $dst -Force;Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue;$check=[IO.File]::ReadAllText($dst);if($check -notmatch 'DHL_UI_VERSION=7\.1'){throw ('Ghi giao dien that bai: '+$dst)};Write-Host ('DA CAP NHAT V7.1: '+$dst) -ForegroundColor Green};Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;Write-Host ('Tong so noi da cap nhat: '+$uniq.Count) -ForegroundColor Cyan"
 exit /b %errorlevel%
 
 :DOWNLOAD_FAIL
@@ -98,7 +115,7 @@ exit /b %DHL_EXIT%
 
 :UI_FAIL
 echo.
-echo TOOL DA CAI NHUNG KHONG GHI DUOC GIAO DIEN V7.0.
+echo TOOL DA CAI NHUNG KHONG GHI DUOC GIAO DIEN V7.1.
 echo Gui anh cua so nay de kiem tra duong dan Corel dang dung.
 pause
 exit /b 5
