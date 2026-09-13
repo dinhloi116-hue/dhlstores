@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="utf-8" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>Nameset A3</title>
-<!-- DHL_UI_VERSION=6.9 -->
+<!-- DHL_UI_VERSION=7.0 -->
 <style>
 *{box-sizing:border-box!important}
 html,body{margin:0!important;min-height:100%!important;background:#f3f5f7!important;color:#24303a!important;font:11px "Segoe UI",Arial,sans-serif!important;line-height:1.35!important}
@@ -19,8 +19,12 @@ b,strong{background:transparent!important;color:inherit!important}
 .top>div{display:table-cell!important;vertical-align:middle!important;background:#fff!important}
 .title{font-size:15px!important;font-weight:800!important;color:#c92d3b!important;white-space:nowrap!important;background:#fff!important}
 .ver{font-size:9px!important;color:#7b8792!important;margin-left:4px!important;background:#fff!important}
-.gitcell{text-align:right!important;width:1%!important;white-space:nowrap!important}
-.gitbtn{width:auto!important;padding:5px 8px!important;margin:0!important;background:#475467!important;color:#fff!important;font:700 10px "Segoe UI",Arial,sans-serif!important;border-radius:5px!important;white-space:nowrap!important;border:0!important}
+.topactions{text-align:right!important;width:1%!important;white-space:nowrap!important}
+.langwrap{display:inline-block!important;vertical-align:middle!important;margin-right:4px!important;border:1px solid #cfd8df!important;border-radius:5px!important;overflow:hidden!important;background:#fff!important}
+.langbtn{width:auto!important;min-width:27px!important;padding:5px 6px!important;margin:0!important;background:#fff!important;color:#475467!important;font:700 9px "Segoe UI",Arial,sans-serif!important;border:0!important;border-radius:0!important;white-space:nowrap!important}
+.langbtn+ .langbtn{border-left:1px solid #d8dee5!important}
+.langbtn.active{background:#344054!important;color:#fff!important}
+.gitbtn{display:inline-block!important;vertical-align:middle!important;width:auto!important;padding:5px 8px!important;margin:0!important;background:#475467!important;color:#fff!important;font:700 10px "Segoe UI",Arial,sans-serif!important;border-radius:5px!important;white-space:nowrap!important;border:0!important}
 .gitbtn:hover{background:#344054!important}
 .status,.note{border:1px solid #d6dde3!important;border-left:4px solid #98a2ad!important;border-radius:5px!important;padding:6px 8px!important;background:#f8fafb!important;line-height:1.35!important;margin:6px 0!important;font-size:10px!important;min-height:28px!important;color:#344054!important;white-space:normal!important;word-wrap:break-word!important}
 .status.ok,.note.ok{border-left-color:#2f9e5b!important;background:#f0faf4!important;color:#1f6b3e!important}
@@ -76,45 +80,48 @@ button{width:100%!important;border:0!important;border-radius:5px!important;paddi
 <body>
 <div class="card">
   <div class="top">
-    <div><span class="title">NAMESET A3</span><span class="ver">v6.9 EN</span></div>
-    <div class="gitcell"><button class="gitbtn" id="reloadGit" type="button" onclick="reloadFromGit()">↻ RELOAD</button></div>
+    <div><span class="title">NAMESET A3</span><span class="ver">v7.0</span></div>
+    <div class="topactions">
+      <span class="langwrap"><button id="langVI" class="langbtn" type="button" onclick="setLanguage('vi')">VI</button><button id="langEN" class="langbtn" type="button" onclick="setLanguage('en')">EN</button></span>
+      <button class="gitbtn" id="reloadGit" type="button" onclick="reloadFromGit()" data-i18n="reload">↻ CẬP NHẬT</button>
+    </div>
   </div>
 
-  <div id="selectionStatus" class="status">Reading selection...</div>
+  <div id="selectionStatus" class="status">Đang đọc vùng chọn…</div>
 
-  <label class="label" for="mode">GROUPING MODE</label>
+  <label class="label" for="mode" data-i18n="groupMode">CHẾ ĐỘ NHẬN BỘ</label>
   <select id="mode">
-    <option value="auto">Auto: name above + number below</option>
-    <option value="group">Each Group = one nameset</option>
+    <option value="auto" data-i18n="modeAuto">Tự ghép: tên trên + số dưới</option>
+    <option value="group" data-i18n="modeGroup">Mỗi Group = một nameset</option>
   </select>
 
-  <span class="label">A3 LAYOUT</span>
+  <span class="label" data-i18n="a3Layout">KHỔ A3</span>
   <div class="radios">
-    <label><input type="radio" name="orientation" value="portrait" checked="checked"/> Portrait 297×420</label>
-    <label><input type="radio" name="orientation" value="landscape"/> Landscape 420×297</label>
+    <label><input type="radio" name="orientation" value="portrait" checked="checked"/><span data-i18n="portrait"> Dọc 297×420</span></label>
+    <label><input type="radio" name="orientation" value="landscape"/><span data-i18n="landscape"> Ngang 420×297</span></label>
   </div>
 
-  <label class="check" for="mirror"><input id="mirror" type="checkbox"/><b>Mirror horizontally</b></label>
+  <label class="check" for="mirror"><input id="mirror" type="checkbox"/><b data-i18n="mirror">Lật gương ngang</b></label>
 
   <div class="buttons">
-    <div><button id="run" type="button">CREATE A3</button></div>
-    <div><button id="undo" type="button">UNDO</button></div>
+    <div><button id="run" type="button" data-i18n="createA3">TẠO TRANG A3</button></div>
+    <div><button id="undo" type="button" data-i18n="undo">HOÀN TÁC</button></div>
   </div>
-  <div id="result" class="note">New A3 pages start at Page 1. Source page stays last.</div>
+  <div id="result" class="note">A3 bắt đầu từ Page 1. Trang nguồn giữ ở cuối.</div>
 </div>
 
 <div class="card excel">
   <div class="sectionbar">
-    <div class="sectionname">FROM EXCEL</div>
-    <div class="sectionaction"><button id="toggleExcel" class="collapsebtn" type="button" onclick="toggleExcelPanel()">HIDE</button></div>
+    <div class="sectionname" data-i18n="fromExcel">TỪ EXCEL</div>
+    <div class="sectionaction"><button id="toggleExcel" class="collapsebtn" type="button" onclick="toggleExcelPanel()">THU GỌN</button></div>
   </div>
 
   <div id="excelBody">
-    <label class="label" for="excelFile">SOURCE FILE</label>
+    <label class="label" for="excelFile" data-i18n="sourceFile">FILE DỮ LIỆU</label>
     <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,.txt"/>
-    <div class="muted">Columns: <b>Name</b> | <b>Number</b> · one row = one nameset.</div>
+    <div class="muted" id="columnHint">Cột: <b>Họ tên</b> | <b>Số áo</b> · mỗi dòng = một nameset.</div>
 
-    <span class="label">SHEET PRESET</span>
+    <span class="label" data-i18n="sheetPreset">KHỔ IN NHANH</span>
     <div class="quickbar">
       <div><button class="quickbtn" type="button" onclick="setPreset(580,2000,10,this)">580×2000</button></div>
       <div><button class="quickbtn" type="button" onclick="setPreset(600,2000,10,this)">600×2000</button></div>
@@ -122,29 +129,120 @@ button{width:100%!important;border:0!important;border-radius:5px!important;paddi
     </div>
 
     <div class="params">
-      <div><span class="mini">W (mm)</span><input id="sheetWidth" type="number" value="580" min="50"/></div>
-      <div><span class="mini">H (mm)</span><input id="sheetHeight" type="number" value="2000" min="50"/></div>
-      <div><span class="mini">Gap</span><input id="sheetGap" type="number" value="10" min="0"/></div>
+      <div><span class="mini" data-i18n="width">Rộng (mm)</span><input id="sheetWidth" type="number" value="580" min="50"/></div>
+      <div><span class="mini" data-i18n="height">Cao (mm)</span><input id="sheetHeight" type="number" value="2000" min="50"/></div>
+      <div><span class="mini" data-i18n="gap">Cách (mm)</span><input id="sheetGap" type="number" value="10" min="0"/></div>
     </div>
 
-    <label class="check" for="excelMirror"><input id="excelMirror" type="checkbox"/><b>Mirror output sheet</b></label>
+    <label class="check" for="excelMirror"><input id="excelMirror" type="checkbox"/><b data-i18n="mirrorSheet">Lật gương cả trang in</b></label>
 
     <div class="toolsrow">
-      <div><button class="smallbtn" type="button" onclick="resetSettings()">RESET</button></div>
-      <div><button class="smallbtn" type="button" onclick="saveSettings(true)">SAVE SETTINGS</button></div>
+      <div><button class="smallbtn" type="button" onclick="resetSettings()" data-i18n="reset">ĐẶT LẠI</button></div>
+      <div><button class="smallbtn" type="button" onclick="saveSettings(true)" data-i18n="save">LƯU THÔNG SỐ</button></div>
     </div>
     <div id="savedState" class="saved"></div>
 
-    <button id="excelRun" type="button">BUILD FROM EXCEL</button>
-    <div id="excelResult" class="note">Select one sample nameset with editable Text before running.</div>
+    <button id="excelRun" type="button" data-i18n="buildExcel">ĐỌC EXCEL + DÀN TRANG</button>
+    <div id="excelResult" class="note">Chọn 1 bộ mẫu tên + số còn là Text trước khi chạy.</div>
   </div>
 </div>
 
-<div class="footer">DHL Nameset A3 · v6.9 · English UI</div>
+<div class="footer" id="footerText">DHL Nameset A3 · v7.0 · VI / EN</div>
 
 <script src="main.js" type="text/javascript"></script>
 <script type="text/javascript">
 function byId(id){return document.getElementById(id);}
+var currentLang='vi';
+
+var I18N={
+  vi:{reload:'↻ CẬP NHẬT',groupMode:'CHẾ ĐỘ NHẬN BỘ',modeAuto:'Tự ghép: tên trên + số dưới',modeGroup:'Mỗi Group = một nameset',a3Layout:'KHỔ A3',portrait:' Dọc 297×420',landscape:' Ngang 420×297',mirror:'Lật gương ngang',createA3:'TẠO TRANG A3',undo:'HOÀN TÁC',fromExcel:'TỪ EXCEL',sourceFile:'FILE DỮ LIỆU',sheetPreset:'KHỔ IN NHANH',width:'Rộng (mm)',height:'Cao (mm)',gap:'Cách (mm)',mirrorSheet:'Lật gương cả trang in',reset:'ĐẶT LẠI',save:'LƯU THÔNG SỐ',buildExcel:'ĐỌC EXCEL + DÀN TRANG',hide:'THU GỌN',show:'MỞ RỘNG',saved:'✓ Đã lưu thông số.',columnHint:'Cột: <b>Họ tên</b> | <b>Số áo</b> · mỗi dòng = một nameset.',resultDefault:'A3 bắt đầu từ Page 1. Trang nguồn giữ ở cuối.',excelDefault:'Chọn 1 bộ mẫu tên + số còn là Text trước khi chạy.',loading:'ĐANG TẢI…',reloadFail:'Cập nhật thất bại. Mã lỗi: ',reloadError:'Không cập nhật được: '},
+  en:{reload:'↻ RELOAD',groupMode:'GROUPING MODE',modeAuto:'Auto: name above + number below',modeGroup:'Each Group = one nameset',a3Layout:'A3 LAYOUT',portrait:' Portrait 297×420',landscape:' Landscape 420×297',mirror:'Mirror horizontally',createA3:'CREATE A3',undo:'UNDO',fromExcel:'FROM EXCEL',sourceFile:'SOURCE FILE',sheetPreset:'SHEET PRESET',width:'W (mm)',height:'H (mm)',gap:'Gap',mirrorSheet:'Mirror output sheet',reset:'RESET',save:'SAVE SETTINGS',buildExcel:'BUILD FROM EXCEL',hide:'HIDE',show:'SHOW',saved:'✓ Settings saved.',columnHint:'Columns: <b>Name</b> | <b>Number</b> · one row = one nameset.',resultDefault:'New A3 pages start at Page 1. Source page stays last.',excelDefault:'Select one sample nameset with editable Text before running.',loading:'LOADING…',reloadFail:'Reload failed. Error code: ',reloadError:'Reload failed: '}
+};
+
+var runtimePairs=[
+  ['Chưa mở file CorelDRAW.','No CorelDRAW document open.'],
+  ['Chưa chọn tên số nào.','No nameset selected.'],
+  ['Đang đọc vùng chọn…','Reading selection...'],
+  ['Đã hoàn tác lượt vừa tạo.','Last action undone.'],
+  ['Không hoàn tác được:','Undo failed:'],
+  ['Hãy chọn file Excel hoặc CSV.','Choose an Excel or CSV file.'],
+  ['Không tìm thấy cột Tên và Số trong hàng tiêu đề.','Could not find Name and Number columns in the header row.'],
+  ['File không có dòng dữ liệu hợp lệ.','No valid data rows found.'],
+  ['Khổ dàn hoặc khoảng cách không hợp lệ.','Invalid sheet size or gap.'],
+  ['Hãy chọn đúng một bộ mẫu gồm tên ở trên và số ở dưới.','Select exactly one sample: name above and number below.'],
+  ['Bộ mẫu phải là chữ Text, chưa Convert to Curves.','Sample must remain editable Text, not converted to curves.'],
+  ['Nếu Excel không đọc được, hãy lưu file thành CSV UTF-8 rồi chọn lại.','If Excel cannot be read, save it as UTF-8 CSV and try again.'],
+  ['Hãy quét chọn các bộ tên số trước.','Select the nameset objects first.'],
+  ['Đã chọn','Selected'],
+  ['đối tượng','objects'],
+  ['Đã chọn 1 Group lớn','Selected 1 large Group'],
+  ['bên trong có','containing'],
+  ['Tool ghép được','Tool matched'],
+  ['bộ nhưng còn','sets, but'],
+  ['đối tượng chưa khớp','objects unmatched'],
+  ['Hãy Group từng bộ rồi chọn chế độ ‘Mỗi Group’.','Group each nameset and choose “Each Group”.'],
+  ['Lỗi tại bước','Error at step'],
+  ['Lỗi:','Error:'],
+  ['Đã tạo xong','Created'],
+  ['Đã tạo và dàn','Created and arranged'],
+  ['trang A3 từ Page 1','A3 pages from Page 1'],
+  ['bộ nameset','namesets'],
+  ['trang nguồn được giữ ở cuối','source page kept last'],
+  ['Đã lật gương ngang','mirrored horizontally'],
+  ['không lật gương','not mirrored'],
+  ['Khổ hiện tại chỉ xếp được','Current sheet only fits'],
+  ['Hãy tăng chiều cao trang.','Increase sheet height.']
+];
+
+function replaceAllText(s,from,to){
+  if(!s){return s;}
+  while(s.indexOf(from)>=0){s=s.replace(from,to);}
+  return s;
+}
+
+function translateRuntimeString(s,lang){
+  var i;
+  if(!s){return s;}
+  for(i=0;i<runtimePairs.length;i++){
+    if(lang==='en'){s=replaceAllText(s,runtimePairs[i][0],runtimePairs[i][1]);}
+    else{s=replaceAllText(s,runtimePairs[i][1],runtimePairs[i][0]);}
+  }
+  return s;
+}
+
+function translateRuntime(){
+  var ids=['selectionStatus','result','excelResult'],i,node,out;
+  for(i=0;i<ids.length;i++){
+    node=byId(ids[i]);
+    if(node){
+      out=translateRuntimeString(node.innerHTML,currentLang);
+      if(out!==node.innerHTML){node.innerHTML=out;}
+    }
+  }
+}
+
+function setLanguage(lang){
+  var nodes,i,key,dict=I18N[lang]||I18N.vi;
+  currentLang=(lang==='en')?'en':'vi';
+  try{window.localStorage.setItem('dhl_nameset_a3_lang',currentLang);}catch(ignoreStore){}
+  document.documentElement.lang=currentLang;
+  nodes=document.getElementsByTagName('*');
+  for(i=0;i<nodes.length;i++){
+    key=nodes[i].getAttribute?nodes[i].getAttribute('data-i18n'):null;
+    if(key&&dict[key]!==undefined){nodes[i].innerHTML=dict[key];}
+  }
+  byId('columnHint').innerHTML=dict.columnHint;
+  byId('langVI').className='langbtn'+(currentLang==='vi'?' active':'');
+  byId('langEN').className='langbtn'+(currentLang==='en'?' active':'');
+  updateCollapseText();
+  translateRuntime();
+}
+
+function loadLanguage(){
+  var lang='vi';
+  try{lang=window.localStorage.getItem('dhl_nameset_a3_lang')||'vi';}catch(ignore){}
+  setLanguage(lang==='en'?'en':'vi');
+}
 
 function setPreset(w,h,g,btn){
   byId('sheetWidth').value=w;byId('sheetHeight').value=h;byId('sheetGap').value=g;
@@ -171,7 +269,7 @@ function saveSettings(show){
     var data=[byId('sheetWidth').value,byId('sheetHeight').value,byId('sheetGap').value,byId('excelMirror').checked?'1':'0',byId('mirror').checked?'1':'0',byId('mode').value,ori].join('|');
     window.localStorage.setItem('dhl_nameset_a3_settings',data);
     if(show){
-      byId('savedState').innerHTML='✓ Settings saved.';
+      byId('savedState').innerHTML=I18N[currentLang].saved;
       setTimeout(function(){byId('savedState').innerHTML='';},1800);
     }
   }catch(ignore){}
@@ -188,10 +286,16 @@ function loadSettings(){
   }catch(ignore){}
 }
 
-function toggleExcelPanel(){
+function updateCollapseText(){
   var body=byId('excelBody'),btn=byId('toggleExcel');
-  if(body.className==='hidden'){body.className='';btn.innerHTML='HIDE';}
-  else{body.className='hidden';btn.innerHTML='SHOW';}
+  if(!body||!btn){return;}
+  btn.innerHTML=(body.className==='hidden')?I18N[currentLang].show:I18N[currentLang].hide;
+}
+
+function toggleExcelPanel(){
+  var body=byId('excelBody');
+  body.className=(body.className==='hidden')?'':'hidden';
+  updateCollapseText();
 }
 
 function hookAutoSave(){
@@ -204,54 +308,10 @@ function hookAutoSave(){
   for(i=0;i<radios.length;i++){radios[i].onclick=function(){saveSettings(false);};}
 }
 
-function translateText(s){
-  if(!s){return s;}
-  var pairs=[
-    ['Chưa mở file CorelDRAW.','No CorelDRAW document open.'],
-    ['Chưa chọn tên số nào.','No nameset selected.'],
-    ['Đang đọc vùng chọn…','Reading selection...'],
-    ['Đã hoàn tác lượt vừa tạo.','Last action undone.'],
-    ['Không hoàn tác được:','Undo failed:'],
-    ['Hãy chọn file Excel hoặc CSV.','Choose an Excel or CSV file.'],
-    ['Không tìm thấy cột Tên và Số trong hàng tiêu đề.','Could not find Name and Number columns in the header row.'],
-    ['File không có dòng dữ liệu hợp lệ.','No valid data rows found.'],
-    ['Khổ dàn hoặc khoảng cách không hợp lệ.','Invalid sheet size or gap.'],
-    ['Hãy chọn đúng một bộ mẫu gồm tên ở trên và số ở dưới.','Select exactly one sample: name above and number below.'],
-    ['Bộ mẫu phải là chữ Text, chưa Convert to Curves.','Sample must remain editable Text, not converted to curves.'],
-    ['Nếu Excel không đọc được, hãy lưu file thành CSV UTF-8 rồi chọn lại.','If Excel cannot be read, save it as UTF-8 CSV and try again.'],
-    ['Lỗi:','Error:'],
-    ['Lỗi tại bước','Error at step'],
-    ['Đã tạo xong','Created'],
-    ['Đã tạo và dàn','Created and arranged'],
-    ['trang A3 từ Page 1','A3 pages from Page 1'],
-    ['bộ nameset','namesets'],
-    ['Đã chọn','Selected'],
-    ['đối tượng','objects'],
-    ['trang nguồn được giữ ở cuối','source page kept last']
-  ];
-  var i;
-  for(i=0;i<pairs.length;i++){
-    while(s.indexOf(pairs[i][0])>=0){s=s.replace(pairs[i][0],pairs[i][1]);}
-  }
-  return s;
-}
-
-function translateRuntime(){
-  var ids=['selectionStatus','result','excelResult'],i,node,html;
-  for(i=0;i<ids.length;i++){
-    node=byId(ids[i]);
-    if(node){
-      html=node.innerHTML;
-      var out=translateText(html);
-      if(out!==html){node.innerHTML=out;}
-    }
-  }
-}
-
 function reloadFromGit(){
-  var btn=byId('reloadGit');
+  var btn=byId('reloadGit'),dict=I18N[currentLang];
   try{
-    if(btn){btn.disabled=true;btn.innerHTML='LOADING...';}
+    if(btn){btn.disabled=true;btn.innerHTML=dict.loading;}
     var sh=new ActiveXObject('WScript.Shell');
     var stamp=(new Date()).getTime();
     var ps="powershell -NoProfile -ExecutionPolicy Bypass -Command \"$u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat?v="+stamp+"';$p=Join-Path $env:TEMP 'CAI_TOOL_TACH_NAMESET_A3_LATEST.bat';try{Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p;cmd.exe /d /c ('\"'+$p+'\" --reload-ui');exit $LASTEXITCODE}catch{Write-Host $_.Exception.Message;exit 1}\"";
@@ -260,18 +320,19 @@ function reloadFromGit(){
       var base=window.location.href.split('?')[0];
       window.location.replace(base+'?v='+(new Date()).getTime());
     }else{
-      alert('Reload failed. Error code: '+rc);
+      alert(dict.reloadFail+rc);
     }
   }catch(e){
-    alert('Reload failed: '+e.message);
+    alert(dict.reloadError+e.message);
   }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='↻ RELOAD';}
+    if(btn){btn.disabled=false;btn.innerHTML=I18N[currentLang].reload;}
   }
 }
 
 try{
   loadSettings();
   hookAutoSave();
+  loadLanguage();
   translateRuntime();
   setInterval(translateRuntime,700);
 }catch(ignoreInit){}
