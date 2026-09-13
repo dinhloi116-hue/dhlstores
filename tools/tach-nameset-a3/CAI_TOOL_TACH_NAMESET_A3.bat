@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-title Cai tool Tach Nameset A3 cho CorelDRAW - V6.5
+title Cai tool Tach Nameset A3 cho CorelDRAW - V6.6
 
 set "DHL_SELF=%~f0"
 set "DHL_ARGS=%*"
@@ -30,7 +30,7 @@ if "%DHL_RELOAD_UI%"=="1" goto :RELOAD_UI
 
 echo.
 echo ================================================
-echo   TACH NAMESET A3 - V6.5
+echo   TACH NAMESET A3 - V6.6
 echo ================================================
 echo Da co quyen Administrator.
 echo Dang cai bo chuc nang Nameset A3...
@@ -51,23 +51,24 @@ call :UPDATE_COMPACT_UI
 if errorlevel 1 goto :UI_FAIL
 
 echo.
-echo DA CAI XONG TOOL TACH NAMESET A3 - BAN V6.5
-echo Giao dien nho gon hon, nut RELOAD GIT nam ngay trong tool.
-echo Mo CorelDRAW ^> Window ^> Dockers ^> Tach Nameset A3.
+echo DA CAI XONG TOOL TACH NAMESET A3 - BAN V6.6
+echo Da ghi giao dien nho vao TAT CA cac ban Corel co tool DHL_A3_Nameset.
+echo Nut RELOAD GIT nam ngay tren dau tool.
+echo Hay dong va mo lai Docker neu no dang mo.
 echo.
 pause
 exit /b 0
 
 :RELOAD_UI
 echo.
-echo Dang Reload giao dien moi tu GitHub...
+echo Dang Reload giao dien V6.6 tu GitHub...
 call :UPDATE_COMPACT_UI
 if errorlevel 1 exit /b 1
-echo DA RELOAD XONG GIAO DIEN TU GITHUB.
+echo DA RELOAD XONG GIAO DIEN V6.6 TU GITHUB.
 exit /b 0
 
 :UPDATE_COMPACT_UI
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';$pf=[Environment]::GetFolderPath('ProgramFiles');$preferred=@('2024','2025','2026','2023','2022')|ForEach-Object{Join-Path $pf ('Corel\CorelDRAW Graphics Suite '+$_+'\Programs64\CorelDRW.exe')};$exe=$preferred|Where-Object{Test-Path -LiteralPath $_}|Select-Object -First 1;if(-not $exe){$root=Join-Path $pf 'Corel';if(Test-Path -LiteralPath $root){$exe=Get-ChildItem -LiteralPath $root -Filter CorelDRW.exe -File -Recurse -ErrorAction SilentlyContinue|Select-Object -ExpandProperty FullName -First 1}};if(-not $exe){throw 'Khong tim thay CorelDRAW 64-bit'};$target=Join-Path (Split-Path -Parent $exe) 'Addons\DHL_A3_Nameset';if(-not(Test-Path -LiteralPath $target)){throw 'Chua tim thay tool DHL_A3_Nameset. Hay cai tool 1 lan truoc.'};$tmp=Join-Path $env:TEMP 'DockerUI_DHL_A3.html';Invoke-WebRequest -UseBasicParsing -Uri $env:DHL_UI_URL -OutFile $tmp;if((Get-Item -LiteralPath $tmp).Length -lt 3000){throw 'File giao dien tai ve khong day du'};Copy-Item -LiteralPath $tmp -Destination (Join-Path $target 'DockerUI.html') -Force;Unblock-File -LiteralPath (Join-Path $target 'DockerUI.html');Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';$stamp=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$url=$env:DHL_UI_URL+'?v=66&t='+$stamp;$tmp=Join-Path $env:TEMP 'DockerUI_DHL_A3_V66.html';Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tmp;$raw=[IO.File]::ReadAllText($tmp);if($raw -notmatch 'DHL_UI_VERSION=6\.6'){throw 'GitHub chua tra ve giao dien V6.6'};$targets=New-Object System.Collections.Generic.List[string];$roots=@();$pf=[Environment]::GetFolderPath('ProgramFiles');if($pf){$roots+=Join-Path $pf 'Corel'};if($env:APPDATA){$roots+=Join-Path $env:APPDATA 'Corel'};if($env:LOCALAPPDATA){$roots+=Join-Path $env:LOCALAPPDATA 'Corel'};foreach($root in $roots){if(-not(Test-Path -LiteralPath $root)){continue};Get-ChildItem -LiteralPath $root -Directory -Filter 'DHL_A3_Nameset' -Recurse -ErrorAction SilentlyContinue|ForEach-Object{if(Test-Path -LiteralPath (Join-Path $_.FullName 'DockerUI.html')){$targets.Add($_.FullName)}}};if($targets.Count -eq 0){throw 'Khong tim thay thu muc DHL_A3_Nameset nao dang duoc cai'};$uniq=$targets|Sort-Object -Unique;foreach($target in $uniq){$dst=Join-Path $target 'DockerUI.html';Copy-Item -LiteralPath $tmp -Destination $dst -Force;Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue;$check=[IO.File]::ReadAllText($dst);if($check -notmatch 'DHL_UI_VERSION=6\.6'){throw ('Ghi giao dien that bai: '+$dst)};Write-Host ('DA CAP NHAT: '+$dst) -ForegroundColor Green};Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;Write-Host ('Tong so noi da cap nhat: '+$uniq.Count) -ForegroundColor Cyan"
 exit /b %errorlevel%
 
 :DOWNLOAD_FAIL
@@ -97,7 +98,7 @@ exit /b %DHL_EXIT%
 
 :UI_FAIL
 echo.
-echo TOOL DA CAI NHUNG KHONG TAI DUOC GIAO DIEN V6.5.
-echo Hay chay lai khi co Internet.
+echo TOOL DA CAI NHUNG KHONG GHI DUOC GIAO DIEN V6.6.
+echo Gui anh cua so nay de kiem tra duong dan Corel dang dung.
 pause
 exit /b 5
