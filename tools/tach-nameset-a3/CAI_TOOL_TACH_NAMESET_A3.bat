@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-title Cai DHL Nameset Layout cho CorelDRAW - V7.3
+title Cai DHL Nameset Layout cho CorelDRAW - V7.4
 
 set "DHL_SELF=%~f0"
 set "DHL_ARGS=%*"
@@ -30,7 +30,7 @@ if "%DHL_RELOAD_UI%"=="1" goto :RELOAD_UI
 
 echo.
 echo ================================================
-echo   DHL NAMESET LAYOUT - V7.3
+echo   DHL NAMESET LAYOUT - V7.4
 echo ================================================
 echo Da co quyen Administrator.
 echo Dang cai bo chuc nang...
@@ -50,8 +50,8 @@ call :UPDATE_UI
 if errorlevel 1 goto :UI_FAIL
 
 echo.
-echo DA CAI XONG DHL NAMESET LAYOUT - V7.3
-echo Giao dien da doi ve NEN TRANG - CHU DEN, khong con cac mang den/do/xanh gay roi mat.
+echo DA CAI XONG DHL NAMESET LAYOUT - V7.4
+echo Da them ghep cap gan nhat, can tam ngang, khoang cach 30 mm va chon font ten/so.
 echo Neu ten tab Corel chua doi, hay khoi dong lai Corel 1 lan.
 echo.
 pause
@@ -59,14 +59,14 @@ exit /b 0
 
 :RELOAD_UI
 echo.
-echo Dang cap nhat DHL Nameset Layout V7.3 tu GitHub...
+echo Dang cap nhat DHL Nameset Layout V7.4 tu GitHub...
 call :UPDATE_UI
 if errorlevel 1 exit /b 1
-echo DA CAP NHAT XONG V7.3.
+echo DA CAP NHAT XONG V7.4.
 exit /b 0
 
 :UPDATE_UI
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';$stamp=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$url=$env:DHL_UI_URL+'?v=73&t='+$stamp;$tmp=Join-Path $env:TEMP 'DockerUI_DHL_Layout_V73.html';Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tmp;$raw=[IO.File]::ReadAllText($tmp);if($raw -notmatch 'DHL_UI_VERSION=7\.2'){throw 'GitHub chua tra ve giao dien goc V7.2'};$raw=$raw.Replace('DHL_UI_VERSION=7.2','DHL_UI_VERSION=7.3').Replace('v7.2','v7.3');$css='<style id="dhl-clean-white">html,body{background:#ffffff!important;color:#111111!important}body{padding:7px!important}.card,.top,.top>div,.excel,.sectionbar,.sectionbar>div,.pagebox,.radios,.check,.status,.note,.label,.mini,.muted,.saved,.footer,.langwrap,.params>div,.quickbar>div,.toolsrow>div,.pageactions>div{background:#ffffff!important;color:#111111!important}.card,.sectionbar,.pagebox,.radios,.check,.status,.note{border-color:#cfcfcf!important}.excel{border-top:1px solid #cfcfcf!important}.title,.ver,.sectionname,.label,.mini,.muted,.saved,.footer,b,strong,span,label{color:#111111!important;background:transparent!important}.status.ok,.status.bad,.note.ok,.note.bad{background:#ffffff!important;color:#111111!important;border-left-color:#999999!important}select,input[type=file],input[type=number]{background:#ffffff!important;color:#111111!important;border:1px solid #999999!important}button,.gitbtn,.langbtn,.langbtn.active,#run,#undo,#excelRun,.collapsebtn,.quickbtn,.quickbtn.active,.smallbtn,.pagebtn,.pagebtn.primary{background:#ffffff!important;color:#111111!important;border:1px solid #8a8a8a!important;box-shadow:none!important}.langbtn.active{font-weight:800!important;text-decoration:underline!important}.gitbtn:hover,#run:hover,#undo:hover,#excelRun:hover,.collapsebtn:hover,.quickbtn:hover,.smallbtn:hover,.pagebtn:hover{background:#f2f2f2!important;color:#111111!important}.sectionbar{border:1px solid #cfcfcf!important}.pagebox{border:1px solid #cfcfcf!important}.title{font-size:16px!important}.sectionname{font-size:14px!important}</style>';$raw=$raw.Replace('</head>',$css+'</head>');$utf8=New-Object Text.UTF8Encoding($false);[IO.File]::WriteAllText($tmp,$raw,$utf8);$verify=[IO.File]::ReadAllText($tmp);if($verify -notmatch 'DHL_UI_VERSION=7\.3' -or $verify -notmatch 'dhl-clean-white'){throw 'Khong tao duoc giao dien V7.3'};$targets=New-Object System.Collections.Generic.List[string];$roots=@();$pf=[Environment]::GetFolderPath('ProgramFiles');if($pf){$roots+=Join-Path $pf 'Corel'};if($env:APPDATA){$roots+=Join-Path $env:APPDATA 'Corel'};if($env:LOCALAPPDATA){$roots+=Join-Path $env:LOCALAPPDATA 'Corel'};foreach($root in $roots){if(-not(Test-Path -LiteralPath $root)){continue};Get-ChildItem -LiteralPath $root -Directory -Filter 'DHL_A3_Nameset' -Recurse -ErrorAction SilentlyContinue|ForEach-Object{if(Test-Path -LiteralPath (Join-Path $_.FullName 'DockerUI.html')){$targets.Add($_.FullName)}}};if($targets.Count -eq 0){throw 'Khong tim thay thu muc DHL_A3_Nameset nao dang duoc cai'};$uniq=$targets|Sort-Object -Unique;foreach($target in $uniq){$dst=Join-Path $target 'DockerUI.html';Copy-Item -LiteralPath $tmp -Destination $dst -Force;Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue;foreach($f in @('AppUI.xslt','UserUI.xslt')){$p=Join-Path $target $f;if(Test-Path -LiteralPath $p){$t=[IO.File]::ReadAllText($p);$t=$t.Replace('Tách Nameset A3','DHL Nameset Layout').Replace('Tach Nameset A3','DHL Nameset Layout');[IO.File]::WriteAllText($p,$t,$utf8)}};$check=[IO.File]::ReadAllText($dst);if($check -notmatch 'DHL_UI_VERSION=7\.3'){throw ('Ghi giao dien that bai: '+$dst)};Write-Host ('DA CAP NHAT V7.3: '+$dst) -ForegroundColor Green};Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;Write-Host ('Tong so noi da cap nhat: '+$uniq.Count) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';$stamp=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$url=$env:DHL_UI_URL+'?v=74&t='+$stamp;$tmp=Join-Path $env:TEMP 'DockerUI_DHL_Layout_V74.html';Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tmp;$raw=[IO.File]::ReadAllText($tmp);if($raw -notmatch 'DHL_UI_VERSION=7\.4'){throw 'GitHub chua tra ve giao dien V7.4'};$targets=New-Object System.Collections.Generic.List[string];$roots=@();$pf=[Environment]::GetFolderPath('ProgramFiles');if($pf){$roots+=Join-Path $pf 'Corel'};if($env:APPDATA){$roots+=Join-Path $env:APPDATA 'Corel'};if($env:LOCALAPPDATA){$roots+=Join-Path $env:LOCALAPPDATA 'Corel'};foreach($root in $roots){if(-not(Test-Path -LiteralPath $root)){continue};Get-ChildItem -LiteralPath $root -Directory -Filter 'DHL_A3_Nameset' -Recurse -ErrorAction SilentlyContinue|ForEach-Object{if(Test-Path -LiteralPath (Join-Path $_.FullName 'DockerUI.html')){$targets.Add($_.FullName)}}};if($targets.Count -eq 0){throw 'Khong tim thay thu muc DHL_A3_Nameset nao dang duoc cai'};$uniq=$targets|Sort-Object -Unique;$utf8=New-Object Text.UTF8Encoding($false);foreach($target in $uniq){$dst=Join-Path $target 'DockerUI.html';Copy-Item -LiteralPath $tmp -Destination $dst -Force;Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue;foreach($f in @('AppUI.xslt','UserUI.xslt')){$p=Join-Path $target $f;if(Test-Path -LiteralPath $p){$t=[IO.File]::ReadAllText($p);$t=$t.Replace('Tách Nameset A3','DHL Nameset Layout').Replace('Tach Nameset A3','DHL Nameset Layout');[IO.File]::WriteAllText($p,$t,$utf8)}};$check=[IO.File]::ReadAllText($dst);if($check -notmatch 'DHL_UI_VERSION=7\.4'){throw ('Ghi giao dien that bai: '+$dst)};Write-Host ('DA CAP NHAT V7.4: '+$dst) -ForegroundColor Green};Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;Write-Host ('Tong so noi da cap nhat: '+$uniq.Count) -ForegroundColor Cyan"
 exit /b %errorlevel%
 
 :DOWNLOAD_FAIL
@@ -96,7 +96,7 @@ exit /b %DHL_EXIT%
 
 :UI_FAIL
 echo.
-echo TOOL DA CAI NHUNG KHONG GHI DUOC GIAO DIEN V7.3.
+echo TOOL DA CAI NHUNG KHONG GHI DUOC GIAO DIEN V7.4.
 echo Gui anh cua so nay de kiem tra duong dan Corel dang dung.
 pause
 exit /b 5
