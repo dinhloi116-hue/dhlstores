@@ -14,7 +14,7 @@ assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
 assert.ok(!manifest.action.default_popup);
 assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
 for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
-for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','warehouse-sku-link-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js','saved-profiles-mode.js','profile-tabs-mode.js','profile-create-safe-mode.js','ui-v2-mode.js','ui-v2-fix-mode.js']) {
+for (const file of ['background.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','warehouse-sku-link-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','stock-history-core.js','stock-history-mode.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js','saved-profiles-mode.js','profile-tabs-mode.js','profile-create-safe-mode.js','ui-v2-mode.js','ui-v2-fix-mode.js','ui-v3-polish-mode.js']) {
   assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
 }
 
@@ -28,6 +28,8 @@ assert.ok(popupHtml.includes('generic-warehouse-mode.js'));
 assert.ok(popupHtml.includes('kids-product-size-mode.js'));
 assert.ok(popupHtml.includes('warehouse-sku-link-mode.js'));
 assert.ok(popupHtml.includes('product-create-core.js'));
+assert.ok(popupHtml.includes('stock-history-core.js'));
+assert.ok(popupHtml.includes('stock-history-mode.js'));
 assert.ok(popupHtml.includes('catalog-ui-shell.js'), 'Phải dùng UI shell không có redirect HD');
 assert.ok(!popupHtml.includes('<script src="catalog-mode.js"></script>'), 'Không được load scanner legacy ép tab sang HD');
 assert.ok(popupHtml.includes('catalog-generic-mode.js'));
@@ -41,6 +43,9 @@ assert.ok(popupHtml.includes('profile-tabs-mode.js'));
 assert.ok(popupHtml.includes('profile-create-safe-mode.js'));
 assert.ok(popupHtml.includes('ui-v2-mode.js'));
 assert.ok(popupHtml.includes('ui-v2-fix-mode.js'));
+assert.ok(popupHtml.includes('ui-v3-polish-mode.js'));
+assert.ok(popupHtml.indexOf('stock-history-core.js') < popupHtml.indexOf('stock-history-mode.js'));
+assert.ok(popupHtml.indexOf('stock-history-mode.js') > popupHtml.indexOf('saved-profiles-mode.js'), 'Lịch sử phải chạy sau hồ sơ đã lưu');
 assert.ok(popupHtml.indexOf('profile-create-safe-mode.js') > popupHtml.indexOf('profile-tabs-mode.js'));
 assert.ok(popupHtml.indexOf('ui-v2-fix-mode.js') > popupHtml.indexOf('ui-v2-mode.js'));
 
@@ -98,11 +103,25 @@ assert.ok(uiFix.indexOf("hay.includes('tre em')") < uiFix.indexOf("path.includes
 assert.ok(uiFix.includes("if(p.includes('tre em'))return'tre em'"), 'Trẻ em HD phải map về nhóm Trẻ em');
 assert.ok(uiFix.includes('runSmart'));
 
+const historyCore = fs.readFileSync(path.join(dir, 'stock-history-core.js'), 'utf8');
+assert.ok(historyCore.includes('snapshotFromSource'));
+assert.ok(historyCore.includes('compareSnapshots'));
+assert.ok(historyCore.includes("restocked"));
+assert.ok(historyCore.includes("soldout"));
+
+const historyMode = fs.readFileSync(path.join(dir, 'stock-history-mode.js'), 'utf8');
+assert.ok(historyMode.includes('dhlStockScanHistoryV1'));
+assert.ok(historyMode.includes('MAX_PER_PROFILE=60'));
+assert.ok(historyMode.includes('TẢI BÁO CÁO .TXT'));
+assert.ok(historyMode.includes('QUÉT XONG'));
+assert.ok(historyMode.includes('matcher.matchSapoProducts=function'), 'Lịch sử chỉ quan sát dữ liệu matcher, không thay core scan');
+
 console.log('BUILD PASS', {
   version: manifest.version,
   scanner: 'current category, no forced HD redirect',
   matching: 'warehouse primary + original Sapo SKU by exact name and size',
   savedProfiles: 'local Chrome profiles, new profile never overwrites selected profile',
   uiV2: 'child HD alias first, one-click sync wrapper with manual fallback',
+  history: '60 local scan snapshots/profile + diff + TXT report',
   sourceHost: manifest.host_permissions[0]
 });
