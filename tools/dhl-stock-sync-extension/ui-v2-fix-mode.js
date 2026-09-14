@@ -61,7 +61,7 @@
     const profile=group.key?profileFor(s.profiles,group.key):null;
     if(profile){
       if(select)await selectProfile(profile);
-      setHint(`Tự nhận: ${profile.name}. Có thể bấm ĐỒNG BỘ TAB ĐANG MỞ.`);
+      setHint(`Tự nhận: ${profile.name}. Bấm ĐỒNG BỘ TAB ĐANG MỞ để lưu cache, chưa tải file.`);
     }else if(group.label){
       setHint(`Đã nhận tab ${group.label}, nhưng chưa có hồ sơ đúng nhóm này.`);
     }else setHint('Không nhận diện được nhóm từ tab hiện tại; hãy chọn hồ sơ thủ công.');
@@ -73,11 +73,10 @@
       const started=Date.now();
       const timer=setInterval(()=>{
         const status=text(document.getElementById('profileStatus')?.textContent);
-        const exportBtn=document.getElementById('profileExportBtn');
-        if(/LỖI QUÉT|chưa ghép được|Hồ sơ chưa đủ SKU/i.test(status)){clearInterval(timer);reject(new Error(status));return;}
-        if(exportBtn&&!exportBtn.disabled&&/QUÉT XONG|Có thể tạo file nhập Sapo/i.test(status)){clearInterval(timer);resolve();return;}
-        if(Date.now()-started>timeout){clearInterval(timer);reject(new Error('Quét quá lâu. Mở “Thao tác thủ công / kiểm tra” để thử riêng từng bước.'));}
-      },300);
+        if(/LỖI QUÉT|LỖI LƯU CACHE|chưa ghép được|Hồ sơ chưa đủ SKU/i.test(status)){clearInterval(timer);reject(new Error(status));return;}
+        if(/^ĐÃ LƯU CACHE\s+/i.test(status)){clearInterval(timer);resolve(status);return;}
+        if(Date.now()-started>timeout){clearInterval(timer);reject(new Error('Quét hoặc lưu cache quá lâu. Mở “Thao tác thủ công / kiểm tra” để thử riêng từng bước.'));}
+      },250);
     });
   }
 
@@ -91,15 +90,11 @@
       const ctx=await syncContext({select:true});
       if(!ctx.tab)throw new Error('Hãy mở đúng tab danh mục nguồn trước.');
       if(!ctx.profile)throw new Error(ctx.group.label?`Chưa có hồ sơ ${ctx.group.label}. Hãy tạo hồ sơ này một lần.`:'Không tự nhận được hồ sơ từ tab đang mở.');
-      const scan=document.getElementById('profileScanBtn'); const exp=document.getElementById('profileExportBtn');
-      if(!scan||!exp)throw new Error('Bộ đồng bộ chưa tải xong. Đóng/mở lại panel rồi thử lại.');
+      const scan=document.getElementById('profileScanBtn');
+      if(!scan)throw new Error('Bộ đồng bộ chưa tải xong. Đóng/mở lại panel rồi thử lại.');
       setSmart(`Đang quét ${ctx.profile.name}...`,'working'); if(btn)btn.textContent='ĐANG QUÉT KHO...';
       scan.click(); await waitScan();
-      setSmart('Quét xong. Đang tạo file nhập Sapo...','working'); if(btn)btn.textContent='ĐANG TẠO FILE...';
-      exp.click(); await sleep(550);
-      const status=text(document.getElementById('profileStatus')?.textContent);
-      if(/LỖI TẠO FILE/i.test(status))throw new Error(status);
-      setSmart(`Đã xong ${ctx.profile.name}. File nhập Sapo đã được tạo.`,'ok');
+      setSmart(`Đã lưu cache ${ctx.profile.name}. Có thể chuyển sang tab khác và đồng bộ tiếp; chưa tải file.`,'ok');
     }catch(error){setSmart(error.message||String(error),'error');}
     finally{running=false;if(btn){btn.disabled=false;btn.textContent=old||'ĐỒNG BỘ TAB ĐANG MỞ';}}
   }
