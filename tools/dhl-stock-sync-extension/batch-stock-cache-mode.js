@@ -154,10 +154,16 @@
     setTimeout(()=>URL.revokeObjectURL(url),2500);
   }
 
+  function setExportBusy(busy){
+    for(const id of ['batchExportBtn','profileExportBtn']){
+      const btn=document.getElementById(id);
+      if(btn)btn.disabled=Boolean(busy);
+    }
+  }
+
   async function exportBatch(event){
     if(event){event.preventDefault();event.stopImmediatePropagation();}
-    const btn=document.getElementById('profileExportBtn');
-    if(btn)btn.disabled=true;
+    setExportBusy(true);
     try{
       const state=await readState();
       const combined=batch.combineEntries(Object.values(state.pending));
@@ -198,30 +204,44 @@
       if(title)title.textContent=entries.length?`ĐANG CHỜ XUẤT: ${entries.length} hồ sơ • ${rows} dòng`:'CHƯA CÓ CACHE CHỜ XUẤT';
       if(list)list.innerHTML=entries.length?entries.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid #eef2f7"><span><b>${esc(x.profileName)}</b> • ${Number(x.rowCount||(x.rows||[]).length)} dòng</span><small>${new Date(Number(x.scannedAt||Date.now())).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}</small></div>`).join(''):'<small>Quét HD, Trẻ em, Wika… lần lượt. Mỗi lần quét sẽ tự lưu vào đây.</small>';
     }
-    const exportBtn=document.getElementById('profileExportBtn');
-    if(exportBtn){
-      exportBtn.textContent=entries.length?`XUẤT FILE TỒN KHO GỘP (${entries.length})`:'XUẤT FILE TỒN KHO GỘP';
-      exportBtn.disabled=entries.length===0;
-      exportBtn.title=entries.length?'Gộp toàn bộ cache đang chờ thành 1 file nhập tồn kho Sapo':'Quét ít nhất 1 tab trước';
+
+    const label=entries.length?`XUẤT FILE TỒN KHO GỘP (${entries.length})`:'XUẤT FILE TỒN KHO GỘP';
+    const title=entries.length?'Gộp toàn bộ cache đang chờ thành 1 file nhập tồn kho Sapo':'Quét ít nhất 1 tab trước';
+    for(const id of ['batchExportBtn','profileExportBtn']){
+      const btn=document.getElementById(id);
+      if(!btn)continue;
+      btn.textContent=label;
+      btn.disabled=entries.length===0;
+      btn.title=title;
     }
   }
 
   function mountUi(){
-    const exportBtn=document.getElementById('profileExportBtn');
-    if(!exportBtn)return false;
-    if(exportBtn.dataset.batchExport!=='1'){
-      exportBtn.dataset.batchExport='1';
-      exportBtn.addEventListener('click',exportBatch,true);
-    }
     const host=document.getElementById('savedProfilesMode');
-    if(host&&!document.getElementById('batchPendingBox')){
+    if(!host)return false;
+
+    const legacyExport=document.getElementById('profileExportBtn');
+    if(legacyExport&&legacyExport.dataset.batchExport!=='1'){
+      legacyExport.dataset.batchExport='1';
+      legacyExport.addEventListener('click',exportBatch,true);
+      legacyExport.style.display='none';
+    }
+
+    if(!document.getElementById('batchPendingBox')){
       const box=document.createElement('div');
       box.id='batchPendingBox';
       box.style.cssText='margin-top:9px;padding:9px 10px;border:1px solid #bfdbfe;border-radius:9px;background:#eff6ff;color:#334155';
-      box.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b id="batchPendingTitle">CHƯA CÓ CACHE CHỜ XUẤT</b><button id="batchClearBtn" type="button" class="secondary" style="padding:5px 8px;font-size:10px">XÓA CACHE</button></div><div id="batchPendingList" style="margin-top:5px;font-size:11px"></div>`;
+      box.innerHTML=`
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <b id="batchPendingTitle">CHƯA CÓ CACHE CHỜ XUẤT</b>
+          <button id="batchClearBtn" type="button" class="secondary" style="padding:5px 8px;font-size:10px">XÓA CACHE</button>
+        </div>
+        <div id="batchPendingList" style="margin-top:5px;font-size:11px"></div>
+        <button id="batchExportBtn" type="button" class="success" style="width:100%;margin-top:9px;min-height:46px;font-size:13px;font-weight:800" disabled>XUẤT FILE TỒN KHO GỘP</button>`;
       const status=document.getElementById('profileStatus');
       if(status)status.insertAdjacentElement('beforebegin',box);else host.appendChild(box);
       document.getElementById('batchClearBtn')?.addEventListener('click',clearBatch);
+      document.getElementById('batchExportBtn')?.addEventListener('click',exportBatch,true);
     }
     renderBatchUi().catch(()=>{});
     return true;
