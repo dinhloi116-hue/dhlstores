@@ -5,27 +5,31 @@ $stamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $tmpBase = Join-Path $env:TEMP 'DockerUI_DHL_Base.html'
 $tmpPatch77 = Join-Path $env:TEMP 'DHL_V77_PATCH.html'
 $tmpPatch78 = Join-Path $env:TEMP 'DHL_V78_PATCH.html'
-$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V78.html'
+$tmpPatch79 = Join-Path $env:TEMP 'DHL_V79_PATCH.html'
+$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V79.html'
 
-Write-Host 'Downloading DHL Nameset Layout V7.8...' -ForegroundColor Cyan
+Write-Host 'Downloading DHL Nameset Layout V7.9...' -ForegroundColor Cyan
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/DockerUI.html?v=$stamp" -OutFile $tmpBase
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V77_PATCH.html?v=$stamp" -OutFile $tmpPatch77
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V78_PATCH.html?v=$stamp" -OutFile $tmpPatch78
+Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V79_PATCH.html?v=$stamp" -OutFile $tmpPatch79
 
 $raw = [IO.File]::ReadAllText($tmpBase)
 $patch77 = [IO.File]::ReadAllText($tmpPatch77)
 $patch78 = [IO.File]::ReadAllText($tmpPatch78)
+$patch79 = [IO.File]::ReadAllText($tmpPatch79)
 if ($raw -notmatch 'DHL_UI_VERSION=7\.4') { throw 'GitHub base UI is not V7.4.' }
 if ($patch77 -notmatch 'dhl-v77-features') { throw 'V7.7 feature patch is missing.' }
 if ($patch78 -notmatch 'dhl-v78-outline-fix') { throw 'V7.8 outline patch is missing.' }
+if ($patch79 -notmatch 'dhl-v79-cm-ui') { throw 'V7.9 cm patch is missing.' }
 
-$raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=7.8').Replace('v7.4','v7.8')
-$raw = $raw.Replace('</body>', $patch77 + "`r`n" + $patch78 + "`r`n</body>")
+$raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=7.9').Replace('v7.4','v7.9')
+$raw = $raw.Replace('</body>', $patch77 + "`r`n" + $patch78 + "`r`n" + $patch79 + "`r`n</body>")
 
 $utf8 = New-Object Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($tmpOut,$raw,$utf8)
 $verify = [IO.File]::ReadAllText($tmpOut)
-if ($verify -notmatch 'DHL_UI_VERSION=7\.8' -or $verify -notmatch 'dhl-v77-features' -or $verify -notmatch 'dhl-v78-outline-fix') { throw 'Could not build V7.8 UI.' }
+if ($verify -notmatch 'DHL_UI_VERSION=7\.9' -or $verify -notmatch 'dhl-v77-features' -or $verify -notmatch 'dhl-v78-outline-fix' -or $verify -notmatch 'dhl-v79-cm-ui') { throw 'Could not build V7.9 UI.' }
 
 $targets = New-Object System.Collections.Generic.List[string]
 $roots = @()
@@ -56,13 +60,13 @@ foreach ($target in $uniq) {
     }
   }
   $check = [IO.File]::ReadAllText($dst)
-  if ($check -notmatch 'DHL_UI_VERSION=7\.8' -or $check -notmatch 'dhl-v78-outline-fix') { throw ('Write failed: ' + $dst) }
-  Write-Host ('UPDATED V7.8: ' + $dst) -ForegroundColor Green
+  if ($check -notmatch 'DHL_UI_VERSION=7\.9' -or $check -notmatch 'dhl-v79-cm-ui') { throw ('Write failed: ' + $dst) }
+  Write-Host ('UPDATED V7.9: ' + $dst) -ForegroundColor Green
 }
 
-Remove-Item -LiteralPath $tmpBase,$tmpPatch77,$tmpPatch78,$tmpOut -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $tmpBase,$tmpPatch77,$tmpPatch78,$tmpPatch79,$tmpOut -Force -ErrorAction SilentlyContinue
 Write-Host ''
-Write-Host 'DONE - DHL Nameset Layout V7.8 installed.' -ForegroundColor Cyan
-Write-Host 'Fix: outline offset now uses document millimeters, exact outside contour, staged error reporting, and auto-group.'
+Write-Host 'DONE - DHL Nameset Layout V7.9 installed.' -ForegroundColor Cyan
+Write-Host 'New: nesting/outline dimensions shown in cm, larger result panel, total material length, highlighted active inputs.'
 Write-Host 'Close and reopen the Docker in CorelDRAW if the version does not refresh immediately.'
 exit 0
