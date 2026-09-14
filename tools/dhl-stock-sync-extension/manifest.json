@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "minimum_chrome_version": "116",
-  "description": "Quét nhiều hồ sơ/tab, lưu cache tồn kho từng hồ sơ rồi xuất một file nhập tồn kho Sapo gộp; vẫn lưu lịch sử biến động từng lần quét. Core ghép SKU/tồn kho giữ nguyên bản ổn.",
+  "description": "Quét nhiều hồ sơ/tab, lưu cache tồn kho từng hồ sơ rồi xuất một file nhập tồn kho Sapo gộp; nút xuất gộp luôn hiện ngay dưới danh sách cache. Core ghép SKU/tồn kho giữ nguyên bản ổn.",
   "permissions": ["storage", "unlimitedStorage", "activeTab", "tabs", "sidePanel", "scripting"],
   "host_permissions": ["https://si.aobongda.net/*"],
   "background": {"service_worker": "background.js"},
