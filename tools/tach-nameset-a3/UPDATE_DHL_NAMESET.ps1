@@ -8,15 +8,17 @@ $tmpPatch78 = Join-Path $env:TEMP 'DHL_V78_PATCH.html'
 $tmpPatch79 = Join-Path $env:TEMP 'DHL_V79_PATCH.html'
 $tmpPatch80 = Join-Path $env:TEMP 'DHL_V80_PATCH.html'
 $tmpPatch81 = Join-Path $env:TEMP 'DHL_V81_PATCH.html'
-$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V81.html'
+$tmpPatch82 = Join-Path $env:TEMP 'DHL_V82_PATCH.html'
+$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V82.html'
 
-Write-Host 'Downloading DHL Nameset Layout V8.1...' -ForegroundColor Cyan
+Write-Host 'Downloading DHL Nameset Layout V8.2...' -ForegroundColor Cyan
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/DockerUI.html?v=$stamp" -OutFile $tmpBase
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V77_PATCH.html?v=$stamp" -OutFile $tmpPatch77
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V78_PATCH.html?v=$stamp" -OutFile $tmpPatch78
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V79_PATCH.html?v=$stamp" -OutFile $tmpPatch79
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V80_PATCH.html?v=$stamp" -OutFile $tmpPatch80
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V81_PATCH.html?v=$stamp" -OutFile $tmpPatch81
+Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V82_PATCH.html?v=$stamp" -OutFile $tmpPatch82
 
 $raw = [IO.File]::ReadAllText($tmpBase)
 $patch77 = [IO.File]::ReadAllText($tmpPatch77)
@@ -24,20 +26,22 @@ $patch78 = [IO.File]::ReadAllText($tmpPatch78)
 $patch79 = [IO.File]::ReadAllText($tmpPatch79)
 $patch80 = [IO.File]::ReadAllText($tmpPatch80)
 $patch81 = [IO.File]::ReadAllText($tmpPatch81)
+$patch82 = [IO.File]::ReadAllText($tmpPatch82)
 if ($raw -notmatch 'DHL_UI_VERSION=7\.4') { throw 'GitHub base UI is not V7.4.' }
 if ($patch77 -notmatch 'dhl-v77-features') { throw 'V7.7 feature patch is missing.' }
 if ($patch78 -notmatch 'dhl-v78-outline-fix') { throw 'V7.8 outline patch is missing.' }
 if ($patch79 -notmatch 'dhl-v79-cm-ui') { throw 'V7.9 cm patch is missing.' }
 if ($patch80 -notmatch 'dhl-v80-modes') { throw 'V8.0 mode patch is missing.' }
 if ($patch81 -notmatch 'dhl-v81-guillotine') { throw 'V8.1 guillotine patch is missing.' }
+if ($patch82 -notmatch 'dhl-v82-tabs') { throw 'V8.2 tab patch is missing.' }
 
-$raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.1').Replace('v7.4','v8.1')
-$raw = $raw.Replace('</body>', $patch77 + "`r`n" + $patch78 + "`r`n" + $patch79 + "`r`n" + $patch80 + "`r`n" + $patch81 + "`r`n</body>")
+$raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.2').Replace('v7.4','v8.2')
+$raw = $raw.Replace('</body>', $patch77 + "`r`n" + $patch78 + "`r`n" + $patch79 + "`r`n" + $patch80 + "`r`n" + $patch81 + "`r`n" + $patch82 + "`r`n</body>")
 
 $utf8 = New-Object Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($tmpOut,$raw,$utf8)
 $verify = [IO.File]::ReadAllText($tmpOut)
-if ($verify -notmatch 'DHL_UI_VERSION=8\.1' -or $verify -notmatch 'dhl-v81-guillotine') { throw 'Could not build V8.1 UI.' }
+if ($verify -notmatch 'DHL_UI_VERSION=8\.2' -or $verify -notmatch 'dhl-v82-tabs') { throw 'Could not build V8.2 UI.' }
 
 $targets = New-Object System.Collections.Generic.List[string]
 $roots = @()
@@ -68,13 +72,13 @@ foreach ($target in $uniq) {
     }
   }
   $check = [IO.File]::ReadAllText($dst)
-  if ($check -notmatch 'DHL_UI_VERSION=8\.1' -or $check -notmatch 'dhl-v81-guillotine') { throw ('Write failed: ' + $dst) }
-  Write-Host ('UPDATED V8.1: ' + $dst) -ForegroundColor Green
+  if ($check -notmatch 'DHL_UI_VERSION=8\.2' -or $check -notmatch 'dhl-v82-tabs') { throw ('Write failed: ' + $dst) }
+  Write-Host ('UPDATED V8.2: ' + $dst) -ForegroundColor Green
 }
 
-Remove-Item -LiteralPath $tmpBase,$tmpPatch77,$tmpPatch78,$tmpPatch79,$tmpPatch80,$tmpPatch81,$tmpOut -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $tmpBase,$tmpPatch77,$tmpPatch78,$tmpPatch79,$tmpPatch80,$tmpPatch81,$tmpPatch82,$tmpOut -Force -ErrorAction SilentlyContinue
 Write-Host ''
-Write-Host 'DONE - DHL Nameset Layout V8.1 installed.' -ForegroundColor Cyan
-Write-Host 'Changed: cut-friendly mode now uses guillotine rectangle packing instead of simple shelves/rows.'
+Write-Host 'DONE - DHL Nameset Layout V8.2 installed.' -ForegroundColor Cyan
+Write-Host 'Changed: the Docker now uses separate tabs for Nameset, Excel, Layout and Outline instead of one long scrolling panel.'
 Write-Host 'Close and reopen the Docker in CorelDRAW if the version does not refresh immediately.'
 exit 0
