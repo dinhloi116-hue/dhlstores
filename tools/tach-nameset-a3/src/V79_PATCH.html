@@ -1,0 +1,41 @@
+<style id="dhl-v79-style">
+/* V7.9: clearer data entry + larger result */
+#v77NestResult{font-size:14px!important;line-height:1.5!important;font-weight:700!important;padding:10px 12px!important;min-height:58px!important;border-left-width:5px!important}
+#v77OutlineResult{font-size:12px!important;line-height:1.45!important;padding:9px 10px!important}
+#v77NestCard input[type=number],#v77OutlineCard input[type=number],#v77NestCard select,#v77OutlineCard select{background:#fff!important;color:#111!important;opacity:1!important;font-weight:600!important;border:1px solid #888!important;transition:background .12s,border .12s,box-shadow .12s!important}
+#v77NestCard input[type=number]:focus,#v77OutlineCard input[type=number]:focus,#v77NestCard select:focus,#v77OutlineCard select:focus{background:#fff7c7!important;border:2px solid #d99a00!important;box-shadow:0 0 0 2px rgba(217,154,0,.18)!important;outline:none!important}
+.v79-edited{background:#fffbe6!important;border-color:#c98b00!important;box-shadow:0 0 0 1px rgba(201,139,0,.14)!important}
+.v79-total{display:block;margin-top:5px;font-size:15px!important;font-weight:800!important}
+</style>
+<script id="dhl-v79-cm-ui" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}
+function N(id,d){var v=Number(E(id).value);return isFinite(v)?v:d;}
+function LANG(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}
+function round2(v){return Math.round(v*100)/100;}
+function storeCM(){try{
+ localStorage.setItem('dhl_v77_nest',[E('v77NestW').value,E('v77NestH').value,E('v77NestGap').value,E('v77FrameGapInput').value,E('v77MarginT').value,E('v77MarginB').value,E('v77MarginL').value,E('v77MarginR').value,E('v77Rotate').value].join('|'));
+ localStorage.setItem('dhl_v77_outline',[E('v77OutlineOffset').value,E('v77OutlineStroke').value,E('v77MakeWhite').checked?'1':'0',E('v77MakeCut').checked?'1':'0'].join('|'));
+ localStorage.setItem('dhl_v79_cm','1');
+}catch(e){}}
+function selectedPreset(btn){var a=document.getElementsByClassName?document.getElementsByClassName('v77-preset'):[],i;for(i=0;i<a.length;i++)a[i].className='v77-preset';if(btn)btn.className='v77-preset selected';}
+function setPresetCM(w,h,btn){E('v77NestW').value=w;E('v77NestH').value=h;selectedPreset(btn);storeCM();}
+window.V77SetPreset=setPresetCM;
+function markPresetCM(){var w=N('v77NestW',0),h=N('v77NestH',0),a=document.getElementsByClassName?document.getElementsByClassName('v77-preset'):[];selectedPreset(null);if(Math.abs(w-21)<.01&&Math.abs(h-29.7)<.01&&a[0])a[0].className='v77-preset selected';else if(Math.abs(w-29.7)<.01&&Math.abs(h-42)<.01&&a[1])a[1].className='v77-preset selected';else if(Math.abs(w-60)<.01&&Math.abs(h-100)<.01&&a[2])a[2].className='v77-preset selected';else if(Math.abs(w-58)<.01&&Math.abs(h-200)<.01&&a[3])a[3].className='v77-preset selected';}
+function labelsCM(){var vi=LANG()==='vi';if(E('v77W'))E('v77W').innerHTML=vi?'Rộng (cm)':'Width (cm)';if(E('v77H'))E('v77H').innerHTML=vi?'Cao / dài (cm)':'Height / length (cm)';if(E('v77Gap'))E('v77Gap').innerHTML=vi?'Cách vật (cm)':'Object gap (cm)';if(E('v77FrameGap'))E('v77FrameGap').innerHTML=vi?'Cách khung (cm)':'Frame gap (cm)';if(E('v77MT'))E('v77MT').innerHTML=vi?'Lề trên (cm)':'Top (cm)';if(E('v77MB'))E('v77MB').innerHTML=vi?'Lề dưới (cm)':'Bottom (cm)';if(E('v77ML'))E('v77ML').innerHTML=vi?'Lề trái (cm)':'Left (cm)';if(E('v77MR'))E('v77MR').innerHTML=vi?'Lề phải (cm)':'Right (cm)';if(E('v77OffsetLabel'))E('v77OffsetLabel').innerHTML=vi?'Khoảng cách viền (cm)':'Outline distance (cm)';if(E('v77StrokeLabel'))E('v77StrokeLabel').innerHTML=vi?'Độ dày cutline (cm)':'Cutline width (cm)';}
+function migrateOnce(){var done=false;try{done=localStorage.getItem('dhl_v79_cm')==='1';}catch(e){}if(done)return;var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR','v77OutlineOffset','v77OutlineStroke'],i,x;for(i=0;i<ids.length;i++){x=E(ids[i]);if(x&&x.value!=='')x.value=round2(Number(x.value)/10);}storeCM();}
+function tempToMM(ids){var vals={},i,x;for(i=0;i<ids.length;i++){x=E(ids[i]);if(x){vals[ids[i]]=x.value;x.value=round2(Number(x.value)*10);}}return vals;}
+function restore(vals){var k;for(k in vals)if(vals.hasOwnProperty(k)&&E(k))E(k).value=vals[k];}
+function parseFrames(s){var m=s.match(/(?:vào|into)\s+(\d+)\s+(?:khung|frame)/i);return m?Number(m[1]):0;}
+function addTotalLength(){var r=E('v77NestResult');if(!r)return;var f=parseFrames(r.innerText||r.textContent||r.innerHTML),h=N('v77NestH',0);if(!(f>0&&h>0))return;var cm=round2(f*h),m=round2(cm/100),vi=LANG()==='vi';var extra='<span class="v79-total">'+(vi?'Tổng chiều dài vật liệu: ':'Total material length: ')+cm+' cm = '+m+' m ('+f+' × '+h+' cm)</span>';r.innerHTML+=extra;}
+var oldNest=null,oldOutline=null;
+function nestCM(){var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR'],vals;if(!oldNest)throw new Error('Nesting engine unavailable');storeCM();vals=tempToMM(ids);try{oldNest();}finally{restore(vals);storeCM();markPresetCM();}addTotalLength();}
+function outlineCM(){var ids=['v77OutlineOffset','v77OutlineStroke'],vals,off=N('v77OutlineOffset',0);if(!oldOutline)throw new Error('Outline engine unavailable');storeCM();vals=tempToMM(ids);try{oldOutline();}finally{restore(vals);storeCM();}var r=E('v77OutlineResult');if(r&&r.innerHTML.indexOf('✓')>=0){r.innerHTML=LANG()==='vi'?'✓ Đã tạo + Group đường bao. Khoảng cách viền: '+off+' cm.':'✓ Outline created + grouped. Outline distance: '+off+' cm.';}}
+function activeInputs(){var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR','v77OutlineOffset','v77OutlineStroke'],i,x;for(i=0;i<ids.length;i++){x=E(ids[i]);if(!x)continue;x.oninput=function(){this.className='v79-edited';storeCM();if(this.id==='v77NestW'||this.id==='v77NestH')selectedPreset(null);};x.onblur=function(){var self=this;setTimeout(function(){self.className='';},180);};}}
+function setDefaultsIfFresh(){try{if(localStorage.getItem('dhl_v79_cm')==='1')return;}catch(e){} }
+function finish(){if(!E('v77NestCard')){setTimeout(finish,150);return;}migrateOnce();labelsCM();markPresetCM();activeInputs();oldNest=window.V77NestSelected;oldOutline=window.V77CreateOutline||window.V76CreateOutline;window.V77NestSelected=nestCM;window.V77CreateOutline=outlineCM;window.V76CreateOutline=outlineCM;var b=E('v77NestBtn');if(b)b.onclick=nestCM;var o=E('v77OutlineBtn');if(o)o.onclick=outlineCM;var v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(v&&v.length)v[0].innerHTML='v7.9';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v7.9 · cm · VI / EN';
+ var oldLang=window.setLanguage;if(oldLang&&!oldLang._v79){var wrap=function(x){oldLang(x);setTimeout(labelsCM,20);};wrap._v79=true;window.setLanguage=wrap;}
+}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,450);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,450);});else setTimeout(finish,650);
+})();
+</script>
