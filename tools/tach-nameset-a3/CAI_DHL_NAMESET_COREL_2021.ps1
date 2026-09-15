@@ -120,16 +120,34 @@ $payloadUrl='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/f176332b
 Write-Host ''
 Write-Host 'Dang tai bo dang ky Docker goc tu Git...' -ForegroundColor Cyan
 Invoke-WebRequest -UseBasicParsing -Uri $payloadUrl -OutFile $payloadFile
-$raw=[IO.File]::ReadAllText($payloadFile)
-$rx=New-Object Text.RegularExpressions.Regex("\$files\['(?<name>[^']+)'\]\s*=\s*@'\r?\n(?<b64>.*?)\r?\n'@",[Text.RegularExpressions.RegexOptions]::Singleline)
-$matches=$rx.Matches($raw)
+
+$lines=[IO.File]::ReadAllLines($payloadFile)
 $payload=@{}
-foreach($m in $matches){
-  $name=$m.Groups['name'].Value
-  if(@('CorelDrw.addon','AppUI.xslt','UserUI.xslt','DockerUI.html','main.js') -contains $name){
-    $b64=$m.Groups['b64'].Value -replace '\s',''
-    $payload[$name]=[Convert]::FromBase64String($b64)
+$wanted=@('CorelDrw.addon','AppUI.xslt','UserUI.xslt','DockerUI.html','main.js')
+for($i=0;$i -lt $lines.Length;$i++){
+  $line=$lines[$i].Trim()
+  if(-not $line.StartsWith("`$files['")){continue}
+  if(-not $line.EndsWith("] = @'")){continue}
+
+  $p1=$line.IndexOf("'")
+  $p2=$line.IndexOf("'",$p1+1)
+  if($p1 -lt 0 -or $p2 -le $p1){continue}
+  $name=$line.Substring($p1+1,$p2-$p1-1)
+  if($wanted -notcontains $name){continue}
+
+  $buf=New-Object System.Collections.Generic.List[string]
+  $j=$i+1
+  while($j -lt $lines.Length -and $lines[$j].Trim() -ne "'@"){
+    $buf.Add($lines[$j].Trim())
+    $j++
   }
+  if($j -ge $lines.Length){throw ('Khong tim thay ket thuc base64 cho '+$name)}
+
+  $b64=($buf -join '') -replace '\s',''
+  if([string]::IsNullOrWhiteSpace($b64)){throw ('Base64 rong cho '+$name)}
+  $payload[$name]=[Convert]::FromBase64String($b64)
+  Write-Host ('  DOC DUOC: '+$name+' | '+$payload[$name].Length+' bytes') -ForegroundColor DarkGray
+  $i=$j
 }
 Remove-Item -LiteralPath $payloadFile -Force -ErrorAction SilentlyContinue
 if($payload.Count -lt 5){throw ('Khong tach duoc du 5 file addon goc. Tim thay '+$payload.Count+'/5.')}
