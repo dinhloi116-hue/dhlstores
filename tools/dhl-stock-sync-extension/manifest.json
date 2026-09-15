@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.19.0",
+  "version": "0.19.1",
   "minimum_chrome_version": "116",
-  "description": "Tự quét các hồ sơ đã chọn theo chu kỳ 1/2/3 giờ, lưu cache/lịch sử và có thể tự ghi tồn theo chi nhánh Sapo sau khi xác minh kết nối. Luồng quét tay vẫn được giữ nguyên.",
+  "description": "Tự quét các hồ sơ đã chọn theo chu kỳ 1/2/3 giờ; chỉ cho phép tự ghi tồn Sapo sau khi xác minh đúng kết nối/chi nhánh và tự hủy xác minh khi đổi shop hoặc API key.",
   "permissions": ["storage", "unlimitedStorage", "activeTab", "tabs", "sidePanel", "scripting", "alarms"],
   "host_permissions": ["https://si.aobongda.net/*", "https://*.mysapo.net/*"],
   "background": {"service_worker": "background.js"},
