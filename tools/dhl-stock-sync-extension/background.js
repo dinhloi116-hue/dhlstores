@@ -8,7 +8,8 @@ importScripts(
   'stock-history-core.js',
   'batch-stock-core.js',
   'auto-sync-core.js',
-  'auto-sync-background.js'
+  'auto-sync-background.js',
+  'auto-sync-safety-background.js'
 );
 
 async function enableSidePanel() {
