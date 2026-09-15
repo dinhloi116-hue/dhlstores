@@ -1,0 +1,18 @@
+name = "dhl-nameset-license"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dhl-nameset-license"
+database_id = "PUT_YOUR_D1_DATABASE_ID_HERE"
+
+[vars]
+BANK_CODE = "MBBank"
+BANK_ACCOUNT = "PUT_BANK_ACCOUNT_HERE"
+PRICE_100 = "PUT_PRICE_VND_HERE"
+PRICE_LIFETIME = "PUT_PRICE_VND_HERE"
+
+# Secrets - KHONG ghi vao file nay. Dung:
+# wrangler secret put SEPAY_WEBHOOK_SECRET
+# wrangler secret put ADMIN_SECRET
