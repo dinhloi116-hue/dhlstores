@@ -1,9 +1,27 @@
 $ErrorActionPreference='Stop'
 
-if (Get-Process -Name CorelDRW -ErrorAction SilentlyContinue) {
+$corelProc=Get-Process -Name CorelDRW -ErrorAction SilentlyContinue
+if($corelProc){
   Write-Host ''
-  Write-Host 'HAY TAT TAT CA COREL DRAW ROI CHAY LAI FILE NAY.' -ForegroundColor Yellow
-  exit 2
+  Write-Host 'DANG CO COREL DRAW CHAY NEN KHONG THE CAI TOOL AN TOAN.' -ForegroundColor Yellow
+  foreach($p in $corelProc){
+    $path=''
+    try{$path=$p.Path}catch{}
+    Write-Host (' - CorelDRW PID '+$p.Id+($(if($path){' | '+$path}else{''})))
+  }
+  Write-Host ''
+  Write-Host 'HAY LUU HET FILE DANG LAM TRUOC.' -ForegroundColor Yellow
+  $ans=Read-Host 'Nhap DONG de tool tu dong tat tat ca CorelDRAW, hoac nhan Enter de huy'
+  if($ans -ne 'DONG'){
+    Write-Host 'Da huy cai dat de tranh mat du lieu.' -ForegroundColor Yellow
+    exit 2
+  }
+  Write-Host 'Dang tat CorelDRAW...'
+  $corelProc | Stop-Process -Force -ErrorAction Stop
+  Start-Sleep -Milliseconds 800
+  if(Get-Process -Name CorelDRW -ErrorAction SilentlyContinue){
+    throw 'Khong tat het duoc CorelDRAW. Hay mo Task Manager va End task CorelDRW.exe roi chay lai.'
+  }
 }
 
 $pf=[Environment]::GetFolderPath('ProgramFiles')
@@ -39,10 +57,12 @@ $installed=@()
 foreach($exe in $allCorel){
   $programsDir=$exe.DirectoryName
   $target=Join-Path $programsDir 'Addons\DHL_A3_Nameset'
-  if((Resolve-Path -LiteralPath $source.FullName).Path -ne (Resolve-Path -LiteralPath $target -ErrorAction SilentlyContinue).Path){
+  $sourcePath=(Resolve-Path -LiteralPath $source.FullName).Path
+  $targetResolved=Resolve-Path -LiteralPath $target -ErrorAction SilentlyContinue
+  if((-not $targetResolved) -or $sourcePath -ne $targetResolved.Path){
     if(Test-Path -LiteralPath $target){Remove-Item -LiteralPath $target -Recurse -Force}
     New-Item -ItemType Directory -Path $target -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $source.FullName '*') -Destination $target -Recurse -Force
+    Copy-Item -Path (Join-Path $source.FullName '*') -Destination $target -Recurse -Force
   }
   $installed += $target
   Write-Host ('DA DONG BO: '+$target) -ForegroundColor Green
