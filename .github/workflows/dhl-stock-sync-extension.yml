@@ -51,7 +51,7 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist/dhl-stock-sync-extension
-          cp manifest.json background.js auto-sync-core.js auto-sync-background.js auto-sync-safety-background.js auto-sync-mode.js auto-sync-safety-mode.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js batch-stock-core.js batch-stock-cache-mode.js stock-history-core.js stock-history-mode.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js catalog-api-mode.js catalog-api-v2-mode.js catalog-popup-v3-mode.js product-branch-mode.js maintenance-ui.js simple-mode.js exact-name-mode.js one-file-mode.js saved-profiles-mode.js profile-tabs-mode.js profile-create-safe-mode.js ui-v2-mode.js ui-v2-fix-mode.js ui-v3-polish-mode.js dist/dhl-stock-sync-extension/
+          cp manifest.json background.js auto-sync-core.js auto-sync-background.js auto-sync-safety-background.js auto-sync-mode.js auto-sync-safety-mode.js auto-sync-ui-sticky-mode.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js batch-stock-core.js batch-stock-cache-mode.js stock-history-core.js stock-history-mode.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js catalog-api-mode.js catalog-api-v2-mode.js catalog-popup-v3-mode.js product-branch-mode.js maintenance-ui.js simple-mode.js exact-name-mode.js one-file-mode.js saved-profiles-mode.js profile-tabs-mode.js profile-create-safe-mode.js ui-v2-mode.js ui-v2-fix-mode.js ui-v3-polish-mode.js dist/dhl-stock-sync-extension/
           cd dist
           zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
 
@@ -66,6 +66,7 @@ jobs:
           test -f dist/dhl-stock-sync-extension/auto-sync-safety-background.js
           test -f dist/dhl-stock-sync-extension/auto-sync-mode.js
           test -f dist/dhl-stock-sync-extension/auto-sync-safety-mode.js
+          test -f dist/dhl-stock-sync-extension/auto-sync-ui-sticky-mode.js
           test -f dist/dhl-stock-sync-extension/batch-stock-core.js
           test -f dist/dhl-stock-sync-extension/batch-stock-cache-mode.js
           test -f dist/dhl-stock-sync-extension/stock-history-core.js
