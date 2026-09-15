@@ -10,9 +10,10 @@ $tmpPatch80 = Join-Path $env:TEMP 'DHL_V80_PATCH.html'
 $tmpPatch81 = Join-Path $env:TEMP 'DHL_V81_PATCH.html'
 $tmpPatch82 = Join-Path $env:TEMP 'DHL_V82_PATCH.html'
 $tmpPatch83 = Join-Path $env:TEMP 'DHL_V83_PATCH.html'
-$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V83.html'
+$tmpPatch84 = Join-Path $env:TEMP 'DHL_V84_PATCH.html'
+$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V84.html'
 
-Write-Host 'Downloading DHL Nameset Layout V8.3...' -ForegroundColor Cyan
+Write-Host 'Downloading DHL Nameset Layout V8.4...' -ForegroundColor Cyan
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/DockerUI.html?v=$stamp" -OutFile $tmpBase
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V77_PATCH.html?v=$stamp" -OutFile $tmpPatch77
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V78_PATCH.html?v=$stamp" -OutFile $tmpPatch78
@@ -21,6 +22,7 @@ Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V80_PATCH.html?v=$stamp" 
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V81_PATCH.html?v=$stamp" -OutFile $tmpPatch81
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V82_PATCH.html?v=$stamp" -OutFile $tmpPatch82
 Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V83_PATCH.html?v=$stamp" -OutFile $tmpPatch83
+Invoke-WebRequest -UseBasicParsing -Uri "$repoBase/src/V84_PATCH.html?v=$stamp" -OutFile $tmpPatch84
 
 $raw = [IO.File]::ReadAllText($tmpBase)
 $patch77 = [IO.File]::ReadAllText($tmpPatch77)
@@ -30,6 +32,7 @@ $patch80 = [IO.File]::ReadAllText($tmpPatch80)
 $patch81 = [IO.File]::ReadAllText($tmpPatch81)
 $patch82 = [IO.File]::ReadAllText($tmpPatch82)
 $patch83 = [IO.File]::ReadAllText($tmpPatch83)
+$patch84 = [IO.File]::ReadAllText($tmpPatch84)
 if ($raw -notmatch 'DHL_UI_VERSION=7\.4') { throw 'GitHub base UI is not V7.4.' }
 if ($patch77 -notmatch 'dhl-v77-features') { throw 'V7.7 feature patch is missing.' }
 if ($patch78 -notmatch 'dhl-v78-outline-fix') { throw 'V7.8 outline patch is missing.' }
@@ -38,14 +41,15 @@ if ($patch80 -notmatch 'dhl-v80-modes') { throw 'V8.0 mode patch is missing.' }
 if ($patch81 -notmatch 'dhl-v81-guillotine') { throw 'V8.1 guillotine patch is missing.' }
 if ($patch82 -notmatch 'dhl-v82-tabs') { throw 'V8.2 tab patch is missing.' }
 if ($patch83 -notmatch 'dhl-v83-roll45') { throw 'V8.3 roll/45 patch is missing.' }
+if ($patch84 -notmatch 'dhl-v84-excel') { throw 'V8.4 Excel patch is missing.' }
 
-$raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.3').Replace('v7.4','v8.3')
-$raw = $raw.Replace('</body>', $patch77 + "`r`n" + $patch78 + "`r`n" + $patch79 + "`r`n" + $patch80 + "`r`n" + $patch81 + "`r`n" + $patch82 + "`r`n" + $patch83 + "`r`n</body>")
+$raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.4').Replace('v7.4','v8.4')
+$raw = $raw.Replace('</body>', $patch77 + "`r`n" + $patch78 + "`r`n" + $patch79 + "`r`n" + $patch80 + "`r`n" + $patch81 + "`r`n" + $patch82 + "`r`n" + $patch83 + "`r`n" + $patch84 + "`r`n</body>")
 
 $utf8 = New-Object Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($tmpOut,$raw,$utf8)
 $verify = [IO.File]::ReadAllText($tmpOut)
-if ($verify -notmatch 'DHL_UI_VERSION=8\.3' -or $verify -notmatch 'dhl-v83-roll45') { throw 'Could not build V8.3 UI.' }
+if ($verify -notmatch 'DHL_UI_VERSION=8\.4' -or $verify -notmatch 'dhl-v84-excel') { throw 'Could not build V8.4 UI.' }
 
 $targets = New-Object System.Collections.Generic.List[string]
 $roots = @()
@@ -76,13 +80,13 @@ foreach ($target in $uniq) {
     }
   }
   $check = [IO.File]::ReadAllText($dst)
-  if ($check -notmatch 'DHL_UI_VERSION=8\.3' -or $check -notmatch 'dhl-v83-roll45') { throw ('Write failed: ' + $dst) }
-  Write-Host ('UPDATED V8.3: ' + $dst) -ForegroundColor Green
+  if ($check -notmatch 'DHL_UI_VERSION=8\.4' -or $check -notmatch 'dhl-v84-excel') { throw ('Write failed: ' + $dst) }
+  Write-Host ('UPDATED V8.4: ' + $dst) -ForegroundColor Green
 }
 
-Remove-Item -LiteralPath $tmpBase,$tmpPatch77,$tmpPatch78,$tmpPatch79,$tmpPatch80,$tmpPatch81,$tmpPatch82,$tmpPatch83,$tmpOut -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $tmpBase,$tmpPatch77,$tmpPatch78,$tmpPatch79,$tmpPatch80,$tmpPatch81,$tmpPatch82,$tmpPatch83,$tmpPatch84,$tmpOut -Force -ErrorAction SilentlyContinue
 Write-Host ''
-Write-Host 'DONE - DHL Nameset Layout V8.3 installed.' -ForegroundColor Cyan
-Write-Host 'Changed: default roll 58 cm x 20 m, 1.5 cm object gap, zero frame/margins, corrected cm presets, optional 45-degree compact rotation.'
+Write-Host 'DONE - DHL Nameset Layout V8.4 installed.' -ForegroundColor Cyan
+Write-Host 'Changed: reliable Excel preview/import, support for Ten in ao + So ao template headers, preserved displayed shirt numbers, clear template validation and progress messages.'
 Write-Host 'Close and reopen the Docker in CorelDRAW if the version does not refresh immediately.'
 exit 0
