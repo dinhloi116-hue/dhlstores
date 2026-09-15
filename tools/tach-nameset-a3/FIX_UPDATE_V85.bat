@@ -27,7 +27,7 @@ set "URL=https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/t
 if exist "%PS1%" del /q "%PS1%" >nul 2>&1
 
 echo [1/3] Dang tai updater moi nhat tu GitHub...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri '%URL%?t=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -OutFile '%PS1%'; if(-not (Test-Path -LiteralPath '%PS1%')){throw 'Khong tao duoc file updater'}; Write-Host ('Da tai: ' + (Get-Item -LiteralPath '%PS1%').Length + ' bytes') -ForegroundColor Green; exit 0 } catch { Write-Host $_.Exception.Message -ForegroundColor Red; Add-Content -LiteralPath '%LOG%' -Value ('DOWNLOAD ERROR: ' + $_.Exception.ToString()); exit 11 }"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $u='%URL%?t=' + [string][DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(); Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile '%PS1%'; if(-not (Test-Path -LiteralPath '%PS1%')){throw 'Khong tao duoc file updater'}; Write-Host ('Da tai: ' + (Get-Item -LiteralPath '%PS1%').Length + ' bytes') -ForegroundColor Green; exit 0 } catch { Write-Host $_.Exception.Message -ForegroundColor Red; Add-Content -LiteralPath '%LOG%' -Value ('DOWNLOAD ERROR: ' + $_.Exception.ToString()); exit 11 }"
 if errorlevel 1 goto :FAIL
 
 echo [2/3] Dang chay updater V8.5...
@@ -47,9 +47,10 @@ pause
 exit /b 0
 
 :FAIL
+set "FAILRC=%errorlevel%"
 echo.
 echo ==================================================
-echo CAP NHAT VAN LOI. MA LOI: %errorlevel%
+echo CAP NHAT VAN LOI. MA LOI: %FAILRC%
 echo ==================================================
 echo.
 echo Log launcher:
@@ -68,4 +69,4 @@ echo --- Launcher log ---
 if exist "%LOG%" type "%LOG%"
 echo.
 pause
-exit /b 1
+exit /b %FAILRC%
