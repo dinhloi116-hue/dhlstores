@@ -3,9 +3,9 @@ $ErrorActionPreference = 'Stop'
 $repoBase = 'https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3'
 $stamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $tmpBase = Join-Path $env:TEMP 'DockerUI_DHL_Base.html'
-$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V86.html'
+$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V87.html'
 $log = Join-Path $env:TEMP 'DHL_NAMESET_UPDATE_LOG.txt'
-$patchNames = @('V77_PATCH.html','V78_PATCH.html','V79_PATCH.html','V80_PATCH.html','V81_PATCH.html','V82_PATCH.html','V83_PATCH.html','V84_PATCH.html','V85_PATCH.html','V86_PATCH.html')
+$patchNames = @('V77_PATCH.html','V78_PATCH.html','V79_PATCH.html','V80_PATCH.html','V81_PATCH.html','V82_PATCH.html','V83_PATCH.html','V84_PATCH.html','V85_PATCH.html','V86_PATCH.html','V87_LICENSE.html')
 $markers = @{
   'V77_PATCH.html'='dhl-v77-features'
   'V78_PATCH.html'='dhl-v78-outline-fix'
@@ -17,6 +17,7 @@ $markers = @{
   'V84_PATCH.html'='dhl-v84-excel'
   'V85_PATCH.html'='dhl-v85-copy-size'
   'V86_PATCH.html'='dhl-v86-excel-rowgroups'
+  'V87_LICENSE.html'='dhl-v87-commercial-license'
 }
 $tmpPatches = @{}
 
@@ -27,8 +28,8 @@ function Log([string]$s){
 }
 
 try {
-  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.6 - ' + (Get-Date)) -Encoding UTF8
-  Log 'Downloading DHL Nameset Layout V8.6...'
+  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.7 - ' + (Get-Date)) -Encoding UTF8
+  Log 'Downloading DHL Nameset Layout V8.7...'
 
   Invoke-WebRequest -UseBasicParsing -Uri ($repoBase + '/src/DockerUI.html?v=' + $stamp) -OutFile $tmpBase
   foreach($name in $patchNames){
@@ -50,15 +51,15 @@ try {
     [void]$append.Append("`r`n")
   }
 
-  $raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.6').Replace('v7.4','v8.6')
+  $raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.7').Replace('v7.4','v8.7')
   if($raw.IndexOf('</body>') -lt 0){ throw 'Base UI is missing </body>.' }
   $raw = $raw.Replace('</body>', $append.ToString() + '</body>')
 
   $utf8 = New-Object Text.UTF8Encoding($false)
   [IO.File]::WriteAllText($tmpOut,$raw,$utf8)
   $verify = [IO.File]::ReadAllText($tmpOut)
-  if ($verify.IndexOf('DHL_UI_VERSION=8.6') -lt 0 -or $verify.IndexOf('dhl-v86-excel-rowgroups') -lt 0) { throw 'Could not build V8.6 UI.' }
-  Log ('Built V8.6 UI: ' + (Get-Item -LiteralPath $tmpOut).Length + ' bytes')
+  if ($verify.IndexOf('DHL_UI_VERSION=8.7') -lt 0 -or $verify.IndexOf('dhl-v87-commercial-license') -lt 0) { throw 'Could not build V8.7 UI.' }
+  Log ('Built V8.7 UI: ' + (Get-Item -LiteralPath $tmpOut).Length + ' bytes')
 
   $targets = New-Object System.Collections.Generic.List[string]
   $roots = @()
@@ -94,9 +95,9 @@ try {
         }
       }
       $check = [IO.File]::ReadAllText($dst)
-      if ($check.IndexOf('DHL_UI_VERSION=8.6') -lt 0 -or $check.IndexOf('dhl-v86-excel-rowgroups') -lt 0) { throw 'Verification failed after write.' }
+      if ($check.IndexOf('DHL_UI_VERSION=8.7') -lt 0 -or $check.IndexOf('dhl-v87-commercial-license') -lt 0) { throw 'Verification failed after write.' }
       $success++
-      Log ('UPDATED V8.6: ' + $dst)
+      Log ('UPDATED V8.7: ' + $dst)
     } catch {
       $failed++
       Log ('SKIP FAILED TARGET: ' + $target + ' | ' + $_.Exception.Message)
@@ -110,9 +111,10 @@ try {
     if($tmpPatches.ContainsKey($name)){ Remove-Item -LiteralPath $tmpPatches[$name] -Force -ErrorAction SilentlyContinue }
   }
 
-  Log ('DONE - V8.6 installed to ' + $success + ' location(s); failed/skipped: ' + $failed)
+  Log ('DONE - V8.7 installed to ' + $success + ' location(s); failed/skipped: ' + $failed)
   Write-Host ''
-  Write-Host 'DONE - DHL Nameset Layout V8.6 installed.' -ForegroundColor Cyan
+  Write-Host 'DONE - DHL Nameset Layout V8.7 installed.' -ForegroundColor Cyan
+  Write-Host 'Licensing: lifetime key or usage-credit key (default 100 uses), machine-bound activation, signed RSA token.'
   Write-Host ('Log: ' + $log) -ForegroundColor DarkGray
   exit 0
 }
