@@ -6,7 +6,7 @@
   const xlsx = globalThis.DHLXlsxLite;
   if (!matcher || !xlsx) return;
 
-  const VERSION = '0.19.1-beta.1';
+  const VERSION = '0.19.2-beta.1';
 
   let sapoData = null;
   let templateBuffer = null;
