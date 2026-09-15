@@ -1,3 +1,16 @@
+importScripts(
+  'match-core.js',
+  'xlsx-lite.js',
+  'warehouse-core.js',
+  'generic-warehouse-mode.js',
+  'kids-product-size-mode.js',
+  'warehouse-sku-link-mode.js',
+  'stock-history-core.js',
+  'batch-stock-core.js',
+  'auto-sync-core.js',
+  'auto-sync-background.js'
+);
+
 async function enableSidePanel() {
   if (!chrome.sidePanel || !chrome.sidePanel.setPanelBehavior) return;
   try {
