@@ -8,7 +8,8 @@ importScripts(
   'stock-history-core.js',
   'batch-stock-core.js',
   'auto-sync-core.js',
-  'auto-sync-background.js',
+  'sapo-inventory-resolver-core.js',
+  'auto-sync-background-v2.js',
   'auto-sync-safety-background.js'
 );
 
