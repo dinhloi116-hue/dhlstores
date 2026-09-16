@@ -14,7 +14,8 @@ assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'));
 for(const file of [
   'background.js','auto-sync-core.js','sapo-inventory-resolver-core.js','auto-sync-background-v2.js',
   'manual-sapo-background.js','auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
-  'manual-sapo-output-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','batch-stock-core.js','stock-history-core.js','popup.html','popup.js','content.js'
+  'manual-sapo-output-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
+  'batch-stock-core.js','stock-history-core.js','popup.html','popup.js','content.js'
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
 const background=read('background.js');
@@ -73,8 +74,10 @@ assert.ok(popup.includes('manual-sapo-output-mode.js'));
 assert.ok(popup.includes('auto-sync-ui-sticky-mode.js'));
 assert.ok(popup.includes('auto-sync-excel-mode.js'));
 assert.ok(popup.includes('sapo-push-report-mode.js'));
+assert.ok(popup.includes('workflow-order-mode.js'));
 assert.ok(popup.indexOf('manual-sapo-output-mode.js')>popup.indexOf('batch-stock-cache-mode.js'));
 assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode.js'));
+assert.ok(popup.indexOf('workflow-order-mode.js')>popup.indexOf('sapo-push-report-mode.js'));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes('TẢI FILE EXCEL'));
@@ -82,6 +85,21 @@ assert.ok(manualUi.includes('ĐẨY THẲNG LÊN SAPO'));
 assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_MANUAL'"));
 assert.ok(manualUi.includes("x.auto!==true"));
 assert.ok(manualUi.includes('THỬ LẠI ĐẨY SAPO'));
+assert.ok(manualUi.includes("if(el&&el.textContent!==value)el.textContent=value"));
+
+const batchUi=read('batch-stock-cache-mode.js');
+assert.ok(batchUi.includes('auto:false'));
+assert.ok(batchUi.includes('x.auto!==true'));
+assert.ok(batchUi.includes('keepAutomaticOnly'));
+assert.ok(batchUi.includes('BƯỚC 3 — CHỌN ĐẦU RA'));
+
+const autoUi=read('auto-sync-mode.js');
+assert.ok(autoUi.includes("persistPatch({enabled:wanted}"));
+assert.ok(autoUi.includes("persistPatch({selectedProfileIds:collectSelectedProfileIds()}"));
+assert.ok(autoUi.includes("persistPatch({autoPushSapo:Boolean(push.checked)}"));
+assert.ok(autoUi.includes('refreshRuntime'));
+assert.ok(autoUi.includes('4. Bật lịch tự động'));
+assert.ok(!autoUi.includes("setInterval(()=>{if(document.getElementById('autoSyncPanel'))load()"));
 
 const excel=read('auto-sync-excel-mode.js');
 assert.ok(excel.includes('TẢI FILE EXCEL'));
@@ -95,10 +113,19 @@ assert.ok(report.includes('ĐÃ NẠP TỒN KHO LÊN SAPO THÀNH CÔNG'));
 assert.ok(report.includes('NẠP SAPO CHƯA HOÀN TẤT'));
 assert.ok(report.includes("label:'ĐANG NẠP'"));
 assert.ok(report.includes("label:'THẤT BẠI'"));
+assert.ok(report.includes('manualPaused===true'));
 assert.ok(report.includes('TẢI BÁO CÁO NẠP SAPO (.TXT)'));
 assert.ok(report.includes('Shop:'));
 assert.ok(report.includes('Còn lại:'));
 assert.ok(report.includes('tồn định ghi'));
 assert.ok(report.includes('successRows'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'scan output = Excel or direct Sapo app queue',excel:'automatic section can download Excel without clearing queue',report:'status/remaining/error detail + TXT'});
+const workflow=read('workflow-order-mode.js');
+assert.ok(workflow.includes("document.getElementById('profileQuickTabs')"));
+assert.ok(workflow.includes("document.getElementById('uiV2Panel')"));
+assert.ok(workflow.includes("document.getElementById('batchPendingBox')"));
+assert.ok(workflow.includes("document.getElementById('autoSyncPanel')"));
+assert.ok(workflow.includes('BƯỚC 1 — CHỌN HỒ SƠ CẦN QUÉT'));
+assert.ok(workflow.includes('BƯỚC 2 — QUÉT TAB NGUỒN'));
+
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'manual cache isolated; output = Excel or direct Sapo queue',autoUi:'controls auto-save; runtime refresh does not rebuild form',workflow:'step order = profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
