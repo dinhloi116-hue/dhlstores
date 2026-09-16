@@ -14,7 +14,7 @@ assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'));
 for(const file of [
   'background.js','auto-sync-core.js','sapo-inventory-resolver-core.js','auto-sync-background-v2.js',
   'auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
-  'sapo-push-report-mode.js','batch-stock-core.js','stock-history-core.js','popup.html','popup.js','content.js'
+  'auto-sync-excel-mode.js','sapo-push-report-mode.js','batch-stock-core.js','stock-history-core.js','popup.html','popup.js','content.js'
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
 const background=read('background.js');
@@ -59,8 +59,16 @@ assert.ok(resolver.includes('normSku'));
 
 const popup=read('popup.html');
 assert.ok(popup.includes('auto-sync-ui-sticky-mode.js'));
+assert.ok(popup.includes('auto-sync-excel-mode.js'));
 assert.ok(popup.includes('sapo-push-report-mode.js'));
-assert.ok(popup.indexOf('sapo-push-report-mode.js')>popup.indexOf('auto-sync-mode.js'));
+assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode.js'));
+
+const excel=read('auto-sync-excel-mode.js');
+assert.ok(excel.includes('TẢI FILE EXCEL'));
+assert.ok(excel.includes('buildOfficialInventoryWorkbook'));
+assert.ok(excel.includes('selectedProfileIds'));
+assert.ok(excel.includes('Cache và hàng đợi Sapo vẫn được giữ nguyên'));
+assert.ok(!excel.includes("chrome.storage.local.set({[BATCH_KEY]:{}})"));
 
 const report=read('sapo-push-report-mode.js');
 assert.ok(report.includes('ĐÃ NẠP TỒN KHO LÊN SAPO THÀNH CÔNG'));
@@ -73,4 +81,4 @@ assert.ok(report.includes('Còn lại:'));
 assert.ok(report.includes('tồn định ghi'));
 assert.ok(report.includes('successRows'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',report:'status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',excel:'manual download beside Sapo output, preserve cache/queue',report:'status/remaining/error detail + TXT'});
