@@ -44,13 +44,15 @@
         const parentName=text(product.parentName);
         if(!parentName)continue;
         const standardName=entry.color&&entry.color!=='(không màu)'?`${parentName} - ${entry.color}`:parentName;
+        const variantImage=(entry.variants.find(v=>text(v.image))||{}).image||'';
         groups.push({
           parentId:Number(product.parentId)||0,
           parentName,
           color:entry.color,
           standardName,
           sourceUrl:text(product.sourceUrl),
-          imageUrl:text(product.imageUrl)||(entry.variants.find(v=>text(v.image))||{}).image||'',
+          imageUrl:text(variantImage)||text(product.imageUrl),
+          parentImageUrl:text(product.imageUrl),
           variants:entry.variants
         });
       }
@@ -58,25 +60,30 @@
     return groups;
   }
 
-  function makeRows(catalogResults){
+  function buildGroupData(group){
     if(!rules)throw new Error('Thiếu bộ quy tắc SKU');
+    const bySize=new Map();
+    for(const variant of group.variants||[]){
+      const size=normalizeSize(variant.size);
+      const stock=Number(variant.available);
+      if(!size||!Number.isFinite(stock)||stock<0)continue;
+      if(!bySize.has(size))bySize.set(size,{size,stock,variant});
+    }
+    const sizes=sizeSort([...bySize.keys()]);
+    if(!sizes.length)return null;
+    const alias=typeof rules.generatedAliasForStandardName==='function'?rules.generatedAliasForStandardName(group.standardName):plain(group.standardName).replace(/\s+/g,'-');
+    const skuBase=rules.skuBaseForStandardName(group.standardName);
+    if(!skuBase)throw new Error(`Không tạo được SKU cho ${group.standardName}`);
+    return{bySize,sizes,alias,skuBase};
+  }
+
+  function makeRows(catalogResults){
     const rows=[];
     const groups=groupCatalog(catalogResults);
     for(const group of groups){
-      const bySize=new Map();
-      for(const variant of group.variants||[]){
-        const size=normalizeSize(variant.size);
-        const stock=Number(variant.available);
-        if(!size||!Number.isFinite(stock)||stock<0)continue;
-        if(!bySize.has(size))bySize.set(size,{size,stock,variant});
-      }
-      const sizes=sizeSort([...bySize.keys()]);
-      if(!sizes.length)continue;
-
-      const alias=typeof rules.generatedAliasForStandardName==='function'?rules.generatedAliasForStandardName(group.standardName):plain(group.standardName).replace(/\s+/g,'-');
-      const skuBase=rules.skuBaseForStandardName(group.standardName);
-      if(!skuBase)throw new Error(`Không tạo được SKU cho ${group.standardName}`);
-
+      const prepared=buildGroupData(group);
+      if(!prepared)continue;
+      const {bySize,sizes,alias,skuBase}=prepared;
       sizes.forEach((size,index)=>{
         const item=bySize.get(size);
         const first=index===0;
@@ -92,13 +99,60 @@
         row[18]='Cái';
         row[19]=first?group.imageUrl:'';
         row[24]='Sapo';
-        row[29]=group.imageUrl;
+        row[29]=text(item.variant&&item.variant.image)||group.imageUrl;
         row[30]='Không';
         row[34]=item.stock;
-        rows.push({values:row,standardName:group.standardName,size,stock:item.stock,sku:row[16],imageUrl:group.imageUrl,sourceUrl:group.sourceUrl});
+        rows.push({values:row,standardName:group.standardName,size,stock:item.stock,sku:row[16],imageUrl:row[29],sourceUrl:group.sourceUrl});
       });
     }
     return{groups,rows};
+  }
+
+  function validHttpUrl(value){
+    try{const u=new URL(text(value));return /^https?:$/.test(u.protocol)?u.href:'';}catch{return'';}
+  }
+
+  function makeApiProducts(catalogResults){
+    const products=[];
+    const groups=groupCatalog(catalogResults);
+    for(const group of groups){
+      const prepared=buildGroupData(group);
+      if(!prepared)continue;
+      const {bySize,sizes,alias,skuBase}=prepared;
+      const imageCandidates=[];
+      for(const size of sizes){
+        const item=bySize.get(size);
+        imageCandidates.push(text(item&&item.variant&&item.variant.image));
+      }
+      imageCandidates.push(group.imageUrl,group.parentImageUrl);
+      const images=[];
+      const seen=new Set();
+      for(const raw of imageCandidates){
+        const url=validHttpUrl(raw);
+        if(!url||seen.has(url))continue;
+        seen.add(url);images.push(url);
+        if(images.length>=20)break;
+      }
+      const variants=sizes.map(size=>{
+        const item=bySize.get(size);
+        return{
+          size,
+          stock:Number(item.stock),
+          sku:`${skuBase}-${size}`,
+          imageUrl:validHttpUrl(text(item&&item.variant&&item.variant.image))||images[0]||''
+        };
+      });
+      products.push({
+        alias,
+        name:group.standardName,
+        parentId:Number(group.parentId)||0,
+        color:text(group.color),
+        sourceUrl:text(group.sourceUrl),
+        images,
+        variants
+      });
+    }
+    return{groups,products};
   }
 
   function xmlEscape(value){
@@ -134,5 +188,5 @@
     return{bytes:xlsx.zipStore(files),rows:built.rows.length,products:built.groups.length,details:built.rows,headers:HEADERS.slice()};
   }
 
-  return{HEADERS,groupCatalog,makeRows,buildWorkbook};
+  return{HEADERS,groupCatalog,makeRows,makeApiProducts,buildWorkbook};
 });
