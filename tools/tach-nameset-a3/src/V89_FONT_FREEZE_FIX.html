@@ -1,0 +1,52 @@
+<style id="dhl-v89-font-freeze-style">
+#v86LoadFonts[disabled]{opacity:.55!important;cursor:wait!important}
+</style>
+<script id="dhl-v89-font-freeze-fix" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var loading=false,cache=null;
+function fill(sel,fonts,keep){var i;if(!sel)return;while(sel.options.length>1)sel.remove(1);for(i=0;i<fonts.length;i++)sel.options.add(new Option(fonts[i],fonts[i]));if(keep)sel.value=keep;}
+function readFontsSafe(){
+ var sh=new ActiveXObject('WScript.Shell');
+ var cmd='powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Drawing; $c=New-Object System.Drawing.Text.InstalledFontCollection; $c.Families ^| ForEach-Object { $_.Name } ^| Sort-Object -Unique"';
+ var ex=sh.Exec(cmd),out='',err='';
+ out=ex.StdOut.ReadAll();try{err=ex.StdErr.ReadAll();}catch(e){}
+ if(ex.ExitCode!==0)throw new Error(err||('PowerShell exit '+ex.ExitCode));
+ var lines=String(out||'').split(/\r?\n/),fonts=[],seen={},i,n;
+ for(i=0;i<lines.length;i++){n=String(lines[i]||'').replace(/^\s+|\s+$/g,'');if(n&&!seen[n.toLowerCase()]){seen[n.toLowerCase()]=1;fonts.push(n);}}
+ return fonts;
+}
+function cloneToExcel(fonts){var nf=E('v86NameFont'),df=E('v86NoFont'),keepN=nf?nf.value:'',keepD=df?df.value:'';fill(nf,fonts,keepN);fill(df,fonts,keepD);}
+window.loadInstalledFonts=function(force){
+ var status=E('fontStatus'),nf=E('nameFont'),df=E('numberFont'),keepN=nf?nf.value:'',keepD=df?df.value:'',fonts,b=E('v86LoadFonts');
+ if(loading)return cache?cache.length:0;loading=true;if(b)b.disabled=true;
+ try{
+  if(status)status.innerHTML=L()==='vi'?'Đang nạp font...':'Loading fonts...';
+  if(cache&&!force)fonts=cache;else{fonts=readFontsSafe();cache=fonts;}
+  fill(nf,fonts,keepN);fill(df,fonts,keepD);cloneToExcel(fonts);
+  try{if(nf&&!nf.value)nf.value=localStorage.getItem('dhl_nameset_name_font')||'';if(df&&!df.value)df.value=localStorage.getItem('dhl_nameset_number_font')||'';}catch(se){}
+  try{if(typeof setKeepFontLabels==='function')setKeepFontLabels();}catch(sl){}
+  if(status)status.innerHTML=(L()==='vi'?'✓ Đã nạp ':'✓ Loaded ')+fonts.length+(L()==='vi'?' font.':' fonts.');
+  return fonts.length;
+ }catch(e){if(status)status.innerHTML=(L()==='vi'?'Không nạp được font: ':'Could not load fonts: ')+esc(e.message);return 0;}
+ finally{loading=false;if(b)b.disabled=false;}
+};
+function validateSelected(){var st=E('v86Status'),nf=E('v86NameFont'),df=E('v86NoFont'),a,doc,old,s1=null,s2=null;try{
+ if(!st||!nf||!df||!nf.value||!df.value)return;
+ a=(window.external&&window.external.Application)?window.external.Application:(typeof corelApp==='function'?corelApp():null);if(!a)return;
+ doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;s1=a.ActivePage.ActiveLayer.CreateArtisticText(0,0,'FONT TEST');s2=a.ActivePage.ActiveLayer.CreateArtisticText(0,0,'88');
+ if(typeof applyFontRecursive==='function'){applyFontRecursive(s1,nf.value);applyFontRecursive(s2,df.value);}else{s1.Text.Story.Font=nf.value;s2.Text.Story.Font=df.value;}
+ var g1=String(s1.Text.Story.Font||''),g2=String(s2.Text.Story.Font||'');s1.Delete();s2.Delete();doc.Unit=old;st.className='v86-note v88-font-ok';st.innerHTML=(L()==='vi'?'✓ Font Corel nhận: ':'✓ Corel accepted: ')+esc(g1)+' / '+esc(g2);
+ }catch(e){try{if(s1)s1.Delete();}catch(x1){}try{if(s2)s2.Delete();}catch(x2){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x3){}if(st){st.className='v86-note v88-font-bad';st.innerHTML=(L()==='vi'?'Lỗi font: ':'Font error: ')+esc(e.message);}}
+}
+function hook(){var b=E('v86LoadFonts'),nf=E('v86NameFont'),df=E('v86NoFont'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
+ if(!b||!nf||!df){setTimeout(hook,180);return;}
+ b.onclick=function(){window.loadInstalledFonts(true);validateSelected();return false;};
+ nf.onchange=function(){validateSelected();try{localStorage.setItem('dhl_v89_name_font',nf.value);}catch(e){}};
+ df.onchange=function(){validateSelected();try{localStorage.setItem('dhl_v89_no_font',df.value);}catch(e){}};
+ try{var sn=localStorage.getItem('dhl_v89_name_font'),sd=localStorage.getItem('dhl_v89_no_font');if(sn)nf.value=sn;if(sd)df.value=sd;}catch(e){}
+ if(v&&v.length)v[0].innerHTML='v8.9';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.9 · font freeze fix · VI / EN';
+}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(hook,3000);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(hook,3000);});else setTimeout(hook,3200);
+})();
+</script>
