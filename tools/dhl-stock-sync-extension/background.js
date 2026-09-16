@@ -10,6 +10,7 @@ importScripts(
   'auto-sync-core.js',
   'sapo-inventory-resolver-core.js',
   'sapo-product-create-background.js',
+  'sapo-product-create-continuous-background.js',
   'auto-sync-background-v2.js',
   'manual-sapo-background.js',
   'auto-sync-safety-background.js'
