@@ -40,6 +40,18 @@
     return bytes.buffer;
   }
 
+  function manualEntries(pending){
+    return Object.values(pending&&typeof pending==='object'?pending:{}).filter(x=>x&&x.auto!==true&&Array.isArray(x.rows)&&x.rows.length);
+  }
+
+  function keepAutomaticOnly(pending){
+    const next={};
+    for(const [id,entry] of Object.entries(pending&&typeof pending==='object'?pending:{})){
+      if(entry&&entry.auto===true)next[id]=entry;
+    }
+    return next;
+  }
+
   function catalogSkuIndex(catalogData){
     const unique=new Map(),duplicates=new Set();
     for(const variant of (catalogData&&catalogData.variants)||[]){
@@ -129,7 +141,8 @@
         variantTotal:Number((warehouseData.variants||[]).length),
         rowCount:prepared.rows.length,
         missingSkuCount:prepared.missingSku.length,
-        rows:prepared.rows
+        rows:prepared.rows,
+        auto:false
       };
       const next={...state.pending,[profile.id]:entry};
       await chrome.storage.local.set({[BATCH_KEY]:next});
@@ -166,17 +179,19 @@
     setExportBusy(true);
     try{
       const state=await readState();
-      const combined=batch.combineEntries(Object.values(state.pending));
+      const entries=manualEntries(state.pending);
+      if(!entries.length)throw new Error('Chưa có cache quét thủ công để tạo Excel.');
+      const combined=batch.combineEntries(entries);
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,combined.rows,combined.branch);
       if(out.templateSignature!=='SAPO-INVENTORY-TEMPLATE-V2')throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_NHAP_TON_KHO_GOP_${stamp}.xlsx`);
-      await chrome.storage.local.set({[BATCH_KEY]:{}});
+      await chrome.storage.local.set({[BATCH_KEY]:keepAutomaticOnly(state.pending)});
       await renderBatchUi();
       const status=document.getElementById('profileStatus');
       if(status){
-        status.textContent=`ĐÃ TẠO FILE GỘP ${combined.profileCount} HỒ SƠ: ${out.rows} dòng • ${out.zeroCount} dòng tồn = 0. Cache chờ đã được dọn.`;
+        status.textContent=`ĐÃ TẠO FILE GỘP ${combined.profileCount} HỒ SƠ: ${out.rows} dòng • ${out.zeroCount} dòng tồn = 0. Cache quét thủ công đã dọn; cache tự động vẫn giữ nguyên.`;
         status.style.color='#166534';
       }
     }catch(error){
@@ -187,26 +202,27 @@
   }
 
   async function clearBatch(){
-    await chrome.storage.local.set({[BATCH_KEY]:{}});
+    const state=await readState();
+    await chrome.storage.local.set({[BATCH_KEY]:keepAutomaticOnly(state.pending)});
     await renderBatchUi();
     const status=document.getElementById('profileStatus');
-    if(status){status.textContent='Đã xóa cache chờ xuất. Các hồ sơ và lịch sử quét vẫn được giữ nguyên.';status.style.color='#475569';}
+    if(status){status.textContent='Đã xóa cache quét thủ công. Cache tự động, hồ sơ và lịch sử quét vẫn được giữ nguyên.';status.style.color='#475569';}
   }
 
   async function renderBatchUi(){
     const state=await readState();
-    const entries=Object.values(state.pending).sort((a,b)=>Number(a.scannedAt||0)-Number(b.scannedAt||0));
+    const entries=manualEntries(state.pending).sort((a,b)=>Number(a.scannedAt||0)-Number(b.scannedAt||0));
     const rows=entries.reduce((sum,x)=>sum+Number(x.rowCount||(x.rows||[]).length||0),0);
     const box=document.getElementById('batchPendingBox');
     if(box){
       const title=document.getElementById('batchPendingTitle');
       const list=document.getElementById('batchPendingList');
-      if(title)title.textContent=entries.length?`ĐANG CHỜ XUẤT: ${entries.length} hồ sơ • ${rows} dòng`:'CHƯA CÓ CACHE CHỜ XUẤT';
-      if(list)list.innerHTML=entries.length?entries.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid #eef2f7"><span><b>${esc(x.profileName)}</b> • ${Number(x.rowCount||(x.rows||[]).length)} dòng</span><small>${new Date(Number(x.scannedAt||Date.now())).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}</small></div>`).join(''):'<small>Quét HD, Trẻ em, Wika… lần lượt. Mỗi lần quét sẽ tự lưu vào đây.</small>';
+      if(title)title.textContent=entries.length?`BƯỚC 3 — CHỌN ĐẦU RA • ${entries.length} hồ sơ • ${rows} dòng`:'BƯỚC 3 — CHỌN ĐẦU RA';
+      if(list)list.innerHTML=entries.length?entries.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid #eef2f7"><span><b>${esc(x.profileName)}</b> • ${Number(x.rowCount||(x.rows||[]).length)} dòng</span><small>${new Date(Number(x.scannedAt||Date.now())).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}</small></div>`).join(''):'<small>Quét HD, Trẻ em, Wika… lần lượt. Sau khi có dữ liệu, chọn tải Excel hoặc đẩy thẳng lên Sapo.</small>';
     }
 
-    const label=entries.length?`XUẤT FILE TỒN KHO GỘP (${entries.length})`:'XUẤT FILE TỒN KHO GỘP';
-    const title=entries.length?'Gộp toàn bộ cache đang chờ thành 1 file nhập tồn kho Sapo':'Quét ít nhất 1 tab trước';
+    const label=entries.length?`TẢI FILE EXCEL (${entries.length})`:'TẢI FILE EXCEL';
+    const title=entries.length?'Tạo 1 file Excel nhập tồn từ toàn bộ cache quét thủ công đang chờ':'Quét ít nhất 1 tab trước';
     for(const id of ['batchExportBtn','profileExportBtn']){
       const btn=document.getElementById(id);
       if(!btn)continue;
@@ -233,11 +249,11 @@
       box.style.cssText='margin-top:9px;padding:9px 10px;border:1px solid #bfdbfe;border-radius:9px;background:#eff6ff;color:#334155';
       box.innerHTML=`
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <b id="batchPendingTitle">CHƯA CÓ CACHE CHỜ XUẤT</b>
+          <b id="batchPendingTitle">BƯỚC 3 — CHỌN ĐẦU RA</b>
           <button id="batchClearBtn" type="button" class="secondary" style="padding:5px 8px;font-size:10px">XÓA CACHE</button>
         </div>
         <div id="batchPendingList" style="margin-top:5px;font-size:11px"></div>
-        <button id="batchExportBtn" type="button" class="success" style="width:100%;margin-top:9px;min-height:46px;font-size:13px;font-weight:800" disabled>XUẤT FILE TỒN KHO GỘP</button>`;
+        <button id="batchExportBtn" type="button" class="success" style="width:100%;margin-top:9px;min-height:46px;font-size:13px;font-weight:800" disabled>TẢI FILE EXCEL</button>`;
       const status=document.getElementById('profileStatus');
       if(status)status.insertAdjacentElement('beforebegin',box);else host.appendChild(box);
       document.getElementById('batchClearBtn')?.addEventListener('click',clearBatch);
