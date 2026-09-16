@@ -5,6 +5,7 @@
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const QUEUE_KEY='dhlSapoPushQueueV1';
   const text=(v)=>String(v==null?'':v).trim();
+  const setText=(el,value)=>{if(el&&el.textContent!==value)el.textContent=value;};
 
   function send(message){
     return new Promise((resolve,reject)=>{
@@ -20,8 +21,9 @@
   function setState(message,kind=''){
     const el=document.getElementById('manualSapoOutputState');
     if(!el)return;
-    el.textContent=message;
-    el.className=`manual-output-state ${kind}`;
+    const cls=`manual-output-state ${kind}`.trim();
+    setText(el,message);
+    if(el.className!==cls)el.className=cls;
   }
 
   async function state(){
@@ -35,7 +37,7 @@
 
   async function pushManual(){
     const btn=document.getElementById('manualSapoPushBtn');
-    if(btn){btn.disabled=true;btn.textContent='ĐANG KHỞI TẠO...';}
+    if(btn){btn.disabled=true;setText(btn,'ĐANG KHỞI TẠO...');}
     try{
       const s=await state();
       const profileIds=s.manualEntries.map(x=>String(x.profileId||'')).filter(Boolean);
@@ -78,7 +80,7 @@
     actions.className='manual-output-actions';
     excel.insertAdjacentElement('beforebegin',actions);
     actions.appendChild(excel);
-    excel.textContent='TẢI FILE EXCEL';
+    setText(excel,'TẢI FILE EXCEL');
     excel.title='Tải file Excel nhập tồn kho Sapo từ kết quả quét thủ công.';
 
     const push=document.createElement('button');
@@ -110,23 +112,27 @@
     const paused=Boolean(s.queue&&s.queue.source==='manual'&&s.queue.status==='running'&&s.queue.manualPaused===true);
     const busy=Boolean(s.queue&&['running','queued'].includes(s.queue.status)&&!paused);
 
-    if(excel){
-      excel.textContent=manualCount?`TẢI FILE EXCEL (${manualCount})`:'TẢI FILE EXCEL';
-    }
+    if(excel)setText(excel,manualCount?`TẢI FILE EXCEL (${manualCount})`:'TẢI FILE EXCEL');
     if(push){
-      push.textContent=paused?'THỬ LẠI ĐẨY SAPO':manualRows?`ĐẨY LÊN SAPO (${manualRows} DÒNG)`:'ĐẨY THẲNG LÊN SAPO';
+      setText(push,paused?'THỬ LẠI ĐẨY SAPO':manualRows?`ĐẨY LÊN SAPO (${manualRows} DÒNG)`:'ĐẨY THẲNG LÊN SAPO');
       push.disabled=paused?false:(!verified||!manualCount||busy);
       push.title=!verified?'Chưa xác minh Ứng dụng riêng Sapo.':busy?'Đang có hàng đợi Sapo khác.':'Ghi trực tiếp tồn kho qua Ứng dụng riêng Sapo.';
     }
     if(paused)setState('Hàng đợi Sapo thủ công đang dừng ở một dòng lỗi. Bấm THỬ LẠI ĐẨY SAPO để tiếp tục đúng dòng đó.','bad');
     else if(!verified)setState('Muốn đẩy trực tiếp: mở phần Sapo bên dưới và bấm KIỂM TRA KẾT NỐI SAPO trước.');
     else if(manualCount)setState(`Quét thủ công đã sẵn sàng: ${manualCount} hồ sơ • ${manualRows} dòng. Chọn TẢI FILE EXCEL hoặc ĐẨY LÊN SAPO.`,'ok');
+    else setState('BƯỚC 3 sẽ sẵn sàng sau khi quét thành công ít nhất một hồ sơ.');
   }
 
   function install(){
     injectStyle();
     refresh().catch(()=>{});
-    const observer=new MutationObserver(()=>refresh().catch(()=>{}));
+    let queued=false;
+    const observer=new MutationObserver(()=>{
+      if(queued)return;
+      queued=true;
+      requestAnimationFrame(()=>{queued=false;refresh().catch(()=>{});});
+    });
     observer.observe(document.documentElement,{childList:true,subtree:true});
     chrome.storage.onChanged.addListener((changes,area)=>{
       if(area==='local'&&(changes[BATCH_KEY]||changes[CONFIG_KEY]||changes[QUEUE_KEY]))refresh().catch(()=>{});
