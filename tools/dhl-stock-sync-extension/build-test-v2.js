@@ -119,10 +119,14 @@ assert.ok(!autoUi.includes("setInterval(()=>{if(document.getElementById('autoSyn
 
 const excel=read('auto-sync-excel-mode.js');
 assert.ok(excel.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
+assert.ok(excel.includes("const CYCLE_KEY='dhlAutoSyncCycleV1'"));
 assert.ok(excel.includes('TẢI FILE EXCEL'));
 assert.ok(excel.includes('buildOfficialInventoryWorkbook'));
 assert.ok(excel.includes('selectedProfileIds'));
 assert.ok(excel.includes('entry.auto===true'));
+assert.ok(excel.includes('cycle.running'));
+assert.ok(excel.includes('cycle.errors.length'));
+assert.ok(excel.includes('Number(entry.scannedAt||0)===Number(result.scannedAt||0)'));
 assert.ok(excel.includes('Cache và hàng đợi Sapo vẫn được giữ nguyên'));
 assert.ok(!excel.includes("chrome.storage.local.set({[BATCH_KEY]:{}})"));
 
@@ -151,4 +155,4 @@ assert.ok(profileTabs.includes('profileTabsSignature'));
 assert.ok(profileTabs.includes('if (rendering) return false'));
 assert.ok(profileTabs.includes('requestAnimationFrame'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated cache + safe cleanup after successful direct Sapo push',auto:'serialized config writes + disabled alarm state + automatic cache',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated cache + safe cleanup after successful direct Sapo push',auto:'serialized config writes + stale-cycle-safe Excel',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
