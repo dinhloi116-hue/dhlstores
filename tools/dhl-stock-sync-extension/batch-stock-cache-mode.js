@@ -7,7 +7,8 @@
   const batch=globalThis.DHLBatchStockCore;
   if(!xlsx||!matcher||!stockImport||!batch)return;
 
-  const BATCH_KEY='dhlPendingStockBatchV1';
+  const BATCH_KEY='dhlManualPendingStockBatchV1';
+  const LEGACY_BATCH_KEY='dhlPendingStockBatchV1';
   const PROFILE_KEY='dhlSavedStockProfilesV1';
   const SELECTED_KEY='dhlSelectedStockProfileId';
   let latestSource=[];
@@ -44,12 +45,16 @@
     return Object.values(pending&&typeof pending==='object'?pending:{}).filter(x=>x&&x.auto!==true&&Array.isArray(x.rows)&&x.rows.length);
   }
 
-  function keepAutomaticOnly(pending){
-    const next={};
-    for(const [id,entry] of Object.entries(pending&&typeof pending==='object'?pending:{})){
-      if(entry&&entry.auto===true)next[id]=entry;
+  async function migrateLegacyManual(pending,legacy){
+    const manual={},automatic={};
+    for(const [id,entry] of Object.entries(legacy&&typeof legacy==='object'?legacy:{})){
+      if(entry&&entry.auto===true)automatic[id]=entry;
+      else if(entry&&Array.isArray(entry.rows)&&entry.rows.length)manual[id]=entry;
     }
-    return next;
+    if(!Object.keys(manual).length)return pending;
+    const merged={...manual,...pending};
+    await chrome.storage.local.set({[BATCH_KEY]:merged,[LEGACY_BATCH_KEY]:automatic});
+    return merged;
   }
 
   function catalogSkuIndex(catalogData){
@@ -67,9 +72,12 @@
   }
 
   async function readState(){
-    const s=await chrome.storage.local.get([BATCH_KEY,PROFILE_KEY,SELECTED_KEY]);
+    const s=await chrome.storage.local.get([BATCH_KEY,LEGACY_BATCH_KEY,PROFILE_KEY,SELECTED_KEY]);
+    let pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
+    const legacy=s[LEGACY_BATCH_KEY]&&typeof s[LEGACY_BATCH_KEY]==='object'?s[LEGACY_BATCH_KEY]:{};
+    pending=await migrateLegacyManual(pending,legacy);
     return{
-      pending:s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{},
+      pending,
       profiles:Array.isArray(s[PROFILE_KEY])?s[PROFILE_KEY]:[],
       selectedId:text(s[SELECTED_KEY])
     };
@@ -187,7 +195,7 @@
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_NHAP_TON_KHO_GOP_${stamp}.xlsx`);
-      await chrome.storage.local.set({[BATCH_KEY]:keepAutomaticOnly(state.pending)});
+      await chrome.storage.local.set({[BATCH_KEY]:{}});
       await renderBatchUi();
       const status=document.getElementById('profileStatus');
       if(status){
@@ -202,8 +210,7 @@
   }
 
   async function clearBatch(){
-    const state=await readState();
-    await chrome.storage.local.set({[BATCH_KEY]:keepAutomaticOnly(state.pending)});
+    await chrome.storage.local.set({[BATCH_KEY]:{}});
     await renderBatchUi();
     const status=document.getElementById('profileStatus');
     if(status){status.textContent='Đã xóa cache quét thủ công. Cache tự động, hồ sơ và lịch sử quét vẫn được giữ nguyên.';status.style.color='#475569';}
@@ -282,7 +289,7 @@
     }
     watchScanSuccess();
     chrome.storage.onChanged.addListener((changes,area)=>{
-      if(area==='local'&&(changes[BATCH_KEY]||changes[SELECTED_KEY]||changes[PROFILE_KEY]))setTimeout(()=>renderBatchUi().catch(()=>{}),50);
+      if(area==='local'&&(changes[BATCH_KEY]||changes[LEGACY_BATCH_KEY]||changes[SELECTED_KEY]||changes[PROFILE_KEY]))setTimeout(()=>renderBatchUi().catch(()=>{}),50);
     });
   }
 
