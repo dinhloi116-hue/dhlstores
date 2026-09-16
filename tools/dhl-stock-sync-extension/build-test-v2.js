@@ -77,6 +77,10 @@ const resolver=read('sapo-inventory-resolver-core.js');
 assert.ok(resolver.includes('variant_id là định danh chính'));
 assert.ok(resolver.includes('Number(x&&x.variant_id)===variantId'));
 assert.ok(resolver.includes('normSku'));
+assert.ok(resolver.includes("for(const key of ['data','result'])"));
+assert.ok(resolver.includes('data.data&&data.data.variant'));
+assert.ok(resolver.includes('data.result&&data.result.variant'));
+assert.ok(resolver.indexOf('const byProductSku=')<resolver.indexOf('const bySku='));
 
 const popup=read('popup.html');
 assert.ok(popup.includes('manual-sapo-output-mode.js'));
@@ -155,4 +159,4 @@ assert.ok(profileTabs.includes('profileTabsSignature'));
 assert.ok(profileTabs.includes('if (rendering) return false'));
 assert.ok(profileTabs.includes('requestAnimationFrame'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated cache + safe cleanup after successful direct Sapo push',auto:'serialized config writes + stale-cycle-safe Excel',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant first + nested API shapes + product/SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated cache + safe cleanup after successful direct Sapo push',auto:'serialized config writes + stale-cycle-safe Excel',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
