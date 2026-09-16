@@ -36,22 +36,29 @@
     if(!q)return{label:'CHƯA CÓ',kind:'',main:'Chưa có lượt ghi tồn kho nào lên Sapo.'};
     const done=Number(q.success||0),total=Number(q.total||0);
     if(q.status==='done'&&total>0&&done>=total)return{label:'THÀNH CÔNG',kind:'ok',main:`ĐÃ NẠP TỒN KHO LÊN SAPO THÀNH CÔNG ${done}/${total} DÒNG`};
-    if(q.status==='running'||q.status==='queued')return{label:'ĐANG GHI',kind:'run',main:`ĐANG NẠP TỒN KHO LÊN SAPO: ${done}/${total} DÒNG`};
-    if(q.status==='paused')return{label:'CHƯA XONG',kind:'bad',main:`NẠP SAPO CHƯA HOÀN TẤT: ${done}/${total} DÒNG THÀNH CÔNG`};
-    return{label:String(q.status||'CHƯA XONG').toUpperCase(),kind:'bad',main:`NẠP SAPO CHƯA HOÀN TẤT: ${done}/${total} DÒNG`};
+    if(q.status==='running'||q.status==='queued')return{label:'ĐANG NẠP',kind:'run',main:`ĐANG NẠP TỒN KHO LÊN SAPO: ${done}/${total} DÒNG`};
+    if(q.status==='paused')return{label:'CHƯA HOÀN TẤT',kind:'bad',main:`NẠP SAPO CHƯA HOÀN TẤT: ${done}/${total} DÒNG THÀNH CÔNG`};
+    if(q.status==='failed'||q.status==='error')return{label:'THẤT BẠI',kind:'bad',main:`NẠP SAPO THẤT BẠI: ${done}/${total} DÒNG THÀNH CÔNG`};
+    return{label:'CHƯA HOÀN TẤT',kind:'bad',main:`NẠP SAPO CHƯA HOÀN TẤT: ${done}/${total} DÒNG`};
   }
 
   function reportText(q){
+    const total=Number(q&&q.total||0),success=Number(q&&q.success||0),remaining=Math.max(0,total-success);
+    const errors=Array.isArray(q&&q.errors)?q.errors:[],info=statusInfo(q);
     const lines=[];lines.push('DHL STOCK SYNC - BÁO CÁO GHI TỒN KHO SAPO');
-    lines.push(`Mã lượt: ${text(q&&q.id)}`);lines.push(`Chi nhánh: ${text(q&&q.locationName)}`);
-    lines.push(`Bắt đầu: ${fmt(q&&q.createdAt)}`);lines.push(`Kết thúc: ${fmt(q&&q.finishedAt)}`);
-    lines.push(`Trạng thái: ${q&&q.status==='done'&&Number(q.success)>=Number(q.total)?'THÀNH CÔNG':'CHƯA HOÀN TẤT'}`);
-    lines.push(`Thành công: ${Number(q&&q.success||0)}/${Number(q&&q.total||0)} dòng`);
-    lines.push(`Số lỗi ghi nhận: ${Array.isArray(q&&q.errors)?q.errors.length:0}`);lines.push('');
+    lines.push(`Queue ID: ${text(q&&q.id)||'—'}`);
+    lines.push(`Shop: ${text(q&&q.host)||'—'}`);
+    lines.push(`Chi nhánh: ${text(q&&q.locationName)||'—'}`);
+    lines.push(`Bắt đầu: ${fmt(q&&q.startedAt||q&&q.createdAt)}`);
+    lines.push(`Kết thúc: ${fmt(q&&q.finishedAt)}`);
+    lines.push(`Trạng thái: ${info.label}`);
+    lines.push(`Tổng dòng: ${total}`);
+    lines.push(`Đã nạp thành công: ${success}`);
+    lines.push(`Còn lại: ${remaining}`);
+    lines.push(`Số lỗi ghi nhận: ${errors.length}`);lines.push('');
     const okRows=Array.isArray(q&&q.successRows)?q.successRows:[];
-    if(okRows.length){lines.push('DÒNG ĐÃ GHI THÀNH CÔNG:');okRows.forEach((r,i)=>lines.push(`${i+1}. SKU ${text(r.sku)||'—'} | variant ${r.variantId||'—'} | tồn ${r.stock} | ${fmt(r.at)}`));lines.push('');}
-    const errors=Array.isArray(q&&q.errors)?q.errors:[];
-    if(errors.length){lines.push('LỖI / LỊCH SỬ THỬ LẠI:');errors.forEach((e,i)=>lines.push(`${i+1}. Dòng ${Number(e.index||0)+1} | SKU ${text(e.sku)||'—'} | variant ${e.variantId||'—'} | ${text(e.error)} | ${fmt(e.at)}`));}
+    if(okRows.length){lines.push('DÒNG ĐÃ GHI THÀNH CÔNG:');okRows.forEach((r,i)=>lines.push(`${i+1}. Index ${Number(r.index||0)} | SKU ${text(r.sku)||'—'} | variant ${r.variantId||'—'} | tồn ${r.stock} | ${fmt(r.at)}`));lines.push('');}
+    if(errors.length){lines.push('LỖI / LỊCH SỬ THỬ LẠI:');errors.forEach((e,i)=>lines.push(`${i+1}. Index ${Number(e.index||0)} | SKU ${text(e.sku)||'—'} | variant ${e.variantId||'—'} | tồn ${Number.isFinite(Number(e.stock))?Number(e.stock):'—'} | ${text(e.error)} | ${fmt(e.at)}`));}
     return lines.join('\r\n');
   }
 
@@ -66,9 +73,9 @@
     panel.innerHTML=`<div class="spr-head"><b>BÁO CÁO NẠP TỒN SAPO</b><span class="spr-badge ${info.kind}">${esc(info.label)}</span></div>
       <div class="spr-main ${info.kind}">${esc(info.main)}</div>
       <div class="spr-grid"><div class="spr-stat"><b>${done}</b><span>ĐÃ GHI OK</span></div><div class="spr-stat"><b>${remaining}</b><span>CÒN LẠI</span></div><div class="spr-stat"><b>${errors.length}</b><span>LỖI/THỬ LẠI</span></div></div>
-      <div class="spr-detail">Chi nhánh: <b>${esc(q&&q.locationName||'—')}</b> • Bắt đầu: ${esc(fmt(q&&q.createdAt))}${q&&q.finishedAt?` • Xong: ${esc(fmt(q.finishedAt))}`:''}</div>
-      ${lastError?`<div class="spr-error"><b>Lỗi gần nhất:</b> ${esc(lastError.error)}<br>SKU: ${esc(lastError.sku||'—')} • variant: ${esc(lastError.variantId||'—')}</div>`:''}
-      <div class="spr-actions"><button id="sapoPushReportDownload" type="button" class="secondary" ${q?'':'disabled'}>TẢI BÁO CÁO SAPO (.TXT)</button></div>`;
+      <div class="spr-detail">Shop: <b>${esc(q&&q.host||'—')}</b><br>Chi nhánh: <b>${esc(q&&q.locationName||'—')}</b> • Bắt đầu: ${esc(fmt(q&&q.startedAt||q&&q.createdAt))}${q&&q.finishedAt?` • Xong: ${esc(fmt(q.finishedAt))}`:''}</div>
+      ${lastError?`<div class="spr-error"><b>Lỗi gần nhất:</b> ${esc(lastError.error)}<br>SKU: ${esc(lastError.sku||'—')} • variant: ${esc(lastError.variantId||'—')} • tồn định ghi: ${esc(Number.isFinite(Number(lastError.stock))?Number(lastError.stock):'—')}</div>`:''}
+      <div class="spr-actions"><button id="sapoPushReportDownload" type="button" class="secondary" ${q?'':'disabled'}>TẢI BÁO CÁO NẠP SAPO (.TXT)</button></div>`;
     document.getElementById('sapoPushReportDownload')?.addEventListener('click',downloadReport);
   }
 
