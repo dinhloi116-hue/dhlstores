@@ -39,6 +39,44 @@
     el.addEventListener('change',()=>{writeDraft().catch(()=>{});});
   }
 
+  function setAutoStatus(message,kind=''){
+    const el=document.getElementById('autoStatusLine');
+    if(!el)return;
+    el.textContent=message;
+    el.className=`auto-status ${kind}`;
+  }
+
+  function updateEnabledLabel(cb){
+    const label=cb&&cb.closest('.auto-switch');
+    const span=label&&label.querySelector('span');
+    if(span)span.textContent=cb.checked?'ĐANG BẬT':'ĐANG TẮT';
+  }
+
+  function bindAutoEnabled(){
+    const cb=document.getElementById('autoEnabled');
+    if(!cb||cb.dataset.dhlAutoEnabledBound==='1')return;
+    cb.dataset.dhlAutoEnabledBound='1';
+    updateEnabledLabel(cb);
+    cb.addEventListener('change',()=>{
+      const wanted=Boolean(cb.checked);
+      updateEnabledLabel(cb);
+      cb.disabled=true;
+      chrome.runtime.sendMessage({type:'DHL_AUTO_SAVE_CONFIG',config:{enabled:wanted}},response=>{
+        const runtimeError=chrome.runtime.lastError;
+        cb.disabled=false;
+        if(runtimeError||!response||!response.ok){
+          cb.checked=!wanted;
+          updateEnabledLabel(cb);
+          setAutoStatus(`Không lưu được trạng thái tự động: ${runtimeError&&runtimeError.message||response&&response.error||'Không có phản hồi.'}`,'bad');
+          return;
+        }
+        cb.checked=Boolean(response.config&&response.config.enabled);
+        updateEnabledLabel(cb);
+        setAutoStatus(cb.checked?'Đã BẬT tự động đồng bộ.':'Đã TẮT tự động đồng bộ.','ok');
+      });
+    });
+  }
+
   async function apply(){
     if(applying)return;
     const box=document.querySelector('details.sapo-box');
@@ -65,6 +103,7 @@
       if(secret&&draft.apiSecret&&!secret.value)secret.value=draft.apiSecret;
 
       bindInput(host);bindInput(key);bindInput(secret);
+      bindAutoEnabled();
     }finally{applying=false;}
   }
 
