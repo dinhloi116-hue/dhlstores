@@ -27,6 +27,7 @@ assert.ok(background.indexOf("'warehouse-sku-link-mode.js'")<background.indexOf(
 assert.ok(background.indexOf("'manual-sapo-background.js'")>background.indexOf("'auto-sync-background-v2.js'"));
 
 const bg=read('auto-sync-background-v2.js');
+assert.ok(bg.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
 assert.ok(bg.includes("const ALARM='dhl-auto-stock-sync'"));
 assert.ok(bg.includes("const PUSH_ALARM='dhl-sapo-push-queue'"));
 assert.ok(bg.includes("chrome.tabs.create({url,active:false})"));
@@ -56,6 +57,7 @@ assert.ok(bg.includes("if(q&&q.status==='paused'){q.status='running';await chrom
 assert.ok(!bg.includes('q.index=0'));
 
 const manualBg=read('manual-sapo-background.js');
+assert.ok(manualBg.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
 assert.ok(manualBg.includes("message.type!=='DHL_SAPO_PUSH_MANUAL'"));
 assert.ok(manualBg.includes("source:'manual'"));
 assert.ok(manualBg.includes('manualPaused'));
@@ -80,6 +82,7 @@ assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode
 assert.ok(popup.indexOf('workflow-order-mode.js')>popup.indexOf('sapo-push-report-mode.js'));
 
 const manualUi=read('manual-sapo-output-mode.js');
+assert.ok(manualUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
 assert.ok(manualUi.includes('TẢI FILE EXCEL'));
 assert.ok(manualUi.includes('ĐẨY THẲNG LÊN SAPO'));
 assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_MANUAL'"));
@@ -88,10 +91,13 @@ assert.ok(manualUi.includes('THỬ LẠI ĐẨY SAPO'));
 assert.ok(manualUi.includes("if(el&&el.textContent!==value)el.textContent=value"));
 
 const batchUi=read('batch-stock-cache-mode.js');
+assert.ok(batchUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
+assert.ok(batchUi.includes("const LEGACY_BATCH_KEY='dhlPendingStockBatchV1'"));
+assert.ok(batchUi.includes('migrateLegacyManual'));
 assert.ok(batchUi.includes('auto:false'));
 assert.ok(batchUi.includes('x.auto!==true'));
-assert.ok(batchUi.includes('keepAutomaticOnly'));
 assert.ok(batchUi.includes('BƯỚC 3 — CHỌN ĐẦU RA'));
+assert.ok(batchUi.includes("chrome.storage.local.set({[BATCH_KEY]:{}})"));
 
 const autoUi=read('auto-sync-mode.js');
 assert.ok(autoUi.includes("persistPatch({enabled:wanted}"));
@@ -102,9 +108,11 @@ assert.ok(autoUi.includes('4. Bật lịch tự động'));
 assert.ok(!autoUi.includes("setInterval(()=>{if(document.getElementById('autoSyncPanel'))load()"));
 
 const excel=read('auto-sync-excel-mode.js');
+assert.ok(excel.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
 assert.ok(excel.includes('TẢI FILE EXCEL'));
 assert.ok(excel.includes('buildOfficialInventoryWorkbook'));
 assert.ok(excel.includes('selectedProfileIds'));
+assert.ok(excel.includes('entry.auto===true'));
 assert.ok(excel.includes('Cache và hàng đợi Sapo vẫn được giữ nguyên'));
 assert.ok(!excel.includes("chrome.storage.local.set({[BATCH_KEY]:{}})"));
 
@@ -128,4 +136,9 @@ assert.ok(workflow.includes("document.getElementById('autoSyncPanel')"));
 assert.ok(workflow.includes('BƯỚC 1 — CHỌN HỒ SƠ CẦN QUÉT'));
 assert.ok(workflow.includes('BƯỚC 2 — QUÉT TAB NGUỒN'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'manual cache isolated; output = Excel or direct Sapo queue',autoUi:'controls auto-save; runtime refresh does not rebuild form',workflow:'step order = profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
+const profileTabs=read('profile-tabs-mode.js');
+assert.ok(profileTabs.includes('profileTabsSignature'));
+assert.ok(profileTabs.includes('if (rendering) return false'));
+assert.ok(profileTabs.includes('requestAnimationFrame'));
+
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated manual cache + Excel/direct Sapo output',auto:'dedicated automatic cache + filtered automatic Excel',autoUi:'controls auto-save; runtime refresh does not rebuild form',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
