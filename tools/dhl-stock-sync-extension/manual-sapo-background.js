@@ -9,7 +9,7 @@
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const STATUS_KEY='dhlAutoSyncStatusV1';
   const CYCLE_KEY='dhlAutoSyncCycleV1';
-  const BATCH_KEY='dhlPendingStockBatchV1';
+  const BATCH_KEY='dhlManualPendingStockBatchV1';
   const SAPO_QUEUE_KEY='dhlSapoPushQueueV1';
   const SAPO_MAP_KEY='dhlSapoInventoryMapV1';
   const MANUAL_ALARM='dhl-sapo-manual-push-queue';
