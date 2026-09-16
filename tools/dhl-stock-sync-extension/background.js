@@ -9,6 +9,7 @@ importScripts(
   'batch-stock-core.js',
   'auto-sync-core.js',
   'sapo-inventory-resolver-core.js',
+  'sapo-product-create-background.js',
   'auto-sync-background-v2.js',
   'manual-sapo-background.js',
   'auto-sync-safety-background.js'
