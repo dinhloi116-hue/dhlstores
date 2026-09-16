@@ -8,15 +8,26 @@
   const text=(v)=>String(v==null?'':v).trim();
   const normSku=(v)=>text(v).toUpperCase().replace(/\s+/g,' ');
 
-  function inventoryCandidates(data){
+  function objectRoots(data){
     if(!data||typeof data!=='object')return[];
-    for(const key of ['inventory_items','items','data']){
+    const roots=[data];
+    for(const key of ['data','result']){
       const value=data[key];
-      if(Array.isArray(value))return value;
-      if(value&&Array.isArray(value.inventory_items))return value.inventory_items;
-      if(value&&Array.isArray(value.items))return value.items;
+      if(value&&typeof value==='object'&&!Array.isArray(value))roots.push(value);
     }
-    if(data.inventory_item)return[data.inventory_item];
+    return roots;
+  }
+
+  function inventoryCandidates(data){
+    if(Array.isArray(data))return data;
+    for(const root of objectRoots(data)){
+      for(const key of ['inventory_items','items']){
+        const value=root[key];
+        if(Array.isArray(value))return value;
+      }
+      if(root.inventory_item&&typeof root.inventory_item==='object')return[root.inventory_item];
+      if(root.data&&Array.isArray(root.data))return root.data;
+    }
     return[];
   }
 
@@ -31,24 +42,41 @@
       const byVariant=list.find(x=>Number(x&&x.variant_id)===variantId);
       if(byVariant)return byVariant;
     }
-    if(sku){
-      const bySku=list.find(x=>normSku(x&&x.sku)===sku);
-      if(bySku)return bySku;
-    }
+    // Nếu API không có variant_id nhưng có SKU trùng ở nhiều sản phẩm, ưu tiên product_id + SKU.
     if(productId&&sku){
       const byProductSku=list.find(x=>Number(x&&x.product_id)===productId&&normSku(x&&x.sku)===sku);
       if(byProductSku)return byProductSku;
     }
+    if(sku){
+      const bySku=list.find(x=>normSku(x&&x.sku)===sku);
+      if(bySku)return bySku;
+    }
     return null;
   }
 
-  function variantInventoryItemId(data){
-    const variant=data&&data.variant?data.variant:data;
-    if(!variant||typeof variant!=='object')return 0;
-    const direct=Number(variant.inventory_item_id||variant.inventoryItemId||0);
+  function inventoryItemIdFromObject(value){
+    if(!value||typeof value!=='object')return 0;
+    const direct=Number(value.inventory_item_id||value.inventoryItemId||0);
     if(direct)return direct;
-    const nested=Number(variant.inventory_item&&variant.inventory_item.id||0);
+    const nested=Number(value.inventory_item&&value.inventory_item.id||0);
     return nested||0;
+  }
+
+  function variantInventoryItemId(data){
+    if(!data||typeof data!=='object')return 0;
+    const roots=[
+      data,
+      data.variant,
+      data.data,
+      data.data&&data.data.variant,
+      data.result,
+      data.result&&data.result.variant
+    ];
+    for(const root of roots){
+      const id=inventoryItemIdFromObject(root);
+      if(id)return id;
+    }
+    return 0;
   }
 
   return{inventoryCandidates,findCandidate,variantInventoryItemId,normSku};
