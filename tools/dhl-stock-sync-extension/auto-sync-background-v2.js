@@ -27,6 +27,7 @@
 
   const text=(v)=>String(v==null?'':v).trim();
   const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+  let configSaveChain=Promise.resolve();
 
   function base64ToBuffer(value){
     const binary=atob(String(value||''));
@@ -94,14 +95,17 @@
     if(!location)throw new Error(`Không tìm thấy chi nhánh Sapo khớp “${branchNames[0]||sapo.locationName||''}”.`);
 
     const verified={storeHost:sapo.storeHost,apiKey:text(sapo.apiKey),apiSecret:text(sapo.apiSecret),locationId:Number(location.id),locationName:text(location.name),locationCount:locations.length,verifiedAt:Date.now()};
-    await chrome.storage.local.set({[CONFIG_KEY]:{...config,sapo:verified,updatedAt:Date.now()}});
+    await saveConfig({sapo:verified});
     return{ok:true,storeName:text(shop&&shop.shop&&shop.shop.name||shop&&shop.store&&shop.store.name||sapo.storeHost),location:{id:verified.locationId,name:verified.locationName},locationCount:locations.length};
   }
 
   async function setupAlarm(){
     const config=await readConfig();
     await chrome.alarms.clear(ALARM);
-    if(!config.enabled)return;
+    if(!config.enabled){
+      await writeStatus({enabled:false,nextRunAt:0,intervalHours:config.intervalHours});
+      return;
+    }
     chrome.alarms.create(ALARM,{delayInMinutes:config.intervalHours*60,periodInMinutes:config.intervalHours*60});
     const alarm=await chrome.alarms.get(ALARM);
     await writeStatus({enabled:true,nextRunAt:alarm&&alarm.scheduledTime||0,intervalHours:config.intervalHours});
@@ -352,10 +356,19 @@
     }
   }
 
-  async function saveConfig(raw){
+  async function saveConfigNow(raw){
     const current=await readConfig(),next=autoCore.normalizeConfig({...current,...raw,updatedAt:Date.now()});
     if(next.autoPushSapo&&!(next.sapo&&next.sapo.verifiedAt&&next.sapo.locationId))next.autoPushSapo=false;
-    await chrome.storage.local.set({[CONFIG_KEY]:next});await setupAlarm();return next;
+    await chrome.storage.local.set({[CONFIG_KEY]:next});
+    await setupAlarm();
+    return next;
+  }
+
+  function saveConfig(raw){
+    const run=()=>saveConfigNow(raw||{});
+    const pending=configSaveChain.then(run,run);
+    configSaveChain=pending.catch(()=>{});
+    return pending;
   }
 
   chrome.alarms.onAlarm.addListener((alarm)=>{
