@@ -13,15 +13,17 @@ assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'));
 
 for(const file of [
   'background.js','auto-sync-core.js','sapo-inventory-resolver-core.js','auto-sync-background-v2.js',
-  'auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
-  'auto-sync-excel-mode.js','sapo-push-report-mode.js','batch-stock-core.js','stock-history-core.js','popup.html','popup.js','content.js'
+  'manual-sapo-background.js','auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
+  'manual-sapo-output-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','batch-stock-core.js','stock-history-core.js','popup.html','popup.js','content.js'
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
 const background=read('background.js');
 assert.ok(background.includes("'sapo-inventory-resolver-core.js'"));
 assert.ok(background.includes("'auto-sync-background-v2.js'"));
+assert.ok(background.includes("'manual-sapo-background.js'"));
 assert.ok(!background.includes("\n  'auto-sync-background.js',"),'Không được chạy đồng thời background Sapo cũ và v2');
 assert.ok(background.indexOf("'warehouse-sku-link-mode.js'")<background.indexOf("'auto-sync-background-v2.js'"));
+assert.ok(background.indexOf("'manual-sapo-background.js'")>background.indexOf("'auto-sync-background-v2.js'"));
 
 const bg=read('auto-sync-background-v2.js');
 assert.ok(bg.includes("const ALARM='dhl-auto-stock-sync'"));
@@ -46,11 +48,20 @@ assert.ok(!bg.includes("new URLSearchParams({...params,location_id:String(sapo.l
 assert.ok(bg.includes("new URLSearchParams({limit:String(LIST_PAGE_LIMIT),page:String(page)})"));
 assert.ok(!bg.includes("new URLSearchParams({location_id:String(sapo.locationId),limit:String(LIST_PAGE_LIMIT),page:String(page)})"));
 
-// Queue phải checkpoint sau TỪNG dòng thành công; retry không reset index/success.
+// Queue tự động phải checkpoint sau TỪNG dòng thành công; retry không reset index/success.
 assert.ok(bg.includes('Lưu NGAY sau từng dòng thành công'));
 assert.ok(bg.includes("await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});\n        await writeStatus({push:pushState(queue,'running',config)});"));
 assert.ok(bg.includes("if(q&&q.status==='paused'){q.status='running';await chrome.storage.local.set({[SAPO_QUEUE_KEY]:q})"));
 assert.ok(!bg.includes('q.index=0'));
+
+const manualBg=read('manual-sapo-background.js');
+assert.ok(manualBg.includes("message.type!=='DHL_SAPO_PUSH_MANUAL'"));
+assert.ok(manualBg.includes("source:'manual'"));
+assert.ok(manualBg.includes('manualPaused'));
+assert.ok(manualBg.includes("tryInventoryQuery(sapo,row,{variant_id:String(row.variantId)},'variant')"));
+assert.ok(manualBg.includes("inventory_level:{available:Number(row.stock)}"));
+assert.ok(manualBg.includes('await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue})'));
+assert.ok(!manualBg.includes('autoPushSapo===true'));
 
 const resolver=read('sapo-inventory-resolver-core.js');
 assert.ok(resolver.includes('variant_id là định danh chính'));
@@ -58,10 +69,19 @@ assert.ok(resolver.includes('Number(x&&x.variant_id)===variantId'));
 assert.ok(resolver.includes('normSku'));
 
 const popup=read('popup.html');
+assert.ok(popup.includes('manual-sapo-output-mode.js'));
 assert.ok(popup.includes('auto-sync-ui-sticky-mode.js'));
 assert.ok(popup.includes('auto-sync-excel-mode.js'));
 assert.ok(popup.includes('sapo-push-report-mode.js'));
+assert.ok(popup.indexOf('manual-sapo-output-mode.js')>popup.indexOf('batch-stock-cache-mode.js'));
 assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode.js'));
+
+const manualUi=read('manual-sapo-output-mode.js');
+assert.ok(manualUi.includes('TẢI FILE EXCEL'));
+assert.ok(manualUi.includes('ĐẨY THẲNG LÊN SAPO'));
+assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_MANUAL'"));
+assert.ok(manualUi.includes("x.auto!==true"));
+assert.ok(manualUi.includes('THỬ LẠI ĐẨY SAPO'));
 
 const excel=read('auto-sync-excel-mode.js');
 assert.ok(excel.includes('TẢI FILE EXCEL'));
@@ -81,4 +101,4 @@ assert.ok(report.includes('Còn lại:'));
 assert.ok(report.includes('tồn định ghi'));
 assert.ok(report.includes('successRows'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',excel:'manual download beside Sapo output, preserve cache/queue',report:'status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'scan output = Excel or direct Sapo app queue',excel:'automatic section can download Excel without clearing queue',report:'status/remaining/error detail + TXT'});
