@@ -300,6 +300,17 @@
     return (out && out[0] && out[0].result) || null;
   }
 
+  function failedScanResult(item, message) {
+    return {
+      parentId:Number(item&&item.id)||0,
+      parentName:String(item&&item.title||'Sản phẩm không xác định'),
+      sourceUrl:String(item&&item.url||''),
+      imageUrl:String(item&&item.imageUrl||''),
+      variants:[],complete:false,confidence:'low',scanMethod:'popup-dom-explicit-stock',
+      errors:[{message:String(message||'Không nhận được kết quả quét từ trang nguồn')}]
+    };
+  }
+
   async function runScan(limit, store) {
     const tab = await ensureCategoryTab();
     const discovered = await discoverProducts(tab.id);
@@ -309,8 +320,12 @@
     const results=[];
     for (let i=0;i<items.length;i+=1) {
       if (state) state.textContent = `${limit===1?'TEST NHANH':'Đang quét'} ${i+1}/${items.length}: ${items[i].title} • mở popup an toàn, đọc đúng tồn hiển thị`;
-      try { results.push(await scanOnePopup(tab.id, items[i])); }
-      catch (error) { results.push({parentId:items[i].id,parentName:items[i].title,sourceUrl:items[i].url,imageUrl:items[i].imageUrl,variants:[],complete:false,confidence:'low',scanMethod:'popup-dom-explicit-stock',errors:[{message:error.message||String(error)}]}); }
+      try {
+        const result=await scanOnePopup(tab.id, items[i]);
+        results.push(result&&typeof result==='object'?result:failedScanResult(items[i],'Trang nguồn không trả về dữ liệu sản phẩm.'));
+      } catch (error) {
+        results.push(failedScanResult(items[i],error&&error.message||String(error)));
+      }
       await sleep(120);
     }
     if (store) await chrome.storage.local.set({dhlCatalogResults:results,dhlCatalogSkuSamples:{},dhlCatalogAt:Date.now(),dhlCatalogPageTitle:discovered.pageTitle,dhlCatalogPageUrl:discovered.pageUrl});
@@ -322,8 +337,8 @@
     try {
       const stored=await chrome.storage.local.get(['dhlCatalogResults']);
       const results=Array.isArray(stored.dhlCatalogResults)?stored.dhlCatalogResults:[];
-      if (!results.length || results.some((r)=>!r.complete)) throw new Error('Dữ liệu chưa đủ 100%. Không xuất file để tránh ghi sai tồn.');
-      if (results.some((r)=>(r.variants||[]).some((v)=>v.synthesizedFromExplicitOutOfStock))) throw new Error('Có tồn 0 suy đoán. Tool chặn xuất.');
+      if (!results.length || results.some((r)=>!r||r.complete!==true)) throw new Error('Dữ liệu chưa đủ 100%. Không xuất file để tránh ghi sai tồn.');
+      if (results.some((r)=>r&&(r.variants||[]).some((v)=>v.synthesizedFromExplicitOutOfStock))) throw new Error('Có tồn 0 suy đoán. Tool chặn xuất.');
       const out=productCreate.buildWorkbook(results);
       const blob=new Blob([out.bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       const url=URL.createObjectURL(blob),a=document.createElement('a'),d=new Date();
@@ -350,13 +365,15 @@
     scan.disabled=true;test.disabled=true;exp.disabled=true;
     try {
       const {results,discovered,itemCount}=await runScan(null,true);
-      const completeCount=results.filter((r)=>r.complete).length;
-      const variantCount=results.reduce((n,r)=>n+(r.variants||[]).length,0);
-      const allComplete=completeCount===itemCount && results.length===itemCount;
+      const validResults=results.filter((r)=>r&&typeof r==='object');
+      const completeCount=validResults.filter((r)=>r.complete===true).length;
+      const variantCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.length:0),0);
+      const failedCount=Math.max(0,itemCount-completeCount);
+      const allComplete=completeCount===itemCount && validResults.length===itemCount;
       exp.disabled=!allComplete;
       state.textContent=allComplete
         ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể. Có thể tạo file Sapo.`
-        : `${discovered.pageTitle}: CHƯA ĐỦ ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể. Tool KHÓA xuất file.`;
+        : `${discovered.pageTitle}: CHƯA ĐỦ ${completeCount}/${itemCount} sản phẩm • lỗi/thiếu ${failedCount} • ${variantCount} biến thể. Tool đã giữ kết quả quét và KHÓA xuất file để tránh sai dữ liệu.`;
     } catch(error) { state.textContent=`Lỗi: ${error.message||String(error)}`; }
     finally { scan.disabled=false;test.disabled=false; }
   }
@@ -375,7 +392,7 @@
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
     const newExport=replaceAndBind('exportCatalogSource','TẠO FILE SẢN PHẨM SAPO (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
-    if(state)state.textContent='v0.14.5: quét bằng popup thật trên trang, đọc trực tiếp từng dòng size/tồn. KHÔNG suy đoán 0; thiếu dữ liệu thì khóa xuất.';
+    if(state)state.textContent='v0.14.6: quét popup thật; sản phẩm không trả dữ liệu được đánh dấu lỗi thay vì làm sập toàn bộ lượt quét.';
     return Boolean(newScan&&newTest&&newExport);
   }
 
