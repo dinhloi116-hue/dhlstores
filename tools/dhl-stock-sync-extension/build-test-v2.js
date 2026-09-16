@@ -39,6 +39,19 @@ assert.ok(bg.includes('cycle.errors.length===0'));
 assert.ok(bg.includes('PUSH_CHUNK=20'));
 assert.ok(bg.includes("if(!config.autoPushSapo||!config.sapo||!config.sapo.verifiedAt)"));
 
+// Inventory item lookup: variant_id là khóa chính và KHÔNG kèm location_id.
+assert.ok(bg.includes("tryInventoryQuery(sapo,row,{variant_id:String(row.variantId)},'variant')"));
+assert.ok(bg.includes("const q=new URLSearchParams({...params,limit:'50'})"));
+assert.ok(!bg.includes("new URLSearchParams({...params,location_id:String(sapo.locationId),limit:'50'})"));
+assert.ok(bg.includes("new URLSearchParams({limit:String(LIST_PAGE_LIMIT),page:String(page)})"));
+assert.ok(!bg.includes("new URLSearchParams({location_id:String(sapo.locationId),limit:String(LIST_PAGE_LIMIT),page:String(page)})"));
+
+// Queue phải checkpoint sau TỪNG dòng thành công; retry không reset index/success.
+assert.ok(bg.includes('Lưu NGAY sau từng dòng thành công'));
+assert.ok(bg.includes("await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});\n        await writeStatus({push:pushState(queue,'running',config)});"));
+assert.ok(bg.includes("if(q&&q.status==='paused'){q.status='running';await chrome.storage.local.set({[SAPO_QUEUE_KEY]:q})"));
+assert.ok(!bg.includes('q.index=0'));
+
 const resolver=read('sapo-inventory-resolver-core.js');
 assert.ok(resolver.includes('variant_id là định danh chính'));
 assert.ok(resolver.includes('Number(x&&x.variant_id)===variantId'));
@@ -52,7 +65,12 @@ assert.ok(popup.indexOf('sapo-push-report-mode.js')>popup.indexOf('auto-sync-mod
 const report=read('sapo-push-report-mode.js');
 assert.ok(report.includes('ĐÃ NẠP TỒN KHO LÊN SAPO THÀNH CÔNG'));
 assert.ok(report.includes('NẠP SAPO CHƯA HOÀN TẤT'));
-assert.ok(report.includes('TẢI BÁO CÁO SAPO (.TXT)'));
+assert.ok(report.includes("label:'ĐANG NẠP'"));
+assert.ok(report.includes("label:'THẤT BẠI'"));
+assert.ok(report.includes('TẢI BÁO CÁO NẠP SAPO (.TXT)'));
+assert.ok(report.includes('Shop:'));
+assert.ok(report.includes('Còn lại:'));
+assert.ok(report.includes('tồn định ghi'));
 assert.ok(report.includes('successRows'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id first + SKU/product/list fallbacks',report:'explicit success/error counts + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',report:'status/remaining/error detail + TXT'});
