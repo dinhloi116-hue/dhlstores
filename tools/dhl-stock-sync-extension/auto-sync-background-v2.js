@@ -198,17 +198,54 @@
     const alarm=await chrome.alarms.get(ALARM);if(alarm)await writeStatus({nextRunAt:alarm.scheduledTime});
   }
 
+  function pushState(queue,status,config,extra={}){
+    const total=Number(queue&&queue.total||0),done=Number(queue&&queue.index||0),success=Number(queue&&queue.success||0);
+    const errors=Array.isArray(queue&&queue.errors)?queue.errors:[],lastError=errors.length?errors[errors.length-1]:null;
+    return{
+      status,
+      done,
+      success,
+      total,
+      remaining:Math.max(0,total-done),
+      failed:errors.length,
+      lastError,
+      shop:text(queue&&queue.host||config&&config.sapo&&config.sapo.storeHost),
+      locationName:text(queue&&queue.locationName||config&&config.sapo&&config.sapo.locationName),
+      startedAt:Number(queue&&queue.startedAt||queue&&queue.createdAt||0),
+      finishedAt:Number(queue&&queue.finishedAt||0),
+      ...extra
+    };
+  }
+
   async function enqueueSapoPush(config,cycle){
     const s=await chrome.storage.local.get(BATCH_KEY),pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
     const combined=batch.combineEntries(cycle.profileIds.map(id=>pending[id]).filter(Boolean));
-    const queue={id:`push-${Date.now()}`,status:'running',createdAt:Date.now(),host:storeHost(config.sapo.storeHost),locationId:Number(config.sapo.locationId),locationName:text(config.sapo.locationName),rows:combined.rows,index:0,total:combined.rows.length,success:0,successRows:[],errors:[],profileCount:combined.profileCount};
-    await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});await writeStatus({push:{status:'queued',done:0,success:0,total:queue.total,locationName:queue.locationName}});chrome.alarms.create(PUSH_ALARM,{when:Date.now()+1000});
+    const startedAt=Date.now();
+    const queue={id:`push-${startedAt}`,status:'running',createdAt:startedAt,startedAt,host:storeHost(config.sapo.storeHost),locationId:Number(config.sapo.locationId),locationName:text(config.sapo.locationName),rows:combined.rows,index:0,total:combined.rows.length,success:0,successRows:[],errors:[],profileCount:combined.profileCount};
+    await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});await writeStatus({push:pushState(queue,'queued',config)});chrome.alarms.create(PUSH_ALARM,{when:Date.now()+1000});
   }
 
-  async function tryInventoryQuery(sapo,row,params){
-    const q=new URLSearchParams({...params,location_id:String(sapo.locationId),limit:'50'});
+  function findExactVariant(candidates,row){
+    const variantId=Number(row&&row.variantId);
+    if(!variantId)return null;
+    return (Array.isArray(candidates)?candidates:[]).find(x=>Number(x&&x.variant_id)===variantId)||null;
+  }
+
+  function findSkuFallback(candidates,row){
+    const sku=resolver.normSku(row&&row.sku);
+    if(!sku)return null;
+    return (Array.isArray(candidates)?candidates:[]).find(x=>resolver.normSku(x&&x.sku)===sku)||null;
+  }
+
+  async function tryInventoryQuery(sapo,row,params,mode='auto'){
+    // Lookup inventory item không phụ thuộc location_id. Chi nhánh chỉ dùng ở bước PUT tồn kho.
+    const q=new URLSearchParams({...params,limit:'50'});
     const data=await sapoFetch(sapo,`/admin/inventory_items.json?${q.toString()}`);
-    const candidates=resolver.inventoryCandidates(data),item=resolver.findCandidate(candidates,row);
+    const candidates=resolver.inventoryCandidates(data);
+    let item=null;
+    if(mode==='variant')item=findExactVariant(candidates,row);
+    else if(mode==='sku')item=findSkuFallback(candidates,row);
+    else item=resolver.findCandidate(candidates,row);
     return item&&Number(item.id)?item:null;
   }
 
@@ -216,27 +253,55 @@
     const mapKey=`${storeHost(sapo.storeHost)}|${Number(sapo.locationId)}|${Number(row.variantId)}`;
     if(map[mapKey])return{itemId:Number(map[mapKey]),mapKey,cached:true,method:'cache'};
     const attempts=[];
-    const queries=[];
-    if(Number(row.variantId))queries.push({variant_id:String(row.variantId)});
-    if(text(row.sku))queries.push({sku:text(row.sku)});
-    if(Number(row.productId))queries.push({product_id:String(row.productId)});
-    for(const params of queries){
-      try{const item=await tryInventoryQuery(sapo,row,params);if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),mapKey,cached:false,method:Object.keys(params)[0]};}}
-      catch(err){attempts.push(err&&err.message||String(err));}
-    }
+
+    // Khóa chính là variant_id. SKU không được dùng để loại một inventory item có variant_id đúng.
     if(Number(row.variantId)){
-      try{const variantData=await sapoFetch(sapo,`/admin/variants/${Number(row.variantId)}.json`);const itemId=resolver.variantInventoryItemId(variantData);if(itemId){map[mapKey]=itemId;return{itemId,mapKey,cached:false,method:'variant.inventory_item_id'};}}
-      catch(err){attempts.push(err&&err.message||String(err));}
+      try{
+        const item=await tryInventoryQuery(sapo,row,{variant_id:String(row.variantId)},'variant');
+        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),mapKey,cached:false,method:'variant_id'};}
+      }catch(err){attempts.push(err&&err.message||String(err));}
+
+      // Một số phiên bản API trả inventory_item_id trực tiếp ở endpoint variant.
+      try{
+        const variantData=await sapoFetch(sapo,`/admin/variants/${Number(row.variantId)}.json`);
+        const itemId=resolver.variantInventoryItemId(variantData);
+        if(itemId){map[mapKey]=itemId;return{itemId,mapKey,cached:false,method:'variant.inventory_item_id'};}
+      }catch(err){attempts.push(err&&err.message||String(err));}
     }
-    // Fallback cuối: một số shop/API bỏ qua filter variant_id. Quét từng trang inventory của đúng chi nhánh.
+
+    // SKU chỉ là fallback sau khi toàn bộ đường variant_id không tìm được.
+    if(text(row.sku)){
+      try{
+        const item=await tryInventoryQuery(sapo,row,{sku:text(row.sku)},'sku');
+        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),mapKey,cached:false,method:'sku'};}
+      }catch(err){attempts.push(err&&err.message||String(err));}
+    }
+
+    if(Number(row.productId)){
+      try{
+        const item=await tryInventoryQuery(sapo,row,{product_id:String(row.productId)});
+        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),mapKey,cached:false,method:'product_id'};}
+      }catch(err){attempts.push(err&&err.message||String(err));}
+    }
+
+    // Fallback cuối: API có thể bỏ qua filter. Quét danh sách KHÔNG kèm location_id,
+    // ưu tiên tìm đúng variant trên mọi trang rồi mới dùng SKU fallback.
+    let skuFallback=null;
     for(let page=1;page<=MAX_LIST_PAGES;page+=1){
       try{
-        const q=new URLSearchParams({location_id:String(sapo.locationId),limit:String(LIST_PAGE_LIMIT),page:String(page)});
-        const data=await sapoFetch(sapo,`/admin/inventory_items.json?${q.toString()}`),candidates=resolver.inventoryCandidates(data),item=resolver.findCandidate(candidates,row);
-        if(item&&Number(item.id)){map[mapKey]=Number(item.id);return{itemId:Number(item.id),mapKey,cached:false,method:`list-page-${page}`};}
+        const q=new URLSearchParams({limit:String(LIST_PAGE_LIMIT),page:String(page)});
+        const data=await sapoFetch(sapo,`/admin/inventory_items.json?${q.toString()}`),candidates=resolver.inventoryCandidates(data);
+        const exact=findExactVariant(candidates,row);
+        if(exact&&Number(exact.id)){map[mapKey]=Number(exact.id);return{itemId:Number(exact.id),mapKey,cached:false,method:`list-variant-page-${page}`};}
+        if(!skuFallback)skuFallback=findSkuFallback(candidates,row);
         if(candidates.length<LIST_PAGE_LIMIT)break;
       }catch(err){attempts.push(err&&err.message||String(err));break;}
     }
+    if(skuFallback&&Number(skuFallback.id)){
+      map[mapKey]=Number(skuFallback.id);
+      return{itemId:Number(skuFallback.id),mapKey,cached:false,method:'list-sku-fallback'};
+    }
+
     const extra=attempts.length?` • API: ${attempts[attempts.length-1]}`:'';
     throw new Error(`Không tìm thấy inventory item cho SKU ${text(row.sku)||'—'} / variant ${Number(row.variantId)||'—'}${extra}`);
   }
@@ -244,11 +309,17 @@
   async function processSapoQueue(){
     const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]),queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
     if(!queue||queue.status!=='running')return;
+    queue.successRows=Array.isArray(queue.successRows)?queue.successRows:[];
+    queue.errors=Array.isArray(queue.errors)?queue.errors:[];
     if(!config.autoPushSapo||!config.sapo||!config.sapo.verifiedAt){
-      queue.status='paused';queue.errors.push({at:Date.now(),index:queue.index,error:'Tự ghi Sapo đã bị tắt hoặc mất xác minh.'});await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});await writeStatus({push:{status:'error',done:queue.index,success:queue.success||0,total:queue.total,error:'Tự ghi Sapo đã bị tắt hoặc mất xác minh.',locationName:queue.locationName}});return;
+      const row=Array.isArray(queue.rows)?queue.rows[queue.index]||{}:{};
+      queue.status='paused';
+      queue.errors.push({at:Date.now(),index:queue.index,sku:text(row.sku),variantId:Number(row.variantId)||0,stock:Number(row.stock),error:'Tự ghi Sapo đã bị tắt hoặc mất xác minh.'});
+      await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+      await writeStatus({push:pushState(queue,'error',config,{error:'Tự ghi Sapo đã bị tắt hoặc mất xác minh.'})});
+      return;
     }
     const map=s[SAPO_MAP_KEY]&&typeof s[SAPO_MAP_KEY]==='object'?s[SAPO_MAP_KEY]:{},end=Math.min(queue.total,queue.index+PUSH_CHUNK);
-    queue.successRows=Array.isArray(queue.successRows)?queue.successRows:[];queue.errors=Array.isArray(queue.errors)?queue.errors:[];
     try{
       while(queue.index<end){
         const row=queue.rows[queue.index],rowIndex=queue.index;
@@ -258,21 +329,26 @@
         queue.success=Number(queue.success||0)+1;
         queue.successRows.push({index:rowIndex,sku:text(row.sku),variantId:Number(row.variantId)||0,productId:Number(row.productId)||0,stock:Number(row.stock),itemId:resolved.itemId,method:resolved.method,at:Date.now()});
         queue.index+=1;
+
+        // Lưu NGAY sau từng dòng thành công để service worker dừng giữa chừng cũng không ghi lại từ đầu.
+        await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
+        await writeStatus({push:pushState(queue,'running',config)});
         await sleep(1200);
       }
-      await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
       if(queue.index>=queue.total){
-        queue.status='done';queue.finishedAt=Date.now();await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
-        await writeStatus({push:{status:'done',done:queue.total,success:queue.success,total:queue.total,failed:0,locationName:config.sapo.locationName,finishedAt:queue.finishedAt}});
+        queue.status='done';queue.finishedAt=Date.now();
+        await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
+        await writeStatus({push:pushState(queue,'done',config)});
       }else{
-        await writeStatus({push:{status:'running',done:queue.index,success:queue.success,total:queue.total,failed:0,locationName:config.sapo.locationName}});
+        await writeStatus({push:pushState(queue,'running',config)});
         chrome.alarms.create(PUSH_ALARM,{when:Date.now()+65000});
       }
     }catch(err){
       const row=queue.rows[queue.index]||{};
-      queue.status='paused';queue.errors.push({at:Date.now(),index:queue.index,sku:text(row.sku),variantId:Number(row.variantId)||0,stock:Number(row.stock),error:err&&err.message||String(err)});
+      const lastError={at:Date.now(),index:queue.index,sku:text(row.sku),variantId:Number(row.variantId)||0,stock:Number(row.stock),error:err&&err.message||String(err)};
+      queue.status='paused';queue.errors.push(lastError);
       await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
-      await writeStatus({push:{status:'error',done:queue.index,success:queue.success||0,total:queue.total,failed:1,error:queue.errors[queue.errors.length-1].error,locationName:config.sapo.locationName}});
+      await writeStatus({push:pushState(queue,'error',config,{error:lastError.error})});
     }
   }
 
