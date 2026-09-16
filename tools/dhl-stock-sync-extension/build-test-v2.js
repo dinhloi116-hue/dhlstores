@@ -105,6 +105,9 @@ assert.ok(autoUi.includes("persistPatch({selectedProfileIds:collectSelectedProfi
 assert.ok(autoUi.includes("persistPatch({autoPushSapo:Boolean(push.checked)}"));
 assert.ok(autoUi.includes('refreshRuntime'));
 assert.ok(autoUi.includes('4. Bật lịch tự động'));
+assert.ok(autoUi.includes('let configSaveChain=Promise.resolve()'));
+assert.ok(autoUi.includes('const pending=configSaveChain.then(run,run)'));
+assert.ok(autoUi.includes('configSaveChain=pending.catch(()=>{})'));
 assert.ok(!autoUi.includes("setInterval(()=>{if(document.getElementById('autoSyncPanel'))load()"));
 
 const excel=read('auto-sync-excel-mode.js');
@@ -141,4 +144,4 @@ assert.ok(profileTabs.includes('profileTabsSignature'));
 assert.ok(profileTabs.includes('if (rendering) return false'));
 assert.ok(profileTabs.includes('requestAnimationFrame'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated manual cache + Excel/direct Sapo output',auto:'dedicated automatic cache + filtered automatic Excel',autoUi:'controls auto-save; runtime refresh does not rebuild form',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated manual cache + Excel/direct Sapo output',auto:'dedicated automatic cache + filtered automatic Excel',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
