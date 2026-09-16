@@ -7,6 +7,7 @@
   let state={config:null,status:{},profiles:[],pushQueue:null};
   let ignoreConfigReloadUntil=0;
   let runtimeRefreshing=false;
+  let configSaveChain=Promise.resolve();
 
   const text=(v)=>String(v==null?'':v).trim();
   const esc=(v)=>text(v).replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
@@ -206,7 +207,7 @@
     if(push)push.checked=Boolean(cfg.autoPushSapo);
   }
 
-  async function persistPatch(patch,message='Đã tự lưu thay đổi.'){
+  async function persistPatchNow(patch,message){
     ignoreConfigReloadUntil=Date.now()+1200;
     const response=await send({type:'DHL_AUTO_SAVE_CONFIG',config:patch});
     if(!response.ok)throw new Error(response.error||'Không lưu được cấu hình.');
@@ -214,6 +215,13 @@
     syncControlsFromConfig();
     if(message)setStatus(message,'ok',1200);
     return state.config;
+  }
+
+  function persistPatch(patch,message='Đã tự lưu thay đổi.'){
+    const run=()=>persistPatchNow(patch,message);
+    const pending=configSaveChain.then(run,run);
+    configSaveChain=pending.catch(()=>{});
+    return pending;
   }
 
   async function save(showMessage=true){
