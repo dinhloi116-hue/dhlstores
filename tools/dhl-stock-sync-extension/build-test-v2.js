@@ -68,6 +68,9 @@ assert.ok(manualBg.includes('manualPaused'));
 assert.ok(manualBg.includes("tryInventoryQuery(sapo,row,{variant_id:String(row.variantId)},'variant')"));
 assert.ok(manualBg.includes("inventory_level:{available:Number(row.stock)}"));
 assert.ok(manualBg.includes('await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue})'));
+assert.ok(manualBg.includes('sourceScans:sourceScanMap(entries)'));
+assert.ok(manualBg.includes('Number(entry.scannedAt||0)===Number(scannedAt||0)'));
+assert.ok(manualBg.includes('try{await clearConsumedManualCache(queue);}catch{}'));
 assert.ok(!manualBg.includes('autoPushSapo===true'));
 
 const resolver=read('sapo-inventory-resolver-core.js');
@@ -148,4 +151,4 @@ assert.ok(profileTabs.includes('profileTabsSignature'));
 assert.ok(profileTabs.includes('if (rendering) return false'));
 assert.ok(profileTabs.includes('requestAnimationFrame'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated manual cache + Excel/direct Sapo output',auto:'serialized config writes + disabled alarm state + automatic cache',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated cache + safe cleanup after successful direct Sapo push',auto:'serialized config writes + disabled alarm state + automatic cache',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
