@@ -8,6 +8,7 @@
 
   const BATCH_KEY='dhlPendingStockBatchV1';
   const CONFIG_KEY='dhlAutoSyncConfigV1';
+  const CYCLE_KEY='dhlAutoSyncCycleV1';
   const text=(v)=>String(v==null?'':v).trim();
 
   function setStatus(message,kind=''){
@@ -32,12 +33,29 @@
   }
 
   async function selectedEntries(){
-    const s=await chrome.storage.local.get([BATCH_KEY,CONFIG_KEY]);
+    const s=await chrome.storage.local.get([BATCH_KEY,CONFIG_KEY,CYCLE_KEY]);
     const pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
     const cfg=s[CONFIG_KEY]&&typeof s[CONFIG_KEY]==='object'?s[CONFIG_KEY]:{};
-    const ids=Array.isArray(cfg.selectedProfileIds)?cfg.selectedProfileIds.map(String):[];
-    const source=ids.length?ids.map(id=>pending[id]):Object.values(pending);
-    return source.filter(entry=>entry&&entry.auto===true&&Array.isArray(entry.rows)&&entry.rows.length);
+    const cycle=s[CYCLE_KEY]&&typeof s[CYCLE_KEY]==='object'?s[CYCLE_KEY]:null;
+    const ids=Array.isArray(cfg.selectedProfileIds)?cfg.selectedProfileIds.map(String).filter(Boolean):[];
+
+    if(!ids.length)throw new Error('Chưa chọn hồ sơ nào cho chế độ tự động.');
+    if(!cycle||!cycle.id)throw new Error('Chưa có lượt quét tự động hoàn tất để tạo Excel.');
+    if(cycle.running)throw new Error('Lượt quét tự động đang chạy. Chờ quét xong rồi tải Excel.');
+    if(Array.isArray(cycle.errors)&&cycle.errors.length)throw new Error(`Lượt quét tự động gần nhất có ${cycle.errors.length} hồ sơ lỗi. Hãy chạy lại trước khi tải Excel.`);
+
+    const resultByProfile=new Map((Array.isArray(cycle.results)?cycle.results:[]).map(r=>[String(r&&r.profileId||''),r]));
+    const entries=[];
+    const missing=[];
+    for(const id of ids){
+      const entry=pending[id];
+      const result=resultByProfile.get(id);
+      const sameScan=entry&&result&&Number(entry.scannedAt||0)===Number(result.scannedAt||0);
+      if(entry&&entry.auto===true&&sameScan&&Array.isArray(entry.rows)&&entry.rows.length)entries.push(entry);
+      else missing.push(id);
+    }
+    if(missing.length)throw new Error(`Lượt quét gần nhất chưa có đủ dữ liệu mới cho ${missing.length}/${ids.length} hồ sơ. Hãy chạy lại trước khi tải Excel.`);
+    return entries;
   }
 
   async function exportExcel(){
@@ -89,7 +107,7 @@
     btn.type='button';
     btn.className='secondary';
     btn.textContent='TẢI FILE EXCEL';
-    btn.title='Tải file nhập tồn kho Excel từ kết quả quét TỰ ĐỘNG hiện có. Không dùng cache quét thủ công, không xóa cache và không ảnh hưởng hàng đợi Sapo.';
+    btn.title='Chỉ tải dữ liệu thuộc đúng lượt quét tự động gần nhất đã hoàn tất. Không dùng cache quét thủ công và không ảnh hưởng hàng đợi Sapo.';
     btn.addEventListener('click',exportExcel);
     wrap.appendChild(btn);
     return true;
