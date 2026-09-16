@@ -42,6 +42,10 @@ assert.ok(bg.includes("inventory_level:{available:Number(row.stock)}"));
 assert.ok(bg.includes('cycle.errors.length===0'));
 assert.ok(bg.includes('PUSH_CHUNK=20'));
 assert.ok(bg.includes("if(!config.autoPushSapo||!config.sapo||!config.sapo.verifiedAt)"));
+assert.ok(bg.includes('let configSaveChain=Promise.resolve()'));
+assert.ok(bg.includes('const pending=configSaveChain.then(run,run)'));
+assert.ok(bg.includes("writeStatus({enabled:false,nextRunAt:0,intervalHours:config.intervalHours})"));
+assert.ok(bg.includes('await saveConfig({sapo:verified})'));
 
 // Inventory item lookup: variant_id là khóa chính và KHÔNG kèm location_id.
 assert.ok(bg.includes("tryInventoryQuery(sapo,row,{variant_id:String(row.variantId)},'variant')"));
@@ -144,4 +148,4 @@ assert.ok(profileTabs.includes('profileTabsSignature'));
 assert.ok(profileTabs.includes('if (rendering) return false'));
 assert.ok(profileTabs.includes('requestAnimationFrame'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated manual cache + Excel/direct Sapo output',auto:'dedicated automatic cache + filtered automatic Excel',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant_id primary, no location_id lookup + SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated manual cache + Excel/direct Sapo output',auto:'serialized config writes + disabled alarm state + automatic cache',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
