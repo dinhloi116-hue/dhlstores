@@ -35,6 +35,7 @@
   function statusInfo(q){
     if(!q)return{label:'CHƯA CÓ',kind:'',main:'Chưa có lượt ghi tồn kho nào lên Sapo.'};
     const done=Number(q.success||0),total=Number(q.total||0);
+    if(q.source==='manual'&&q.manualPaused===true)return{label:'CHƯA HOÀN TẤT',kind:'bad',main:`ĐẨY SAPO THỦ CÔNG ĐANG DỪNG: ${done}/${total} DÒNG THÀNH CÔNG`};
     if(q.status==='done'&&total>0&&done>=total)return{label:'THÀNH CÔNG',kind:'ok',main:`ĐÃ NẠP TỒN KHO LÊN SAPO THÀNH CÔNG ${done}/${total} DÒNG`};
     if(q.status==='running'||q.status==='queued')return{label:'ĐANG NẠP',kind:'run',main:`ĐANG NẠP TỒN KHO LÊN SAPO: ${done}/${total} DÒNG`};
     if(q.status==='paused')return{label:'CHƯA HOÀN TẤT',kind:'bad',main:`NẠP SAPO CHƯA HOÀN TẤT: ${done}/${total} DÒNG THÀNH CÔNG`};
@@ -46,6 +47,7 @@
     const total=Number(q&&q.total||0),success=Number(q&&q.success||0),remaining=Math.max(0,total-success);
     const errors=Array.isArray(q&&q.errors)?q.errors:[],info=statusInfo(q);
     const lines=[];lines.push('DHL STOCK SYNC - BÁO CÁO GHI TỒN KHO SAPO');
+    lines.push(`Nguồn: ${q&&q.source==='manual'?'Quét thủ công':'Tự động'}`);
     lines.push(`Queue ID: ${text(q&&q.id)||'—'}`);
     lines.push(`Shop: ${text(q&&q.host)||'—'}`);
     lines.push(`Chi nhánh: ${text(q&&q.locationName)||'—'}`);
@@ -73,7 +75,7 @@
     panel.innerHTML=`<div class="spr-head"><b>BÁO CÁO NẠP TỒN SAPO</b><span class="spr-badge ${info.kind}">${esc(info.label)}</span></div>
       <div class="spr-main ${info.kind}">${esc(info.main)}</div>
       <div class="spr-grid"><div class="spr-stat"><b>${done}</b><span>ĐÃ GHI OK</span></div><div class="spr-stat"><b>${remaining}</b><span>CÒN LẠI</span></div><div class="spr-stat"><b>${errors.length}</b><span>LỖI/THỬ LẠI</span></div></div>
-      <div class="spr-detail">Shop: <b>${esc(q&&q.host||'—')}</b><br>Chi nhánh: <b>${esc(q&&q.locationName||'—')}</b> • Bắt đầu: ${esc(fmt(q&&q.startedAt||q&&q.createdAt))}${q&&q.finishedAt?` • Xong: ${esc(fmt(q.finishedAt))}`:''}</div>
+      <div class="spr-detail">Nguồn: <b>${q&&q.source==='manual'?'Quét thủ công':'Tự động'}</b><br>Shop: <b>${esc(q&&q.host||'—')}</b><br>Chi nhánh: <b>${esc(q&&q.locationName||'—')}</b> • Bắt đầu: ${esc(fmt(q&&q.startedAt||q&&q.createdAt))}${q&&q.finishedAt?` • Xong: ${esc(fmt(q.finishedAt))}`:''}</div>
       ${lastError?`<div class="spr-error"><b>Lỗi gần nhất:</b> ${esc(lastError.error)}<br>SKU: ${esc(lastError.sku||'—')} • variant: ${esc(lastError.variantId||'—')} • tồn định ghi: ${esc(Number.isFinite(Number(lastError.stock))?Number(lastError.stock):'—')}</div>`:''}
       <div class="spr-actions"><button id="sapoPushReportDownload" type="button" class="secondary" ${q?'':'disabled'}>TẢI BÁO CÁO NẠP SAPO (.TXT)</button></div>`;
     document.getElementById('sapoPushReportDownload')?.addEventListener('click',downloadReport);
