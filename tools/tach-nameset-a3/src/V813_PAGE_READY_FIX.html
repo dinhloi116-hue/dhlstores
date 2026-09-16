@@ -1,0 +1,34 @@
+<style id="dhl-v813-page-ready-fix-style"></style>
+<script id="dhl-v813-page-ready-fix" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}
+function hook(){
+ if(window.readCurrentPageSize&& !window.readCurrentPageSize._v813){
+   var oldRead=window.readCurrentPageSize;
+   var wrap=function(){
+     var r=oldRead.apply(window,arguments);
+     setTimeout(function(){
+       var pr=E('pageResult');
+       if(pr && String(pr.innerHTML||'').indexOf('✓')>=0 && typeof window.setCurrentPrintPage==='function'){
+         try{window.setCurrentPrintPage();}catch(e){}
+         setTimeout(function(){
+           var p=E('pageResult');
+           if(p && String(p.innerHTML||'').indexOf('✓')>=0){
+             p.innerHTML=L()==='vi'?'✓ Khổ trang hiện tại đã được xác nhận. Có thể sang BƯỚC 5.':'✓ Current page size confirmed. You can continue to STEP 5.';
+           }
+         },80);
+       }
+     },80);
+     return r;
+   };
+   wrap._v813=true;
+   window.readCurrentPageSize=wrap;
+ }
+ var v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
+ if(v&&v.length)v[0].innerHTML='v8.13';
+ if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.13 · page-step unlock fix · VI / EN';
+}
+function finish(){hook();setTimeout(hook,900);}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,4700);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,4700);});else setTimeout(finish,4900);
+})();
+</script>
