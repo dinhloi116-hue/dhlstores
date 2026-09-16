@@ -3,10 +3,10 @@ $ErrorActionPreference = 'Stop'
 $repoBase = 'https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3'
 $stamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $tmpBase = Join-Path $env:TEMP 'DockerUI_DHL_Base.html'
-$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V816.html'
+$tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V817.html'
 $log = Join-Path $env:TEMP 'DHL_NAMESET_UPDATE_LOG.txt'
 $patchNames = @(
-  'V77_PATCH.html','V78_PATCH.html','V79_PATCH.html','V80_PATCH.html','V81_PATCH.html','V82_PATCH.html','V83_PATCH.html','V84_PATCH.html','V85_PATCH.html','V86_PATCH.html','V87_LICENSE.html','V88_FONT_FIX.html','V89_FONT_FREEZE_FIX.html','V810_WORKFLOW_ORDER.html','V811_FONT_ORDER.html','V812_FONT_LOAD_FIX.html','V813_PAGE_READY_FIX.html','V814_SMART_ROTATION_NEST.html','V815_DEEP_NEST.html','V816_SEARCH_NEST.html'
+  'V77_PATCH.html','V78_PATCH.html','V79_PATCH.html','V80_PATCH.html','V81_PATCH.html','V82_PATCH.html','V83_PATCH.html','V84_PATCH.html','V85_PATCH.html','V86_PATCH.html','V87_LICENSE.html','V88_FONT_FIX.html','V89_FONT_FREEZE_FIX.html','V810_WORKFLOW_ORDER.html','V811_FONT_ORDER.html','V812_FONT_LOAD_FIX.html','V813_PAGE_READY_FIX.html','V814_SMART_ROTATION_NEST.html','V815_DEEP_NEST.html','V816_SEARCH_NEST.html','V817_BEAM_NEST.html'
 )
 $markers = @{
   'V77_PATCH.html'='dhl-v77-features'
@@ -29,6 +29,7 @@ $markers = @{
   'V814_SMART_ROTATION_NEST.html'='dhl-v814-smart-rotation-nest'
   'V815_DEEP_NEST.html'='dhl-v815-deep-nest'
   'V816_SEARCH_NEST.html'='dhl-v816-search-nest'
+  'V817_BEAM_NEST.html'='dhl-v817-beam-nest'
 }
 $tmpPatches = @{}
 
@@ -39,9 +40,9 @@ function Log([string]$s){
 }
 
 try {
-  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.16 - ' + (Get-Date)) -Encoding UTF8
+  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.17 - ' + (Get-Date)) -Encoding UTF8
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  Log 'Downloading DHL Nameset Layout V8.16...'
+  Log 'Downloading DHL Nameset Layout V8.17...'
 
   Invoke-WebRequest -UseBasicParsing -Uri ($repoBase + '/src/DockerUI.html?v=' + $stamp) -OutFile $tmpBase
   foreach($name in $patchNames){
@@ -63,15 +64,15 @@ try {
     [void]$append.Append("`r`n")
   }
 
-  $raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.16').Replace('v7.4','v8.16')
+  $raw = $raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.17').Replace('v7.4','v8.17')
   if($raw.IndexOf('</body>') -lt 0){ throw 'Base UI is missing </body>.' }
   $raw = $raw.Replace('</body>', $append.ToString() + '</body>')
 
   $utf8 = New-Object Text.UTF8Encoding($false)
   [IO.File]::WriteAllText($tmpOut,$raw,$utf8)
   $verify = [IO.File]::ReadAllText($tmpOut)
-  if ($verify.IndexOf('DHL_UI_VERSION=8.16') -lt 0 -or $verify.IndexOf('dhl-v816-search-nest') -lt 0) { throw 'Could not build V8.16 UI.' }
-  Log ('Built V8.16 UI: ' + (Get-Item -LiteralPath $tmpOut).Length + ' bytes')
+  if ($verify.IndexOf('DHL_UI_VERSION=8.17') -lt 0 -or $verify.IndexOf('dhl-v817-beam-nest') -lt 0) { throw 'Could not build V8.17 UI.' }
+  Log ('Built V8.17 UI: ' + (Get-Item -LiteralPath $tmpOut).Length + ' bytes')
 
   $targets = New-Object System.Collections.Generic.List[string]
   $roots = @()
@@ -107,9 +108,9 @@ try {
         }
       }
       $check = [IO.File]::ReadAllText($dst)
-      if ($check.IndexOf('DHL_UI_VERSION=8.16') -lt 0 -or $check.IndexOf('dhl-v816-search-nest') -lt 0) { throw 'Verification failed after write.' }
+      if ($check.IndexOf('DHL_UI_VERSION=8.17') -lt 0 -or $check.IndexOf('dhl-v817-beam-nest') -lt 0) { throw 'Verification failed after write.' }
       $success++
-      Log ('UPDATED V8.16: ' + $dst)
+      Log ('UPDATED V8.17: ' + $dst)
     } catch {
       $failed++
       Log ('SKIP FAILED TARGET: ' + $target + ' | ' + $_.Exception.Message)
@@ -121,10 +122,10 @@ try {
   Remove-Item -LiteralPath $tmpBase,$tmpOut -Force -ErrorAction SilentlyContinue
   foreach($name in $patchNames){ if($tmpPatches.ContainsKey($name)){ Remove-Item -LiteralPath $tmpPatches[$name] -Force -ErrorAction SilentlyContinue } }
 
-  Log ('DONE - V8.16 installed to ' + $success + ' location(s); failed/skipped: ' + $failed)
+  Log ('DONE - V8.17 installed to ' + $success + ' location(s); failed/skipped: ' + $failed)
   Write-Host ''
-  Write-Host 'DONE - DHL Nameset Layout V8.16 installed.' -ForegroundColor Cyan
-  Write-Host 'V8.16: deeper material-length search using MaxRects + Skyline, local mutations, time-bounded multi-start search, and safe 0/90 baseline comparison.'
+  Write-Host 'DONE - DHL Nameset Layout V8.17 installed.' -ForegroundColor Cyan
+  Write-Host 'V8.17: MaxRects + Skyline + beam placement search, longer bounded search, and safe baseline comparison for lower material length.'
   Write-Host ('Log: ' + $log) -ForegroundColor DarkGray
   exit 0
 }
