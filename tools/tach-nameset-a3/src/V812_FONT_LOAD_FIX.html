@@ -14,7 +14,6 @@ function readFonts(){
  var ps=temp('DHL_LIST_FONTS_V812.ps1'),out=temp('DHL_FONTS_V812.txt'),err=temp('DHL_FONTS_V812_ERR.txt'),rc,script,lines,fonts=[],seen={},i,n;
  try{if(fso().FileExists(out))fso().DeleteFile(out,true);}catch(x){}try{if(fso().FileExists(err))fso().DeleteFile(err,true);}catch(x2){}
  script="$ErrorActionPreference='Stop'\r\n"+
- "param()\r\n"+
  "try {\r\n"+
  "  Add-Type -AssemblyName System.Drawing\r\n"+
  "  $c = New-Object System.Drawing.Text.InstalledFontCollection\r\n"+
@@ -34,22 +33,9 @@ function readFonts(){
  return fonts;
 }
 function fill(sel,fonts,keep){var i;if(!sel)return;while(sel.options.length>1)sel.remove(1);for(i=0;i<fonts.length;i++)sel.options.add(new Option(fonts[i],fonts[i]));if(keep)sel.value=keep;}
-function populate(fonts){
- var a=E('nameFont'),b=E('numberFont'),n=E('v86NameFont'),d=E('v86NoFont'),ka=a?a.value:'',kb=b?b.value:'',kn=n?n.value:'',kd=d?d.value:'';
- fill(a,fonts,ka);fill(b,fonts,kb);fill(n,fonts,kn);fill(d,fonts,kd);
-}
+function populate(fonts){var a=E('nameFont'),b=E('numberFont'),n=E('v86NameFont'),d=E('v86NoFont'),ka=a?a.value:'',kb=b?b.value:'',kn=n?n.value:'',kd=d?d.value:'';fill(a,fonts,ka);fill(b,fonts,kb);fill(n,fonts,kn);fill(d,fonts,kd);}
 function status(msg,ok){var s=E('v86Status');if(s){s.className='v86-note '+(ok?'ok':'bad');s.innerHTML=msg;}var s2=E('fontStatus');if(s2)s2.innerHTML=msg;}
-window.loadInstalledFonts=function(force){
- var b=E('v86LoadFonts'),fonts;
- if(busy)return cache?cache.length:0;busy=true;if(b){b.disabled=true;b.className=(b.className||'')+' v812-loading';}
- try{
-   status(L()==='vi'?'Đang đọc font đã cài trên Windows...':'Reading installed Windows fonts...',true);
-   fonts=(cache&&!force)?cache:readFonts();cache=fonts;populate(fonts);
-   status((L()==='vi'?'✓ Đã nạp ':'✓ Loaded ')+fonts.length+(L()==='vi'?' font. Bây giờ hãy chọn Font tên và Font số.':' fonts. Now choose Name and Number fonts.'),true);
-   return fonts.length;
- }catch(e){status((L()==='vi'?'Không nạp được font: ':'Could not load fonts: ')+esc(e.message),false);return 0;}
- finally{busy=false;if(b){b.disabled=false;b.className=(b.className||'').replace(/\s*v812-loading\b/g,'');}}
-};
+window.loadInstalledFonts=function(force){var b=E('v86LoadFonts'),fonts;if(busy)return cache?cache.length:0;busy=true;if(b){b.disabled=true;b.className=(b.className||'')+' v812-loading';}try{status(L()==='vi'?'Đang đọc font đã cài trên Windows...':'Reading installed Windows fonts...',true);fonts=(cache&&!force)?cache:readFonts();cache=fonts;populate(fonts);status((L()==='vi'?'✓ Đã nạp ':'✓ Loaded ')+fonts.length+(L()==='vi'?' font. Bây giờ hãy chọn Font tên và Font số.':' fonts. Now choose Name and Number fonts.'),true);return fonts.length;}catch(e){status((L()==='vi'?'Không nạp được font: ':'Could not load fonts: ')+esc(e.message),false);return 0;}finally{busy=false;if(b){b.disabled=false;b.className=(b.className||'').replace(/\s*v812-loading\b/g,'');}}};
 function hook(){var b=E('v86LoadFonts'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(!b){setTimeout(hook,180);return;}b.onclick=function(){window.loadInstalledFonts(true);return false;};if(v&&v.length)v[0].innerHTML='v8.12';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.12 · reliable font loader · VI / EN';}
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(hook,4300);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(hook,4300);});else setTimeout(hook,4500);
 })();
