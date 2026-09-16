@@ -36,8 +36,8 @@
     const pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
     const cfg=s[CONFIG_KEY]&&typeof s[CONFIG_KEY]==='object'?s[CONFIG_KEY]:{};
     const ids=Array.isArray(cfg.selectedProfileIds)?cfg.selectedProfileIds.map(String):[];
-    const entries=ids.length?ids.map(id=>pending[id]).filter(Boolean):Object.values(pending);
-    return entries;
+    const source=ids.length?ids.map(id=>pending[id]):Object.values(pending);
+    return source.filter(entry=>entry&&entry.auto===true&&Array.isArray(entry.rows)&&entry.rows.length);
   }
 
   async function exportExcel(){
@@ -45,15 +45,15 @@
     if(btn){btn.disabled=true;btn.textContent='ĐANG TẠO EXCEL...';}
     try{
       const entries=await selectedEntries();
-      if(!entries.length)throw new Error('Chưa có kết quả quét tự động để tạo Excel. Hãy chạy quét trước.');
+      if(!entries.length)throw new Error('Chưa có kết quả quét tự động để tạo Excel. Hãy chạy quét tự động trước.');
       const combined=batch.combineEntries(entries);
-      if(!combined.rows.length)throw new Error('Kết quả quét chưa có dòng tồn kho hợp lệ.');
+      if(!combined.rows.length)throw new Error('Kết quả quét tự động chưa có dòng tồn kho hợp lệ.');
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,combined.rows,combined.branch);
       if(out.templateSignature!=='SAPO-INVENTORY-TEMPLATE-V2')throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
       download(out.bytes,`SAPO_TON_KHO_TU_DONG_${fileStamp()}.xlsx`);
-      setStatus(`Đã tải file Excel: ${combined.profileCount} hồ sơ • ${out.rows} dòng. Cache và hàng đợi Sapo vẫn được giữ nguyên.`,'ok');
+      setStatus(`Đã tải file Excel tự động: ${combined.profileCount} hồ sơ • ${out.rows} dòng. Cache và hàng đợi Sapo vẫn được giữ nguyên.`,'ok');
     }catch(error){
-      setStatus(`Lỗi tải Excel: ${error.message||String(error)}`,'bad');
+      setStatus(`Lỗi tải Excel tự động: ${error.message||String(error)}`,'bad');
     }finally{
       if(btn){btn.disabled=false;btn.textContent='TẢI FILE EXCEL';}
     }
@@ -89,7 +89,7 @@
     btn.type='button';
     btn.className='secondary';
     btn.textContent='TẢI FILE EXCEL';
-    btn.title='Tải file nhập tồn kho Excel từ kết quả quét tự động hiện có. Không xóa cache và không ảnh hưởng hàng đợi Sapo.';
+    btn.title='Tải file nhập tồn kho Excel từ kết quả quét TỰ ĐỘNG hiện có. Không dùng cache quét thủ công, không xóa cache và không ảnh hưởng hàng đợi Sapo.';
     btn.addEventListener('click',exportExcel);
     wrap.appendChild(btn);
     return true;
