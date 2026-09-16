@@ -71,6 +71,31 @@
     };
   }
 
+  function sourceScanMap(entries){
+    const result={};
+    for(const entry of Array.isArray(entries)?entries:[]){
+      const id=text(entry&&entry.profileId);
+      if(id)result[id]=Number(entry&&entry.scannedAt||0);
+    }
+    return result;
+  }
+
+  async function clearConsumedManualCache(queue){
+    const scans=queue&&queue.sourceScans&&typeof queue.sourceScans==='object'?queue.sourceScans:{};
+    if(!Object.keys(scans).length)return;
+    const s=await chrome.storage.local.get(BATCH_KEY);
+    const pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?{...s[BATCH_KEY]}:{};
+    let changed=false;
+    for(const [profileId,scannedAt] of Object.entries(scans)){
+      const entry=pending[profileId];
+      if(entry&&Number(entry.scannedAt||0)===Number(scannedAt||0)){
+        delete pending[profileId];
+        changed=true;
+      }
+    }
+    if(changed)await chrome.storage.local.set({[BATCH_KEY]:pending});
+  }
+
   function findExactVariant(candidates,row){
     const variantId=Number(row&&row.variantId);
     if(!variantId)return null;
@@ -176,7 +201,8 @@
     const queue={
       id:`manual-push-${startedAt}`,source:'manual',manualPaused:false,status:'running',createdAt:startedAt,startedAt,
       host:storeHost(config.sapo.storeHost),locationId:Number(config.sapo.locationId),locationName:text(config.sapo.locationName),
-      rows:combined.rows,index:0,total:combined.rows.length,success:0,successRows:[],errors:[],profileCount:combined.profileCount,profileIds:ids
+      rows:combined.rows,index:0,total:combined.rows.length,success:0,successRows:[],errors:[],profileCount:combined.profileCount,profileIds:ids,
+      sourceScans:sourceScanMap(entries)
     };
     await chrome.alarms.clear(AUTO_PUSH_ALARM);
     await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
@@ -218,6 +244,7 @@
       if(queue.index>=queue.total){
         queue.status='done';queue.manualPaused=false;queue.finishedAt=Date.now();
         await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
+        try{await clearConsumedManualCache(queue);}catch{}
         await writePushStatus(pushState(queue,'done',config));
       }else{
         await writePushStatus(pushState(queue,'running',config));
