@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const BATCH_KEY='dhlPendingStockBatchV1';
+  const BATCH_KEY='dhlManualPendingStockBatchV1';
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const QUEUE_KEY='dhlSapoPushQueueV1';
   const text=(v)=>String(v==null?'':v).trim();
