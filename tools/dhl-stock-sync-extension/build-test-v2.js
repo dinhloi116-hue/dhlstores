@@ -13,13 +13,14 @@ assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'));
 
 for(const file of [
   'background.js','auto-sync-core.js','sapo-inventory-resolver-core.js','auto-sync-background-v2.js',
-  'manual-sapo-background.js','auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
-  'manual-sapo-output-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
-  'batch-stock-core.js','stock-history-core.js','popup.html','popup.js','content.js'
+  'manual-sapo-background.js','sapo-product-create-background.js','auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
+  'manual-sapo-output-mode.js','sapo-product-create-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
+  'batch-stock-core.js','stock-history-core.js','product-create-core.js','popup.html','popup.js','content.js'
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
 const background=read('background.js');
 assert.ok(background.includes("'sapo-inventory-resolver-core.js'"));
+assert.ok(background.includes("'sapo-product-create-background.js'"));
 assert.ok(background.includes("'auto-sync-background-v2.js'"));
 assert.ok(background.includes("'manual-sapo-background.js'"));
 assert.ok(!background.includes("\n  'auto-sync-background.js',"),'Không được chạy đồng thời background Sapo cũ và v2');
@@ -82,15 +83,47 @@ assert.ok(resolver.includes('data.data&&data.data.variant'));
 assert.ok(resolver.includes('data.result&&data.result.variant'));
 assert.ok(resolver.indexOf('const byProductSku=')<resolver.indexOf('const bySku='));
 
+const productCore=read('product-create-core.js');
+assert.ok(productCore.includes('function makeApiProducts'));
+assert.ok(productCore.includes('images,'));
+assert.ok(productCore.includes('variants')); 
+assert.ok(productCore.includes('validHttpUrl'));
+assert.ok(productCore.includes('variantImage'));
+
+const productBg=read('sapo-product-create-background.js');
+assert.ok(productBg.includes("const QUEUE_KEY='dhlSapoProductCreateQueueV1'"));
+assert.ok(productBg.includes("'/admin/products.json'"));
+assert.ok(productBg.includes("sapoFetch(sapo,'/admin/products.json',{method:'POST'"));
+assert.ok(productBg.includes("images:(item.images||[]).map((src,index)=>({src"));
+assert.ok(productBg.includes("options:[{name:'Size'}]"));
+assert.ok(productBg.includes("inventory_management:'bizweb'"));
+assert.ok(productBg.includes("inventory_quantity:0"));
+assert.ok(productBg.includes('/images.json'));
+assert.ok(productBg.includes("inventory_level:{available:Number(expected.stock)}"));
+assert.ok(productBg.includes('findExistingByAlias'));
+assert.ok(productBg.includes('sameExpectedSkus'));
+assert.ok(productBg.includes('Checkpoint ngay sau POST'));
+assert.ok(productBg.includes("message.type==='DHL_SAPO_PRODUCT_CREATE_RETRY'"));
+
 const popup=read('popup.html');
 assert.ok(popup.includes('manual-sapo-output-mode.js'));
+assert.ok(popup.includes('sapo-product-create-mode.js'));
 assert.ok(popup.includes('auto-sync-ui-sticky-mode.js'));
 assert.ok(popup.includes('auto-sync-excel-mode.js'));
 assert.ok(popup.includes('sapo-push-report-mode.js'));
 assert.ok(popup.includes('workflow-order-mode.js'));
+assert.ok(popup.indexOf('sapo-product-create-mode.js')>popup.indexOf('product-branch-mode.js'));
 assert.ok(popup.indexOf('manual-sapo-output-mode.js')>popup.indexOf('batch-stock-cache-mode.js'));
 assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode.js'));
 assert.ok(popup.indexOf('workflow-order-mode.js')>popup.indexOf('sapo-push-report-mode.js'));
+
+const productUi=read('sapo-product-create-mode.js');
+assert.ok(productUi.includes('ĐĂNG THẲNG LÊN SAPO'));
+assert.ok(productUi.includes("type:'DHL_SAPO_PRODUCT_CREATE_START'"));
+assert.ok(productUi.includes("type:'DHL_SAPO_PRODUCT_CREATE_RETRY'"));
+assert.ok(productUi.includes('makeApiProducts'));
+assert.ok(productUi.includes('Ảnh dùng link nguồn (src), Sapo tự tải ảnh về'));
+assert.ok(productUi.includes('Tool sẽ kiểm tra alias + SKU để tránh tạo trùng'));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
@@ -159,4 +192,4 @@ assert.ok(profileTabs.includes('profileTabsSignature'));
 assert.ok(profileTabs.includes('if (rendering) return false'));
 assert.ok(profileTabs.includes('requestAnimationFrame'));
 
-console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant first + nested API shapes + product/SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated cache + safe cleanup after successful direct Sapo push',auto:'serialized config writes + stale-cycle-safe Excel',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
+console.log('BUILD V2 PASS',{version:manifest.version,sapoResolver:'variant first + nested API shapes + product/SKU fallback',queue:'per-row checkpoint + retry same index',manual:'dedicated cache + safe cleanup after successful direct Sapo push',newProducts:'direct Sapo POST + src image links + Size variants + stock checkpoint/retry',auto:'serialized config writes + stale-cycle-safe Excel',autoUi:'serialized control saves + runtime refresh without form rebuild',workflow:'profile -> scan -> output -> optional automation',report:'manual pause + status/remaining/error detail + TXT'});
