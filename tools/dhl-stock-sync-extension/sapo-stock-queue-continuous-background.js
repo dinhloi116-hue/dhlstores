@@ -11,11 +11,15 @@
 
   function isSystemError(message){
     const s=text(message);
-    return /mất xác minh|chưa xác minh|api key|api secret|tên shop sapo|sapo http (401|403|408|429|5\d\d)|failed to fetch|networkerror|err_internet|err_network|quá nhiều yêu cầu|rate limit/i.test(s);
+    return /mất xác minh|chưa xác minh|api key|api secret|tên shop sapo|sapo http (401|403|405|408|429|5\d\d)|sapo http 404.*request path is not found|failed to fetch|networkerror|err_internet|err_network|quá nhiều yêu cầu|rate limit/i.test(s);
   }
 
   function isLegacyRoute404(message){
     return /sapo http 404.*request path is not found/i.test(text(message));
+  }
+
+  function isLegacyPost405(message){
+    return /sapo http 405.*not supported request method ['"]?post['"]?/i.test(text(message));
   }
 
   async function clearConsumedManualCache(queue){
@@ -41,6 +45,34 @@
     chrome.alarms.create(isManual?MANUAL_ALARM:AUTO_ALARM,{when:Date.now()+delay});
   }
 
+  async function recoverLegacyPost405Queue(queue,isManual){
+    const errors=Array.isArray(queue&&queue.errors)?queue.errors:[];
+    if(Number(queue&&queue.success||0)!==0)return false;
+    if(Number(queue&&queue.index||0)<=0)return false;
+    if(!errors.length||!errors.every(e=>isLegacyPost405(e&&e.error)))return false;
+    if(queue.legacyPost405RecoveredAt)return false;
+
+    // Các dòng đã xử lý trước đó đều thất bại do chính endpoint/method của tool,
+    // không phải dữ liệu sản phẩm. Vì chưa có dòng nào thành công nên reset index=0 là an toàn.
+    queue.recoveryHistory=Array.isArray(queue.recoveryHistory)?queue.recoveryHistory:[];
+    queue.recoveryHistory.push({
+      at:Date.now(),
+      reason:'Sapo 405 POST inventory stock endpoint',
+      processed:Number(queue.index||0),
+      errors:errors.map(e=>({...e}))
+    });
+    queue.index=0;
+    queue.success=0;
+    queue.successRows=[];
+    queue.failed=0;
+    queue.skippedRows=[];
+    queue.errors=[];
+    queue.finishedAt=0;
+    queue.legacyPost405RecoveredAt=Date.now();
+    await schedule(queue,isManual,450);
+    return true;
+  }
+
   async function continueAfterRowError(){
     if(repairing)return;
     repairing=true;
@@ -50,6 +82,10 @@
       if(!queue)return;
 
       const isManual=queue.source==='manual';
+
+      // Tự cứu queue cũ đã bị bỏ qua hàng loạt vì bản trước gọi POST inventory_levels/set.
+      if(await recoverLegacyPost405Queue(queue,isManual))return;
+
       const paused=isManual?queue.manualPaused===true:queue.status==='paused';
       if(!paused)return;
 
@@ -62,7 +98,7 @@
       if(index>=Number(queue.total||rows.length||0))return;
 
       // Queue cũ có thể đang dừng vì endpoint PUT cũ trả 404. Sau khi cập nhật,
-      // retry đúng dòng đó 1 lần bằng lớp tương thích inventory_levels/set trước khi bỏ qua.
+      // retry đúng dòng đó 1 lần bằng lớp tương thích mới trước khi bỏ qua.
       if(isLegacyRoute404(last.error)){
         queue.compatRetriedIndexes=Array.isArray(queue.compatRetriedIndexes)?queue.compatRetriedIndexes:[];
         if(!queue.compatRetriedIndexes.includes(index)){
