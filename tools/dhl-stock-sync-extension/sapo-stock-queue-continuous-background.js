@@ -14,6 +14,10 @@
     return /mất xác minh|chưa xác minh|api key|api secret|tên shop sapo|sapo http (401|403|408|429|5\d\d)|failed to fetch|networkerror|err_internet|err_network|quá nhiều yêu cầu|rate limit/i.test(s);
   }
 
+  function isLegacyRoute404(message){
+    return /sapo http 404.*request path is not found/i.test(text(message));
+  }
+
   async function clearConsumedManualCache(queue){
     const scans=queue&&queue.sourceScans&&typeof queue.sourceScans==='object'?queue.sourceScans:{};
     if(!Object.keys(scans).length)return;
@@ -27,6 +31,14 @@
       }
     }
     if(changed)await chrome.storage.local.set({[MANUAL_BATCH_KEY]:pending});
+  }
+
+  async function schedule(queue,isManual,delay=650){
+    queue.status='running';
+    if(isManual)queue.manualPaused=false;
+    await chrome.storage.local.set({[QUEUE_KEY]:queue});
+    await chrome.alarms.clear(isManual?MANUAL_ALARM:AUTO_ALARM);
+    chrome.alarms.create(isManual?MANUAL_ALARM:AUTO_ALARM,{when:Date.now()+delay});
   }
 
   async function continueAfterRowError(){
@@ -48,6 +60,19 @@
       const rows=Array.isArray(queue.rows)?queue.rows:[];
       const index=Math.max(0,Number(queue.index||0));
       if(index>=Number(queue.total||rows.length||0))return;
+
+      // Queue cũ có thể đang dừng vì endpoint PUT cũ trả 404. Sau khi cập nhật,
+      // retry đúng dòng đó 1 lần bằng lớp tương thích inventory_levels/set trước khi bỏ qua.
+      if(isLegacyRoute404(last.error)){
+        queue.compatRetriedIndexes=Array.isArray(queue.compatRetriedIndexes)?queue.compatRetriedIndexes:[];
+        if(!queue.compatRetriedIndexes.includes(index)){
+          queue.compatRetriedIndexes.push(index);
+          last.compatRetry=true;
+          last.compatRetryAt=Date.now();
+          await schedule(queue,isManual,450);
+          return;
+        }
+      }
 
       if(last.skipped!==true){
         last.skipped=true;
