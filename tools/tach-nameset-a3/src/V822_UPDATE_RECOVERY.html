@@ -1,0 +1,34 @@
+<script id="dhl-v822-update-recovery" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function LANG(){try{return currentLang==='en'?'en':'vi';}catch(e){return'vi';}}
+function reloadV822(){var b=E('reloadGit'),sh,fso,temp,launcher,tf,pexe,script,cmd,rc,base,msg;try{
+ if(b){b.disabled=true;b.innerHTML=LANG()==='vi'?'ĐANG CẬP NHẬT…':'UPDATING…';}
+ sh=new ActiveXObject('WScript.Shell');fso=new ActiveXObject('Scripting.FileSystemObject');temp=sh.ExpandEnvironmentStrings('%TEMP%');launcher=temp+'\\DHL_NAMESET_UPDATE_LAUNCHER_V822.ps1';pexe=sh.ExpandEnvironmentStrings('%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');
+ script="$ErrorActionPreference='Stop'\r\n"
+ +"[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12\r\n"
+ +"$log=Join-Path $env:TEMP 'DHL_NAMESET_LAUNCHER_LOG.txt'\r\n"
+ +"try {\r\n"
+ +"  Set-Content -LiteralPath $log -Value ('DHL launcher V8.22 '+(Get-Date)) -Encoding UTF8\r\n"
+ +"  $u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?v=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n"
+ +"  $p=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET.ps1'\r\n"
+ +"  try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p -TimeoutSec 30 } catch {\r\n"
+ +"    Add-Content -LiteralPath $log -Value ('IWR failed: '+$_.Exception.Message) -Encoding UTF8\r\n"
+ +"    $curl=Join-Path $env:SystemRoot 'System32\\curl.exe'\r\n"
+ +"    if(Test-Path $curl){ & $curl -L --fail --silent --show-error -o $p $u; if($LASTEXITCODE -ne 0){throw 'curl download failed'} } else { (New-Object Net.WebClient).DownloadFile($u,$p) }\r\n"
+ +"  }\r\n"
+ +"  if(!(Test-Path $p)){throw 'Updater was not downloaded'}\r\n"
+ +"  $txt=[IO.File]::ReadAllText($p); if($txt.IndexOf('DHL Nameset Layout updater V8.22') -lt 0){throw 'Downloaded updater is not V8.22'}\r\n"
+ +"  $ps=Join-Path $PSHOME 'powershell.exe'\r\n"
+ +"  $pr=Start-Process -FilePath $ps -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$p) -Verb RunAs -Wait -PassThru\r\n"
+ +"  Add-Content -LiteralPath $log -Value ('Updater exit code: '+$pr.ExitCode) -Encoding UTF8\r\n"
+ +"  exit $pr.ExitCode\r\n"
+ +"} catch { Add-Content -LiteralPath $log -Value ('ERROR: '+$_.Exception.Message) -Encoding UTF8; exit 91 }\r\n";
+ tf=fso.CreateTextFile(launcher,true,false);tf.Write(script);tf.Close();cmd='"'+pexe+'" -NoProfile -ExecutionPolicy Bypass -File "'+launcher+'"';rc=sh.Run(cmd,1,true);try{fso.DeleteFile(launcher,true);}catch(dx){}
+ if(rc===0){base=window.location.href.split('?')[0];window.location.replace(base+'?v='+(new Date()).getTime());}
+ else{msg=(LANG()==='vi'?'Cập nhật chưa chạy được. Mã lỗi ':'Update failed. Error code ')+rc+'\n'+(LANG()==='vi'?'Log: ':'Log: ')+temp+'\\DHL_NAMESET_LAUNCHER_LOG.txt';alert(msg);}
+ }catch(e){alert((LANG()==='vi'?'Không cập nhật được: ':'Could not update: ')+e.message);}finally{if(b){b.disabled=false;b.innerHTML=LANG()==='vi'?'↻ CẬP NHẬT':'↻ UPDATE';}}}
+window.reloadFromGit=reloadV822;
+function finish(){var b=E('reloadGit'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(!b){setTimeout(finish,250);return;}b.onclick=reloadV822;if(v&&v.length)v[0].innerHTML='v8.22';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.22 · robust updater · VI / EN';}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,9800);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,9800);});else setTimeout(finish,10000);
+})();
+</script>
