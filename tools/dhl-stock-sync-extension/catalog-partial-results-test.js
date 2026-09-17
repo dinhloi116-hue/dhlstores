@@ -1,0 +1,12 @@
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const src=fs.readFileSync(path.join(__dirname,'catalog-partial-results-mode.js'),'utf8');
+assert.ok(src.includes("if(item&&item.complete===true&&variants.length>0&&!guessedZero)complete.push(item)"));
+assert.ok(src.includes("else failed.push(item||"));
+assert.ok(src.includes('productCreate.buildWorkbook(complete)'));
+assert.ok(src.includes('productCreate.makeApiProducts(complete)'));
+assert.ok(src.includes('Bỏ qua ${failed.length} sản phẩm lỗi/thiếu'));
+assert.ok(src.includes('Sản phẩm lỗi sẽ KHÔNG chặn các sản phẩm còn lại.'));
+assert.ok(src.includes("exportBtn.disabled=complete.length===0"));
+console.log('CATALOG PARTIAL RESULTS PASS');
