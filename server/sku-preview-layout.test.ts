@@ -6,7 +6,8 @@ describe("public SKU inventory presentation", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
     expect(source).toContain("SKU + tồn kho");
-    expect(source).toContain('inline-flex max-w-full items-center gap-1.5 rounded-lg bg-slate-100');
+    expect(source).toContain('hidden justify-self-end max-w-full items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1');
+    expect(source).toContain('sm:inline-flex');
   });
 
   it("opens a hover preview from the whole SKU row when that SKU has an image", () => {
@@ -65,6 +66,9 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('onClick={event => event.stopPropagation()}');
     expect(source).toContain('clientY - previewHeight - 16');
+    expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)_7rem]');
+    expect(source).toContain('hidden text-right sm:block');
+    expect(source).toContain('sm:grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)_8rem]');
   });
 
   it("protects zeroing a SKU and gives mobile quantity changes feedback", () => {

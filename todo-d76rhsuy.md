@@ -1050,3 +1050,8 @@
 - [x] Xác nhận trước khi đưa một SKU hoặc toàn bộ SKU về 0.
 - [x] Tăng vùng chạm nút +/- trên điện thoại và giữ kích thước gọn trên desktop.
 - [x] Bổ sung hồi quy, chạy test mục tiêu, TypeScript và build production.
+
+## Sửa cột số lượng bị tràn ngang 2026-09-18
+- [x] Thu gọn panel tồn kho về 3 cột trên mobile để cột Số lượng luôn nằm trong viewport.
+- [x] Ẩn metadata SKU phụ trên mobile, giữ đầy đủ SKU + tồn kho từ breakpoint sm trở lên.
+- [x] Cập nhật hồi quy và xác nhận test SKU 23/23, TypeScript đạt.
