@@ -68,7 +68,7 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('clientY - previewHeight - 16');
     expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)_7rem]');
     expect(source).toContain('hidden text-right sm:block');
-    expect(source).toContain('sm:grid-cols-[3.5rem_minmax(0,1fr)_minmax(10.5rem,auto)_8rem]');
+    expect(source).toContain('lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_9rem_11rem]');
   });
 
   it("protects zeroing a SKU and gives mobile quantity changes feedback", () => {
@@ -82,6 +82,11 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("Đã cập nhật");
     expect(source).toContain("h-11 w-11");
     expect(source).toContain("sm:h-9 sm:w-9");
+    expect(source).toContain("quantityWarnings");
+    expect(source).toContain("chỉ còn ${max} sản phẩm trong kho");
+    expect(source).toContain("animate-[pulse_0.45s_ease-out]");
+    expect(source).toContain("Lưu sản phẩm để mua sau");
+    expect(source).toContain("toggleFavoriteMutation.mutate({ productId: product.id })");
   });
 
   it("uses SKU aggregate stock and keeps physical cards free of long descriptions", () => {
