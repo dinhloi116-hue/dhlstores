@@ -1059,3 +1059,10 @@
 ## Sửa bảng nhiều SKU ở breakpoint trung gian 2026-09-18
 - [x] Chuyển bảng chọn nhiều SKU sang layout đầy đủ chỉ từ breakpoint lg.
 - [x] Ở màn hình trung gian, ẩn đơn giá/khả dụng phụ để giữ cột số lượng trong khung.
+
+## Lưu mua sau và nhắc hàng 2026-09-18
+- [x] Tạo trang `/saved` hiển thị danh sách sản phẩm đã lưu, bỏ lưu và mua ngay.
+- [x] Thêm liên kết Lưu mua sau vào menu tài khoản.
+- [x] Cho phép đăng ký nhắc hàng theo SKU hết hàng riêng lẻ và hiển thị trạng thái/hủy nhắc.
+- [x] Thêm CTA Mua ngay nổi bật cạnh bộ chọn số lượng.
+- [x] Bổ sung test hồi quy, TypeScript và build production.
