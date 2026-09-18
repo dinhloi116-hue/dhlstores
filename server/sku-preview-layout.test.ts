@@ -188,7 +188,9 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("SKU duy nhất · chọn số lượng");
     expect(source).toContain("product.type === \"physical\" && variants.length > 1");
     expect(source).toContain("{variants.length > 1 ? <><div className=\"mt-4\">{skuBatchSelector}</div>");
-    expect(source).toContain("<div className=\"divide-y divide-slate-100\">");
+    expect(source).toContain("<div className=\"space-y-2 p-2 sm:p-3\">");
+    expect(source).toContain("rounded-xl border px-3 py-3 transition-all duration-200");
+    expect(source).toContain("col-span-full flex flex-wrap items-center");
     expect(source).not.toContain("max-h-[42rem]");
   });
 
