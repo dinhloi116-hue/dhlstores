@@ -1066,3 +1066,8 @@
 - [x] Cho phép đăng ký nhắc hàng theo SKU hết hàng riêng lẻ và hiển thị trạng thái/hủy nhắc.
 - [x] Thêm CTA Mua ngay nổi bật cạnh bộ chọn số lượng.
 - [x] Bổ sung test hồi quy, TypeScript và build production.
+
+## Marketplace SKU cards theo tham chiếu Shopee 2026-09-18
+- [x] Bỏ cảm giác bảng quản trị ở khu vực chọn nhiều SKU, chuyển thành các thẻ sản phẩm bo góc và có khoảng cách.
+- [x] Ở màn hình hẹp, cụm số lượng xuống hàng riêng, không bị mất hoặc tràn khỏi khung.
+- [x] Giữ layout nhiều cột chỉ ở desktop rộng và cập nhật hồi quy layout.
