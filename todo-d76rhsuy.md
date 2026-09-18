@@ -1055,3 +1055,7 @@
 - [x] Thu gọn panel tồn kho về 3 cột trên mobile để cột Số lượng luôn nằm trong viewport.
 - [x] Ẩn metadata SKU phụ trên mobile, giữ đầy đủ SKU + tồn kho từ breakpoint sm trở lên.
 - [x] Cập nhật hồi quy và xác nhận test SKU 23/23, TypeScript đạt.
+
+## Sửa bảng nhiều SKU ở breakpoint trung gian 2026-09-18
+- [x] Chuyển bảng chọn nhiều SKU sang layout đầy đủ chỉ từ breakpoint lg.
+- [x] Ở màn hình trung gian, ẩn đơn giá/khả dụng phụ để giữ cột số lượng trong khung.
