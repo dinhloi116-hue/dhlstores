@@ -191,6 +191,11 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("<div className=\"space-y-2 p-2 sm:p-3\">");
     expect(source).toContain("rounded-xl border px-3 py-3 transition-all duration-200");
     expect(source).toContain("col-span-full flex flex-wrap items-center");
+    expect(source).toContain("skuStockFilter");
+    expect(source).toContain("setAllVisibleVariantQuantities(1)");
+    expect(source).toContain("Chọn tất cả");
+    expect(source).toContain("Bỏ chọn");
+    expect(source).toContain("animateProductToCart();");
     expect(source).not.toContain("max-h-[42rem]");
   });
 

@@ -92,6 +92,7 @@ export default function ProductDetail() {
   const [adding, setAdding] = useState<boolean>(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [fulfillmentMode, setFulfillmentMode] = useState<'in_stock' | 'preorder'>('in_stock');
+  const [skuStockFilter, setSkuStockFilter] = useState<"all" | "in_stock" | "out_of_stock">("all");
   const [hoveredPreview, setHoveredPreview] = useState<{ variantId: number; x: number; y: number } | null>(null);
   const [previewVariantId, setPreviewVariantId] = useState<number | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -121,7 +122,11 @@ export default function ProductDetail() {
   const restockVariantId = selectedVariant && Number(selectedVariant.stock) <= 0 ? selectedVariant.id : undefined;
   const restockSubscription = product ? (restockSubscriptionsQuery.data || []).find(item => item.productId === product.id && item.variantId === (restockVariantId || 0) && item.status !== "cancelled") : undefined;
   const normalizedSkuSearch = skuSearch.trim().toLocaleLowerCase("vi-VN");
-  const visibleVariants = normalizedSkuSearch ? sortedVariants.filter(variant => `${formatVariantOptions(variant)} ${variant.sku || ""}`.toLocaleLowerCase("vi-VN").includes(normalizedSkuSearch)) : sortedVariants;
+  const visibleVariants = sortedVariants.filter(variant => {
+    const matchesSearch = !normalizedSkuSearch || `${formatVariantOptions(variant)} ${variant.sku || ""}`.toLocaleLowerCase("vi-VN").includes(normalizedSkuSearch);
+    const matchesStock = skuStockFilter === "all" || (skuStockFilter === "in_stock" ? Number(variant.stock) > 0 : Number(variant.stock) <= 0);
+    return matchesSearch && matchesStock;
+  });
   const selectedSkuItems = sortedVariants.map(variant => ({ variant, quantity: variantQuantities[variant.id] ?? 0 })).filter(item => item.quantity > 0);
   const selectedSkuTotal = selectedSkuItems.reduce((total, item) => total + item.quantity, 0);
   const directPurchaseQuantity = product?.type === "physical" && variants.length > 0 ? (selectedVariantId ? variantQuantities[selectedVariantId] ?? 0 : 0) : quantity;
@@ -377,6 +382,17 @@ export default function ProductDetail() {
     toast.success("Đã xóa toàn bộ số lượng SKU về 0.");
   };
 
+  const setAllVisibleVariantQuantities = (quantity: number) => {
+    const selectable = visibleVariants.filter(variant => isPreorder || Number(variant.stock) > 0);
+    if (quantity === 0 && selectedSkuTotal > 0 && typeof window !== "undefined" && !window.confirm("Đưa số lượng các SKU đang lọc về 0 và bỏ khỏi giỏ dự kiến?")) return;
+    setVariantQuantities(current => {
+      const next = { ...current };
+      selectable.forEach(variant => { next[variant.id] = quantity === 0 ? 0 : Math.min(quantity, isPreorder ? 99 : Math.max(0, Number(variant.stock) || 0)); });
+      return next;
+    });
+    toast.success(quantity === 0 ? "Đã bỏ chọn các SKU đang lọc." : `Đã chọn ${selectable.length} SKU đang hiển thị.`);
+  };
+
   const updateVariantQuantity = (variantId: number, requestedQuantity: number) => {
     const variant = variants.find(item => item.id === variantId);
     if (!variant || !Number.isFinite(requestedQuantity)) return;
@@ -409,7 +425,7 @@ export default function ProductDetail() {
         <div><p className="text-xs font-black uppercase tracking-wide text-slate-900">Chọn nhiều SKU, thêm giỏ một lần</p><p className="mt-1 text-[11px] leading-relaxed text-slate-600">Để số lượng <strong>0</strong> cho SKU không lấy. Mỗi dòng có giá, tồn kho và số lượng riêng; bấm Thêm vào giỏ sẽ thêm toàn bộ SKU đang có số lượng.</p></div>
         <div className="flex items-center gap-2"><div className="rounded-lg bg-orange-50 px-3 py-2 text-right"><p className="text-[10px] font-black uppercase tracking-wide text-orange-700">Đang chọn</p><p className="text-sm font-black text-slate-900">{selectedSkuTotal} sản phẩm · {selectedSkuItems.length} SKU</p><p className="mt-1 text-[10px] font-bold text-slate-500">Kho khả dụng: {totalSkuStock} · {inStockSkuCount}/{variants.length} SKU</p>{latestSapoSyncAt && <p className="mt-1 text-[10px] font-semibold text-slate-500">Sapo cập nhật gần nhất: {latestSapoSyncAt.toLocaleString("vi-VN")}</p>}{applicableWholesaleTier && <p className="mt-1 text-[10px] font-black text-emerald-700">Giá sỉ mốc {applicableWholesaleTier.minQuantity} cái</p>}</div><button type="button" onClick={clearAllVariantQuantities} disabled={selectedSkuTotal === 0} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40">Xóa tất cả</button></div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-2"><label className="sr-only" htmlFor="sku-search">Tìm SKU</label><input id="sku-search" value={skuSearch} onChange={event => setSkuSearch(event.target.value)} placeholder="Tìm tên, thuộc tính hoặc mã SKU…" className="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100" />{skuSearch && <button type="button" onClick={() => setSkuSearch("")} className="rounded-lg px-2 py-2 text-xs font-black text-slate-500 hover:bg-slate-100 hover:text-slate-800">Xóa</button>}<span className="text-[10px] font-black text-slate-500">{visibleVariants.length}/{sortedVariants.length} SKU</span></div>
+      <div className="mt-4 grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto]"><div className="flex min-w-0 items-center gap-2"><label className="sr-only" htmlFor="sku-search">Tìm SKU</label><input id="sku-search" value={skuSearch} onChange={event => setSkuSearch(event.target.value)} placeholder="Tìm tên, thuộc tính hoặc mã SKU…" className="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100" />{skuSearch && <button type="button" onClick={() => setSkuSearch("")} className="rounded-lg px-2 py-2 text-xs font-black text-slate-500 hover:bg-slate-100 hover:text-slate-800">Xóa</button>}<span className="shrink-0 text-[10px] font-black text-slate-500">{visibleVariants.length}/{sortedVariants.length} SKU</span></div><div className="flex flex-wrap items-center gap-1.5"><div className="flex rounded-lg border border-slate-200 bg-white p-0.5" aria-label="Lọc tồn kho"><button type="button" onClick={() => setSkuStockFilter("all")} className={`rounded-md px-2 py-1.5 text-[10px] font-black ${skuStockFilter === "all" ? "bg-slate-900 text-white" : "text-slate-500"}`}>Tất cả</button><button type="button" onClick={() => setSkuStockFilter("in_stock")} className={`rounded-md px-2 py-1.5 text-[10px] font-black ${skuStockFilter === "in_stock" ? "bg-emerald-600 text-white" : "text-slate-500"}`}>Còn hàng</button><button type="button" onClick={() => setSkuStockFilter("out_of_stock")} className={`rounded-md px-2 py-1.5 text-[10px] font-black ${skuStockFilter === "out_of_stock" ? "bg-rose-600 text-white" : "text-slate-500"}`}>Hết hàng</button></div><button type="button" onClick={() => setAllVisibleVariantQuantities(1)} disabled={visibleVariants.every(variant => !isPreorder && Number(variant.stock) <= 0)} className="rounded-lg bg-[#ee4d2d] px-2.5 py-2 text-[10px] font-black text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">Chọn tất cả</button><button type="button" onClick={() => setAllVisibleVariantQuantities(0)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-black text-slate-600 hover:border-rose-300 hover:text-rose-700">Bỏ chọn</button></div></div>
       <div className="mt-3 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60">
         <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-600 lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_9rem_11rem]"><span>Ảnh</span><span className="min-w-0 whitespace-normal">Thông tin phiên bản / SKU</span><span className="hidden text-right lg:block">Đơn giá</span><span className="hidden text-right lg:block">Khả dụng</span><span className="hidden text-right lg:block">Số lượng</span></div>
         <div className="space-y-2 p-2 sm:p-3">
