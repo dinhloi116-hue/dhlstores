@@ -1071,3 +1071,10 @@
 - [x] Bỏ cảm giác bảng quản trị ở khu vực chọn nhiều SKU, chuyển thành các thẻ sản phẩm bo góc và có khoảng cách.
 - [x] Ở màn hình hẹp, cụm số lượng xuống hàng riêng, không bị mất hoặc tràn khỏi khung.
 - [x] Giữ layout nhiều cột chỉ ở desktop rộng và cập nhật hồi quy layout.
+
+## Tìm kiếm, lọc và thêm SKU hàng loạt 2026-09-18
+- [x] Thanh tìm kiếm SKU hỗ trợ tên, thuộc tính và mã SKU.
+- [x] Thêm bộ lọc nhanh Tất cả / Còn hàng / Hết hàng.
+- [x] Thêm Chọn tất cả và Bỏ chọn theo danh sách đang lọc, giới hạn an toàn theo tồn kho.
+- [x] Giữ hiệu ứng sản phẩm bay vào giỏ sau khi thêm từng sản phẩm hoặc thêm hàng loạt.
+- [x] Bổ sung hồi quy và kiểm tra TypeScript/build.
