@@ -56,6 +56,17 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('paymentMethod: paymentMethod === "wallet_balance" ? "wallet_balance" : undefined');
   });
 
+  it("keeps quantity controls visible in the compact inventory table", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4"');
+    expect(source).toContain('<span className="text-right">Số lượng</span>');
+    expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
+    expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
+    expect(source).toContain('onClick={event => event.stopPropagation()}');
+    expect(source).toContain('clientY - previewHeight - 16');
+  });
+
   it("uses SKU aggregate stock and keeps physical cards free of long descriptions", () => {
     const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
     const dbSource = readFileSync(new URL("./db.ts", import.meta.url), "utf8");

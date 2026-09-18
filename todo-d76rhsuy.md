@@ -1015,3 +1015,32 @@
 - [x] Cập nhật cache/UI sau khi xóa, xử lý trường hợp SKU cuối cùng và lỗi thao tác.
 - [x] Viết hồi quy Vitest, chạy test mục tiêu, TypeScript, build và kiểm tra responsive.
 - [x] Lưu checkpoint, phát hành website và push thay đổi lên GitHub `main`.
+
+## Xung đột GitHub sau khi hoàn tất xóa SKU 2026-09-10
+- [ ] Xác nhận cách hợp nhất thay đổi mới trên `github/main` (`811487f` và các commit Cloudflare/R2) với checkpoint xóa SKU hiện tại; không force-push hoặc tự ghi đè.
+
+## Hợp nhất GitHub main với thay đổi Cloudflare/R2 2026-09-10
+- [x] Đồng bộ và kiểm tra nền `github/main` mới nhất có Cloudflare/R2 và extension kho.
+- [x] Hợp nhất phần xóa SKU vào nền mới mà không ghi đè thay đổi của công cụ khác.
+- [x] Chạy lại test mục tiêu, TypeScript/build và kiểm tra xung đột sau hợp nhất.
+- [ ] Lưu checkpoint hợp nhất và push an toàn lên GitHub `main`.
+
+## Cấu hình R2 sau hợp nhất GitHub 2026-09-10
+- [ ] Bổ sung cấu hình R2 production/dev: endpoint, access key ID, secret access key và bucket.
+- [ ] Kiểm tra lại StorageProxy và test/build sau khi đủ secret; không commit secret vào GitHub.
+
+## Kết nối domain dhlstores.com 2026-09-10
+- [x] Kiểm tra trạng thái domain production hiện tại của DHL Stores: project hiện có domain `cuahangtoit-9a4r8wsz.manus.space`, còn `dhlstores.com` chưa phân giải DNS.
+- [ ] Gắn `dhlstores.com` vào dự án nếu hệ thống cho phép và không thay đổi DNS ngoài ý muốn.
+- [ ] Xác minh DNS/HTTPS hoặc đưa bản ghi chính xác để người dùng hoàn tất.
+
+## Migration độc lập GitHub–Render–TiDB–R2 2026-09-10
+- [ ] Đối chiếu `github/main` mới nhất với workspace và giữ nguyên dữ liệu/Manus production.
+- [ ] Kiểm tra toàn bộ phụ thuộc Manus Forge/OAuth, R2 và danh sách env cần cho Render.
+- [ ] Kiểm tra `pnpm run build`, `pnpm run start`, kết nối TiDB TLS và StorageProxy R2 mà không reset database.
+- [ ] Xác minh checklist production trước khi trỏ Cloudflare DNS `dhlstores.com` và `www.dhlstores.com`.
+
+## Khôi phục bộ số lượng ở bảng SKU 2026-09-18
+- [x] Hiển thị lại cột số lượng với nút giảm, ô nhập và nút tăng cho từng SKU.
+- [x] Không cho popup preview ảnh che vùng thao tác số lượng; vẫn giữ preview khi rê chuột.
+- [x] Bổ sung hồi quy SKU preview, chạy test mục tiêu, TypeScript và build production.
