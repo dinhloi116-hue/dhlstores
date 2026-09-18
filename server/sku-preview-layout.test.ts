@@ -67,6 +67,19 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('clientY - previewHeight - 16');
   });
 
+  it("protects zeroing a SKU and gives mobile quantity changes feedback", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("Bạn có chắc muốn đưa toàn bộ số lượng SKU về 0 không?");
+    expect(source).toContain("Đưa số lượng “${formatVariantOptions(variant)}” về 0");
+    expect(source).toContain("quantityUpdatingVariantId");
+    expect(source).toContain("quantityUpdatedVariantId");
+    expect(source).toContain("Đang cập nhật");
+    expect(source).toContain("Đã cập nhật");
+    expect(source).toContain("h-11 w-11");
+    expect(source).toContain("sm:h-9 sm:w-9");
+  });
+
   it("uses SKU aggregate stock and keeps physical cards free of long descriptions", () => {
     const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
     const dbSource = readFileSync(new URL("./db.ts", import.meta.url), "utf8");

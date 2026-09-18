@@ -1044,3 +1044,9 @@
 - [x] Hiển thị lại cột số lượng với nút giảm, ô nhập và nút tăng cho từng SKU.
 - [x] Không cho popup preview ảnh che vùng thao tác số lượng; vẫn giữ preview khi rê chuột.
 - [x] Bổ sung hồi quy SKU preview, chạy test mục tiêu, TypeScript và build production.
+
+## Phản hồi thao tác số lượng SKU 2026-09-18
+- [x] Hiển thị loading nhỏ và trạng thái đã cập nhật sau khi đổi số lượng.
+- [x] Xác nhận trước khi đưa một SKU hoặc toàn bộ SKU về 0.
+- [x] Tăng vùng chạm nút +/- trên điện thoại và giữ kích thước gọn trên desktop.
+- [x] Bổ sung hồi quy, chạy test mục tiêu, TypeScript và build production.
