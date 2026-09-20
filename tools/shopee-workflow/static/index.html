@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shopee Product Workflow</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="brand"><span class="logo">▣</span><b>SHOPEE<br>WORKFLOW</b></div>
+  <nav class="tabs"><button data-view="tool" class="active">CÔNG CỤ</button><button data-view="manage">QUẢN LÝ <span id="manageCount">0</span></button><button data-view="export">XUẤT FILE <span id="queueCount">0</span></button></nav>
+  <div class="global-mini"><button id="updateBtn" class="update-btn" title="Kiểm tra và cài bản cập nhật mới nhất">↻ CẬP NHẬT <span id="versionLabel">...</span></button><input id="shopNameTop" placeholder="Tên shop"><button id="saveShop">Lưu shop</button></div>
+</header>
+<main>
+<section id="toolView" class="view active">
+  <div class="steps" id="steps"></div>
+  <section class="step active" data-step="1">
+    <div class="card"><h2>☁ NỘI DUNG GỐC THAM CHIẾU</h2><p class="muted">Ảnh, PDF, Excel hoặc tài liệu nguồn để phân tích sản phẩm. Link chỉ là tùy chọn.</p>
+      <div class="grid2"><div><label class="dropzone" id="dropzone"><input id="sourceFiles" type="file" multiple accept="image/*,.pdf,.xlsx,.xls,.txt,.docx"><strong>CHỌN HOẶC KÉO THẢ NỘI DUNG GỐC</strong><small>JPG, PNG, WEBP, PDF, Excel, TXT</small></label><div id="fileList" class="filelist"></div></div>
+      <div><label>Link nguồn hàng (tùy chọn)</label><input id="sourceLink" placeholder="1688, Taobao, Tmall..."><label class="mt">Ghi chú nguồn</label><textarea id="sourceNote" rows="5" placeholder="Thông tin thêm nếu cần"></textarea></div></div>
+    </div>
+    <div class="card"><h2>▣ CẤU HÌNH GIÁ VỐN</h2>
+      <div class="grid3 inputs"><div><label>Giá nhập (CNY)</label><input id="purchaseCny" type="number" step="0.01"></div><div><label>Tỷ giá</label><input id="exchangeRate" type="number"></div><div><label>Khối lượng tính cước (gram)</label><input id="chargeWeight" type="number"></div><div><label>Cước quốc tế (VNĐ/kg)</label><input id="shipRate" type="number"></div><div><label>Ship nội địa TQ</label><input id="chinaShip" type="number" value="0"></div><div><label>Chi phí khác</label><input id="otherCost" type="number" value="0"></div></div>
+      <div id="costCard" class="cost-card"></div>
+    </div>
+    <div class="actions"><button class="primary" data-next="2">TIẾP THEO: PHÂN TÍCH SẢN PHẨM →</button></div>
+  </section>
+
+  <section class="step" data-step="2">
+    <div class="card"><div class="headrow"><h2>☷ XÁC NHẬN THÔNG TIN SẢN PHẨM</h2><button id="aiAnalyze" class="secondary">AI PHÂN TÍCH (TÙY CHỌN)</button></div>
+      <div class="grid2 inputs"><div><label>Tên sản phẩm</label><input id="productName"></div><div><label>Mã ngành Shopee để xuất file</label><input id="categoryId" placeholder="Ví dụ 100xxx"></div><div class="full"><label>Ngành tính phí</label><div class="searchrow"><input id="categorySearch" placeholder="Gõ tên sản phẩm/ngành..."><button id="findCategory">Dò ngành</button></div><select id="categorySelect"></select><div id="categoryFeeLabel" class="hint"></div></div><div><label>Chất liệu</label><input id="material"></div><div><label>Màu sắc</label><input id="colors"></div><div><label>Kích thước sản phẩm</label><input id="dimensions"></div><div><label>Trọng lượng sản phẩm AI/nguồn (g)</label><input id="productWeight" type="number"></div><div class="full"><label>Đặc điểm / công dụng</label><textarea id="features" rows="5"></textarea></div><div class="full"><label>Phân loại — mỗi dòng 1 mẫu</label><textarea id="variants" rows="5" placeholder="Lá Rùa (Xanh Đậm)&#10;Lá Hoa Huệ (Xanh Nhạt)"></textarea></div></div>
+      <div id="weightWarning" class="warning hidden"></div>
+    </div>
+    <div class="actions"><button class="ghost" data-prev="1">← QUAY LẠI</button><button class="primary" data-next="3">XÁC NHẬN & CHỐT GIÁ BÁN →</button></div>
+  </section>
+
+  <section class="step" data-step="3">
+    <div class="card"><h2>☷ CẤU HÌNH PHÍ SHOPEE & MỤC TIÊU</h2><div class="grid4 inputs" id="feeInputs"></div></div>
+    <div class="card"><div class="headrow"><h2>☷ PHÂN LOẠI & KẾT QUẢ TÍNH GIÁ</h2><span class="badge" id="exchangeInfo"></span></div><div id="priceTable"></div></div>
+    <div class="actions"><button class="ghost" data-prev="2">← QUAY LẠI</button><button class="primary" data-next="4">CHỐT GIÁ & SOẠN SEO →</button></div>
+  </section>
+
+  <section class="step" data-step="4">
+    <div class="card"><div class="headrow"><h2>T TIÊU ĐỀ SHOPEE SEO</h2><button id="aiSeo" class="secondary">AI SOẠN SEO (TÙY CHỌN)</button></div><div id="titleChoices"></div></div>
+    <div class="card"><h2>☰ MÔ TẢ CHI TIẾT</h2><textarea id="description" rows="18"></textarea></div>
+    <div class="actions"><button class="ghost" data-prev="3">← QUAY LẠI</button><button class="primary" data-next="5">TIẾP TỤC: ẢNH BÌA →</button></div>
+  </section>
+
+  <section class="step" data-step="5">
+    <div class="card grid2"><div><h2>↪ CẤU HÌNH ẢNH BÌA CHUNG</h2><label>Chế độ</label><select id="coverMode"><option value="all">Hiển thị tất cả mẫu chính</option><option value="two">Hiển thị 2 mẫu nổi bật</option><option value="one">Hiển thị 1 mẫu đại diện</option><option value="custom">Tự chọn</option></select><label>Phong cách</label><select id="coverStyle"><option>Chân thật</option><option>Studio sản phẩm</option><option>Home decor</option><option>Tối giản</option></select><label>Nền</label><select id="coverBg"><option>Sáng</option><option>Kem / beige</option><option>Xám nhạt</option><option>Không gian sử dụng thực tế</option></select><button id="makeImagePrompt" class="primary wide">✨ TẠO PROMPT CHATGPT</button></div><div><h3>KẾT QUẢ</h3><textarea id="imagePrompt" rows="22" placeholder="Prompt ảnh bìa chung sẽ xuất hiện ở đây"></textarea><div class="row"><button id="copyImagePrompt">COPY PROMPT</button></div></div></div>
+    <div class="card"><h3>Ảnh bìa hoàn thiện (URL công khai — dùng cho file Shopee)</h3><input id="coverUrl" placeholder="https://..."></div>
+    <div class="actions"><button class="ghost" data-prev="4">← QUAY LẠI</button><button class="primary" data-next="6">TIẾP TỤC BƯỚC CUỐI →</button></div>
+  </section>
+
+  <section class="step" data-step="6">
+    <div class="grid2"><div class="card"><h2>DỮ LIỆU ĐĂNG BÁN</h2><label>Tiêu đề SEO</label><input id="finalTitle"><label>Mô tả</label><textarea id="finalDescription" rows="16"></textarea></div><div class="card"><h2>HOÀN TẤT</h2><div id="finalSummary"></div><div class="stack"><button id="saveProduct" class="primary">LƯU VÀO QUẢN LÝ GIAN HÀNG</button><button id="addQueue" class="green">THÊM VÀO FILE SHOPEE</button><button id="newProduct">LÀM SẢN PHẨM MỚI</button></div></div></div>
+    <div class="card"><h2>BẢNG GIÁ CUỐI & LỢI NHUẬN</h2><div id="finalPrices"></div></div>
+    <div class="actions"><button class="ghost" data-prev="5">← QUAY LẠI</button></div>
+  </section>
+</section>
+
+<section id="manageView" class="view"><div class="page-title"><h1>QUẢN LÝ GIAN HÀNG</h1><p>Lưu trữ sản phẩm cục bộ trên trình duyệt.</p></div><div id="productCards" class="cards"></div></section>
+<section id="exportView" class="view"><div class="page-title"><h1>HÀNG CHỜ XUẤT FILE SHOPEE</h1><p>Xuất trên chính template Mass Upload gốc.</p></div><div class="grid2"><div class="card"><div id="exportList"></div></div><div class="card"><h2>CẤU HÌNH XUẤT</h2><label>Chế độ</label><select id="exportMode"><option value="draft">File nháp</option><option value="ready">Sẵn sàng đăng</option></select><div id="exportChecks" class="checks"></div><button id="exportBtn" class="green wide">⬇ XUẤT FILE SHOPEE MASS UPLOAD</button></div></div></section>
+</main>
+<div id="toast"></div>
+<script src="/static/app.js"></script></body></html>
