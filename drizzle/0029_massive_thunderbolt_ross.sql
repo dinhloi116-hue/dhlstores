@@ -1,1 +1,0 @@
-ALTER TABLE `wallet_withdrawals` ADD `qrUrl` varchar(4096);

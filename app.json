@@ -1,0 +1,5 @@
+{
+  "name":"Shopee Workflow",
+  "description":"Shopee workflow full-stack prototype",
+  "requestFramePermissions":["clipboard-read"]
+}
