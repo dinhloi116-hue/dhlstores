@@ -1,0 +1,16 @@
+{
+  "version": "1.1.0",
+  "notes": "Thêm nút cập nhật một chạm; tự tải bản mới, khởi động lại và giữ nguyên dữ liệu/cấu hình người dùng.",
+  "files": [
+    {
+      "path": "VERSION",
+      "url": "https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/shopee-workflow-tool/tools/shopee-workflow/VERSION",
+      "sha256": "1575e1af4a95f12f70b4ee6a6adce8160953d93ea17dc2611b90883ccc3ad3b8"
+    },
+    {
+      "path": "server.py",
+      "url": "https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/shopee-workflow-tool/tools/shopee-workflow/server.py",
+      "sha256": "486e8f218ba825ad6e8dbbb564985fe359683c96bc3dabc7eab05998b5634bd8"
+    }
+  ]
+}
