@@ -1084,3 +1084,9 @@
 - [x] Thêm sắp xếp SKU theo giá tăng/giảm và tồn kho tăng/giảm, cạnh thanh tìm kiếm/lọc.
 - [x] Cho phép rê chuột xem preview ảnh và nhấn ảnh hoặc tên phiên bản để mở ảnh chi tiết.
 - [x] Bổ sung hồi quy, TypeScript và build production.
+
+## Popup giỏ và gợi ý mua kèm 2026-09-22
+- [x] Popup hover trên giỏ nổi hiển thị tối đa 4 sản phẩm đã chọn, số lượng và tạm tính.
+- [x] Thêm nút Thanh toán ngay trong popup, chuyển trực tiếp tới checkout.
+- [x] Thêm khu vực Sản phẩm thường được mua kèm dưới khu vực chọn SKU, ưu tiên cùng danh mục/cùng loại.
+- [x] Bổ sung hồi quy 26/26, TypeScript và build production.

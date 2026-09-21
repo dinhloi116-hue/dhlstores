@@ -222,6 +222,18 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('dhlstores-cart-animation-complete');
   });
 
+  it("provides floating cart summary, checkout CTA, and product recommendations", () => {
+    const productSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+    const layoutSource = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
+
+    expect(layoutSource).toContain("group/floating-cart");
+    expect(layoutSource).toContain("Thanh toán ngay");
+    expect(layoutSource).toContain("cartItems.slice(0, 4)");
+    expect(productSource).toContain("Sản phẩm thường được mua kèm");
+    expect(productSource).toContain("recommendedProducts");
+    expect(productSource).toContain("trpc.store.products.useQuery");
+  });
+
   it("makes inventory editing safer with labeled bulk fields and unsaved-SKU indicators", () => {
     const source = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
 
