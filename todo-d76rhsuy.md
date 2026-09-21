@@ -1090,3 +1090,9 @@
 - [x] Thêm nút Thanh toán ngay trong popup, chuyển trực tiếp tới checkout.
 - [x] Thêm khu vực Sản phẩm thường được mua kèm dưới khu vực chọn SKU, ưu tiên cùng danh mục/cùng loại.
 - [x] Bổ sung hồi quy 26/26, TypeScript và build production.
+
+## Mua nhanh và chỉnh giỏ nổi 2026-09-22
+- [x] Thêm nút Thêm vào giỏ cho từng sản phẩm trong khu vực mua kèm.
+- [x] Cho phép tăng, giảm và xóa sản phẩm ngay trong popup giỏ nổi.
+- [x] Thêm loading và thông báo “Đang mở trang thanh toán…” trước khi chuyển tới checkout.
+- [x] Bổ sung hồi quy, TypeScript và build production.
