@@ -38,6 +38,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [toolQuery, setToolQuery] = useState("");
   const [mobileSearchQuery, setMobileSearchQuery] = useState("");
   const [imageSearchPreview, setImageSearchPreview] = useState<string | null>(null);
+  const [cartPulse, setCartPulse] = useState(false);
   const [imageSearchResults, setImageSearchResults] = useState<Array<{ productId: number; confidence: number; reason: string; product?: { id: number; name: string; slug: string; image?: string | null; price: string | number; type: string } }>>([]);
   const imageSearchMutation = trpc.store.imageSearch.useMutation({ onSuccess: result => { setImageSearchResults(result.matches as typeof imageSearchResults); if (!result.matches.length) toast.info(result.message); }, onError: error => toast.error(error.message) });
   const recordVisit = trpc.analytics.recordVisit.useMutation();
@@ -86,6 +87,16 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     const refreshCompared = () => setComparedCount(getComparedProductIds().length);
     window.addEventListener("dhlstores-customer-tools", refreshCompared);
     return () => window.removeEventListener("dhlstores-customer-tools", refreshCompared);
+  }, []);
+
+  useEffect(() => {
+    const pulseCart = () => {
+      setCartPulse(true);
+      const timer = window.setTimeout(() => setCartPulse(false), 520);
+      return () => window.clearTimeout(timer);
+    };
+    window.addEventListener("dhlstores-cart-animation-complete", pulseCart);
+    return () => window.removeEventListener("dhlstores-cart-animation-complete", pulseCart);
   }, []);
 
   useEffect(() => {
@@ -550,6 +561,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         </div>
       </nav>
       {comparedCount > 0 && <Link href="/compare" className="fixed bottom-5 left-4 z-40 inline-flex items-center gap-2 rounded-full border border-indigo-300 bg-slate-950 px-4 py-3 text-xs font-black text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-indigo-700 sm:left-6"><Scale className="h-4 w-4 text-indigo-200" />So sánh <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber-400 px-1 text-[10px] text-slate-950">{comparedCount}</span></Link>}
+      {isAuthenticated && <button type="button" id="floating-cart-trigger" onClick={() => setCartOpen(true)} aria-label={`${lang === "vi" ? "Mở giỏ hàng, " : "Open cart, "}${cartItemCount} ${lang === "vi" ? "sản phẩm" : "items"}`} className={`fixed bottom-20 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border-4 border-white bg-[#ee4d2d] text-white shadow-2xl transition hover:-translate-y-1 hover:bg-[#d94325] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 sm:right-6 ${cartPulse ? "animate-[bounce_0.5s_ease-in-out]" : ""}`}><ShoppingBag className="h-6 w-6" /><span className="absolute -right-1 -top-1 grid min-h-6 min-w-6 place-items-center rounded-full border-2 border-white bg-amber-400 px-1 text-[10px] font-black text-slate-950">{cartItemCount}</span></button>}
       {scrollProgress > 18 && <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label={lang === "vi" ? "Quay lên đầu trang" : "Back to top"} className="fixed bottom-24 right-4 z-40 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:right-6"><ArrowUp className="h-5 w-5" /></button>}
       <CustomerContactHub />
 

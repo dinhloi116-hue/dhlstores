@@ -1078,3 +1078,9 @@
 - [x] Thêm Chọn tất cả và Bỏ chọn theo danh sách đang lọc, giới hạn an toàn theo tồn kho.
 - [x] Giữ hiệu ứng sản phẩm bay vào giỏ sau khi thêm từng sản phẩm hoặc thêm hàng loạt.
 - [x] Bổ sung hồi quy và kiểm tra TypeScript/build.
+
+## Giỏ nổi, sắp xếp SKU và preview phiên bản 2026-09-22
+- [x] Thêm giỏ hàng nổi ở góc màn hình, lấy số lượng từ cart query và rung nhẹ sau khi hiệu ứng bay kết thúc.
+- [x] Thêm sắp xếp SKU theo giá tăng/giảm và tồn kho tăng/giảm, cạnh thanh tìm kiếm/lọc.
+- [x] Cho phép rê chuột xem preview ảnh và nhấn ảnh hoặc tên phiên bản để mở ảnh chi tiết.
+- [x] Bổ sung hồi quy, TypeScript và build production.

@@ -202,7 +202,10 @@ describe("public SKU inventory presentation", () => {
   it("prioritizes in-stock SKUs while preserving the existing order within each stock group", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("const sortedVariants = [...variants].sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));");
+    expect(source).toContain('const [skuSort, setSkuSort] = useState<"stock_priority" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc">("stock_priority");');
+    expect(source).toContain('id="sku-sort"');
+    expect(source).toContain('value="price_asc">Giá thấp → cao</option>');
+    expect(source).toContain('value="stock_desc">Tồn kho nhiều → ít</option>');
   });
 
   it("summarizes SKU-level inventory and labels low or depleted stock in the marketplace table", () => {
@@ -214,6 +217,9 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("const lowStock = !outOfStock");
     expect(source).toContain('lowStock ? `Sắp hết · ${variant.stock}`');
     expect(source).toContain('outOfStock ? "Hết hàng"');
+    expect(source).toContain('aria-label={variant.image ? `Mở ảnh ${formatVariantOptions(variant)}`');
+    expect(source).toContain('Xem ảnh');
+    expect(source).toContain('dhlstores-cart-animation-complete');
   });
 
   it("makes inventory editing safer with labeled bulk fields and unsaved-SKU indicators", () => {
