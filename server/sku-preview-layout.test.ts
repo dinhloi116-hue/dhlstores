@@ -232,6 +232,12 @@ describe("public SKU inventory presentation", () => {
     expect(productSource).toContain("Sản phẩm thường được mua kèm");
     expect(productSource).toContain("recommendedProducts");
     expect(productSource).toContain("trpc.store.products.useQuery");
+    expect(productSource).toContain("Thêm vào giỏ");
+    expect(productSource).toContain("productId: recommended.id");
+    expect(layoutSource).toContain("goToCheckout");
+    expect(layoutSource).toContain("checkoutRedirecting");
+    expect(layoutSource).toContain("aria-label=\"Xóa sản phẩm\"");
+    expect(layoutSource).toContain("quantity: item.quantity + 1");
   });
 
   it("makes inventory editing safer with labeled bulk fields and unsaved-SKU indicators", () => {
