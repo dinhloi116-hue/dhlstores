@@ -1108,3 +1108,8 @@
 - [x] Thêm thanh tiến trình số tiền còn thiếu để đạt miễn phí vận chuyển, tự cập nhật theo subtotal.
 - [x] Thêm quick view modal cho từng sản phẩm mua kèm, gồm ảnh, giá, xem chi tiết và thêm vào giỏ.
 - [x] Hồi quy đạt 26/26; TypeScript và build production đạt.
+
+## Redesign marketplace ưu tiên hàng vật lý 2026-09-22
+- [x] Chuyển trang chủ sang bố cục marketplace: banner cam, tìm kiếm lớn, danh mục ngang và hàng vật lý nổi bật.
+- [x] Gom tài nguyên số vào khu riêng dễ nhìn bên dưới, không làm loãng luồng mua hàng vật lý.
+- [x] Cập nhật hồi quy storefront, TypeScript, build và kiểm tra responsive desktop/mobile.
