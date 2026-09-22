@@ -1,173 +1,73 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import StoreLayout from "@/components/StoreLayout";
 import AssetVisual from "@/components/AssetVisual";
 import { trpc } from "@/lib/trpc";
-import { clearRecentProducts, getRecentProductIds } from "@/lib/customer-tools";
 import { Link } from "wouter";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { catalogDescription, catalogName } from "@/lib/catalogLocale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/category-icons";
-import { ArrowRight, Camera, CircleHelp, Download, FolderGit2, History, PackageCheck, Search, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ArrowRight, Camera, ChevronRight, Download, Flame, History, PackageCheck, Search, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react";
+import { clearRecentProducts, getRecentProductIds } from "@/lib/customer-tools";
 
 export default function Home() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
   const [searchTerm, setSearchTerm] = useState("");
   const [recentProductIds, setRecentProductIds] = useState<number[]>(getRecentProductIds);
+  const t = translations[lang];
+  const productsQuery = trpc.store.products.useQuery({});
+  const categoriesQuery = trpc.store.categories.useQuery();
+  const allProducts = productsQuery.data || [];
+  const categories = categoriesQuery.data || [];
+  const physicalProducts = allProducts.filter(product => product.type === "physical");
+  const digitalProducts = allProducts.filter(product => product.type === "digital");
+  const recentProducts = recentProductIds.map(id => allProducts.find(product => product.id === id)).filter((product): product is typeof allProducts[number] => Boolean(product));
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const current = getClientLanguage();
-      if (current !== lang) setLang(current);
-    }, 500);
-    return () => clearInterval(interval);
+    const timer = window.setInterval(() => { const current = getClientLanguage(); if (current !== lang) setLang(current); }, 500);
+    return () => window.clearInterval(timer);
   }, [lang]);
-
   useEffect(() => {
     const refresh = () => setRecentProductIds(getRecentProductIds());
     window.addEventListener("dhlstores-customer-tools", refresh);
     return () => window.removeEventListener("dhlstores-customer-tools", refresh);
   }, []);
 
-  const t = translations[lang];
-
-  const productsQuery = trpc.store.products.useQuery({});
-  const categoriesQuery = trpc.store.categories.useQuery();
-  const siteSettingsQuery = trpc.store.siteSettings.useQuery();
-  const allProducts = productsQuery.data || [];
-  const digitalProducts = allProducts.filter(product => product.type === "digital");
-  const physicalProducts = allProducts.filter(product => product.type === "physical");
-  const recentProducts = recentProductIds.map(id => allProducts.find(product => product.id === id)).filter((product): product is typeof allProducts[number] => Boolean(product));
-  const categories = categoriesQuery.data || [];
-	  const configuredHomeHeading = siteSettingsQuery.data?.homeHeading?.trim();
-	  const homeHeading = lang === "vi" && configuredHomeHeading?.toLocaleLowerCase("vi") === "sports design resources"
-	    ? "Tài nguyên thiết kế thể thao"
-	    : configuredHomeHeading || (lang === "vi" ? "Tài nguyên thiết kế thể thao" : "Sports design resources");
-  const normalizedSearchTerm = searchTerm.trim().toLocaleLowerCase("vi");
-  const searchSuggestions = !normalizedSearchTerm ? [] : allProducts.filter(product => {
-    const category = categories.find(item => item.id === product.categoryId);
-    return `${product.name} ${product.nameEn || ""} ${product.description || ""} ${product.descriptionEn || ""} ${product.slug || ""} ${category?.name || ""} ${category?.nameEn || ""}`.toLocaleLowerCase("vi").includes(normalizedSearchTerm);
-  }).slice(0, 6);
-
-  const formatCurrency = (val: string | number) => {
-    const num = Number(val);
-    if (!Number.isFinite(num) || num <= 0) return lang === 'vi' ? 'Đang cập nhật giá' : 'Price being updated';
-    if (lang === 'en') {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num / 25000);
-    }
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+  const formatCurrency = (value: string | number) => {
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount <= 0) return lang === "vi" ? "Đang cập nhật" : "Updating";
+    return lang === "en" ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount / 25000) : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
   };
+  const normalizedSearch = searchTerm.trim().toLocaleLowerCase("vi");
+  const suggestions = useMemo(() => !normalizedSearch ? [] : allProducts.filter(product => `${product.name} ${product.nameEn || ""} ${product.slug || ""}`.toLocaleLowerCase("vi").includes(normalizedSearch)).slice(0, 6), [allProducts, normalizedSearch]);
+  const physicalFeatured = physicalProducts.filter(product => product.featured).concat(physicalProducts.filter(product => !product.featured)).slice(0, 8);
+  const digitalFeatured = digitalProducts.filter(product => product.featured).concat(digitalProducts.filter(product => !product.featured)).slice(0, 6);
 
-  return (
-    <StoreLayout>
-      <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
-        <div className="mb-4 flex items-end justify-between gap-4 border-b border-slate-200 pb-3">
-	          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">DHL Stores · {lang === "vi" ? "Thư viện tài nguyên" : "Resource Library"}</p><h1 className="mt-1 font-display text-3xl font-black uppercase leading-none text-slate-900 sm:text-4xl">{homeHeading}</h1></div>
-          <Link href="/products"><Button variant="outline" size="sm" className="shrink-0 border-slate-300 bg-white text-xs font-bold text-slate-800 hover:border-amber-400 hover:bg-amber-50">{t.exploreShop}<ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
-        </div>
-        <div className="relative z-20 mb-5 max-w-3xl">
-          <label htmlFor="home-product-search" className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Tìm nhanh sản phẩm</label>
-          <div className="mt-1 flex h-12 items-center rounded-xl border border-slate-300 bg-white px-3 shadow-sm transition focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-100">
-            <Search className="mr-2 h-5 w-5 shrink-0 text-amber-600" />
-            <input id="home-product-search" value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Tìm tên sản phẩm, loại tài nguyên hoặc danh mục..." className="h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400" autoComplete="off" />
-            {searchTerm && <button type="button" onClick={() => setSearchTerm("")} className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Xóa từ khóa tìm kiếm"><X className="h-4 w-4" /></button>}
-            <button type="button" onClick={() => window.dispatchEvent(new Event("dhlstores-open-image-search"))} className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-lg border border-cyan-200 bg-cyan-50 px-2 py-1.5 text-[10px] font-black text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-100 sm:px-3 sm:text-xs" aria-label="Tìm kiếm bằng hình ảnh"><Camera className="h-4 w-4" /><span className="hidden sm:inline">Tìm bằng ảnh</span></button>
+  return <StoreLayout>
+    <div className="min-h-screen bg-[#f5f5f5]">
+      <section className="bg-gradient-to-r from-[#ee4d2d] via-[#f4512c] to-[#ff8a00] text-white">
+        <div className="mx-auto max-w-[1600px] px-4 pb-5 pt-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-white/90"><span>DHL STORES · {lang === "vi" ? "Mua sắm nhanh, giao hàng rõ ràng" : "Fast shopping, clear delivery"}</span><span className="hidden sm:inline">{lang === "vi" ? "Kho chính · cập nhật tồn kho liên tục" : "Main stock · continuously updated"}</span></div>
+          <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_310px] lg:items-center">
+            <div><p className="text-xs font-black uppercase tracking-[0.2em] text-orange-100">{lang === "vi" ? "Chợ sản phẩm DHL Stores" : "DHL Stores marketplace"}</p><h1 className="mt-2 max-w-3xl text-3xl font-black leading-tight sm:text-5xl">{lang === "vi" ? "Mua đồ thể thao dễ hơn, chọn đúng SKU ngay." : "Shop sports products faster, choose the right SKU."}</h1><p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/90">{lang === "vi" ? "Ưu tiên quần áo bóng đá, áo in, patch và nameset. Tài nguyên số được gom riêng bên dưới để bạn vẫn tìm thấy nhanh khi cần." : "Shop football apparel, printed shirts, patches and namesets first. Digital resources stay in a clear section below."}</p></div>
+            <div className="rounded-2xl bg-white/15 p-4 backdrop-blur-sm"><div className="flex items-center gap-3"><div className="grid h-12 w-12 place-items-center rounded-full bg-white text-[#ee4d2d]"><Truck className="h-6 w-6" /></div><div><p className="text-xs font-black uppercase tracking-wide">{lang === "vi" ? "Mua hàng an tâm" : "Shop with confidence"}</p><p className="mt-1 text-xs text-white/85">{lang === "vi" ? "Chọn SKU · kiểm tra tồn · theo dõi đơn" : "Choose SKU · check stock · track orders"}</p></div></div></div>
           </div>
-          {normalizedSearchTerm && <div className="absolute left-0 right-0 top-[4.45rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"><div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-[11px] font-black text-slate-600">{searchSuggestions.length ? `Gợi ý ${searchSuggestions.length} sản phẩm phù hợp` : "Không tìm thấy sản phẩm phù hợp"}</div>{searchSuggestions.length ? <div className="divide-y divide-slate-100">{searchSuggestions.map(product => { const category = categories.find(item => item.id === product.categoryId); return <Link key={product.id} href={`/product/${product.slug}`} onClick={() => setSearchTerm("")} className="group flex items-center gap-3 px-4 py-3 transition hover:bg-amber-50"><div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 text-[11px] font-black text-amber-700">{product.image ? <img src={product.image} alt="" className="h-full w-full object-cover" /> : product.name.slice(0, 2).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900 group-hover:text-amber-700">{product.name}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{category?.name || "Sản phẩm"} · {formatCurrency(product.price)}</p></div><ArrowRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-amber-600" /></Link>; })}</div> : <div className="px-4 py-5 text-center text-xs leading-relaxed text-slate-500">Thử tìm theo tên sản phẩm, loại tài nguyên hoặc danh mục khác.</div>}<Link href={`/products?search=${encodeURIComponent(searchTerm)}`} onClick={() => setSearchTerm("")} className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3 text-xs font-black text-amber-700 transition hover:bg-amber-50">Xem toàn bộ kết quả <ArrowRight className="h-3.5 w-3.5" /></Link></div>}
-        </div>
-        <section className="mb-5 grid gap-3 md:grid-cols-2" aria-label="Chọn loại sản phẩm">
-          <Link href="/products?type=digital" className="group rounded-2xl border border-violet-200 bg-violet-50/80 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-400 hover:bg-violet-100"><div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-violet-700 text-white"><Download className="h-5 w-5" /></div><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Mua và tải ngay</p><h2 className="mt-1 text-lg font-black text-slate-900">Tài nguyên số</h2></div><ArrowRight className="ml-auto h-5 w-5 text-violet-500 transition group-hover:translate-x-1" /></div><p className="mt-3 text-xs leading-relaxed text-slate-600">Font, vector, nameset, mockup và file thiết kế. Thanh toán xong sẽ mở quyền tải trong 7 ngày.</p><div className="mt-3 flex flex-wrap gap-1.5"><Badge className="bg-white text-violet-800">Tải file</Badge><Badge className="bg-white text-violet-800">QR / SePay</Badge></div></Link>
-          <Link href="/products?type=physical" className="group rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:bg-emerald-100"><div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-emerald-700 text-white"><PackageCheck className="h-5 w-5" /></div><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Mua và nhận hàng</p><h2 className="mt-1 text-lg font-black text-slate-900">Hàng vật lý</h2></div><ArrowRight className="ml-auto h-5 w-5 text-emerald-500 transition group-hover:translate-x-1" /></div><p className="mt-3 text-xs leading-relaxed text-slate-600">Quần áo bóng đá, patch tay, nameset và áo in. Chọn SKU, kiểm tra tồn kho, điền địa chỉ rồi theo dõi đơn.</p><div className="mt-3 flex flex-wrap gap-1.5"><Badge className="bg-white text-emerald-800">Có SKU / tồn kho</Badge><Badge className="bg-white text-emerald-800">Giao hàng SPX</Badge></div></Link>
-        </section>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
-          {categoriesQuery.isLoading ? Array.from({ length: 10 }).map((_, index) => <div key={index} className="h-16 animate-pulse border border-slate-200 bg-slate-100" />) : categories.map(category => { const Icon = getCategoryIcon(category.iconKey); return (
-            <Link key={category.id} href={`/products?categoryId=${category.id}`} className="dhl-hover-card relative border border-slate-200 bg-white p-3 text-center shadow-sm hover:bg-amber-50 group">
-              <Icon className="mx-auto mb-1.5 h-5 w-5 text-amber-600 transition-transform duration-200 group-hover:scale-125 group-hover:-rotate-6" />
-              <h4 className="text-[11px] font-extrabold text-slate-800 line-clamp-1">{catalogName(category, lang)}</h4>
-              {category.type === "physical" && <span className="absolute right-1.5 top-1.5 rounded bg-emerald-100 px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-emerald-700">Hàng vật lý</span>}
-            </Link>
-          ); })}
-        </div>
-      </div>
-
-      {recentProducts.length > 0 && <section className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8 2xl:px-10"><div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white"><History className="h-4 w-4" /></div><div><p className="text-xs font-black text-slate-900">Bạn đã xem gần đây</p><p className="mt-0.5 text-[10px] text-slate-500">Lịch sử chỉ lưu trên thiết bị này để bạn quay lại nhanh.</p></div></div><button type="button" onClick={() => { clearRecentProducts(); setRecentProductIds([]); }} className="text-[10px] font-black text-indigo-700 hover:text-indigo-900">Xóa lịch sử</button></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">{recentProducts.map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group flex min-w-0 items-center gap-2 rounded-xl border border-indigo-100 bg-white p-2 transition hover:border-indigo-300 hover:bg-indigo-50"><img src={product.image} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-lg border border-slate-200 bg-slate-50 object-contain" /><span className="min-w-0"><span className="block truncate text-[11px] font-black text-slate-900 group-hover:text-indigo-700">{product.name}</span><span className="mt-0.5 block text-[10px] font-bold text-amber-700">{formatCurrency(product.price)}</span></span></Link>)}</div></div></section>}
-      <section className="border-y border-slate-200 bg-slate-50/70 py-8">
-        <div className="mx-auto grid max-w-[1600px] gap-5 px-4 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:px-8 2xl:px-10">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">Chọn nhanh theo nhu cầu</p><h2 className="mt-1 font-display text-2xl font-black uppercase text-slate-900">Đúng tài nguyên, đúng mục đích</h2></div><Sparkles className="h-6 w-6 shrink-0 text-amber-500" /></div><div className="grid divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">{[{ title: "Thiết kế & in ấn", copy: "Font, vector, mockup và file in áo.", tone: "bg-violet-50 text-violet-700" }, { title: "Hoàn thiện áo đấu", copy: "Nameset, patch tay và phụ kiện ép nhiệt.", tone: "bg-emerald-50 text-emerald-700" }, { title: "Tìm theo danh mục", copy: "Mở toàn bộ thư viện để lọc nhanh.", tone: "bg-amber-50 text-amber-700" }].map((item, index) => <Link key={item.title} href={index === 2 ? "/products" : `/products?categoryId=${categories.find(category => index === 0 ? category.type === "digital" : category.slug === "nameset-chong-nhiem")?.id || ""}`} className="group p-4 transition-colors hover:bg-slate-50"><span className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-wide ${item.tone}`}>Lối tắt</span><p className="mt-3 text-sm font-black text-slate-900 group-hover:text-amber-600">{item.title}<ArrowRight className="ml-1 inline h-3.5 w-3.5" /></p><p className="mt-1 text-xs leading-relaxed text-slate-500">{item.copy}</p></Link>)}</div></div>
-	          <div className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-400">DHL Stores · cách mua</p><h2 className="mt-1 font-display text-2xl font-black uppercase leading-tight">Chọn nhanh, thanh toán rõ, nhận đúng sản phẩm</h2><div className="mt-4 space-y-3">{[{ icon: PackageCheck, title: "1. Chọn sản phẩm", copy: "Chọn tài nguyên số hoặc phiên bản hàng vật lý phù hợp." }, { icon: ShieldCheck, title: "2. Quét QR thanh toán", copy: "Mỗi đơn hàng hiển thị mã QR thanh toán phù hợp để giao dịch nhanh và rõ ràng." }, { icon: Download, title: "3. Nhận sản phẩm", copy: "Tài nguyên số mở quyền tải trong 7 ngày sau khi giao dịch xác nhận; hàng vật lý được cửa hàng xác nhận và theo dõi theo đơn." }].map(step => <div key={step.title} className="flex gap-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-amber-400"><step.icon className="h-4 w-4" /></div><div><p className="text-xs font-black text-white">{step.title}</p><p className="mt-0.5 text-[11px] leading-relaxed text-slate-300">{step.copy}</p></div></div>)}</div></div>
+          <div className="relative z-20 mt-5 max-w-4xl"><div className="flex h-12 items-center rounded-md bg-white px-3 shadow-lg focus-within:ring-4 focus-within:ring-white/30"><Search className="mr-2 h-5 w-5 shrink-0 text-[#ee4d2d]" /><input value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder={lang === "vi" ? "Tìm sản phẩm, SKU, tên áo, patch..." : "Search products, SKU, shirt, patch..."} className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400" autoComplete="off" /><button type="button" onClick={() => window.dispatchEvent(new Event("dhlstores-open-image-search"))} className="inline-flex shrink-0 items-center gap-1 rounded-md bg-orange-50 px-2 py-2 text-[10px] font-black text-[#ee4d2d] sm:px-3 sm:text-xs"><Camera className="h-4 w-4" /><span className="hidden sm:inline">{lang === "vi" ? "Tìm bằng ảnh" : "Image search"}</span></button>{searchTerm && <button type="button" onClick={() => setSearchTerm("")} className="ml-1 p-1 text-slate-400" aria-label="Xóa tìm kiếm"><X className="h-4 w-4" /></button>}</div>{normalizedSearch && <div className="absolute left-0 right-0 top-14 overflow-hidden rounded-md bg-white text-slate-900 shadow-2xl">{suggestions.length ? suggestions.map(product => <Link key={product.id} href={`/product/${product.slug}`} onClick={() => setSearchTerm("")} className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 hover:bg-orange-50"><div className="h-10 w-10 shrink-0 overflow-hidden rounded bg-slate-100">{product.image ? <img src={product.image} alt="" className="h-full w-full object-contain" /> : <span className="grid h-full place-items-center text-xs font-black text-orange-500">DHL</span>}</div><span className="min-w-0 flex-1 truncate text-sm font-bold">{catalogName(product, lang)}</span><ChevronRight className="h-4 w-4 text-slate-300" /></Link>) : <p className="p-4 text-center text-xs text-slate-500">{lang === "vi" ? "Không tìm thấy sản phẩm" : "No products found"}</p>}<Link href={`/products?search=${encodeURIComponent(searchTerm)}`} onClick={() => setSearchTerm("")} className="block bg-slate-50 px-4 py-3 text-center text-xs font-black text-[#ee4d2d]">{lang === "vi" ? "Xem toàn bộ kết quả" : "View all results"}</Link></div>}</div>
         </div>
       </section>
 
-      {/* Product Catalog Grid */}
-      <section className="py-10 bg-white border-t border-slate-200 mt-6">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 2xl:px-10">
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
-            <div>
-              <h2 className="font-display text-3xl font-black uppercase tracking-wide text-slate-900">
-                {lang === 'vi' ? 'Tài Nguyên Số Mới Nhất & Nổi Bật' : 'Latest & Featured Digital Assets'}
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">{lang === 'vi' ? 'Tải xuống sau khi giao dịch QR được hệ thống xác nhận' : 'Downloads unlock after QR payment is confirmed'}</p>
-            </div>
-            <Link href="/products">
-              <Button variant="outline" size="sm" className="text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-100">
-                {t.viewAll} <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
-            </Link>
-          </div>
+      <nav className="border-b border-slate-200 bg-white shadow-sm"><div className="mx-auto flex max-w-[1600px] gap-2 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8"><Link href="/products?type=physical" className="shrink-0 rounded-full bg-[#ee4d2d] px-4 py-2 text-xs font-black text-white">{lang === "vi" ? "Tất cả hàng vật lý" : "All physical products"}</Link>{categories.filter(category => category.type === "physical").slice(0, 8).map(category => { const Icon = getCategoryIcon(category.iconKey); return <Link key={category.id} href={`/products?type=physical&categoryId=${category.id}`} className="flex shrink-0 items-center gap-1 rounded-full border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:border-orange-300 hover:text-[#ee4d2d]"><Icon className="h-3.5 w-3.5" />{catalogName(category, lang)}</Link>; })}<Link href="/products?type=digital" className="flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-700"><Download className="h-3.5 w-3.5" />{lang === "vi" ? "Tài nguyên số" : "Digital resources"}</Link></div></nav>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {productsQuery.isLoading ? Array.from({ length: 8 }).map((_, index) => (
-              <div key={index} className="overflow-hidden border border-slate-200 bg-white">
-                <div className="aspect-[4/3] animate-pulse bg-slate-200" />
-                <div className="space-y-3 p-4"><div className="h-3 w-4/5 animate-pulse bg-slate-200" /><div className="h-3 w-full animate-pulse bg-slate-100" /><div className="h-4 w-1/3 animate-pulse bg-slate-200" /></div>
-              </div>
-            )) : digitalProducts.map((p) => (
-              <Link key={p.id} href={`/product/${p.slug}`} className="group">
-                  <div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white">
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <AssetVisual categoryId={p.categoryId} title={catalogName(p, lang)} fileSize={p.fileSize} imageUrl={p.image} className="transition-transform duration-300 group-hover:scale-105" />
-                    <div className="absolute top-2 left-2">
-                      <Badge className="bg-violet-700 text-white text-[10px] font-bold px-2 py-0.5">
-	                        {lang === "vi" ? "Tài nguyên số" : "Digital Asset"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-relaxed">
-                        {catalogName(p, lang)}
-                      </h3>
-                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">
-                        {catalogDescription(p, lang)}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <span className="text-sm font-black text-amber-600">
-                        {formatCurrency(p.price)}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
-                        {t.details}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <main className="mx-auto max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <section><div className="mb-3 flex items-end justify-between"><div><div className="flex items-center gap-2"><Flame className="h-5 w-5 text-[#ee4d2d]" /><h2 className="text-xl font-black text-slate-900 sm:text-2xl">{lang === "vi" ? "Hàng vật lý bán chạy" : "Popular physical products"}</h2></div><p className="mt-1 text-xs text-slate-500">{lang === "vi" ? "Chọn sản phẩm, vào chi tiết để chọn SKU và số lượng." : "Open a product to choose SKU and quantity."}</p></div><Link href="/products?type=physical" className="flex items-center gap-1 text-xs font-black text-[#ee4d2d]">{lang === "vi" ? "Xem tất cả" : "View all"}<ArrowRight className="h-4 w-4" /></Link></div>{physicalFeatured.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{physicalFeatured.map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group overflow-hidden rounded-sm bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl"><div className="relative aspect-square overflow-hidden bg-slate-100"><img src={product.image} alt={catalogName(product, lang)} loading="lazy" decoding="async" className="h-full w-full object-contain transition duration-300 group-hover:scale-105" /><Badge className="absolute left-2 top-2 bg-[#ee4d2d] text-[9px] text-white">{lang === "vi" ? "Hàng vật lý" : "Physical"}</Badge></div><div className="p-3"><p className="line-clamp-2 min-h-9 text-xs font-bold leading-relaxed text-slate-800">{catalogName(product, lang)}</p><div className="mt-2 flex items-center justify-between gap-2"><span className="text-base font-black text-[#ee4d2d]">{formatCurrency(product.price)}</span><span className="text-[10px] text-slate-500">{Number(product.stock) > 0 ? `${product.stock} ${lang === "vi" ? "còn" : "left"}` : (lang === "vi" ? "Hết hàng" : "Sold out")}</span></div><div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-slate-500"><PackageCheck className="h-3.5 w-3.5 text-emerald-600" />{lang === "vi" ? "Giao 2–5 ngày" : "2–5 day delivery"}</div></div></Link>)}</div> : <div className="rounded-md border border-dashed border-orange-300 bg-white p-10 text-center"><p className="font-black text-orange-700">{lang === "vi" ? "Kho hàng vật lý đang được cập nhật" : "Physical stock is being updated"}</p><Link href="/products?type=digital" className="mt-3 inline-flex text-xs font-black text-violet-700">{lang === "vi" ? "Xem tài nguyên số" : "View digital resources"}<ArrowRight className="ml-1 h-4 w-4" /></Link></div>}</section>
 
-      <section className="border-t border-emerald-100 bg-emerald-50/40 py-10">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 2xl:px-10">
-          <div className="mb-8 flex items-center justify-between border-b border-emerald-100 pb-4"><div><h2 className="font-display text-3xl font-black uppercase tracking-wide text-slate-900">{lang === "vi" ? "Hàng Thể Thao Mới & Nổi Bật" : "New & Featured Sports Gear"}</h2><p className="mt-0.5 text-xs text-slate-500">{lang === "vi" ? "Áo bóng đá, patch tay và nameset sẵn sàng đặt hàng." : "Football apparel, sleeve patches and namesets ready to order."}</p></div><Link href="/products"><Button variant="outline" size="sm" className="border-emerald-200 bg-white text-xs font-bold text-emerald-800 hover:bg-emerald-100">{t.viewAll} <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link></div>
-          {physicalProducts.length > 0 ? <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">{physicalProducts.filter(product => product.featured).concat(physicalProducts.filter(product => !product.featured)).slice(0, 8).map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group"><div className="dhl-hover-card flex h-full flex-col overflow-hidden border border-emerald-200 bg-white shadow-sm"><div className="aspect-square overflow-hidden bg-slate-50"><img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" /></div><div className="flex flex-1 flex-col justify-between space-y-3 p-4"><div><Badge className="mb-2 bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-800">Hàng vật lý</Badge><h3 className="line-clamp-2 text-xs font-bold leading-relaxed text-slate-800 transition-colors group-hover:text-emerald-700">{product.name}</h3><p className={`mt-1 text-[11px] font-semibold ${Number(product.stock) > 0 ? 'text-slate-500' : 'text-rose-600'}`}>{Number(product.stock) > 0 ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'}</p></div><div className="flex items-center justify-between border-t border-emerald-50 pt-2"><span className="text-sm font-black text-emerald-700">{formatCurrency(product.price)}</span><span className={`rounded px-2.5 py-1 text-[11px] font-bold transition-colors ${Number(product.stock) > 0 ? 'bg-emerald-50 text-emerald-800 group-hover:bg-emerald-600 group-hover:text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'}`}>{Number(product.stock) > 0 ? 'Xem chi tiết' : 'Xem sản phẩm'}</span></div></div></div></Link>)}</div> : <div className="rounded-2xl border border-dashed border-emerald-300 bg-white/70 px-6 py-10 text-center"><p className="font-display text-2xl font-black uppercase text-emerald-900">Danh mục hàng thể thao đã sẵn sàng</p><p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-600">Sản phẩm quần áo bóng đá, patch tay và nameset chống nhiễm sẽ xuất hiện tại đây ngay khi quản trị viên đăng hàng.</p></div>}
-        </div>
-      </section>
+        <section className="rounded-md bg-gradient-to-r from-violet-700 to-indigo-700 p-5 text-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-4"><div><div className="flex items-center gap-2"><Zap className="h-5 w-5 text-amber-300" /><p className="text-xs font-black uppercase tracking-[0.16em] text-violet-200">{lang === "vi" ? "Khu riêng tài nguyên số" : "Digital resources zone"}</p></div><h2 className="mt-1 text-xl font-black sm:text-2xl">{lang === "vi" ? "Font, vector, nameset và file thiết kế" : "Fonts, vectors, namesets and design files"}</h2><p className="mt-1 text-xs text-violet-100">{lang === "vi" ? "Thanh toán QR xác nhận xong, quyền tải mở trong 7 ngày." : "After QR payment confirmation, downloads unlock for 7 days."}</p></div><Link href="/products?type=digital" className="inline-flex items-center gap-1 rounded-md bg-white px-4 py-2 text-xs font-black text-violet-800 hover:bg-violet-50">{lang === "vi" ? "Vào kho tài nguyên số" : "Open digital library"}<ArrowRight className="h-4 w-4" /></Link></div>{digitalFeatured.length > 0 && <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">{digitalFeatured.map(product => <Link key={product.id} href={`/product/${product.slug}`} className="group overflow-hidden rounded-md bg-white text-slate-900"><div className="aspect-square overflow-hidden bg-violet-50"><AssetVisual categoryId={product.categoryId} title={catalogName(product, lang)} fileSize={product.fileSize} imageUrl={product.image} className="h-full w-full object-contain transition group-hover:scale-105" /></div><div className="p-2"><p className="line-clamp-2 text-[11px] font-bold">{catalogName(product, lang)}</p><p className="mt-1 text-xs font-black text-[#ee4d2d]">{formatCurrency(product.price)}</p></div></Link>)}</div>}</section>
 
-      <section className="border-t border-slate-200 bg-white py-8">
-        <div className="mx-auto flex max-w-[1600px] flex-col items-start justify-between gap-4 px-4 sm:px-6 md:flex-row md:items-center lg:px-8 2xl:px-10"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">Cần hỗ trợ trước khi đặt?</p><h2 className="mt-1 font-display text-2xl font-black uppercase text-slate-900">Kiểm tra file, SKU hoặc lựa chọn ép nhiệt</h2><p className="mt-1 text-sm text-slate-500">Gửi yêu cầu qua Zalo để được hỗ trợ đúng sản phẩm và phiên bản phù hợp.</p></div><a href="https://zalo.me/0963898871" target="_blank" rel="noreferrer"><Button className="bg-amber-500 font-black text-slate-950 hover:bg-amber-400"><CircleHelp className="mr-2 h-4 w-4" />Hỗ trợ Zalo</Button></a></div>
-      </section>
-    </StoreLayout>
-  );
+        <section className="grid gap-3 md:grid-cols-3"><div className="rounded-md bg-white p-4 shadow-sm"><PackageCheck className="h-6 w-6 text-[#ee4d2d]" /><h3 className="mt-2 text-sm font-black">{lang === "vi" ? "Kho chính rõ ràng" : "Clear main stock"}</h3><p className="mt-1 text-xs text-slate-500">{lang === "vi" ? "Tồn kho website là nguồn chính, đồng bộ Sapo ở phía sau." : "Website stock is primary, with Sapo sync in the background."}</p></div><div className="rounded-md bg-white p-4 shadow-sm"><ShieldCheck className="h-6 w-6 text-emerald-600" /><h3 className="mt-2 text-sm font-black">{lang === "vi" ? "Thanh toán rõ ràng" : "Clear payments"}</h3><p className="mt-1 text-xs text-slate-500">{lang === "vi" ? "Xem giá, SKU, phí ship và trạng thái đơn trước khi xác nhận." : "See price, SKU, shipping and order status before confirming."}</p></div><div className="rounded-md bg-white p-4 shadow-sm"><Sparkles className="h-6 w-6 text-violet-600" /><h3 className="mt-2 text-sm font-black">{lang === "vi" ? "Mua lại nhanh" : "Buy again faster"}</h3><p className="mt-1 text-xs text-slate-500">{lang === "vi" ? "Lịch sử xem và tài nguyên số luôn được gom ở đúng khu vực." : "Recent views and digital resources stay easy to find."}</p></div></section>
+
+        {recentProducts.length > 0 && <section className="rounded-md bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><History className="h-4 w-4 text-indigo-600" /><h2 className="text-sm font-black text-slate-900">{lang === "vi" ? "Bạn đã xem gần đây" : "Recently viewed"}</h2></div><button type="button" onClick={() => { clearRecentProducts(); setRecentProductIds([]); }} className="text-[10px] font-black text-indigo-700">{lang === "vi" ? "Xóa lịch sử" : "Clear"}</button></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{recentProducts.map(product => <Link key={product.id} href={`/product/${product.slug}`} className="flex min-w-0 items-center gap-2 rounded border border-slate-100 p-2 hover:border-orange-200"><img src={product.image} alt="" className="h-10 w-10 rounded object-contain" /><span className="min-w-0"><span className="block truncate text-[10px] font-bold">{catalogName(product, lang)}</span><span className="text-[10px] font-black text-[#ee4d2d]">{formatCurrency(product.price)}</span></span></Link>)}</div></section>}
+      </main>
+    </div>
+  </StoreLayout>;
 }

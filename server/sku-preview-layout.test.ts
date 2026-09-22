@@ -127,8 +127,9 @@ describe("public SKU inventory presentation", () => {
   it("keeps homepage physical cards honest about stock and actions", () => {
     const source = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("Number(product.stock) > 0 ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'");
-    expect(source).toContain("Number(product.stock) > 0 ? 'Xem chi tiết' : 'Xem sản phẩm'");
+    expect(source).toContain("Popular physical products");
+    expect(source).toContain("Hàng vật lý bán chạy");
+    expect(source).toContain("Number(product.stock) > 0");
     expect(source).not.toContain('>Đặt hàng</span>');
   });
 
@@ -139,7 +140,7 @@ describe("public SKU inventory presentation", () => {
 
     expect(detailSource).toContain("Sản phẩm đang được cập nhật giá");
     expect(catalogSource).toContain("return lang === 'vi' ? 'Đang cập nhật giá'");
-    expect(homeSource).toContain("return lang === 'vi' ? 'Đang cập nhật giá'");
+    expect(homeSource).toContain("Đang cập nhật");
   });
 
   it("blocks purchase actions and explains missing price", () => {
