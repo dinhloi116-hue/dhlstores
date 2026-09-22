@@ -35,6 +35,10 @@ describe("account page layout", () => {
     expect(source).toContain('Đơn hàng');
     expect(source).toContain('Ví số dư');
     expect(source).toContain('hidden');
+    expect(source).toContain('isTabTransitioning');
+    expect(source).toContain('switchAccountTab');
+    expect(source).toContain('animate-pulse');
+    expect(source).toContain('transition-[opacity,transform]');
   });
 });
 

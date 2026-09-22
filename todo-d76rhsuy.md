@@ -1120,3 +1120,4 @@
 - [x] Chỉ hiển thị một nhóm nội dung mỗi lần, thêm các thẻ tổng quan số đơn/số dư/sản phẩm đã lưu.
 - [x] Giữ nguyên mutation, quyền owner, nạp/rút ví, địa chỉ, yêu thích, nhắc hàng và theo dõi đơn.
 - [x] Account layout 6 test, responsive 2 test, địa chỉ 2 test; TypeScript/build production đạt.
+- [x] Thêm chuyển cảnh opacity/transform 200ms và skeleton loading ngắn khi đổi tab.
