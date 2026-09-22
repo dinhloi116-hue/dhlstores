@@ -1121,3 +1121,4 @@
 - [x] Giữ nguyên mutation, quyền owner, nạp/rút ví, địa chỉ, yêu thích, nhắc hàng và theo dõi đơn.
 - [x] Account layout 6 test, responsive 2 test, địa chỉ 2 test; TypeScript/build production đạt.
 - [x] Thêm chuyển cảnh opacity/transform 200ms và skeleton loading ngắn khi đổi tab.
+- [x] Thêm tìm kiếm theo mã đơn, tên sản phẩm/SKU và bộ lọc trạng thái trong tab Đơn hàng.
