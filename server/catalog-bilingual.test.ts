@@ -23,11 +23,10 @@ describe("bilingual catalog presentation", () => {
     expect(catalogDescription({ name: "Tên", description: "Mô tả" }, "en")).toBe("Mô tả");
   });
 
-  it("uses browser locale only when visitors have not selected a language", async () => {
+  it("keeps Vietnamese as the default and allows explicit language selection", async () => {
     const source = await readFile(path.resolve(process.cwd(), "client/src/lib/i18n.ts"), "utf8");
-    expect(source).toContain("navigator.languages");
-    expect(source).toContain("startsWith('vi')");
     expect(source).toContain("dhl_lang_selected");
-    expect(source).toContain("dhl_lang_detected");
+    expect(source).toContain("return 'vi'");
+    expect(source).toContain("setSelectedLanguage");
   });
 });

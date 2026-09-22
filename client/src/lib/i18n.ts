@@ -163,12 +163,10 @@ export function getClientLanguage(): Language {
   }
   const saved = localStorage.getItem('dhl_lang_selected');
   if (saved === 'vi' || saved === 'en') return saved;
-  const detected = localStorage.getItem('dhl_lang_detected');
-  if (detected === 'vi' || detected === 'en') return detected;
-  const browserLocales = Array.isArray(navigator.languages) && navigator.languages.length
-    ? navigator.languages
-    : [navigator.language];
-  return browserLocales.some(locale => locale?.toLowerCase().startsWith('vi')) ? 'vi' : 'en';
+  // Vietnamese is the storefront default. Visitors can switch to English explicitly
+  // with the language button; this avoids showing an English storefront merely because
+  // the browser or preview environment reports an English locale.
+  return 'vi';
 }
 
 export function setDetectedLanguage(language: Language) {

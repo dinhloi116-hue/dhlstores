@@ -1113,3 +1113,4 @@
 - [x] Chuyển trang chủ sang bố cục marketplace: banner cam, tìm kiếm lớn, danh mục ngang và hàng vật lý nổi bật.
 - [x] Gom tài nguyên số vào khu riêng dễ nhìn bên dưới, không làm loãng luồng mua hàng vật lý.
 - [x] Cập nhật hồi quy storefront, TypeScript, build và kiểm tra responsive desktop/mobile.
+- [x] Đặt tiếng Việt làm ngôn ngữ storefront mặc định; English chỉ bật khi khách chọn rõ ràng.
