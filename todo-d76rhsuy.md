@@ -1102,3 +1102,9 @@
 - [x] Hiển thị toast thành công nhỏ gọn ở góc dưới phải khi thêm sản phẩm mua kèm.
 - [x] Thêm nút Xem chi tiết giỏ hàng cạnh nút Thanh toán ngay.
 - [x] Hồi quy đạt 26/26; TypeScript và build production đạt.
+
+## Empty state, miễn phí vận chuyển và quick view 2026-09-22
+- [x] Thêm empty state đẹp mắt cho popup giỏ trống với nút Tiếp tục mua sắm.
+- [x] Thêm thanh tiến trình số tiền còn thiếu để đạt miễn phí vận chuyển, tự cập nhật theo subtotal.
+- [x] Thêm quick view modal cho từng sản phẩm mua kèm, gồm ảnh, giá, xem chi tiết và thêm vào giỏ.
+- [x] Hồi quy đạt 26/26; TypeScript và build production đạt.
