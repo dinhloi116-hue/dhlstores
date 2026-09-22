@@ -1122,3 +1122,4 @@
 - [x] Account layout 6 test, responsive 2 test, địa chỉ 2 test; TypeScript/build production đạt.
 - [x] Thêm chuyển cảnh opacity/transform 200ms và skeleton loading ngắn khi đổi tab.
 - [x] Thêm tìm kiếm theo mã đơn, tên sản phẩm/SKU và bộ lọc trạng thái trong tab Đơn hàng.
+- [x] Thêm nút Mua lại cho đơn đã thanh toán và hoàn tất; dùng lại payload sản phẩm/biến thể/số lượng hiện có.
