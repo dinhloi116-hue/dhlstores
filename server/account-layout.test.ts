@@ -44,6 +44,10 @@ describe("account page layout", () => {
     expect(source).toContain('aria-label="Tìm kiếm đơn hàng"');
     expect(source).toContain('matchesOrderStatus');
     expect(source).toContain('filteredPriorityOrders');
+    expect(source).toContain('const reorderOrder = async');
+    expect(source).toContain('trpc.store.addToCart.useMutation');
+    expect(source).toContain('order.status === "completed" && order.paymentStatus === "paid"');
+    expect(source).toContain('Mua lại');
   });
 });
 
