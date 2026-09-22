@@ -26,6 +26,13 @@ export default function Account() {
   const [orderFilter, setOrderFilter] = useState<"all" | "pending" | "completed" | "cancelled">("all");
   const [trackingViewOrderId, setTrackingViewOrderId] = useState<number | null>(null);
   const [activeAccountTab, setActiveAccountTab] = useState<"orders" | "wallet" | "saved" | "addresses" | "account">("orders");
+  const [isTabTransitioning, setIsTabTransitioning] = useState(false);
+  const switchAccountTab = (tab: typeof activeAccountTab) => {
+    if (tab === activeAccountTab) return;
+    setIsTabTransitioning(true);
+    setActiveAccountTab(tab);
+    window.setTimeout(() => setIsTabTransitioning(false), 220);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -216,9 +223,9 @@ export default function Account() {
 	          )}
 	        </div>
 
-	        <div className="grid items-start gap-6 xl:grid-cols-2">
+	        <div className={`grid items-start gap-6 xl:grid-cols-2 transition-[opacity,transform] duration-200 ease-out ${isTabTransitioning ? "translate-y-1 opacity-60" : "translate-y-0 opacity-100"}`}><div className={`xl:col-span-2 overflow-hidden transition-[max-height,opacity,margin] duration-200 ${isTabTransitioning ? "mb-2 max-h-24 opacity-100" : "pointer-events-none max-h-0 opacity-0"}`} aria-live="polite" aria-label="Đang chuyển khu vực tài khoản"><div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><div className="h-9 w-9 animate-pulse rounded-xl bg-orange-100" /><div className="min-w-0 flex-1 space-y-2"><div className="h-3 w-40 animate-pulse rounded bg-slate-200" /><div className="h-2 w-64 max-w-full animate-pulse rounded bg-slate-100" /></div><div className="h-8 w-20 animate-pulse rounded-lg bg-slate-100" /></div></div></div>
               <div className="xl:col-span-2 grid grid-cols-3 gap-2"><div className="rounded-xl bg-orange-50 p-3"><p className="text-[10px] font-bold text-orange-700">Đơn hàng</p><p className="mt-1 text-xl font-black text-slate-900">{orders.length}</p></div><div className="rounded-xl bg-amber-50 p-3"><p className="text-[10px] font-bold text-amber-700">Số dư ví</p><p className="mt-1 truncate text-sm font-black text-slate-900">{formatCurrency(Number(wallet?.balance || 0))}</p></div><div className="rounded-xl bg-rose-50 p-3"><p className="text-[10px] font-bold text-rose-700">Đã lưu</p><p className="mt-1 text-xl font-black text-slate-900">{(favoritesQuery.data || []).length}</p></div></div>
-              <div className="xl:col-span-2 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-5" role="tablist" aria-label="Khu vực tài khoản">{([["orders", "Đơn hàng", Package], ["wallet", "Ví số dư", WalletCards], ["saved", "Đã lưu", Heart], ["addresses", "Địa chỉ", MapPin], ["account", "Tài khoản", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" role="tab" aria-selected={activeAccountTab === value} onClick={() => setActiveAccountTab(value)} className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[11px] font-black transition sm:text-xs ${activeAccountTab === value ? "bg-[#ee4d2d] text-white shadow-sm" : "text-slate-600 hover:bg-orange-50 hover:text-[#ee4d2d]"}`}><Icon className="h-4 w-4" />{label}</button>)}</div>
+              <div className="xl:col-span-2 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-5" role="tablist" aria-label="Khu vực tài khoản">{([["orders", "Đơn hàng", Package], ["wallet", "Ví số dư", WalletCards], ["saved", "Đã lưu", Heart], ["addresses", "Địa chỉ", MapPin], ["account", "Tài khoản", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" role="tab" aria-selected={activeAccountTab === value} onClick={() => switchAccountTab(value)} className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[11px] font-black transition sm:text-xs ${activeAccountTab === value ? "bg-[#ee4d2d] text-white shadow-sm" : "text-slate-600 hover:bg-orange-50 hover:text-[#ee4d2d]"}`}><Icon className="h-4 w-4" />{label}</button>)}</div>
 	          <div className="contents">
 
 	        <section className={`${activeAccountTab === "account" ? "" : "hidden"} rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-white p-5 sm:p-6`}>
