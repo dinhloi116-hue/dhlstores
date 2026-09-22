@@ -1114,3 +1114,9 @@
 - [x] Gom tài nguyên số vào khu riêng dễ nhìn bên dưới, không làm loãng luồng mua hàng vật lý.
 - [x] Cập nhật hồi quy storefront, TypeScript, build và kiểm tra responsive desktop/mobile.
 - [x] Đặt tiếng Việt làm ngôn ngữ storefront mặc định; English chỉ bật khi khách chọn rõ ràng.
+
+## Tinh gọn trang tài khoản 2026-09-22
+- [x] Gom các khu Hồ sơ, Ví số dư, Đơn hàng, Đã lưu và Địa chỉ thành thanh tab rõ ràng.
+- [x] Chỉ hiển thị một nhóm nội dung mỗi lần, thêm các thẻ tổng quan số đơn/số dư/sản phẩm đã lưu.
+- [x] Giữ nguyên mutation, quyền owner, nạp/rút ví, địa chỉ, yêu thích, nhắc hàng và theo dõi đơn.
+- [x] Account layout 6 test, responsive 2 test, địa chỉ 2 test; TypeScript/build production đạt.
