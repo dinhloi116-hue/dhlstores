@@ -237,7 +237,11 @@ describe("public SKU inventory presentation", () => {
     expect(layoutSource).toContain("goToCheckout");
     expect(layoutSource).toContain("checkoutRedirecting");
     expect(layoutSource).toContain("aria-label=\"Xóa sản phẩm\"");
-    expect(layoutSource).toContain("quantity: item.quantity + 1");
+    expect(layoutSource).toContain('quantity: item.quantity + 1');
+    expect(layoutSource).toContain('Tiếp tục mua sắm');
+    expect(layoutSource).toContain('freeShippingProgress');
+    expect(productSource).toContain('Xem nhanh');
+    expect(productSource).toContain('setQuickViewProduct');
     expect(layoutSource).toContain("Tổng tạm tính");
     expect(layoutSource).toContain("Xem chi tiết giỏ hàng");
     expect(productSource).toContain('position: "bottom-right"');
