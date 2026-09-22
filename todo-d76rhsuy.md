@@ -1096,3 +1096,9 @@
 - [x] Cho phép tăng, giảm và xóa sản phẩm ngay trong popup giỏ nổi.
 - [x] Thêm loading và thông báo “Đang mở trang thanh toán…” trước khi chuyển tới checkout.
 - [x] Bổ sung hồi quy, TypeScript và build production.
+
+## Hoàn thiện popup giỏ và mua kèm 2026-09-22
+- [x] Hiển thị Tổng tạm tính nổi bật và tự cập nhật sau mỗi thay đổi số lượng/xóa sản phẩm.
+- [x] Hiển thị toast thành công nhỏ gọn ở góc dưới phải khi thêm sản phẩm mua kèm.
+- [x] Thêm nút Xem chi tiết giỏ hàng cạnh nút Thanh toán ngay.
+- [x] Hồi quy đạt 26/26; TypeScript và build production đạt.

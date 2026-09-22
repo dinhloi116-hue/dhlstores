@@ -91,6 +91,7 @@ export default function ProductDetail() {
   const [quantityWarnings, setQuantityWarnings] = useState<Record<number, string>>({});
   const [skuSearch, setSkuSearch] = useState("");
   const [adding, setAdding] = useState<boolean>(false);
+  const [addingRecommended, setAddingRecommended] = useState<number | null>(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [fulfillmentMode, setFulfillmentMode] = useState<'in_stock' | 'preorder'>('in_stock');
   const [skuStockFilter, setSkuStockFilter] = useState<"all" | "in_stock" | "out_of_stock">("all");
@@ -259,11 +260,14 @@ export default function ProductDetail() {
   const addToCartMutation = trpc.store.addToCart.useMutation({
     onSuccess: () => {
       animateProductToCart();
-      toast.success(lang === 'vi' ? "Đã thêm tài nguyên vào giỏ hàng thành công!" : "Added resource to cart successfully!", { duration: 3000, action: { label: "Thanh toán", onClick: () => { window.location.href = "/checkout"; } } });
+      const recommendedToast = addingRecommended !== null;
+      toast.success(recommendedToast ? (lang === "vi" ? "Đã thêm sản phẩm mua kèm vào giỏ" : "Added recommended product to cart") : (lang === 'vi' ? "Đã thêm tài nguyên vào giỏ hàng thành công!" : "Added resource to cart successfully!"), { duration: recommendedToast ? 1800 : 3000, position: "bottom-right", ...(recommendedToast ? {} : { action: { label: "Thanh toán", onClick: () => { window.location.href = "/checkout"; } } }) });
+      setAddingRecommended(null);
       utils.store.cart.invalidate();
       setAdding(false);
     },
     onError: (err) => {
+      setAddingRecommended(null);
       toast.error(err.message || "Không thể thêm vào giỏ hàng");
       setAdding(false);
     }
@@ -564,7 +568,7 @@ export default function ProductDetail() {
               </section>
             )}
 
-            {recommendedProducts.length > 0 && <section className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4 shadow-sm" aria-label="Sản phẩm thường được mua kèm"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Gợi ý cho đơn hàng</p><h2 className="mt-1 text-sm font-black text-slate-900">Sản phẩm thường được mua kèm</h2></div><Sparkles className="h-5 w-5 text-violet-600" /></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">{recommendedProducts.map(recommended => <Link key={recommended.id} href={`/product/${recommended.slug}`} className="group min-w-0 overflow-hidden rounded-xl border border-violet-100 bg-white transition hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-md"><div className="aspect-square overflow-hidden bg-slate-100">{recommended.image ? <img src={recommended.image} alt={catalogName(recommended, lang)} loading="lazy" decoding="async" className="h-full w-full object-contain transition duration-200 group-hover:scale-105" /> : <div className="grid h-full place-items-center text-[10px] font-black text-violet-500">DHL</div>}</div><div className="p-2"><p className="line-clamp-2 text-[11px] font-black leading-snug text-slate-900 group-hover:text-violet-700">{catalogName(recommended, lang)}</p><p className="mt-1 text-[10px] font-black text-[#ee4d2d]">{formatCurrency(recommended.price)}</p><button type="button" disabled={addToCartMutation.isPending} onClick={event => { event.preventDefault(); event.stopPropagation(); if (!isAuthenticated) { toast.info("Đăng nhập để thêm sản phẩm vào giỏ"); startLogin(); return; } addToCartMutation.mutate({ productId: recommended.id, quantity: 1 }); }} className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg bg-[#ee4d2d] px-2 py-1.5 text-[10px] font-black text-white transition hover:bg-[#d94325] disabled:cursor-wait disabled:opacity-60"><ShoppingBag className="h-3 w-3" />{addToCartMutation.isPending ? "Đang thêm…" : "Thêm vào giỏ"}</button></div></Link>)}</div></section>}
+            {recommendedProducts.length > 0 && <section className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4 shadow-sm" aria-label="Sản phẩm thường được mua kèm"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Gợi ý cho đơn hàng</p><h2 className="mt-1 text-sm font-black text-slate-900">Sản phẩm thường được mua kèm</h2></div><Sparkles className="h-5 w-5 text-violet-600" /></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">{recommendedProducts.map(recommended => <Link key={recommended.id} href={`/product/${recommended.slug}`} className="group min-w-0 overflow-hidden rounded-xl border border-violet-100 bg-white transition hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-md"><div className="aspect-square overflow-hidden bg-slate-100">{recommended.image ? <img src={recommended.image} alt={catalogName(recommended, lang)} loading="lazy" decoding="async" className="h-full w-full object-contain transition duration-200 group-hover:scale-105" /> : <div className="grid h-full place-items-center text-[10px] font-black text-violet-500">DHL</div>}</div><div className="p-2"><p className="line-clamp-2 text-[11px] font-black leading-snug text-slate-900 group-hover:text-violet-700">{catalogName(recommended, lang)}</p><p className="mt-1 text-[10px] font-black text-[#ee4d2d]">{formatCurrency(recommended.price)}</p><button type="button" disabled={addToCartMutation.isPending || addingRecommended === recommended.id} onClick={event => { event.preventDefault(); event.stopPropagation(); if (!isAuthenticated) { toast.info("Đăng nhập để thêm sản phẩm vào giỏ"); startLogin(); return; } setAddingRecommended(recommended.id); addToCartMutation.mutate({ productId: recommended.id, quantity: 1 }); }} className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg bg-[#ee4d2d] px-2 py-1.5 text-[10px] font-black text-white transition hover:bg-[#d94325] disabled:cursor-wait disabled:opacity-60"><ShoppingBag className="h-3 w-3" />{addingRecommended === recommended.id ? "Đã thêm…" : "Thêm vào giỏ"}</button></div></Link>)}</div></section>}
 
             {product.specs && (
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
