@@ -39,6 +39,11 @@ describe("account page layout", () => {
     expect(source).toContain('switchAccountTab');
     expect(source).toContain('animate-pulse');
     expect(source).toContain('transition-[opacity,transform]');
+    expect(source).toContain('const [orderSearch, setOrderSearch]');
+    expect(source).toContain('Tìm mã đơn, tên sản phẩm hoặc SKU');
+    expect(source).toContain('aria-label="Tìm kiếm đơn hàng"');
+    expect(source).toContain('matchesOrderStatus');
+    expect(source).toContain('filteredPriorityOrders');
   });
 });
 
