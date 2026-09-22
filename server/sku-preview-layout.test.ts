@@ -238,6 +238,10 @@ describe("public SKU inventory presentation", () => {
     expect(layoutSource).toContain("checkoutRedirecting");
     expect(layoutSource).toContain("aria-label=\"Xóa sản phẩm\"");
     expect(layoutSource).toContain("quantity: item.quantity + 1");
+    expect(layoutSource).toContain("Tổng tạm tính");
+    expect(layoutSource).toContain("Xem chi tiết giỏ hàng");
+    expect(productSource).toContain('position: "bottom-right"');
+    expect(productSource).toContain("Đã thêm sản phẩm mua kèm vào giỏ");
   });
 
   it("makes inventory editing safer with labeled bulk fields and unsaved-SKU indicators", () => {
