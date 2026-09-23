@@ -1123,3 +1123,9 @@
 - [x] Thêm chuyển cảnh opacity/transform 200ms và skeleton loading ngắn khi đổi tab.
 - [x] Thêm tìm kiếm theo mã đơn, tên sản phẩm/SKU và bộ lọc trạng thái trong tab Đơn hàng.
 - [x] Thêm nút Mua lại cho đơn đã thanh toán và hoàn tất; dùng lại payload sản phẩm/biến thể/số lượng hiện có.
+
+## Giá preview theo mốc sỉ thấp nhất 2026-09-23
+- [x] Lấy các mốc giá sỉ của hàng vật lý bằng query dùng chung cho nhiều sản phẩm.
+- [x] Hiển thị `unitPrice` thấp nhất trên thẻ trang chủ, catalog, sản phẩm xem gần đây và quick view.
+- [x] Giữ giá bán gốc làm fallback khi chưa có mốc sỉ hợp lệ; tài nguyên số không bị thay đổi.
+- [x] Hồi quy đạt 25/25; TypeScript và build production đạt.
