@@ -1138,3 +1138,9 @@
 - [x] Thêm badge `Kho: số lượng` cạnh bộ tăng/giảm số lượng trong bảng chọn nhiều SKU.
 - [x] Thêm badge `Tồn: số lượng` trong panel tồn kho và áp dụng cho cả SKU đơn, giao diện classic.
 - [x] Hết hàng hiển thị rõ `Hết`, order trước hiển thị `Order`; hồi quy 25/25, TypeScript/build đạt.
+
+## Cảnh báo và giới hạn tồn kho 2026-09-23
+- [x] Đổi chữ số lượng tồn sang đỏ khi SKU còn dưới 10 sản phẩm, gồm cả badge bảng SKU, SKU đơn và classic.
+- [x] Thêm tooltip native cho nhãn `Order`: dự kiến giao trong 7–10 ngày.
+- [x] Tự động kẹp số lượng nhập về tồn kho tối đa; giữ cảnh báo “Chỉ còn … sản phẩm trong kho”.
+- [x] Bổ sung hồi quy và kiểm tra TypeScript/build production.
