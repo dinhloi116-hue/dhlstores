@@ -1133,3 +1133,8 @@
 - [x] Đổi nhãn và mức giá preview sang tông đỏ cam nổi bật trên trang chủ, catalog, sản phẩm gần đây và Quick View.
 - [x] Thêm icon tia chớp nhỏ màu vàng cạnh nhãn để tăng khả năng thu hút nhưng vẫn giữ bố cục gọn.
 - [x] Thêm pulse nhẹ 1,8 giây cho icon tia chớp, không ảnh hưởng nhãn hoặc mức giá.
+
+## Hiển thị tồn kho cạnh số lượng mua 2026-09-23
+- [x] Thêm badge `Kho: số lượng` cạnh bộ tăng/giảm số lượng trong bảng chọn nhiều SKU.
+- [x] Thêm badge `Tồn: số lượng` trong panel tồn kho và áp dụng cho cả SKU đơn, giao diện classic.
+- [x] Hết hàng hiển thị rõ `Hết`, order trước hiển thị `Order`; hồi quy 25/25, TypeScript/build đạt.

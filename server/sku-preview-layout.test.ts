@@ -85,6 +85,8 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('<span className="text-right">Số lượng</span>');
     expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
+    expect(source).toContain('`Kho: ${variant.stock}`');
+    expect(source).toContain('Tồn: {outOfStock ? "Hết" : variant.stock}');
     expect(source).toContain('onClick={event => event.stopPropagation()}');
     expect(source).toContain('clientY - previewHeight - 16');
     expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)_7rem]');
