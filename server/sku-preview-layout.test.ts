@@ -111,6 +111,10 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("quantityWarnings");
     expect(source).toContain("chỉ còn ${max} sản phẩm trong kho");
     expect(source).toContain("animate-[pulse_0.45s_ease-out]");
+    expect(source).toContain("quantityShakeVariantId");
+    expect(source).toContain("animate-[dhl-shake_0.35s_ease-in-out]");
+    expect(source).toContain("Nhận thông báo khi có hàng");
+    expect(source).toContain("stockProgress(variant.stock)");
     expect(source).toContain("Lưu sản phẩm để mua sau");
     expect(source).toContain("toggleFavoriteMutation.mutate({ productId: product.id })");
   });
