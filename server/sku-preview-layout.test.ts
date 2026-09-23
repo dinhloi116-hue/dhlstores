@@ -12,6 +12,10 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("productWholesaleTiersForProducts");
     expect(catalogSource).toContain("previewPrice(p)");
     expect(catalogSource).toContain("previewPrice(quickViewProduct)");
+    expect(homeSource).toContain("Giá sỉ từ");
+    expect(catalogSource).toContain("Giá sỉ từ");
+    expect(homeSource).toContain("hasWholesalePreviewPrice");
+    expect(catalogSource).toContain("hasWholesalePreviewPrice");
   });
 
 

@@ -1129,3 +1129,4 @@
 - [x] Hiển thị `unitPrice` thấp nhất trên thẻ trang chủ, catalog, sản phẩm xem gần đây và quick view.
 - [x] Giữ giá bán gốc làm fallback khi chưa có mốc sỉ hợp lệ; tài nguyên số không bị thay đổi.
 - [x] Hồi quy đạt 25/25; TypeScript và build production đạt.
+- [x] Thêm nhãn “Giá sỉ từ” ngay trước giá thấp nhất, chỉ hiện khi sản phẩm có mốc sỉ hợp lệ.
