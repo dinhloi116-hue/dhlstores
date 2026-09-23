@@ -18,8 +18,8 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("hasWholesalePreviewPrice");
     expect(homeSource).toContain("aria-hidden=\"true\"");
     expect(catalogSource).toContain("aria-hidden=\"true\"");
-    expect(homeSource).toContain("h-3 w-3 align-[-1px]");
-    expect(catalogSource).toContain("h-3 w-3 align-[-1px]");
+    expect(homeSource).toContain("h-3 w-3 animate-[pulse_1.8s_ease-in-out_infinite]");
+    expect(catalogSource).toContain("h-3 w-3 animate-[pulse_1.8s_ease-in-out_infinite]");
   });
 
 

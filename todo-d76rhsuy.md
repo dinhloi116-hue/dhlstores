@@ -1132,3 +1132,4 @@
 - [x] Thêm nhãn “Giá sỉ từ” ngay trước giá thấp nhất, chỉ hiện khi sản phẩm có mốc sỉ hợp lệ.
 - [x] Đổi nhãn và mức giá preview sang tông đỏ cam nổi bật trên trang chủ, catalog, sản phẩm gần đây và Quick View.
 - [x] Thêm icon tia chớp nhỏ màu vàng cạnh nhãn để tăng khả năng thu hút nhưng vẫn giữ bố cục gọn.
+- [x] Thêm pulse nhẹ 1,8 giây cho icon tia chớp, không ảnh hưởng nhãn hoặc mức giá.
