@@ -1145,3 +1145,9 @@
 - [x] Thêm tooltip native cho nhãn `Order`: dự kiến giao trong 7–10 ngày.
 - [x] Tự động kẹp số lượng nhập về tồn kho tối đa; giữ cảnh báo “Chỉ còn … sản phẩm trong kho”.
 - [x] Bổ sung hồi quy và kiểm tra TypeScript/build production.
+
+## Tăng cường cảnh báo tồn kho 2026-09-23
+- [x] Thêm hiệu ứng rung nhẹ vào ô nhập khi người dùng nhập vượt tồn kho; tự tắt sau 500ms.
+- [x] Thêm nút `Nhận thông báo khi có hàng` cho từng SKU hết hàng, có xử lý đăng nhập và mutation nhắc hàng hiện có.
+- [x] Thêm progress bar nhỏ dưới số tồn, tỷ lệ trực quan theo mốc 50 sản phẩm và màu đỏ khi khan hiếm.
+- [x] Hồi quy đạt 25/25; TypeScript và build production đạt.
