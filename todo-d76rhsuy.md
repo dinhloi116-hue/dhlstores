@@ -1130,3 +1130,4 @@
 - [x] Giữ giá bán gốc làm fallback khi chưa có mốc sỉ hợp lệ; tài nguyên số không bị thay đổi.
 - [x] Hồi quy đạt 25/25; TypeScript và build production đạt.
 - [x] Thêm nhãn “Giá sỉ từ” ngay trước giá thấp nhất, chỉ hiện khi sản phẩm có mốc sỉ hợp lệ.
+- [x] Đổi nhãn và mức giá preview sang tông đỏ cam nổi bật trên trang chủ, catalog, sản phẩm gần đây và Quick View.
