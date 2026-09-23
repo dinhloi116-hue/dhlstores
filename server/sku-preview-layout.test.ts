@@ -2,6 +2,19 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("public SKU inventory presentation", () => {
+  it("shows the lowest wholesale tier price in physical product previews", () => {
+    const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+    const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+
+    expect(homeSource).toContain("productWholesaleTiersForProducts");
+    expect(homeSource).toContain("lowestWholesalePriceByProduct");
+    expect(homeSource).toContain("previewPrice(product)");
+    expect(catalogSource).toContain("productWholesaleTiersForProducts");
+    expect(catalogSource).toContain("previewPrice(p)");
+    expect(catalogSource).toContain("previewPrice(quickViewProduct)");
+  });
+
+
   it("keeps SKU and stock in the same compact metadata group", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
