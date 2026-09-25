@@ -7,9 +7,7 @@
   const sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
 
   function failed(item){
-    const variants=Array.isArray(item&&item.variants)?item.variants:[];
-    const hasMissingSku=variants.some(v=>!String(v&&v.sku||'').trim());
-    return Boolean(item&&item.complete!==true&&item.lagRetryAttempted!==true&&(variants.length===0||hasMissingSku));
+    return Boolean(item&&item.complete!==true&&item.lagRetryAttempted!==true);
   }
 
   async function activeSourceTab(){
