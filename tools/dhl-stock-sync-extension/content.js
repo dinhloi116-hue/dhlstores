@@ -703,14 +703,6 @@
       }
     }
 
-    const expectedSkuCount=Math.max(1,(controls.length||1)*Math.max(1,neededSizes.length));
-    let sourceSkuVariants=[];
-    try{
-      sourceSkuVariants=await collectSourceSkuVariants(parentId,parentName,expectedSkuCount);
-    }catch(_){
-      sourceSkuVariants=[];
-    }
-
     const variants = [];
     const snapshots = [];
     let previousSignature = '';
@@ -738,8 +730,7 @@
         targetSizes: neededSizes
       });
       rows.forEach((row) => {
-        const sourceVariant=findSourceSkuVariant(sourceSkuVariants,target.name,row.size);
-        variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,sourceVariant));
+        variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,null));
       });
     }
 
@@ -790,8 +781,7 @@
         expectedSizes: neededSizes,
         ignoredSizes: [],
         missingSizes: missing,
-        sourceSkuExpected:expectedSkuCount,
-        sourceSkuRead:sourceSkuVariants.length,
+        skuRule:'alias+size',
         missingSourceSku,
         snapshots
       }
