@@ -9,7 +9,7 @@
   function setHtml(el,value){if(el&&el.innerHTML!==value)el.innerHTML=value;}
 
   function decorate(){
-    setText(document.querySelector('header p'),'Thêm 1 SP mới: mở popup nguồn → quét 1 SP → đăng Sapo. Đồng bộ tồn: chọn hồ sơ → quét tab → xuất/đẩy tồn.');
+    setText(document.querySelector('header p'),'SP mới: quét cả danh mục 1 lượt → cột A làm mã gốc → SKU phân loại = Alias + Size. Đồng bộ tồn là luồng riêng bên dưới.');
 
     const quick=document.getElementById('profileQuickTabs');
     const quickHint=quick&&quick.querySelector('small');
@@ -38,6 +38,13 @@
     arranging=true;
     try{
       decorate();
+      const main=document.querySelector('main');
+      const catalog=document.getElementById('catalogMode');
+      const header=document.querySelector('main > header');
+      if(main&&catalog&&catalog.parentElement===main){
+        if(header&&header.nextSibling!==catalog)main.insertBefore(catalog,header.nextSibling);
+        else if(!header&&main.firstChild!==catalog)main.insertBefore(catalog,main.firstChild);
+      }
       const expected=[
         document.getElementById('profileQuickTabs'),
         document.getElementById('activeProfileCard'),
