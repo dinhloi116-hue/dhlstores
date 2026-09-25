@@ -41,12 +41,14 @@ assert.ok(autoCore.includes('SOURCE SKU là khóa MASTER tuyệt đối'));
 const savedProfiles=read('saved-profiles-mode.js');
 assert.ok(savedProfiles.includes('autoCore.prepareRows(activeData.warehouseData, activeData.catalogData, latestSource, matcher, rules)'));
 assert.ok(savedProfiles.includes('const hints = []; // Quét TOÀN BỘ'));
-assert.ok(savedProfiles.includes('KẾT QUẢ QUÉT NGUỒN là MASTER'));
+assert.ok(savedProfiles.includes('SKU GỐC trên aobongda.net là MASTER'));
 
 const batchCache=read('batch-stock-cache-mode.js');
 assert.ok(batchCache.includes('autoCore.prepareRows(warehouseData,catalogData,sourceResults,matcher,rules)'));
 assert.ok(batchCache.includes('sourceProductCount'));
-assert.ok(batchCache.includes('generatedSkuCount'));
+assert.ok(batchCache.includes('generatedSkuCount:0'));
+assert.ok(batchCache.includes('matchedSkuCount'));
+assert.ok(batchCache.includes('sourceOnlySkuCount'));
 
 const bg=read('auto-sync-background-v2.js');
 assert.ok(bg.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
