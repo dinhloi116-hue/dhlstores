@@ -37,7 +37,7 @@
     standardizeBox.innerHTML = `
       <b style="display:block;color:#92400e">CHUẨN HÓA 1 LẦN — POPUP TOÀN BỘ</b>
       <small style="display:block;margin-top:5px;line-height:1.45">
-        Tool sẽ tự mở popup từng sản phẩm → đọc toàn bộ màu / size / tồn → đóng popup → sang sản phẩm kế tiếp.
+        Tool sẽ BẬT popup thật lên màn hình cho từng sản phẩm → đọc toàn bộ màu / size / tồn → tự đóng popup → bật popup sản phẩm kế tiếp.
         <b>Không dùng quét API nhanh và không dùng SKU cũ.</b> Hãy giữ nguyên tab danh mục trong lúc chạy.
       </small>
       <button id="maintenancePopupFullScan" type="button" class="primary" style="width:100%;margin-top:9px">
@@ -71,7 +71,7 @@
       }
       const ok=confirm(
         'CHUẨN HÓA TOÀN BỘ NGUỒN 1 LẦN?\n\n'+
-        'Tool sẽ tự mở/đóng popup cho TẤT CẢ sản phẩm trên danh mục đang mở.\n'+
+        'Tool sẽ BẬT/ĐÓNG popup thật trên màn hình cho TẤT CẢ sản phẩm trên danh mục đang mở.\n'+
         'Trong lúc chạy không chuyển tab nguồn, không bấm popup bằng tay.'
       );
       if(!ok)return;
