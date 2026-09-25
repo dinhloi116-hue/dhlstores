@@ -24,8 +24,78 @@
     if (oldTitle) oldTitle.textContent = 'LÀM MỚI DANH SÁCH NGUỒN';
     const oldDesc = body.querySelector('span');
     if (oldDesc) {
-      oldDesc.textContent = 'Chỉ chạy khi web nguồn vừa thêm sản phẩm, đổi tên hoặc thêm màu mới. Không cần chạy mỗi ngày. Nên TEST NHANH 1 SP trước rồi mới quét toàn bộ.';
+      oldDesc.textContent = 'Dùng khi cần chuẩn hóa lại nguồn. Chế độ bên dưới sẽ tự mở popup từng sản phẩm, đọc hết màu/size/tồn rồi chuyển sang sản phẩm tiếp theo.';
     }
+
+    const standardizeBox = document.createElement('div');
+    standardizeBox.id = 'maintenancePopupStandardizeBox';
+    standardizeBox.style.marginTop = '10px';
+    standardizeBox.style.padding = '10px';
+    standardizeBox.style.border = '1px solid #f59e0b';
+    standardizeBox.style.borderRadius = '9px';
+    standardizeBox.style.background = '#fffbeb';
+    standardizeBox.innerHTML = `
+      <b style="display:block;color:#92400e">CHUẨN HÓA 1 LẦN — POPUP TOÀN BỘ</b>
+      <small style="display:block;margin-top:5px;line-height:1.45">
+        Tool sẽ tự mở popup từng sản phẩm → đọc toàn bộ màu / size / tồn → đóng popup → sang sản phẩm kế tiếp.
+        <b>Không dùng quét API nhanh và không dùng SKU cũ.</b> Hãy giữ nguyên tab danh mục trong lúc chạy.
+      </small>
+      <button id="maintenancePopupFullScan" type="button" class="primary" style="width:100%;margin-top:9px">
+        CHẠY POPUP TOÀN BỘ 1 LẦN
+      </button>
+      <small id="maintenancePopupFullState" style="display:block;margin-top:7px">
+        Chưa chạy chuẩn hóa.
+      </small>`;
+    body.appendChild(standardizeBox);
+
+    const standardizeBtn=standardizeBox.querySelector('#maintenancePopupFullScan');
+    const standardizeState=standardizeBox.querySelector('#maintenancePopupFullState');
+
+    function renderStandardizeProgress(info){
+      if(!standardizeState||!info)return;
+      if(info.done){
+        standardizeState.textContent=`HOÀN TẤT: ${info.completeCount}/${info.total} sản phẩm đạt • ${info.variantCount||0} biến thể • lỗi/thiếu ${info.failedCount||0}.`;
+        standardizeState.style.color=info.failedCount?'#92400e':'#166534';
+        return;
+      }
+      standardizeState.textContent=`ĐANG POPUP ${info.current||0}/${info.total||0}: ${info.title||'Sản phẩm'} • đạt ${info.completeCount||0} • lỗi ${info.failedCount||0}`;
+      standardizeState.style.color='#92400e';
+    }
+
+    standardizeBtn.addEventListener('click', async () => {
+      const api=globalThis.DHLCatalogMaintenance;
+      if(!api||typeof api.standardizeAllByPopup!=='function'){
+        standardizeState.textContent='Chưa nạp được bộ quét popup. Hãy NẠP LẠI TOOL rồi thử lại.';
+        standardizeState.style.color='#b91c1c';
+        return;
+      }
+      const ok=confirm(
+        'CHUẨN HÓA TOÀN BỘ NGUỒN 1 LẦN?\n\n'+
+        'Tool sẽ tự mở/đóng popup cho TẤT CẢ sản phẩm trên danh mục đang mở.\n'+
+        'Trong lúc chạy không chuyển tab nguồn, không bấm popup bằng tay.'
+      );
+      if(!ok)return;
+
+      standardizeBtn.disabled=true;
+      standardizeBtn.textContent='ĐANG CHUẨN HÓA...';
+      standardizeState.textContent='Đang tìm danh sách sản phẩm trên tab nguồn...';
+      try{
+        const out=await api.standardizeAllByPopup({onProgress:renderStandardizeProgress});
+        renderStandardizeProgress({
+          done:true,
+          total:out.itemCount,
+          completeCount:out.completeCount,
+          failedCount:out.failedCount,
+          variantCount:out.variantCount
+        });
+      }catch(error){
+        standardizeState.textContent=`LỖI: ${error&&error.message||String(error)}`;
+        standardizeState.style.color='#b91c1c';
+      }finally{
+        standardizeBtn.disabled=false;
+        standardizeBtn.textContent='CHẠY POPUP TOÀN BỘ 1 LẦN';
+      }
+    });
 
     const devBox = document.createElement('div');
     devBox.style.marginTop = '10px';
@@ -55,7 +125,7 @@
     toggle.style.justifyContent = 'space-between';
     toggle.style.gap = '8px';
     toggle.style.textAlign = 'left';
-    toggle.innerHTML = '<span><b>BẢO TRÌ NGUỒN</b><small style="display:block;margin-top:3px;font-weight:400">Chỉ dùng khi web có sản phẩm / màu mới</small></span><span id="catalogMaintenanceChevron" style="font-size:16px">▾</span>';
+    toggle.innerHTML = '<span><b>BẢO TRÌ NGUỒN</b><small style="display:block;margin-top:3px;font-weight:400">Chuẩn hóa 1 lần / khi web có sản phẩm, màu mới</small></span><span id="catalogMaintenanceChevron" style="font-size:16px">▾</span>';
 
     toggle.addEventListener('click', () => {
       body.hidden = !body.hidden;
