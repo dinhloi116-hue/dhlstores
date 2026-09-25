@@ -9,7 +9,7 @@
   function setHtml(el,value){if(el&&el.innerHTML!==value)el.innerHTML=value;}
 
   function decorate(){
-    setText(document.querySelector('header p'),'1) Chọn hồ sơ → 2) mở đúng tab nguồn → 3) quét → 4) tải Excel hoặc đẩy thẳng lên Sapo');
+    setText(document.querySelector('header p'),'Thêm 1 SP mới: mở popup nguồn → quét 1 SP → đăng Sapo. Đồng bộ tồn: chọn hồ sơ → quét tab → xuất/đẩy tồn.');
 
     const quick=document.getElementById('profileQuickTabs');
     const quickHint=quick&&quick.querySelector('small');
