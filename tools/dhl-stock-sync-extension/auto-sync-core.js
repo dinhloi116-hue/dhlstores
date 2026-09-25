@@ -46,15 +46,17 @@
   }
 
   function skuCoverage(warehouseData,catalogData){
+    // products_export là master: chỉ cần chính danh sách này có SKU đầy đủ.
+    // warehouseData được giữ trong chữ ký hàm để tương thích các caller cũ và chỉ còn dùng lấy chi nhánh.
     const index=catalogSkuIndex(catalogData);
-    let matched=0;
+    const variants=(catalogData&&catalogData.variants)||[];
     const missing=[];
-    for(const variant of (warehouseData&&warehouseData.variants)||[]){
-      const key=rowKey(variant.name,displaySize(variant));
-      if(index.map.has(key))matched+=1;
-      else missing.push(`${variant.name||''} / Size ${displaySize(variant)}`);
+    let matched=0;
+    for(const variant of variants){
+      if(text(variant&&variant.sku))matched+=1;
+      else missing.push(`${variant&&variant.name||''} / Size ${displaySize(variant)}`);
     }
-    return{matched,total:(warehouseData&&warehouseData.variants||[]).length,missing,duplicates:index.duplicates.size};
+    return{matched,total:variants.length,missing,duplicates:index.duplicates.size,master:'products_export'};
   }
 
   function prepareRows(warehouseData,catalogData,sourceResults,matcher){
