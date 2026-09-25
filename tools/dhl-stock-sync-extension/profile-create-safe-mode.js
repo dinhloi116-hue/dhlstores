@@ -27,22 +27,14 @@
   function rowKey(name,size){return `${plain(name)}|${plain(size)}`;}
 
   function coverage(warehouseData,catalogData){
-    const index=new Map();
-    const duplicates=new Set();
-    for(const v of (catalogData&&catalogData.variants)||[]){
-      const sku=text(v&&v.sku); if(!sku)continue;
-      const key=rowKey(v.name,displaySize(v)); if(!key||key==='|')continue;
-      if(index.has(key)&&index.get(key)!==sku)duplicates.add(key); else index.set(key,sku);
+    const variants=(catalogData&&catalogData.variants)||[];
+    const missing=[];let matched=0;
+    for(const variant of variants){
+      if(text(variant&&variant.sku))matched+=1;
+      else missing.push(`${variant&&variant.name||''} / Size ${displaySize(variant)}`);
     }
-    for(const key of duplicates)index.delete(key);
-    let matched=0; const missing=[];
-    for(const v of (warehouseData&&warehouseData.variants)||[]){
-      const key=rowKey(v.name,displaySize(v));
-      if(index.has(key))matched++; else missing.push(`${v.name} / Size ${displaySize(v)}`);
-    }
-    return{matched,total:(warehouseData&&warehouseData.variants||[]).length,missing,duplicates:duplicates.size};
+    return{matched,total:variants.length,missing,master:'products_export'};
   }
-
   function bytesToBase64(buffer){
     const bytes=new Uint8Array(buffer); let binary=''; const chunk=0x8000;
     for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)));
@@ -81,7 +73,7 @@
       const c=coverage(warehouseData,catalogData);
       if(c.matched!==c.total){
         const sample=c.missing.slice(0,3).join('; ');
-        throw new Error(`2 file mới nối được ${c.matched}/${c.total} SKU.${sample?` Ví dụ thiếu: ${sample}`:''}`);
+        throw new Error(`products_export mới có ${c.matched}/${c.total} biến thể có SKU.${sample?` Ví dụ thiếu: ${sample}`:''}`);
       }
 
       const stored=await chrome.storage.local.get([STORAGE_KEY]);
@@ -98,7 +90,7 @@
       };
       profiles.push(profile);
       await chrome.storage.local.set({[STORAGE_KEY]:profiles,[SELECTED_KEY]:profile.id});
-      setStatus(`ĐÃ TẠO HỒ SƠ ${name}: ${c.matched}/${c.total} SKU. Hồ sơ cũ được giữ nguyên.`,'ok');
+      setStatus(`ĐÃ TẠO HỒ SƠ ${name}: products_export là master • ${(catalogData.products||[]).length} sản phẩm • ${c.matched}/${c.total} biến thể SKU.`,'ok');
       createMode=false;
       setTimeout(()=>location.reload(),350);
     }catch(error){
