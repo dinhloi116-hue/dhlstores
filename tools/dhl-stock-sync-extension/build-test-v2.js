@@ -110,7 +110,10 @@ assert.ok(resolver.includes('data.result&&data.result.variant'));
 assert.ok(resolver.indexOf('const byProductSku=')<resolver.indexOf('const bySku='));
 
 const contentScanner=read('content.js');
-assert.ok(contentScanner.includes('collectSourceSkuVariants'));
+assert.ok(contentScanner.includes('collectSourceSkuBundle'));
+assert.ok(contentScanner.includes('scanDescriptorApiFast'));
+assert.ok(contentScanner.includes("const concurrency=Math.min(3,Math.max(1,links.length))"));
+assert.ok(contentScanner.includes("stage:'popup-fallback'"));
 assert.ok(contentScanner.includes("scanMethod: 'category-source-sku-exact'"));
 assert.ok(contentScanner.includes('missingSourceSku'));
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR'"));
