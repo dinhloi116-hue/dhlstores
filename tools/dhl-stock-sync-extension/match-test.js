@@ -73,5 +73,58 @@ assert.strictEqual(strictOut[3].matched,true,'Anh be phải ghép được Kem')
 assert.ok(m.scoreColorHint('xanh','Rêu')>=0.5);
 assert.strictEqual(m.scoreColorHint('đỏ','Kem'),0);
 
+
+// Regression: products_export mới có CLB Real / ARS / Liver.
+// Các tên này không được phép biến mất khỏi file tồn chỉ vì không có trong TEAM_PATTERNS.
+function clubProduct(productId,name,color,skuToken,baseId){
+  return {
+    productId,name:`${name} - ${color}`,
+    skuBase:`ABDN-${skuToken}`,
+    variants:['S','M','L','XL','XXL'].map((size,i)=>({
+      productId,variantId:baseId+i,
+      name:`${name} - ${color}`,
+      sku:`ABDN-${skuToken}-${size}`,
+      size
+    }))
+  };
+}
+function clubSource(parentId,parentName,colors){
+  const variants=[];let n=0;
+  for(const color of colors){
+    for(const size of ['S','M','L','XL','XXL']){
+      variants.push({
+        id:parentId*100+n++,parentId,color,size,
+        name:`${parentName} - ${color} - ${size}`,
+        available:size==='XXL'?0:11
+      });
+    }
+  }
+  return{parentId,parentName,variants,complete:true};
+}
+
+const clubTargets=[
+  clubProduct(91959154,'CLB Real 26-27 HD','Hồng','CLB-REAL-26-27-HD-HONG-14NE9U1',228274684),
+  clubProduct(91959152,'CLB Real 26-27 HD','Trắng','CLB-REAL-26-27-HD-TRANG-14HQR4B',228274679),
+  clubProduct(91959151,'CLB Real 26-27 HD','Xanh Rêu','CLB-REAL-26-27-HD-XANH-REU-1Y8VHAE',228274674),
+  clubProduct(91959150,'CLB Real 26-27 HD','Trắng Có Cổ','CLB-REAL-26-27-HD-TRANG-CO-C-BSBWNF',228274669),
+  clubProduct(91959149,'CLB ARS 26-27 HD','Đỏ','CLB-ARS-26-27-HD-DO-1E6II4I',228274664),
+  clubProduct(91959148,'CLB Liver 26-27 HD','Đỏ','CLB-LIVER-26-27-HD-DO-128IY0I',228274659)
+];
+const clubSourceData=[
+  clubSource(7001,'CLB Real 26-27 HD',['Hồng','Trắng','Xanh Rêu','Trắng Có Cổ']),
+  clubSource(7002,'CLB ARS 26-27 HD',['Đỏ']),
+  clubSource(7003,'CLB Liver 26-27 HD',['Đỏ'])
+];
+const clubOut=m.matchSapoProducts(clubTargets,clubSourceData);
+assert.strictEqual(clubOut.length,6);
+assert.ok(clubOut.every(x=>x.matched),'Tất cả mẫu CLB mới trong products_export phải ghép được nguồn');
+assert.ok(clubOut.every(x=>x.complete),'Tất cả size của mẫu CLB mới phải ghép đủ');
+assert.strictEqual(clubOut.reduce((n,x)=>n+x.variantMatches.length,0),30);
+assert.strictEqual(clubOut[0].best.color,'Hồng');
+assert.strictEqual(clubOut[3].best.color,'Trắng Có Cổ');
+assert.strictEqual(clubOut[4].best.parentName,'CLB ARS 26-27 HD');
+assert.strictEqual(clubOut[5].best.parentName,'CLB Liver 26-27 HD');
+console.log('CLUB MASTER MATCH PASS',clubOut.map(x=>({name:x.sapoProduct.name,matched:x.matched,score:Math.round(x.best.score*100)})));
+
 console.log('MATCH PASS', out.map(x => ({sapo:x.sapoProduct.productId, source:`${x.best.parentName}/${x.best.color}`, score:Math.round(x.best.score*100), method:x.linkMethod})));
 console.log('STRICT COLOR PASS', strictOut.map(x => ({sapo:x.sapoProduct.productId, matched:x.matched, source:x.best?x.best.color:null})));
