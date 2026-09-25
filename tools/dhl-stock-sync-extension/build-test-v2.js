@@ -117,6 +117,7 @@ assert.ok(contentScanner.includes("stage:'popup-fallback'"));
 assert.ok(contentScanner.includes("scanMethod: 'category-alias-size'"));
 assert.ok(contentScanner.includes("skuRule:'alias+size'"));
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR'"));
+assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
@@ -125,7 +126,16 @@ assert.ok(catalogScanner.includes('QUÉT TẤT CẢ SẢN PHẨM MỚI'));
 assert.ok(catalogScanner.includes("type:'DHL_SCAN_HD_LIVE'"));
 assert.ok(catalogScanner.includes("chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples'])"));
 assert.ok(catalogScanner.includes('không đọc SKU cũ'));
+assert.ok(catalogScanner.includes('standardizeAllByPopup'));
+assert.ok(catalogScanner.includes("type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
+assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'maintenance-popup-standardize-once'"));
 
+
+
+const maintenanceUi=read('maintenance-ui.js');
+assert.ok(maintenanceUi.includes('CHUẨN HÓA 1 LẦN — POPUP TOÀN BỘ'));
+assert.ok(maintenanceUi.includes('CHẠY POPUP TOÀN BỘ 1 LẦN'));
+assert.ok(maintenanceUi.includes('standardizeAllByPopup'));
 
 const productCore=read('product-create-core.js');
 assert.ok(productCore.includes('function makeApiProducts'));
