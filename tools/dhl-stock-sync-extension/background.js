@@ -1,5 +1,7 @@
 importScripts(
   'match-core.js',
+  'shop-rules.js',
+  'generic-shop-rules.js',
   'xlsx-lite.js',
   'warehouse-core.js',
   'generic-warehouse-mode.js',
