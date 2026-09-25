@@ -1,5 +1,9 @@
 const assert=require('assert');
 const core=require('./auto-sync-core.js');
+const matcher=require('./match-core.js');
+global.DHLShopRules=require('./shop-rules.js');
+require('./generic-shop-rules.js');
+const rules=global.DHLShopRules;
 
 assert.strictEqual(core.validSourceUrl('https://si.aobongda.net/hd-pc36029.html'),true);
 assert.strictEqual(core.validSourceUrl('https://si.aobongda.net/ao-tre-em-pc37502.html'),true);
@@ -12,57 +16,63 @@ assert.strictEqual(cfg.intervalHours,3);
 assert.deepStrictEqual(cfg.selectedProfileIds,['a','b']);
 assert.strictEqual(core.normalizeConfig({intervalHours:99}).intervalHours,2);
 
-// File kho có thể cũ và chưa có sản phẩm mới.
-const warehouse={
-  products:[{productId:1,name:'ĐT Cũ 2026 HD - Đỏ',variants:[{name:'ĐT Cũ 2026 HD - Đỏ',rawProductLabel:'ĐT Cũ 2026 HD - Đỏ / M',size:'M'}]}],
-  variants:[{name:'ĐT Cũ 2026 HD - Đỏ',rawProductLabel:'ĐT Cũ 2026 HD - Đỏ / M',size:'M'}]
-};
+const warehouse={warehouseBranchName:'dhl sport',products:[],variants:[]};
 
-// products_export là MASTER và có thêm một sản phẩm mới mà file kho chưa có.
+// products_export chỉ có Real Hồng; Real Trắng là mẫu mới chỉ xuất hiện trong kết quả quét.
 const catalog={
-  products:[
-    {productId:22,name:'ĐT A 2026 HD - Đỏ',variants:[
-      {name:'ĐT A 2026 HD - Đỏ',size:'M',sku:'A-M',variantId:11,productId:22}
-    ]},
-    {productId:33,name:'ĐT B 2026 HD - Trắng',variants:[
-      {name:'ĐT B 2026 HD - Trắng',size:'L',sku:'B-L',variantId:12,productId:33}
-    ]}
-  ],
-  variants:[
-    {name:'ĐT A 2026 HD - Đỏ',size:'M',sku:'A-M',variantId:11,productId:22},
-    {name:'ĐT B 2026 HD - Trắng',size:'L',sku:'B-L',variantId:12,productId:33}
-  ]
+  products:[{
+    productId:91959154,
+    name:'CLB Real 26-27 HD - Hồng',
+    skuBase:'ABDN-CLB-REAL-26-27-HD-HONG-14NE9U1',
+    variants:['S','M','L','XL','XXL'].map((size,i)=>({
+      productId:91959154,variantId:228274684+i,name:'CLB Real 26-27 HD - Hồng',
+      size,sku:`ABDN-CLB-REAL-26-27-HD-HONG-14NE9U1-${size}`
+    }))
+  }],
+  variants:[]
 };
+catalog.variants=catalog.products[0].variants.slice();
 
+function sourceGroup(parentId,color,baseStock){
+  return {
+    parentId,parentName:'CLB Real 26-27 HD',complete:true,
+    variants:['S','M','L','XL','XXL'].map((size,i)=>({
+      id:parentId*100+i,parentId,color,size,
+      name:`CLB Real 26-27 HD - ${color} - ${size}`,
+      available:baseStock+i
+    }))
+  };
+}
 const source=[
-  {parentName:'ĐT A 2026 HD',variants:[{name:'ĐT A 2026 HD - Đỏ - M',size:'M',available:7}]},
-  {parentName:'ĐT B 2026 HD',variants:[{name:'ĐT B 2026 HD - Trắng - L',size:'L',available:9}]}
+  sourceGroup(7001,'Hồng',10),
+  sourceGroup(7001,'Trắng',20)
 ];
 
-let receivedProducts=null;
-const matcher={
-  matchSapoProducts(products){
-    receivedProducts=products;
-    return[
-      {variantMatches:[{sapo:catalog.products[0].variants[0],source:source[0].variants[0]}]},
-      {variantMatches:[{sapo:catalog.products[1].variants[0],source:source[1].variants[0]}]}
-    ];
-  }
-};
-
 const coverage=core.skuCoverage(warehouse,catalog);
-assert.strictEqual(coverage.master,'products_export');
-assert.strictEqual(coverage.matched,2);
-assert.strictEqual(coverage.total,2);
+assert.strictEqual(coverage.master,'products_export_lookup');
+assert.strictEqual(coverage.matched,5);
+assert.strictEqual(coverage.total,5);
 
-const prepared=core.prepareRows(warehouse,catalog,source,matcher);
-assert.strictEqual(receivedProducts,catalog.products,'Phải match theo products_export, không theo file kho cũ');
-assert.deepStrictEqual(
-  prepared.rows.map(x=>({sku:x.sku,stock:x.stock,variantId:x.variantId,productId:x.productId})),
-  [
-    {sku:'A-M',stock:7,variantId:11,productId:22},
-    {sku:'B-L',stock:9,variantId:12,productId:33}
-  ]
-);
+const prepared=core.prepareRows(warehouse,catalog,source,matcher,rules);
+assert.strictEqual(prepared.master,'source_scan');
+assert.strictEqual(prepared.sourceProductCount,2);
+assert.strictEqual(prepared.sourceVariantCount,10);
+assert.strictEqual(prepared.rows.length,10,'Mọi biến thể quét được phải vào file tồn');
+assert.strictEqual(prepared.existingSkuCount,5);
+assert.strictEqual(prepared.generatedSkuCount,5);
 
-console.log('AUTO SYNC CORE PASS', {master:'products_export',catalogOnlyProductIncluded:true});
+const pink=prepared.rows.filter(x=>x.standardName==='CLB Real 26-27 HD - Hồng');
+const white=prepared.rows.filter(x=>x.standardName==='CLB Real 26-27 HD - Trắng');
+assert.strictEqual(pink.length,5);
+assert.strictEqual(white.length,5);
+assert.strictEqual(pink[0].sku,'ABDN-CLB-REAL-26-27-HD-HONG-14NE9U1-S');
+assert.ok(white.every(x=>x.sku.startsWith('ABDN-CLB-REAL-26-27-HD-TRANG-14HQR4B-')),'Mẫu nguồn chưa có trong products_export phải dùng đúng SKU tạo sản phẩm');
+assert.ok(white.every(x=>x.variantId===0),'Mẫu chưa đối chiếu được Sapo giữ variantId=0 để resolver tìm bằng SKU');
+
+console.log('AUTO SYNC CORE PASS',{
+  master:'source_scan',
+  scannedVariants:prepared.sourceVariantCount,
+  outputRows:prepared.rows.length,
+  existingSku:prepared.existingSkuCount,
+  generatedSku:prepared.generatedSkuCount
+});
