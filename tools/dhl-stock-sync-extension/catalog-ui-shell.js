@@ -12,8 +12,8 @@
     section.style.borderColor = '#93c5fd';
     section.style.background = '#eff6ff';
     section.innerHTML = `
-      <b>BƯỚC 0 — LẤY DANH SÁCH NGUỒN (KHÔNG CẦN FILE SAPO)</b>
-      <span style="display:block;margin:6px 0 10px">Đứng ở đúng danh mục cần quét (HD, Trẻ em, CLB/ĐT...). Tool chỉ dùng đúng trang đang mở và không tự chuyển sang danh mục khác.</span>
+      <b>THÊM NHIỀU SẢN PHẨM / QUÉT CẢ DANH MỤC</b>
+      <span style="display:block;margin:6px 0 10px">Dùng phần này khi cần thêm/quét nhiều sản phẩm cùng lúc. Nếu chỉ thêm 1 sản phẩm mới, dùng khối “THÊM 1 SẢN PHẨM MỚI — NHANH” bên dưới.</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button id="scanCatalogSource" class="primary" style="flex:1;min-width:145px">QUÉT TOÀN BỘ TRANG ĐANG MỞ</button>
         <button id="catalogQuickTest" class="secondary" style="flex:1;min-width:120px">TEST NHANH 1 SP</button>
