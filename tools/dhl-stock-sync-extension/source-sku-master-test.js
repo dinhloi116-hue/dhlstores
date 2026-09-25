@@ -40,13 +40,18 @@ assert.strictEqual(prepared.generatedSkuCount,0);
 
 const content=fs.readFileSync(__dirname+'/content.js','utf8');
 const catalogUi=fs.readFileSync(__dirname+'/catalog-popup-v3-mode.js','utf8');
-assert.ok(content.includes('collectSourceSkuVariants'));
+assert.ok(content.includes('collectSourceSkuBundle'));
+assert.ok(content.includes('fetchSourceChildVariant'));
+assert.ok(content.includes('scanDescriptorApiFast'));
+assert.ok(content.includes("const concurrency=Math.min(3,Math.max(1,links.length))"));
+assert.ok(content.includes("stage:'popup-fallback'"));
+assert.ok(!content.includes("&_dhl=${encodeURIComponent(stamp)}"));
 assert.ok(content.includes("scanMethod: 'category-source-sku-exact'"));
 assert.ok(catalogUi.includes('QUÉT TOÀN BỘ + SKU GỐC NGUỒN'));
 
 console.log('SOURCE SKU MASTER PASS',{
   source:'aobongda.net code/SKU',
   productCreate:'preserved',
-  stockSync:'exact SKU match only',
+  stockSync:'exact SKU match only + API sequential fast path',
   generatedSku:0
 });
