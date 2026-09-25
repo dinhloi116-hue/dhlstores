@@ -270,7 +270,7 @@
       profile.lastSourceUrl = String(tab.url || '');
       profile.lastSourceAt = Date.now();
       await saveStore();
-      status(`QUÉT XONG ${profile.name}: ${prepared.rows.length}/${prepared.sourceVariantCount || prepared.rows.length} biến thể quét được đã đưa vào file • ${prepared.sourceProductCount || groups} mẫu/màu • SKU có sẵn ${prepared.existingSkuCount || 0} • SKU theo quy tắc ${prepared.generatedSkuCount || 0}.`, 'ok');
+      status(`QUÉT XONG ${profile.name}: ${prepared.rows.length}/${prepared.sourceVariantCount || prepared.rows.length} biến thể có SKU GỐC • ${prepared.sourceProductCount || groups} mẫu/màu • trùng SKU Sapo ${prepared.matchedSkuCount || 0} • SKU nguồn mới/chưa có Sapo ${prepared.sourceOnlySkuCount || 0}.`, 'ok');
     } catch (error) {
       scannedForSelected = false;
       status(`LỖI QUÉT: ${error.message || String(error)}`, 'error');
@@ -386,7 +386,7 @@
       renderProfiles();
       renderActiveSummary();
       $('profileManageBody').hidden = true;
-      status(`ĐÃ LƯU HỒ SƠ ${name}: products_export là master • ${parsed.catalogData.products.length} sản phẩm • ${parsed.coverage.matched}/${parsed.coverage.total} biến thể SKU.`, 'ok');
+      status(`ĐÃ LƯU HỒ SƠ ${name}: products_export chỉ dùng đối chiếu SKU/ID Sapo • ${parsed.catalogData.products.length} sản phẩm • ${parsed.coverage.matched}/${parsed.coverage.total} biến thể có SKU.`, 'ok');
     } catch (error) {
       status(`LỖI LƯU HỒ SƠ: ${error.message || String(error)}`, 'error');
     } finally {
@@ -443,7 +443,7 @@
       const b = intro.querySelector('b');
       const s = intro.querySelector('span');
       if (b) b.textContent = 'DÙNG HẰNG NGÀY: KHÔNG CẦN NẠP LẠI EXCEL';
-      if (s) s.textContent = 'KẾT QUẢ QUÉT NGUỒN là MASTER của file tồn. File 2 products_export chỉ ưu tiên lấy SKU/ID thật trên Sapo; mẫu quét mới chưa có trong File 2 vẫn được xuất bằng đúng quy tắc SKU của tool.';
+      if (s) s.textContent = 'SKU GỐC trên aobongda.net là MASTER. File 2 products_export chỉ dùng đối chiếu xem SKU đó đã tồn tại trên Sapo và lấy ID; tool không tự sinh SKU nữa.';
     }
 
     const section = document.createElement('section');
