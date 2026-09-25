@@ -19,6 +19,9 @@ for(const file of [
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
 const background=read('background.js');
+assert.ok(background.includes("'shop-rules.js'"));
+assert.ok(background.includes("'generic-shop-rules.js'"));
+assert.ok(background.indexOf("'shop-rules.js'")<background.indexOf("'auto-sync-background-v2.js'"));
 assert.ok(background.includes("'sapo-inventory-resolver-core.js'"));
 assert.ok(background.includes("'sapo-product-create-background.js'"));
 assert.ok(background.includes("'auto-sync-background-v2.js'"));
@@ -28,27 +31,30 @@ assert.ok(background.indexOf("'warehouse-sku-link-mode.js'")<background.indexOf(
 assert.ok(background.indexOf("'manual-sapo-background.js'")>background.indexOf("'auto-sync-background-v2.js'"));
 
 const autoCore=read('auto-sync-core.js');
-assert.ok(autoCore.includes("master:'products_export'"));
-assert.ok(autoCore.includes('const catalogProducts=(catalogData&&catalogData.products)||[]'));
-assert.ok(autoCore.includes('matcher.matchSapoProducts(catalogProducts,sourceResults||[])'));
-assert.ok(!autoCore.includes('matcher.matchSapoProducts((warehouseData&&warehouseData.products)||[],sourceResults||[])'));
+assert.ok(autoCore.includes("master:'source_scan'"));
+assert.ok(autoCore.includes('const sourceGroups=matcher.groupSourceVariants(sourceResults||[])'));
+assert.ok(autoCore.includes('generatedSkuCount'));
+assert.ok(autoCore.includes('fallbackSkuBase'));
+assert.ok(autoCore.includes('products_export chỉ ưu tiên cung cấp SKU/ID thật'));
 
 const savedProfiles=read('saved-profiles-mode.js');
-assert.ok(savedProfiles.includes('matcher.matchSapoProducts(activeData.catalogData.products, latestSource)'));
-assert.ok(savedProfiles.includes('matcher.buildScanHints(activeData.catalogData.products)'));
-assert.ok(savedProfiles.includes('activeData.catalogData.variants.length'));
+assert.ok(savedProfiles.includes('autoCore.prepareRows(activeData.warehouseData, activeData.catalogData, latestSource, matcher, rules)'));
+assert.ok(savedProfiles.includes('const hints = []; // Quét TOÀN BỘ'));
+assert.ok(savedProfiles.includes('KẾT QUẢ QUÉT NGUỒN là MASTER'));
 
 const batchCache=read('batch-stock-cache-mode.js');
-assert.ok(batchCache.includes("matcher.matchSapoProducts((catalogData&&catalogData.products)||[],sourceResults||[])"));
-assert.ok(batchCache.includes("variantTotal:Number((catalogData.variants||[]).length)"));
+assert.ok(batchCache.includes('autoCore.prepareRows(warehouseData,catalogData,sourceResults,matcher,rules)'));
+assert.ok(batchCache.includes('sourceProductCount'));
+assert.ok(batchCache.includes('generatedSkuCount'));
 
 const bg=read('auto-sync-background-v2.js');
 assert.ok(bg.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
 assert.ok(bg.includes("const ALARM='dhl-auto-stock-sync'"));
 assert.ok(bg.includes("const PUSH_ALARM='dhl-sapo-push-queue'"));
 assert.ok(bg.includes("chrome.tabs.create({url,active:false})"));
-assert.ok(bg.includes('matcher.buildScanHints(parsed.catalogData.products)'));
-assert.ok(bg.includes('variantTotal:Number((parsed.catalogData.variants||[]).length)'));
+assert.ok(bg.includes('hints=[]; // luôn quét toàn bộ sản phẩm/màu/size của trang nguồn'));
+assert.ok(bg.includes('variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length)'));
+assert.ok(bg.includes('autoCore.prepareRows(parsed.warehouseData,parsed.catalogData,sourceResults,matcher,rules)'));
 assert.ok(bg.includes("type:'DHL_SCAN_HD_LIVE'"));
 assert.ok(bg.includes("'/admin/store.json'"));
 assert.ok(bg.includes("'/admin/locations.json'"));
