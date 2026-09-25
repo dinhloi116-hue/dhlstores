@@ -544,7 +544,7 @@
     const expected=Math.max(0,Number(expectedCount)||0);
     const firstResponse=await fetchSourceChildVariant(parentId,parentId,parentName);
     const first=firstResponse.variant;
-    if(!first||!first.sku)return{variants:[],complete:false,requestCount:1,stopReason:'first-child-missing'};
+    if(!first)return{variants:[],complete:false,requestCount:1,stopReason:'first-child-missing'};
 
     const byId=new Map([[Number(first.id),first]]);
     let requestCount=1,stale=0,stopReason='max-span',complete=false;
@@ -566,7 +566,7 @@
         break;
       }
 
-      if(variant&&variant.sku){
+      if(variant){
         const existed=byId.has(Number(variant.id));
         if(!existed){
           byId.set(Number(variant.id),variant);
@@ -588,7 +588,7 @@
       }
     }
 
-    const variants=[...byId.values()].filter(v=>v&&v.sku);
+    const variants=[...byId.values()].filter(Boolean);
     if(expected>0&&variants.length>=expected)complete=true;
     return{variants,complete,requestCount,stopReason};
   }
@@ -613,7 +613,7 @@
       parentId,
       scanMethod:'api-source-sku-sequential'
     }));
-    const complete=bundle.complete===true&&variants.length>0&&variants.every(v=>core.normalizeText(v.sku));
+    const complete=bundle.complete===true&&variants.length>0;
     if(progress)progress({
       stage:'api-product',
       descriptor,
@@ -758,12 +758,12 @@
       }
     }
 
-    const missingSourceSku=list.filter(v=>!core.normalizeText(v&&v.sku)).map(v=>`${dom.colorKey(v.color)}/${v.size}`);
+    const missingSourceSku=[];
     const expectedHints = expectedColorHints(hint);
     const uiComplete = expectedHints.length
       ? targetSelection.missingHints.length === 0 && colorKeys.length === expectedHints.length && missing.length === 0
       : Boolean(list.length) && missing.length === 0;
-    const complete=uiComplete&&missingSourceSku.length===0;
+    const complete=uiComplete;
 
     const result = {
       parentId,
@@ -771,10 +771,10 @@
       variants: list,
       errors: [],
       requestCount: 1,
-      stopReason: complete ? 'source-sku-exact-complete' : (missingSourceSku.length?'source-sku-missing':'target-colors-size-partial'),
+      stopReason: complete ? 'alias-size-ready' : 'target-colors-size-partial',
       confidence: list.length ? (complete ? 'high' : 'medium') : 'low',
       complete,
-      scanMethod: 'category-source-sku-exact',
+      scanMethod: 'category-alias-size',
       sourceUrl: String(descriptor.url||location.href),
       expectedFromSapo: expectedHints.length * neededSizes.length,
       domDiagnostics: {
