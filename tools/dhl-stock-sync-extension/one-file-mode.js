@@ -212,7 +212,7 @@
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_NHAP_TON_KHO_${stamp}.xlsx`);
       const skipped=Math.max(0,warehouseData.variants.length-prepared.rows.length);
-      setState(`ĐÃ XONG: ${out.rows} dòng • ${out.zeroCount} dòng tồn = 0 • chi nhánh ${branch}. File TỒN KHO là gốc, SKU giữ nguyên từ products_export. Bỏ qua ${skipped} dòng chưa đủ điều kiện.`,'ok');
+      setState(`ĐÃ XONG: ${out.rows} dòng • ${out.zeroCount} dòng tồn = 0 • chi nhánh ${branch}. SKU GỐC aobongda.net là khóa đồng bộ; products_export chỉ đối chiếu SKU/ID Sapo. Bỏ qua ${skipped} dòng chưa đủ điều kiện.`,'ok');
     }catch(error){
       setState(`LỖI TẠO FILE: ${error.message||String(error)}`,'error');
     }finally{
@@ -258,11 +258,11 @@
     }
 
     const guide=document.getElementById('dailyGuide');
-    if(guide)guide.innerHTML='<b>DÙNG 2 FILE — FILE TỒN KHO LÀ GỐC</b><span style="display:block;margin-top:5px">1) File <b>TỒN KHO</b> quyết định sản phẩm/size cần cập nhật → 2) file <b>DANH SÁCH products_export</b> chỉ dùng tra đúng SKU/ID theo tên + size → 3) quét nguồn → 4) tạo file nhập tồn.</span>';
+    if(guide)guide.innerHTML='<b>SKU GỐC WEBSITE LÀ KHÓA ĐỒNG BỘ</b><span style="display:block;margin-top:5px">1) Quét toàn bộ aobongda.net và lấy đúng <b>SKU/code từng phân loại</b> → 2) products_export chỉ dùng đối chiếu SKU/ID đang có trên Sapo → 3) SKU trùng thì cập nhật tồn → 4) SKU mới được nhận diện tự động. File tồn kho chỉ giữ thông tin chi nhánh/mẫu nhập.</span>';
     const subtitle=document.querySelector('header p');
     if(subtitle)subtitle.textContent='Tồn kho là file chính • Danh sách chỉ cấp SKU/ID • Ghép chính xác theo Tên + Size';
     const footer=document.querySelector('footer');
-    if(footer)footer.textContent='Không tự sinh SKU. Tool nối file Tồn kho ↔ products_export bằng đúng Tên sản phẩm + Size rồi mới lấy SKU gốc Sapo.';
+    if(footer)footer.textContent='Không tự sinh SKU. Tool lấy đúng SKU/code từ aobongda.net rồi đối chiếu Sapo bằng SKU chính xác; không còn ghép tên + size để quyết định SKU.';
 
     if(exportInput)exportInput.addEventListener('change',(event)=>readWarehouse(event.target.files&&event.target.files[0]));
 
