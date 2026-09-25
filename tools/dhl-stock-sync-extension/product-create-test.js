@@ -12,9 +12,9 @@ const productCreate=require('./product-create-core.js');
     sourceUrl:'https://si.aobongda.net/dt-brazil-tre-em-2025-hd-p4978420.html',
     imageUrl:'https://cdn.example.com/brazil-kids-parent.jpg',
     variants:[
-      {color:'Vàng',size:'16',available:5,image:'https://cdn.example.com/brazil-kids-yellow.jpg'},
-      {color:'Vàng',size:'18',available:7,image:'https://cdn.example.com/brazil-kids-yellow.jpg'},
-      {color:'Vàng',size:'20',available:0,image:''}
+      {id:101,sku:'WEB-BRAZIL-VANG-16',color:'Vàng',size:'16',available:5,image:'https://cdn.example.com/brazil-kids-yellow.jpg'},
+      {id:102,sku:'WEB-BRAZIL-VANG-18',color:'Vàng',size:'18',available:7,image:'https://cdn.example.com/brazil-kids-yellow.jpg'},
+      {id:103,sku:'WEB-BRAZIL-VANG-20',color:'Vàng',size:'20',available:0,image:''}
     ]
   }];
   const built=productCreate.makeRows(catalog);
@@ -22,11 +22,10 @@ const productCreate=require('./product-create-core.js');
   assert.strictEqual(built.rows.length,3);
   assert.strictEqual(built.rows[0].values[1],'ĐT Brazil Trẻ Em 2025 HD - Vàng');
   assert.strictEqual(built.rows[0].values[10],'16');
-  assert.ok(/^ABDN-/.test(built.rows[0].values[16]),'Sản phẩm mới phải có SKU tự sinh ổn định');
-  assert.ok(built.rows[0].values[16].endsWith('-16'));
-  assert.strictEqual(built.rows[0].values[19],'https://cdn.example.com/brazil-kids-yellow.jpg','Ưu tiên ảnh đúng màu/variant');
-  assert.strictEqual(built.rows[0].values[29],'https://cdn.example.com/brazil-kids-yellow.jpg');
-  assert.strictEqual(built.rows[2].values[34],0,'Tồn 0 phải được giữ đúng');
+  assert.strictEqual(built.rows[0].values[16],'WEB-BRAZIL-VANG-16','Phải giữ đúng SKU gốc website');
+  assert.strictEqual(built.rows[1].values[16],'WEB-BRAZIL-VANG-18');
+  assert.strictEqual(built.rows[0].values[19],'https://cdn.example.com/brazil-kids-yellow.jpg');
+  assert.strictEqual(built.rows[2].values[34],0);
 
   const api=productCreate.makeApiProducts(catalog);
   assert.strictEqual(api.products.length,1);
@@ -34,20 +33,21 @@ const productCreate=require('./product-create-core.js');
   assert.ok(api.products[0].alias);
   assert.deepStrictEqual(api.products[0].variants.map(v=>v.size),['16','18','20']);
   assert.deepStrictEqual(api.products[0].variants.map(v=>v.stock),[5,7,0]);
-  assert.strictEqual(api.products[0].variants[0].sku,built.rows[0].values[16]);
-  assert.strictEqual(api.products[0].images[0],'https://cdn.example.com/brazil-kids-yellow.jpg');
-  assert.ok(api.products[0].images.includes('https://cdn.example.com/brazil-kids-parent.jpg'));
+  assert.deepStrictEqual(api.products[0].variants.map(v=>v.sku),[
+    'WEB-BRAZIL-VANG-16','WEB-BRAZIL-VANG-18','WEB-BRAZIL-VANG-20'
+  ]);
+
+  assert.throws(
+    ()=>productCreate.makeApiProducts([{parentId:1,parentName:'Thiếu SKU',variants:[{color:'Đỏ',size:'M',available:1,sku:''}]}]),
+    /nguồn chưa trả SKU thật/
+  );
 
   const out=productCreate.buildWorkbook(catalog);
   const book=await global.DHLXlsxLite.readFirstSheet(out.bytes);
   assert.strictEqual(book.rows[0].length>=36,true);
-  assert.strictEqual(book.rows[0][0],'Đường dẫn/Alias');
-  assert.strictEqual(book.rows[0][1],'Tên sản phẩm*');
-  assert.strictEqual(book.rows[0][19],'Ảnh đại diện');
-  assert.strictEqual(book.rows[0][29],'Ảnh phiên bản');
-  assert.strictEqual(book.rows[0][34],'Cửa hàng chính_Tồn kho');
-  assert.strictEqual(book.rows[0][35],'Id phiên bản');
+  assert.strictEqual(book.rows[0][16],'Mã SKU');
+  assert.strictEqual(book.rows[1][16],'WEB-BRAZIL-VANG-16');
   assert.strictEqual(book.rows[1][34],5);
   assert.strictEqual(book.rows[3][34],0);
-  console.log('PRODUCT CREATE PASS',{columns:36,rows:out.rows,imageUrl:true,directSapo:true,kidsNumericSizes:true});
+  console.log('PRODUCT CREATE PASS',{sourceSkuExact:true,rows:out.rows,directSapo:true});
 })().catch(error=>{console.error(error);process.exit(1);});
