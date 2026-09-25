@@ -407,6 +407,25 @@
     }
   }
 
+  function maintenanceFailureDetail(result,index){
+    if(!result||result.complete===true)return null;
+    const diagnostics=result.domDiagnostics||{};
+    const missingSizes=Array.isArray(diagnostics.missingSizes)?diagnostics.missingSizes.filter(Boolean):[];
+    const missingColors=Array.isArray(diagnostics.missingColorHints)?diagnostics.missingColorHints.filter(Boolean):[];
+    const errors=Array.isArray(result.errors)?result.errors.map(x=>String(x&&x.message||x||'').trim()).filter(Boolean):[];
+    const reason=errors[0]||String(result.stopReason||'Dữ liệu popup chưa đầy đủ');
+    return{
+      index:Number(index)+1,
+      parentId:Number(result.parentId)||0,
+      name:String(result.parentName||'Sản phẩm không xác định'),
+      reason,
+      missingSizes,
+      missingColors,
+      variantCount:Array.isArray(result.variants)?result.variants.length:0,
+      sourceUrl:String(result.sourceUrl||'')
+    };
+  }
+
   async function standardizeAllByPopup(options={}){
     const onProgress=typeof options.onProgress==='function'?options.onProgress:()=>{};
     const tab=await ensureCategoryTab();
@@ -449,6 +468,7 @@
       results.push(result);
 
       // Checkpoint sau TỪNG sản phẩm để đóng popup/tool không làm mất cả lượt.
+      const failureDetails=results.map((x,idx)=>maintenanceFailureDetail(x,idx)).filter(Boolean);
       await chrome.storage.local.set({
         dhlCatalogResults:results,
         dhlCatalogSkuSamples:{},
@@ -464,7 +484,8 @@
           total:items.length,
           title:descriptor.title||'Sản phẩm',
           completeCount,
-          failedCount:(i+1)-completeCount
+          failedCount:(i+1)-completeCount,
+          failures:failureDetails
         }
       });
       await sleep(180);
@@ -472,6 +493,7 @@
 
     const variantCount=results.reduce((n,r)=>n+(Array.isArray(r&&r.variants)?r.variants.length:0),0);
     const failedCount=items.length-completeCount;
+    const failures=results.map((x,idx)=>maintenanceFailureDetail(x,idx)).filter(Boolean);
     const done={
       running:false,
       done:true,
@@ -481,11 +503,12 @@
       completeCount,
       failedCount,
       variantCount,
+      failures,
       finishedAt:Date.now()
     };
     await chrome.storage.local.set({dhlCatalogMaintenanceProgressV1:done});
     onProgress(done);
-    return{results,discovered,itemCount:items.length,completeCount,failedCount,variantCount};
+    return{results,discovered,itemCount:items.length,completeCount,failedCount,variantCount,failures};
   }
 
   globalThis.DHLCatalogMaintenance={
