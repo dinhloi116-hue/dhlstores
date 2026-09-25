@@ -15,7 +15,7 @@ for(const file of [
   'background.js','auto-sync-core.js','sapo-inventory-resolver-core.js','auto-sync-background-v2.js',
   'manual-sapo-background.js','sapo-product-create-background.js','auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
   'manual-sapo-output-mode.js','sapo-product-create-mode.js','single-product-add-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
-  'batch-stock-core.js','stock-history-core.js','product-create-core.js','popup.html','popup.js','content.js'
+  'batch-stock-core.js','stock-history-core.js','product-create-core.js','marketplace-sku-mode.js','popup.html','popup.js','content.js'
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
 const background=read('background.js');
@@ -137,6 +137,13 @@ assert.ok(maintenanceUi.includes('CHUẨN HÓA 1 LẦN — POPUP TOÀN BỘ'));
 assert.ok(maintenanceUi.includes('CHẠY POPUP TOÀN BỘ 1 LẦN'));
 assert.ok(maintenanceUi.includes('standardizeAllByPopup'));
 
+const marketplaceSku=read('marketplace-sku-mode.js');
+assert.ok(marketplaceSku.includes('CHUẨN HÓA SKU SÀN — SHOPEE / LAZADA'));
+assert.ok(marketplaceSku.includes('FILE SHOPEE → SỬA SKU'));
+assert.ok(marketplaceSku.includes('FILE LAZADA → SỬA SKU'));
+assert.ok(marketplaceSku.includes('buildPatchedWorkbook'));
+assert.ok(marketplaceSku.includes('Các cột khác giữ nguyên.'));
+
 const productCore=read('product-create-core.js');
 assert.ok(productCore.includes('function makeApiProducts'));
 assert.ok(productCore.includes('images,'));
@@ -170,6 +177,7 @@ assert.ok(popup.includes('auto-sync-ui-sticky-mode.js'));
 assert.ok(popup.includes('auto-sync-excel-mode.js'));
 assert.ok(popup.includes('sapo-push-report-mode.js'));
 assert.ok(popup.includes('workflow-order-mode.js'));
+assert.ok(popup.includes('marketplace-sku-mode.js'));
 assert.ok(popup.indexOf('sapo-product-create-mode.js')>popup.indexOf('product-branch-mode.js'));
 assert.ok(popup.indexOf('single-product-add-mode.js')>popup.indexOf('sapo-product-create-mode.js'));
 assert.ok(popup.indexOf('manual-sapo-output-mode.js')>popup.indexOf('batch-stock-cache-mode.js'));
