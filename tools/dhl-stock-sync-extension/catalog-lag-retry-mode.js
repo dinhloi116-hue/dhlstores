@@ -41,10 +41,9 @@
     if(!response||!response.ok)return{ok:false,error:response&&response.error||'Không nhận được kết quả retry SKU nguồn'};
     const result=response.result;
     const variants=Array.isArray(result&&result.variants)?result.variants:[];
-    const exactSku=variants.length>0&&variants.every(v=>String(v&&v.sku||'').trim());
-    return result&&result.complete===true&&exactSku
+    return result&&result.complete===true&&variants.length>0
       ? {ok:true,result}
-      : {ok:false,error:`Retry vẫn chưa đủ dữ liệu/SKU nguồn cho ${descriptor.title||'sản phẩm'}`};
+      : {ok:false,error:`Retry vẫn chưa đủ dữ liệu màu/size/tồn cho ${descriptor.title||'sản phẩm'}`};
   }
 
   async function run(){
@@ -63,7 +62,7 @@
       let recovered=0;
       for(let n=0;n<indexes.length;n+=1){
         const index=indexes[n],previous=results[index];
-        if(state)state.textContent=`Retry ${n+1}/${indexes.length}: ${previous.parentName||'Sản phẩm'} • yêu cầu SKU gốc website`;
+        if(state)state.textContent=`Retry ${n+1}/${indexes.length}: ${previous.parentName||'Sản phẩm'} • yêu cầu đủ màu/size/tồn`;
         let retry;
         try{retry=await retryOne(tab.id,previous);}catch(error){retry={ok:false,error:error&&error.message||String(error)};}
         if(retry&&retry.ok&&retry.result){
@@ -75,7 +74,7 @@
         await chrome.storage.local.set({[RESULTS_KEY]:results});
         await sleep(220);
       }
-      if(state)state.textContent=`Đã retry ${indexes.length} sản phẩm • khôi phục đủ dữ liệu + SKU nguồn ${recovered}/${indexes.length}.`;
+      if(state)state.textContent=`Đã retry ${indexes.length} sản phẩm • khôi phục đủ dữ liệu màu/size/tồn ${recovered}/${indexes.length}.`;
     }finally{retrying=false;}
   }
 
