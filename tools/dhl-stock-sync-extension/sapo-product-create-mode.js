@@ -107,7 +107,7 @@
   async function getCatalogProducts(){
     const stored=await chrome.storage.local.get(RESULTS_KEY);
     const results=Array.isArray(stored[RESULTS_KEY])?stored[RESULTS_KEY]:[];
-    if(!results.length)throw new Error('Chưa có kết quả quét sản phẩm mới. Hãy quét trang trước.');
+    if(!results.length)throw new Error('Chưa có kết quả QUÉT TẤT CẢ SẢN PHẨM MỚI. Hãy quét danh mục trước.');
     if(results.some(r=>!r||r.complete!==true))throw new Error('Kết quả quét chưa đủ 100%. Tool không đăng sản phẩm thiếu size/biến thể.');
     const built=productCreate.makeApiProducts(results);
     if(!built.products.length)throw new Error('Không tạo được danh sách sản phẩm để đăng Sapo.');
@@ -135,7 +135,7 @@
       btn.disabled=!response.verified;
       if(queue&&queue.status==='done')setState(queueSummary(queue),'ok');
       else if(!response.verified)setState('Chưa xác minh Ứng dụng riêng Sapo. Hãy kiểm tra kết nối ở phần TỰ ĐỘNG ĐỒNG BỘ trước.','bad');
-      else setState(`Sẵn sàng đăng trực tiếp lên ${response.shop||'Sapo'} • chi nhánh ${response.locationName||'đã xác minh'}. Ảnh dùng link nguồn (src), Sapo tự tải ảnh về.`,'ok');
+      else setState(`Sẵn sàng • dữ liệu từ lượt quét mới • SKU = Alias + Size • ${response.shop||'Sapo'} / ${response.locationName||'chi nhánh đã xác minh'}.`,'ok');
     }catch(error){
       renderProgress(null);
       btn.disabled=true;btn.textContent='ĐĂNG THẲNG LÊN SAPO';
@@ -161,7 +161,7 @@
       if(!current.verified)throw new Error('Chưa xác minh Ứng dụng riêng Sapo.');
       const variants=products.reduce((n,p)=>n+(p.variants||[]).length,0);
       const images=products.reduce((n,p)=>n+(p.images||[]).length,0);
-      const ok=confirm(`Đăng ${products.length} sản phẩm mới (${variants} biến thể) lên ${current.shop||'Sapo'}?\n\nTồn kho sẽ ghi vào: ${current.locationName||'chi nhánh đã xác minh'}\nẢnh: ${images} link nguồn; Sapo sẽ tự tải ảnh về.\n\nTool sẽ kiểm tra alias + SKU để tránh tạo trùng.`);
+      const ok=confirm(`Đăng ${products.length} sản phẩm từ lượt QUÉT MỚI (${variants} biến thể) lên ${current.shop||'Sapo'}?\n\nSKU KHÔNG lấy từ dữ liệu cũ.\nSKU sản phẩm = Đường dẫn/Alias.\nSKU phân loại = Alias + Size.\nTồn kho: ${current.locationName||'chi nhánh đã xác minh'}\nẢnh: ${images} link nguồn.\n\nTool vẫn kiểm tra alias/SKU để tránh tạo trùng sản phẩm đang tồn tại.`);
       if(!ok){await refresh();return;}
       setState(`Đang tạo hàng đợi ${products.length} sản phẩm...`,'working');
       const response=await send({type:'DHL_SAPO_PRODUCT_CREATE_START',products});
