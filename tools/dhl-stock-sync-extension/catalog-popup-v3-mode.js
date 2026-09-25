@@ -360,21 +360,56 @@
     finally { test.disabled=false;scan.disabled=false; }
   }
 
+  function noReceiver(error) {
+    return /Receiving end does not exist|Could not establish connection/i.test(String(error&&error.message||error||''));
+  }
+
+  async function scanAllExactSourceSku() {
+    const tab=await ensureCategoryTab();
+    const discovered=await discoverProducts(tab.id);
+    if(!discovered.items.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục.');
+    const message={type:'DHL_SCAN_HD_LIVE',hints:[]};
+    let response;
+    try{
+      response=await chrome.tabs.sendMessage(tab.id,message);
+    }catch(error){
+      if(!noReceiver(error))throw error;
+      for(const file of ['stock-core.js','dom-stock-parser.js','match-core.js','content.js']){
+        await chrome.scripting.executeScript({target:{tabId:tab.id},files:[file]});
+      }
+      await sleep(250);
+      response=await chrome.tabs.sendMessage(tab.id,message);
+    }
+    if(!response||!response.ok)throw new Error(response&&response.error||'Không nhận được dữ liệu quét SKU nguồn.');
+    const results=Array.isArray(response.result)?response.result:[];
+    await chrome.storage.local.set({
+      dhlCatalogResults:results,
+      dhlCatalogSkuSamples:{},
+      dhlCatalogAt:Date.now(),
+      dhlCatalogPageTitle:discovered.pageTitle,
+      dhlCatalogPageUrl:discovered.pageUrl,
+      dhlCatalogSkuMode:'source-exact'
+    });
+    return{results,discovered,itemCount:discovered.items.length};
+  }
+
   async function fullScan() {
     const scan=document.getElementById('scanCatalogSource'),test=document.getElementById('catalogQuickTest'),exp=document.getElementById('exportCatalogSource'),state=document.getElementById('catalogState');
     scan.disabled=true;test.disabled=true;exp.disabled=true;
     try {
-      const {results,discovered,itemCount}=await runScan(null,true);
+      state.textContent='Đang quét toàn bộ trang theo SKU GỐC của aobongda.net...';
+      const {results,discovered,itemCount}=await scanAllExactSourceSku();
       const validResults=results.filter((r)=>r&&typeof r==='object');
       const completeCount=validResults.filter((r)=>r.complete===true).length;
       const variantCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.length:0),0);
+      const exactSkuCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.filter(v=>String(v&&v.sku||'').trim()).length:0),0);
       const failedCount=Math.max(0,itemCount-completeCount);
-      const allComplete=completeCount===itemCount && validResults.length===itemCount;
+      const allComplete=completeCount===itemCount&&validResults.length===itemCount&&exactSkuCount===variantCount;
       exp.disabled=!allComplete;
       state.textContent=allComplete
-        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể. Có thể tạo file Sapo.`
-        : `${discovered.pageTitle}: CHƯA ĐỦ ${completeCount}/${itemCount} sản phẩm • lỗi/thiếu ${failedCount} • ${variantCount} biến thể. Tool đã giữ kết quả quét và KHÓA xuất file để tránh sai dữ liệu.`;
-    } catch(error) { state.textContent=`Lỗi: ${error.message||String(error)}`; }
+        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • ${exactSkuCount} SKU GỐC. Có thể tạo file/đăng Sapo.`
+        : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm đạt • ${variantCount} biến thể • ${exactSkuCount} SKU GỐC • lỗi/thiếu ${failedCount}. Sản phẩm lỗi được giữ để báo cáo.`;
+    } catch(error) { state.textContent=`Lỗi quét SKU nguồn: ${error.message||String(error)}`; }
     finally { scan.disabled=false;test.disabled=false; }
   }
 
@@ -388,11 +423,11 @@
     const scan=document.getElementById('scanCatalogSource'),test=document.getElementById('catalogQuickTest'),exp=document.getElementById('exportCatalogSource'),state=document.getElementById('catalogState');
     if(!scan||!test||!exp)return false;
     if(scan.dataset.popupV3==='1')return true;
-    const newScan=replaceAndBind('scanCatalogSource','QUÉT TOÀN BỘ TRANG ĐANG MỞ',fullScan);
+    const newScan=replaceAndBind('scanCatalogSource','QUÉT TOÀN BỘ + SKU GỐC NGUỒN',fullScan);
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
     const newExport=replaceAndBind('exportCatalogSource','TẠO FILE SẢN PHẨM SAPO (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
-    if(state)state.textContent='v0.14.6: quét popup thật; sản phẩm không trả dữ liệu được đánh dấu lỗi thay vì làm sập toàn bộ lượt quét.';
+    if(state)state.textContent='SKU MASTER: quét toàn bộ sản phẩm và lấy đúng SKU/code gốc từ aobongda.net; không tự sinh SKU.';
     return Boolean(newScan&&newTest&&newExport);
   }
 
