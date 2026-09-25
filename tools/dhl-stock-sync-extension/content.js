@@ -915,9 +915,42 @@
       descriptor.title=core.normalizeText(descriptor.title||descriptor.parentName);
       descriptor.url=String(descriptor.url||descriptor.sourceUrl||location.href);
       descriptor.categoryPath=location.pathname;
-      // Chế độ CHUẨN HÓA 1 LẦN: bắt buộc mở popup thật cho từng sản phẩm.
-      // Không chạy scanDescriptorApiFast, không dùng cache/API nhanh.
-      scanOneDescriptor(descriptor,hints,progress)
+
+      // Chế độ CHUẨN HÓA 1 LẦN:
+      // 1) đóng popup cũ nếu còn mở,
+      // 2) BẬT popup thật của đúng sản phẩm,
+      // 3) giữ popup hiển thị trong lúc đọc màu/size/tồn,
+      // 4) đóng popup rồi mới sang sản phẩm tiếp theo.
+      (async()=>{
+        const stale=findStockRoot();
+        if(stale){
+          await closeStockPopup(stale);
+          await sleep(220);
+        }
+
+        progress({
+          stage:'popup-opening',
+          descriptor,
+          mode:'popup-standardize-once'
+        });
+
+        const result=await scanOneDescriptor(descriptor,hints,progress);
+
+        const visiblePopup=findStockRoot();
+        if(visiblePopup){
+          // Giữ popup nhìn thấy rõ một nhịp ngắn sau khi đọc xong rồi mới đóng.
+          await sleep(260);
+          await closeStockPopup(visiblePopup);
+          await sleep(180);
+        }
+
+        progress({
+          stage:'popup-closed',
+          descriptor,
+          mode:'popup-standardize-once'
+        });
+        return result;
+      })()
         .then((result)=>sendResponse({ok:true,result}))
         .catch((error)=>sendResponse({ok:false,error:error.message}));
       return true;
