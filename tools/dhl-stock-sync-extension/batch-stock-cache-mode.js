@@ -5,7 +5,9 @@
   const matcher=globalThis.DHLMatchCore;
   const stockImport=globalThis.DHLStockImportCore;
   const batch=globalThis.DHLBatchStockCore;
-  if(!xlsx||!matcher||!stockImport||!batch)return;
+  const autoCore=globalThis.DHLAutoSyncCore;
+  const rules=globalThis.DHLShopRules;
+  if(!xlsx||!matcher||!stockImport||!batch||!autoCore||!rules)return;
 
   const BATCH_KEY='dhlManualPendingStockBatchV1';
   const LEGACY_BATCH_KEY='dhlPendingStockBatchV1';
@@ -84,29 +86,7 @@
   }
 
   function matchedOfficialRows(warehouseData,catalogData,sourceResults){
-    const matches=matcher.matchSapoProducts((catalogData&&catalogData.products)||[],sourceResults||[]);
-    const rows=[];
-    const missingSku=[];
-    for(const match of matches){
-      for(const vm of match.variantMatches||[]){
-        if(!vm||!vm.sapo||!vm.source)continue;
-        const stock=Number(vm.source.available);
-        if(!Number.isFinite(stock)||stock<0)continue;
-        const size=displaySize(vm.sapo);
-        const sku=text(vm.sapo.sku);
-        if(!sku){missingSku.push(`${vm.sapo.name||''} / Size ${size}`);continue;}
-        rows.push({
-          variantName:text(vm.sapo.rawProductLabel||`${vm.sapo.name||''}${size?` / Size ${size}`:''}`),
-          sku,
-          stock,
-          standardName:text(vm.sapo.name),
-          size,
-          variantId:vm.sapo.variantId,
-          productId:vm.sapo.productId
-        });
-      }
-    }
-    return{rows,missingSku};
+    return autoCore.prepareRows(warehouseData,catalogData,sourceResults,matcher,rules);
   }
 
   function captureMatcher(){
@@ -145,7 +125,9 @@
         branch,
         sourceUrl:text(tab&&tab.url),
         scannedAt:Date.now(),
-        variantTotal:Number((catalogData.variants||[]).length),
+        variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),
+        sourceProductCount:Number(prepared.sourceProductCount||0),
+        generatedSkuCount:Number(prepared.generatedSkuCount||0),
         rowCount:prepared.rows.length,
         missingSkuCount:prepared.missingSku.length,
         rows:prepared.rows,
@@ -157,7 +139,7 @@
       await renderBatchUi();
       const status=document.getElementById('profileStatus');
       if(status){
-        status.textContent=`ĐÃ LƯU CACHE ${entry.profileName}: ${entry.rowCount} dòng. Có thể chuyển sang tab/hồ sơ khác để quét tiếp, chưa cần tải file.`;
+        status.textContent=`ĐÃ LƯU CACHE ${entry.profileName}: ${entry.rowCount}/${entry.variantTotal} biến thể quét được • ${entry.sourceProductCount} mẫu/màu • SKU theo quy tắc ${entry.generatedSkuCount}.`;
         status.style.color='#166534';
       }
     }catch(error){
