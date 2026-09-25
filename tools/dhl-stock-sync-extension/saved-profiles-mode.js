@@ -100,18 +100,19 @@
 
   function skuCoverage(warehouseData, catalogData) {
     const index = catalogSkuIndex(catalogData);
-    let matched = 0;
+    const variants = (catalogData && catalogData.variants) || [];
     const missing = [];
-    for (const variant of (warehouseData && warehouseData.variants) || []) {
-      const key = rowKey(variant.name, displaySize(variant));
-      if (index.map.has(key)) matched += 1;
-      else missing.push(`${variant.name} / Size ${displaySize(variant)}`);
+    let matched = 0;
+    for (const variant of variants) {
+      if (text(variant && variant.sku)) matched += 1;
+      else missing.push(`${variant && variant.name || ''} / Size ${displaySize(variant)}`);
     }
     return {
       matched,
-      total: warehouseData && warehouseData.variants ? warehouseData.variants.length : 0,
+      total: variants.length,
       missing,
-      duplicates: index.duplicates.size
+      duplicates: index.duplicates.size,
+      master: 'products_export'
     };
   }
 
@@ -191,9 +192,9 @@
       activeData = await parseProfile(p);
       const c = activeData.coverage;
       if (c.matched !== c.total) {
-        status(`Hồ sơ ${p.name} cần cập nhật: mới nối được ${c.matched}/${c.total} SKU giữa 2 file.`, 'error');
+        status(`Hồ sơ ${p.name} cần cập nhật products_export: mới có ${c.matched}/${c.total} biến thể có SKU.`, 'error');
       } else {
-        status(`Đã chọn ${p.name}: ${c.matched}/${c.total} SKU sẵn sàng. Mở đúng tab nguồn rồi bấm QUÉT KHO.`, 'ok');
+        status(`Đã chọn ${p.name}: products_export có ${activeData.catalogData.products.length} sản phẩm • ${c.matched}/${c.total} biến thể SKU sẵn sàng. Mở đúng tab nguồn rồi bấm QUÉT KHO.`, 'ok');
       }
     } catch (error) {
       status(`Không mở được hồ sơ ${p.name}: ${error.message || String(error)}`, 'error');
@@ -388,7 +389,7 @@
       const parsed = await parseProfile(temp);
       if (parsed.coverage.matched !== parsed.coverage.total) {
         const sample = parsed.coverage.missing.slice(0, 3).join('; ');
-        throw new Error(`2 file mới nối được ${parsed.coverage.matched}/${parsed.coverage.total} SKU. ${sample ? `Ví dụ thiếu: ${sample}` : ''}`);
+        throw new Error(`products_export mới có ${parsed.coverage.matched}/${parsed.coverage.total} biến thể có SKU. ${sample ? `Ví dụ thiếu: ${sample}` : ''}`);
       }
 
       const existing = profiles.find((p) => p.id === selectedId);
@@ -416,7 +417,7 @@
       renderProfiles();
       renderActiveSummary();
       $('profileManageBody').hidden = true;
-      status(`ĐÃ LƯU HỒ SƠ ${name}: ${parsed.coverage.matched}/${parsed.coverage.total} SKU. Từ giờ không cần nạp lại 2 file cho đến khi sản phẩm thay đổi.`, 'ok');
+      status(`ĐÃ LƯU HỒ SƠ ${name}: products_export là master • ${parsed.catalogData.products.length} sản phẩm • ${parsed.coverage.matched}/${parsed.coverage.total} biến thể SKU.`, 'ok');
     } catch (error) {
       status(`LỖI LƯU HỒ SƠ: ${error.message || String(error)}`, 'error');
     } finally {
