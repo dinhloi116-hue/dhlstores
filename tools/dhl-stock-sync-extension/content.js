@@ -521,28 +521,119 @@
     }
   }
 
-  async function collectSourceSkuVariants(parentId,parentName,expectedCount){
-    const expected=Math.max(0,Number(expectedCount)||0);
-    const requestChild=async(_parentId,index)=>{
-      const stamp=`${Date.now()}-${index}-${Math.random().toString(36).slice(2,7)}`;
-      const response=await fetch(`/product/child?psId=${encodeURIComponent(parentId)}&_dhl=${encodeURIComponent(stamp)}`,{
+  async function fetchSourceChildVariant(psId,parentId,parentName){
+    try{
+      const response=await fetch(`/product/child?psId=${encodeURIComponent(psId)}`,{
         credentials:'include',
         cache:'no-store',
         headers:{Accept:'application/json, text/plain, */*'}
       });
-      if(!response.ok)throw new Error(`Nguồn SKU HTTP ${response.status}`);
-      return response.json();
+      if(!response.ok)return{variant:null,http:response.status};
+      const json=await response.json();
+      const raw=json&&(json.data||json.result||json);
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return{variant:null};
+      const variant=core.normalizeVariant(raw,parentId,parentName);
+      if(!variant)return{variant:null};
+      return{variant};
+    }catch(error){
+      return{variant:null,error:error&&error.message||String(error)};
+    }
+  }
+
+  async function collectSourceSkuBundle(parentId,parentName,expectedCount=0){
+    const expected=Math.max(0,Number(expectedCount)||0);
+    const firstResponse=await fetchSourceChildVariant(parentId,parentId,parentName);
+    const first=firstResponse.variant;
+    if(!first||!first.sku)return{variants:[],complete:false,requestCount:1,stopReason:'first-child-missing'};
+
+    const byId=new Map([[Number(first.id),first]]);
+    let requestCount=1,stale=0,stopReason='max-span',complete=false;
+    const firstId=Number(first.id)>0?Number(first.id):Number(parentId)+1;
+    // Đây là cơ chế quét nhanh của bước SẢN PHẨM MỚI:
+    // lấy child đầu tiên rồi đi tuần tự ID kế tiếp để đọc code/SKU thật của website.
+    const maxSpan=Math.max(24,expected?expected+12:48);
+
+    for(let offset=0;offset<maxSpan;offset+=1){
+      const childId=firstId+offset;
+      if(childId===Number(first.id))continue;
+      const response=await fetchSourceChildVariant(childId,parentId,parentName);
+      requestCount+=1;
+      const variant=response.variant;
+
+      if(variant&&Number(variant.parentId)!==Number(parentId)){
+        stopReason='next-parent';
+        complete=byId.size>0;
+        break;
+      }
+
+      if(variant&&variant.sku){
+        const existed=byId.has(Number(variant.id));
+        if(!existed){
+          byId.set(Number(variant.id),variant);
+          stale=0;
+        }else stale+=1;
+        if(expected>0&&byId.size>=expected){
+          stopReason='expected-count';
+          complete=true;
+          break;
+        }
+      }else{
+        stale+=1;
+      }
+
+      if(byId.size>0&&stale>=5){
+        stopReason='sequence-ended';
+        complete=expected>0?byId.size>=expected:true;
+        break;
+      }
+    }
+
+    const variants=[...byId.values()].filter(v=>v&&v.sku);
+    if(expected>0&&variants.length>=expected)complete=true;
+    return{variants,complete,requestCount,stopReason};
+  }
+
+  async function collectSourceSkuVariants(parentId,parentName,expectedCount){
+    const bundle=await collectSourceSkuBundle(parentId,parentName,expectedCount);
+    return bundle.variants;
+  }
+
+  async function scanDescriptorApiFast(descriptor,progress){
+    const parentId=Number(descriptor&&descriptor.id)||0;
+    const parentName=core.normalizeText(descriptor&&descriptor.title)||`#${parentId}`;
+    if(!parentId)return{
+      parentId:0,parentName,sourceUrl:String(descriptor&&descriptor.url||location.href),
+      variants:[],complete:false,confidence:'low',scanMethod:'api-source-sku-sequential',
+      stopReason:'missing-parent-id',errors:[{message:'Thiếu parentId'}]
     };
-    const result=await core.collectVariants({
+
+    const bundle=await collectSourceSkuBundle(parentId,parentName,0);
+    const variants=bundle.variants.map(v=>({
+      ...v,
       parentId,
-      parentName,
-      requestChild,
-      expectedVariantCount:expected,
-      maxRequests:Math.max(60,expected?expected*10:80),
-      maxDuplicateStreak:Math.max(18,expected?expected*4:24),
-      delayMs:80
+      scanMethod:'api-source-sku-sequential'
+    }));
+    const complete=bundle.complete===true&&variants.length>0&&variants.every(v=>core.normalizeText(v.sku));
+    if(progress)progress({
+      stage:'api-product',
+      descriptor,
+      variants:variants.length,
+      requests:bundle.requestCount,
+      stopReason:bundle.stopReason
     });
-    return result&&Array.isArray(result.variants)?result.variants.filter(v=>v&&v.sku):[];
+    return{
+      parentId,parentName,
+      sourceUrl:String(descriptor&&descriptor.url||location.href),
+      imageUrl:String(descriptor&&descriptor.imageUrl||''),
+      variants,
+      complete,
+      confidence:complete?'high':(variants.length?'medium':'low'),
+      scanMethod:'api-source-sku-sequential',
+      requestCount:bundle.requestCount,
+      stopReason:bundle.stopReason,
+      errors:complete?[]:[{message:'API nguồn chưa xác nhận đủ toàn bộ biến thể/SKU'}],
+      domDiagnostics:{apiFast:true,sourceSkuRead:variants.length}
+    };
   }
 
   function sourceSkuKey(color,size){
@@ -755,17 +846,42 @@
     const categoryPath=location.pathname;
     const links=await discoverCurrentCategory();
     links.forEach(item=>{item.categoryPath=categoryPath;});
-    progress({stage:'discovered',productTotal:links.length,categoryPath});
-    const results=[];
-    const stale=findStockRoot();if(stale)await closeStockPopup(stale);
-    for(let i=0;i<links.length;i+=1){
-      if(location.pathname!==categoryPath)throw new Error('Trang nguồn đã rời danh mục đang quét.');
-      const descriptor=links[i];
-      progress({stage:'product',productIndex:i+1,productTotal:links.length,descriptor});
-      results.push(await scanOneDescriptor(descriptor,hints,progress));
-      await sleep(180);
+    progress({stage:'discovered',productTotal:links.length,categoryPath,mode:'api-fast-source-sku'});
+
+    const results=new Array(links.length);
+    let cursor=0;
+    const concurrency=Math.min(3,Math.max(1,links.length));
+
+    async function worker(){
+      while(true){
+        const i=cursor++;
+        if(i>=links.length)return;
+        if(location.pathname!==categoryPath)throw new Error('Trang nguồn đã rời danh mục đang quét.');
+        const descriptor=links[i];
+        progress({stage:'product',productIndex:i+1,productTotal:links.length,descriptor,mode:'api-fast-source-sku'});
+        results[i]=await scanDescriptorApiFast(descriptor,progress);
+      }
     }
-    const finalPopup=findStockRoot();if(finalPopup)await closeStockPopup(finalPopup);
+
+    await Promise.all(Array.from({length:concurrency},()=>worker()));
+
+    // Chỉ những sản phẩm API nhanh không xác nhận đủ mới mở popup để cứu dữ liệu.
+    const failedIndexes=[];
+    for(let i=0;i<results.length;i++){
+      if(!results[i]||results[i].complete!==true)failedIndexes.push(i);
+    }
+    if(failedIndexes.length){
+      const stale=findStockRoot();if(stale)await closeStockPopup(stale);
+      for(let n=0;n<failedIndexes.length;n++){
+        const i=failedIndexes[n],descriptor=links[i];
+        progress({stage:'popup-fallback',productIndex:i+1,productTotal:links.length,descriptor,fallbackIndex:n+1,fallbackTotal:failedIndexes.length});
+        const fallback=await scanOneDescriptor(descriptor,hints,progress);
+        const oldCount=(results[i]&&results[i].variants||[]).length;
+        const newCount=(fallback&&fallback.variants||[]).length;
+        if(fallback&&fallback.complete===true||newCount>oldCount)results[i]=fallback;
+      }
+      const finalPopup=findStockRoot();if(finalPopup)await closeStockPopup(finalPopup);
+    }
     return results;
   }
 
@@ -796,7 +912,11 @@
       descriptor.title=core.normalizeText(descriptor.title||descriptor.parentName);
       descriptor.url=String(descriptor.url||descriptor.sourceUrl||location.href);
       descriptor.categoryPath=location.pathname;
-      scanOneDescriptor(descriptor,hints,progress).then((result)=>sendResponse({ok:true,result})).catch((error)=>sendResponse({ok:false,error:error.message}));
+      (async()=>{
+        const fast=await scanDescriptorApiFast(descriptor,progress);
+        if(fast&&fast.complete===true)return fast;
+        return scanOneDescriptor(descriptor,hints,progress);
+      })().then((result)=>sendResponse({ok:true,result})).catch((error)=>sendResponse({ok:false,error:error.message}));
       return true;
     }
     if (message.type === 'DHL_SCAN_CURRENT_POPUP' || message.type === 'DHL_SCAN_CURRENT_DOM' || message.type === 'DHL_SCAN_CURRENT') {
