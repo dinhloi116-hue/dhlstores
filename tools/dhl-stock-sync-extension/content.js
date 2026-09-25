@@ -909,6 +909,19 @@
       })().then((result)=>sendResponse({ok:true,result})).catch((error)=>sendResponse({ok:false,error:error.message}));
       return true;
     }
+    if (message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY') {
+      const descriptor={...(message.descriptor||{})};
+      descriptor.id=Number(descriptor.id||descriptor.parentId)||0;
+      descriptor.title=core.normalizeText(descriptor.title||descriptor.parentName);
+      descriptor.url=String(descriptor.url||descriptor.sourceUrl||location.href);
+      descriptor.categoryPath=location.pathname;
+      // Chế độ CHUẨN HÓA 1 LẦN: bắt buộc mở popup thật cho từng sản phẩm.
+      // Không chạy scanDescriptorApiFast, không dùng cache/API nhanh.
+      scanOneDescriptor(descriptor,hints,progress)
+        .then((result)=>sendResponse({ok:true,result}))
+        .catch((error)=>sendResponse({ok:false,error:error.message}));
+      return true;
+    }
     if (message.type === 'DHL_SCAN_CURRENT_POPUP' || message.type === 'DHL_SCAN_CURRENT_DOM' || message.type === 'DHL_SCAN_CURRENT') {
       scanCurrentPopup(hints, progress).then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
