@@ -93,7 +93,7 @@
         warehouseName:warehouseFile.name,catalogName:catalogFile.name,
         warehouseBase64:bytesToBase64(warehouseBuffer),catalogBase64:bytesToBase64(catalogBuffer),
         branchName:text(warehouseData.warehouseBranchName),
-        productCount:(warehouseData.products||[]).length,variantCount:(warehouseData.variants||[]).length,
+        productCount:(catalogData.products||[]).length,variantCount:(catalogData.variants||[]).length,
         updatedAt:Date.now(),lastSourceUrl:'',lastSourceAt:0
       };
       profiles.push(profile);
