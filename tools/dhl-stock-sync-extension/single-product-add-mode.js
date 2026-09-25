@@ -144,7 +144,7 @@
         `${summary.name}\n`+
         `${summary.colors} màu/sản phẩm Sapo • ${summary.variants} biến thể\n`+
         `Chi nhánh: ${current.locationName||'đã xác minh'}\n\n`+
-        `Tool sẽ tự tạo SKU/alias, kiểm tra trùng trước khi tạo, đưa ảnh nguồn lên Sapo và ghi tồn từng size.\n`+
+        `Tool giữ NGUYÊN SKU GỐC của website, chỉ tạo alias, kiểm tra trùng trước khi tạo, đưa ảnh nguồn lên Sapo và ghi tồn từng size.\n`+
         `Nếu đã tồn tại cùng alias/SKU, tool dùng lại thay vì tạo trùng.`
       );
       if(!ok)return;
@@ -190,7 +190,7 @@
       <div class="single-product-add-steps">
         1) Trên aobongda mở <b>popup màu/size</b> của đúng sản phẩm cần thêm.<br>
         2) Bấm <b>QUÉT 1 SP ĐANG MỞ</b>.<br>
-        3) Kiểm tra đủ màu/size → <b>ĐĂNG 1 SP LÊN SAPO</b>. Không cần quét cả danh mục, không cần cập nhật products_export trước.
+        3) Kiểm tra đủ màu/size/SKU gốc → <b>ĐĂNG 1 SP LÊN SAPO</b>. SKU Sapo tạo mới sẽ giống hệt SKU website.
       </div>
       <div class="single-product-add-actions">
         <button id="singleProductScanBtn" type="button" class="primary">QUÉT 1 SP ĐANG MỞ</button>
