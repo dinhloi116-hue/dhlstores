@@ -153,7 +153,7 @@
 
   async function scanProfile(profile,url,config){
     if(!autoCore.validSourceUrl(url))throw new Error('URL nguồn chưa hợp lệ hoặc đang là trang chi tiết sản phẩm.');
-    const parsed=await parseProfile(profile),hints=matcher.buildScanHints(parsed.warehouseData.products);
+    const parsed=await parseProfile(profile),hints=matcher.buildScanHints(parsed.catalogData.products);
     let tab=null;
     try{
       tab=await chrome.tabs.create({url,active:false});await waitTabComplete(tab.id);await sleep(500);
@@ -163,7 +163,7 @@
       const prepared=autoCore.prepareRows(parsed.warehouseData,parsed.catalogData,sourceResults,matcher);
       if(!prepared.rows.length)throw new Error('Quét xong nhưng chưa ghép được dòng tồn kho nào.');
       const branch=text(parsed.warehouseData.warehouseBranchName||profile.branchName);if(!branch)throw new Error('Không đọc được tên chi nhánh từ hồ sơ.');
-      const entry={profileId:profile.id,profileName:text(profile.name)||'Hồ sơ',branch,sourceUrl:url,scannedAt:Date.now(),variantTotal:Number((parsed.warehouseData.variants||[]).length),rowCount:prepared.rows.length,missingSkuCount:prepared.missingSku.length,rows:prepared.rows,auto:true};
+      const entry={profileId:profile.id,profileName:text(profile.name)||'Hồ sơ',branch,sourceUrl:url,scannedAt:Date.now(),variantTotal:Number((parsed.catalogData.variants||[]).length),rowCount:prepared.rows.length,missingSkuCount:prepared.missingSku.length,rows:prepared.rows,auto:true};
       const s=await chrome.storage.local.get(BATCH_KEY),pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
       await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});await recordHistory(profile,url,sourceResults);return entry;
     }finally{if(tab&&tab.id&&config.closeTabsAfterScan!==false){try{await chrome.tabs.remove(tab.id);}catch{}}}
