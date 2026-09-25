@@ -258,11 +258,11 @@
     }
 
     const guide=document.getElementById('dailyGuide');
-    if(guide)guide.innerHTML='<b>SKU GỐC WEBSITE LÀ KHÓA ĐỒNG BỘ</b><span style="display:block;margin-top:5px">1) Quét toàn bộ aobongda.net và lấy đúng <b>SKU/code từng phân loại</b> → 2) products_export chỉ dùng đối chiếu SKU/ID đang có trên Sapo → 3) SKU trùng thì cập nhật tồn → 4) SKU mới được nhận diện tự động. File tồn kho chỉ giữ thông tin chi nhánh/mẫu nhập.</span>';
+    if(guide)guide.innerHTML='<b>ĐƯỜNG DẪN/ALIAS LÀ SKU GỐC</b><span style="display:block;margin-top:5px">1) Tool lấy <b>cột A Đường dẫn/Alias</b> làm SKU sản phẩm → 2) SKU phiên bản = Alias + Size → 3) products_export chỉ đối chiếu SKU/ID Sapo → 4) SKU trùng cập nhật tồn, SKU chưa có được nhận diện là mới.</span>';
     const subtitle=document.querySelector('header p');
     if(subtitle)subtitle.textContent='Tồn kho là file chính • Danh sách chỉ cấp SKU/ID • Ghép chính xác theo Tên + Size';
     const footer=document.querySelector('footer');
-    if(footer)footer.textContent='Không tự sinh SKU. Tool lấy đúng SKU/code từ aobongda.net rồi đối chiếu Sapo bằng SKU chính xác; không còn ghép tên + size để quyết định SKU.';
+    if(footer)footer.textContent='Quy tắc duy nhất: SKU = Đường dẫn/Alias + Size. Không đọc code ẩn website, không ghép tên để quyết định SKU.';
 
     if(exportInput)exportInput.addEventListener('change',(event)=>readWarehouse(event.target.files&&event.target.files[0]));
 
