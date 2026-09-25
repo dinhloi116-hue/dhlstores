@@ -11,6 +11,12 @@ const maintenance=read('maintenance-ui.js');
 assert.ok(contentScript.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
 assert.ok(contentScript.includes('Chế độ CHUẨN HÓA 1 LẦN: bắt buộc mở popup thật cho từng sản phẩm.'));
 assert.ok(contentScript.includes('scanOneDescriptor(descriptor,hints,progress)'));
+assert.ok(contentScript.includes("stage:'popup-opening'"));
+assert.ok(contentScript.includes("stage:'popup-closed'"));
+assert.ok(contentScript.includes('const stale=findStockRoot()'));
+assert.ok(contentScript.includes('await closeStockPopup(stale)'));
+assert.ok(contentScript.includes('const visiblePopup=findStockRoot()'));
+assert.ok(contentScript.includes('await closeStockPopup(visiblePopup)'));
 
 assert.ok(catalog.includes('async function standardizeAllByPopup(options={})'));
 assert.ok(catalog.includes("type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
@@ -22,6 +28,7 @@ assert.ok(catalog.includes('await sleep(180)'));
 assert.ok(maintenance.includes('CHUẨN HÓA 1 LẦN — POPUP TOÀN BỘ'));
 assert.ok(maintenance.includes('CHẠY POPUP TOÀN BỘ 1 LẦN'));
 assert.ok(maintenance.includes('Không dùng quét API nhanh và không dùng SKU cũ.'));
+assert.ok(maintenance.includes('BẬT popup thật lên màn hình'));
 assert.ok(maintenance.includes('standardizeAllByPopup'));
 assert.ok(maintenance.includes('ĐANG POPUP'));
 
