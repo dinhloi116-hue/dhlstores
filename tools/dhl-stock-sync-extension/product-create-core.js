@@ -66,15 +66,18 @@
     for(const variant of group.variants||[]){
       const size=normalizeSize(variant.size);
       const stock=Number(variant.available);
-      const sku=text(variant&&variant.sku);
       if(!size||!Number.isFinite(stock)||stock<0)continue;
-      if(!sku)throw new Error(`${group.standardName} / Size ${size}: nguồn chưa trả SKU thật`);
-      if(!bySize.has(size))bySize.set(size,{size,stock,sku,variant});
+      if(!bySize.has(size))bySize.set(size,{size,stock,variant});
     }
     const sizes=sizeSort([...bySize.keys()]);
     if(!sizes.length)return null;
-    const alias=typeof rules.generatedAliasForStandardName==='function'?rules.generatedAliasForStandardName(group.standardName):plain(group.standardName).replace(/\s+/g,'-');
-    return{bySize,sizes,alias};
+    // Cột A "Đường dẫn/Alias" chính là SKU GỐC của sản phẩm.
+    // SKU phiên bản = Alias + "-" + Size.
+    const alias=typeof rules.generatedAliasForStandardName==='function'
+      ? rules.generatedAliasForStandardName(group.standardName)
+      : plain(group.standardName).replace(/\s+/g,'-');
+    if(!alias)throw new Error(`Không tạo được Đường dẫn/Alias cho ${group.standardName}`);
+    return{bySize,sizes,alias,skuBase:alias};
   }
 
   function makeRows(catalogResults){
@@ -83,7 +86,7 @@
     for(const group of groups){
       const prepared=buildGroupData(group);
       if(!prepared)continue;
-      const {bySize,sizes,alias}=prepared;
+      const {bySize,sizes,alias,skuBase}=prepared;
       sizes.forEach((size,index)=>{
         const item=bySize.get(size);
         const first=index===0;
@@ -95,7 +98,7 @@
         row[8]=first?'Có':'';
         row[9]=first?'Size':'';
         row[10]=size;
-        row[16]=item.sku;
+        row[16]=`${skuBase}-${size}`;
         row[18]='Cái';
         row[19]=first?group.imageUrl:'';
         row[24]='Sapo';
@@ -118,7 +121,7 @@
     for(const group of groups){
       const prepared=buildGroupData(group);
       if(!prepared)continue;
-      const {bySize,sizes,alias}=prepared;
+      const {bySize,sizes,alias,skuBase}=prepared;
       const imageCandidates=[];
       for(const size of sizes){
         const item=bySize.get(size);
@@ -138,7 +141,7 @@
         return{
           size,
           stock:Number(item.stock),
-          sku:item.sku,
+          sku:`${skuBase}-${size}`,
           imageUrl:validHttpUrl(text(item&&item.variant&&item.variant.image))||images[0]||''
         };
       });
