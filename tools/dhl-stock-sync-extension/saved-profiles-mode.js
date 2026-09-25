@@ -474,7 +474,7 @@
       const b = intro.querySelector('b');
       const s = intro.querySelector('span');
       if (b) b.textContent = 'DÙNG HẰNG NGÀY: KHÔNG CẦN NẠP LẠI EXCEL';
-      if (s) s.textContent = '2 file Sapo được lưu theo từng hồ sơ trên chính máy này. Chỉ cập nhật hồ sơ khi có thêm/xóa/đổi sản phẩm hoặc SKU.';
+      if (s) s.textContent = 'products_export là danh sách MASTER. Khi Sapo có thêm/xóa/đổi sản phẩm hoặc SKU, chỉ cần cập nhật File 2; File 1 tồn kho chủ yếu giữ thông tin chi nhánh.';
     }
 
     const section = document.createElement('section');
@@ -498,8 +498,8 @@
       <button id="profileManageToggle" type="button" class="secondary" style="width:100%;margin-top:10px">THÊM / CẬP NHẬT HỒ SƠ</button>
       <div id="profileManageBody" hidden style="margin-top:9px;padding:10px;border:1px dashed #94a3b8;border-radius:8px;background:#fff">
         <label style="display:block"><b>Tên hồ sơ</b><input id="profileNameInput" type="text" placeholder="VD: HD, Trẻ em, Wika" style="width:100%;box-sizing:border-box;margin-top:4px" /></label>
-        <label style="display:block;margin-top:8px"><b>File 1 — TỒN KHO (file chính)</b><input id="profileWarehouseFile" type="file" accept=".xlsx" style="width:100%;margin-top:4px" /></label>
-        <label style="display:block;margin-top:8px"><b>File 2 — DANH SÁCH products_export (SKU/ID)</b><input id="profileCatalogFile" type="file" accept=".xlsx" style="width:100%;margin-top:4px" /></label>
+        <label style="display:block;margin-top:8px"><b>File 1 — TỒN KHO (chỉ lấy chi nhánh)</b><input id="profileWarehouseFile" type="file" accept=".xlsx" style="width:100%;margin-top:4px" /></label>
+        <label style="display:block;margin-top:8px"><b>File 2 — DANH SÁCH products_export (MASTER sản phẩm/SKU/ID)</b><input id="profileCatalogFile" type="file" accept=".xlsx" style="width:100%;margin-top:4px" /></label>
         <small id="profileManageHint" style="display:block;margin-top:7px;color:#64748b"></small>
         <div style="display:flex;gap:8px;margin-top:9px">
           <button id="profileSaveBtn" type="button" class="primary" style="flex:1">LƯU HỒ SƠ</button>
