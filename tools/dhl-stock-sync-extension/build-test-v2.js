@@ -120,9 +120,12 @@ assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR'"))
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
-assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'alias-size'"));
-assert.ok(catalogScanner.includes('QUÉT TOÀN BỘ • SKU = ĐƯỜNG DẪN + SIZE'));
+assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'new-product-alias-size'"));
+assert.ok(catalogScanner.includes('QUÉT TẤT CẢ SẢN PHẨM MỚI'));
 assert.ok(catalogScanner.includes("type:'DHL_SCAN_HD_LIVE'"));
+assert.ok(catalogScanner.includes("chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples'])"));
+assert.ok(catalogScanner.includes('không đọc SKU cũ'));
+
 
 const productCore=read('product-create-core.js');
 assert.ok(productCore.includes('function makeApiProducts'));
@@ -232,6 +235,9 @@ assert.ok(workflow.includes("document.getElementById('batchPendingBox')"));
 assert.ok(workflow.includes("document.getElementById('autoSyncPanel')"));
 assert.ok(workflow.includes('BƯỚC 1 — CHỌN HỒ SƠ CẦN QUÉT'));
 assert.ok(workflow.includes('BƯỚC 2 — QUÉT TAB NGUỒN'));
+assert.ok(workflow.includes("document.getElementById('catalogMode')"));
+assert.ok(workflow.includes('SP mới: quét cả danh mục 1 lượt'));
+
 
 const profileTabs=read('profile-tabs-mode.js');
 assert.ok(profileTabs.includes('profileTabsSignature'));
