@@ -56,36 +56,103 @@
       if(text(variant&&variant.sku))matched+=1;
       else missing.push(`${variant&&variant.name||''} / Size ${displaySize(variant)}`);
     }
-    return{matched,total:variants.length,missing,duplicates:index.duplicates.size,master:'products_export'};
+    return{matched,total:variants.length,missing,duplicates:index.duplicates.size,master:'products_export_lookup'};
   }
 
-  function prepareRows(warehouseData,catalogData,sourceResults,matcher){
-    if(!matcher||typeof matcher.matchSapoProducts!=='function')throw new Error('Thiếu bộ ghép tồn kho');
-    // products_export là danh sách MASTER cần đồng bộ.
-    // File quản lý kho chỉ dùng cho thông tin chi nhánh; không được làm mất sản phẩm mới đã có trên Sapo.
+  function sourceGroupKey(group){
+    return `${Number(group&&group.parentId)||0}|${plain(group&&group.parentName)}|${plain(group&&group.color)}`;
+  }
+
+  function sourceStandardName(group){
+    const parent=text(group&&group.parentName);
+    const color=text(group&&group.color);
+    return color&&color!=='(không màu)'?`${parent} - ${color}`:parent;
+  }
+
+  function fallbackSkuBase(name){
+    const p=plain(name);
+    if(!p)return'';
+    let h=2166136261>>>0;
+    for(let i=0;i<p.length;i+=1){h^=p.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+    const slug=p.replace(/\s+/g,'-').toUpperCase().slice(0,28).replace(/-+$/,'');
+    return `ABDN-${slug}-${h.toString(36).toUpperCase()}`;
+  }
+
+  function prepareRows(warehouseData,catalogData,sourceResults,matcher,rules){
+    if(!matcher||typeof matcher.matchSapoProducts!=='function'||typeof matcher.groupSourceVariants!=='function')throw new Error('Thiếu bộ ghép tồn kho');
+
+    // MASTER của file tồn là KẾT QUẢ QUÉT NGUỒN.
+    // products_export chỉ ưu tiên cung cấp SKU/ID thật đang có trên Sapo.
+    // Nếu một mẫu quét được chưa có trong products_export, dùng cùng quy tắc SKU với luồng tạo sản phẩm mới,
+    // tuyệt đối không loại mẫu đó khỏi file tồn.
     const catalogProducts=(catalogData&&catalogData.products)||[];
+    const sourceGroups=matcher.groupSourceVariants(sourceResults||[]);
     const matches=matcher.matchSapoProducts(catalogProducts,sourceResults||[]);
-    const rows=[],missingSku=[];
+    const matchedBySource=new Map();
+
     for(const match of matches){
-      for(const vm of match.variantMatches||[]){
-        if(!vm||!vm.sapo||!vm.source)continue;
-        const stock=Number(vm.source.available);
-        if(!Number.isFinite(stock)||stock<0)continue;
-        const size=displaySize(vm.sapo);
-        const sku=text(vm.sapo.sku);
-        if(!sku){missingSku.push(`${vm.sapo.name||''} / Size ${size}`);continue;}
+      if(!match||!match.matched||!match.best||!match.sapoProduct)continue;
+      matchedBySource.set(sourceGroupKey(match.best),match.sapoProduct);
+    }
+
+    const rows=[],missingSku=[],seen=new Set();
+    let sourceVariantCount=0,generatedSkuCount=0,existingSkuCount=0;
+
+    for(const group of sourceGroups){
+      const standardName=sourceStandardName(group);
+      if(!standardName)continue;
+      const sapoProduct=matchedBySource.get(sourceGroupKey(group))||null;
+      const existingBySize=new Map();
+      for(const v of (sapoProduct&&sapoProduct.variants)||[]){
+        const size=matcher.normalizeSize?matcher.normalizeSize(v.size||v.sizeFromSku):displaySize(v);
+        if(size&&!existingBySize.has(size))existingBySize.set(size,v);
+      }
+
+      let skuBase='';
+      if(sapoProduct&&typeof matcher.productSkuBase==='function')skuBase=text(matcher.productSkuBase(sapoProduct));
+      if(!skuBase&&rules&&typeof rules.skuBaseForStandardName==='function')skuBase=text(rules.skuBaseForStandardName(standardName));
+      if(!skuBase)skuBase=fallbackSkuBase(standardName);
+
+      const sourceBySize=new Map();
+      for(const source of group.variants||[]){
+        const size=matcher.normalizeSize?matcher.normalizeSize(source&&source.size):text(source&&source.size).toUpperCase();
+        const stock=Number(source&&source.available);
+        if(!size||!Number.isFinite(stock)||stock<0)continue;
+        sourceVariantCount+=1;
+        if(!sourceBySize.has(size))sourceBySize.set(size,{source,size,stock});
+      }
+
+      for(const {source,size,stock} of sourceBySize.values()){
+        const existing=existingBySize.get(size)||null;
+        const sku=text(existing&&existing.sku)||(skuBase?`${skuBase}-${size}`:'');
+        if(!sku){missingSku.push(`${standardName} / Size ${size}`);continue;}
+        const key=sku.toLowerCase();
+        if(seen.has(key))continue;
+        seen.add(key);
+        if(existing)existingSkuCount+=1;else generatedSkuCount+=1;
         rows.push({
-          variantName:text(vm.sapo.rawProductLabel||`${vm.sapo.name||''}${size?` / Size ${size}`:''}`),
+          variantName:`${standardName} / Size ${size}`,
           sku,
           stock,
-          standardName:text(vm.sapo.name),
+          standardName,
           size,
-          variantId:vm.sapo.variantId,
-          productId:vm.sapo.productId
+          variantId:Number(existing&&existing.variantId)||0,
+          productId:Number(existing&&existing.productId||sapoProduct&&sapoProduct.productId)||0,
+          sourceParentId:Number(group.parentId)||0,
+          sourceUrl:text(source&&source.sourceUrl||''),
+          generatedSku:!existing
         });
       }
     }
-    return{rows,missingSku};
+
+    return{
+      rows,missingSku,
+      sourceProductCount:sourceGroups.length,
+      sourceVariantCount,
+      existingSkuCount,
+      generatedSkuCount,
+      master:'source_scan'
+    };
   }
 
   function validSourceUrl(value){
