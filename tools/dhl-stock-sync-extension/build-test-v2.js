@@ -14,7 +14,7 @@ assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'));
 for(const file of [
   'background.js','auto-sync-core.js','sapo-inventory-resolver-core.js','auto-sync-background-v2.js',
   'manual-sapo-background.js','sapo-product-create-background.js','auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
-  'manual-sapo-output-mode.js','sapo-product-create-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
+  'manual-sapo-output-mode.js','sapo-product-create-mode.js','single-product-add-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
   'batch-stock-core.js','stock-history-core.js','product-create-core.js','popup.html','popup.js','content.js'
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
@@ -131,11 +131,13 @@ assert.ok(productBg.includes("message.type==='DHL_SAPO_PRODUCT_CREATE_RETRY'"));
 const popup=read('popup.html');
 assert.ok(popup.includes('manual-sapo-output-mode.js'));
 assert.ok(popup.includes('sapo-product-create-mode.js'));
+assert.ok(popup.includes('single-product-add-mode.js'));
 assert.ok(popup.includes('auto-sync-ui-sticky-mode.js'));
 assert.ok(popup.includes('auto-sync-excel-mode.js'));
 assert.ok(popup.includes('sapo-push-report-mode.js'));
 assert.ok(popup.includes('workflow-order-mode.js'));
 assert.ok(popup.indexOf('sapo-product-create-mode.js')>popup.indexOf('product-branch-mode.js'));
+assert.ok(popup.indexOf('single-product-add-mode.js')>popup.indexOf('sapo-product-create-mode.js'));
 assert.ok(popup.indexOf('manual-sapo-output-mode.js')>popup.indexOf('batch-stock-cache-mode.js'));
 assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode.js'));
 assert.ok(popup.indexOf('workflow-order-mode.js')>popup.indexOf('sapo-push-report-mode.js'));
