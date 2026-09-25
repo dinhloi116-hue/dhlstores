@@ -521,21 +521,64 @@
     }
   }
 
-  function makeVariant(parentId, parentName, color, row, index) {
+  async function collectSourceSkuVariants(parentId,parentName,expectedCount){
+    const expected=Math.max(0,Number(expectedCount)||0);
+    const requestChild=async(_parentId,index)=>{
+      const stamp=`${Date.now()}-${index}-${Math.random().toString(36).slice(2,7)}`;
+      const response=await fetch(`/product/child?psId=${encodeURIComponent(parentId)}&_dhl=${encodeURIComponent(stamp)}`,{
+        credentials:'include',
+        cache:'no-store',
+        headers:{Accept:'application/json, text/plain, */*'}
+      });
+      if(!response.ok)throw new Error(`Nguồn SKU HTTP ${response.status}`);
+      return response.json();
+    };
+    const result=await core.collectVariants({
+      parentId,
+      parentName,
+      requestChild,
+      expectedVariantCount:expected,
+      maxRequests:Math.max(60,expected?expected*10:80),
+      maxDuplicateStreak:Math.max(18,expected?expected*4:24),
+      delayMs:80
+    });
+    return result&&Array.isArray(result.variants)?result.variants.filter(v=>v&&v.sku):[];
+  }
+
+  function sourceSkuKey(color,size){
+    return `${dom.colorKey(color)}|${dom.normalizeSize(size)}`;
+  }
+
+  function findSourceSkuVariant(sourceVariants,color,size){
+    const normalizedSize=dom.normalizeSize(size);
+    const candidates=(sourceVariants||[]).filter(v=>dom.normalizeSize(v&&v.size)===normalizedSize&&v&&v.sku);
+    if(!candidates.length)return null;
+    if(candidates.length===1)return candidates[0];
+    const exact=candidates.find(v=>dom.colorKey(v.color)===dom.colorKey(color));
+    if(exact)return exact;
+    const ranked=candidates
+      .map(v=>({v,score:matcher.scoreColorHint(color,v.color)}))
+      .sort((a,b)=>b.score-a.score);
+    return ranked[0]&&ranked[0].score>=0.5?ranked[0].v:null;
+  }
+
+  function makeVariant(parentId, parentName, color, row, index, sourceVariant=null) {
     const cleanColor = core.normalizeText(color) || '(không màu)';
     const size = dom.normalizeSize(row.size);
+    const exactSku=core.normalizeText(sourceVariant&&sourceVariant.sku);
     return {
-      id: Number(parentId) * 1000 + index + 1,
+      id: Number(sourceVariant&&sourceVariant.id)||Number(parentId) * 1000 + index + 1,
       parentId: Number(parentId),
-      sku: `DOM-${parentId}-${dom.colorKey(cleanColor).replace(/\s+/g, '_') || 'COLOR'}-${size}`.toUpperCase(),
-      name: `${parentName} - ${cleanColor} - ${size}`,
-      color: cleanColor,
-      size,
+      sku: exactSku,
+      skuKey: core.normalizeSku(exactSku),
+      name: core.normalizeText(sourceVariant&&sourceVariant.name)||`${parentName} - ${cleanColor} - ${size}`,
+      color: core.normalizeText(sourceVariant&&sourceVariant.color)||cleanColor,
+      size: dom.normalizeSize(sourceVariant&&sourceVariant.size)||size,
       available: Number(row.stock),
-      price: 0,
-      image: '',
+      price: Number(sourceVariant&&sourceVariant.price)||0,
+      image: sourceVariant&&sourceVariant.image||'',
       status: Number(row.stock) > 0 ? 2 : 0,
-      scanMethod: 'category-target-color-size'
+      scanMethod: 'category-source-sku-exact'
     };
   }
 
@@ -569,6 +612,14 @@
       }
     }
 
+    const expectedSkuCount=Math.max(1,(controls.length||1)*Math.max(1,neededSizes.length));
+    let sourceSkuVariants=[];
+    try{
+      sourceSkuVariants=await collectSourceSkuVariants(parentId,parentName,expectedSkuCount);
+    }catch(_){
+      sourceSkuVariants=[];
+    }
+
     const variants = [];
     const snapshots = [];
     let previousSignature = '';
@@ -595,7 +646,10 @@
         targetRows: neededSizes.length,
         targetSizes: neededSizes
       });
-      rows.forEach((row) => variants.push(makeVariant(parentId, parentName, target.name, row, variants.length)));
+      rows.forEach((row) => {
+        const sourceVariant=findSourceSkuVariant(sourceSkuVariants,target.name,row.size);
+        variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,sourceVariant));
+      });
     }
 
     const unique = new Map();
@@ -613,10 +667,12 @@
       }
     }
 
+    const missingSourceSku=list.filter(v=>!core.normalizeText(v&&v.sku)).map(v=>`${dom.colorKey(v.color)}/${v.size}`);
     const expectedHints = expectedColorHints(hint);
-    const complete = expectedHints.length
+    const uiComplete = expectedHints.length
       ? targetSelection.missingHints.length === 0 && colorKeys.length === expectedHints.length && missing.length === 0
       : Boolean(list.length) && missing.length === 0;
+    const complete=uiComplete&&missingSourceSku.length===0;
 
     const result = {
       parentId,
@@ -624,10 +680,10 @@
       variants: list,
       errors: [],
       requestCount: 1,
-      stopReason: complete ? 'target-colors-5-size-complete' : 'target-colors-5-size-partial',
+      stopReason: complete ? 'source-sku-exact-complete' : (missingSourceSku.length?'source-sku-missing':'target-colors-size-partial'),
       confidence: list.length ? (complete ? 'high' : 'medium') : 'low',
       complete,
-      scanMethod: 'category-target-color-size',
+      scanMethod: 'category-source-sku-exact',
       sourceUrl: location.href,
       expectedFromSapo: expectedHints.length * neededSizes.length,
       domDiagnostics: {
@@ -643,6 +699,9 @@
         expectedSizes: neededSizes,
         ignoredSizes: [],
         missingSizes: missing,
+        sourceSkuExpected:expectedSkuCount,
+        sourceSkuRead:sourceSkuVariants.length,
+        missingSourceSku,
         snapshots
       }
     };
