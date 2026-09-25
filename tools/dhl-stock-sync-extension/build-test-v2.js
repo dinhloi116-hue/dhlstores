@@ -171,8 +171,9 @@ assert.ok(productUi.includes('ĐĂNG THẲNG LÊN SAPO'));
 assert.ok(productUi.includes("type:'DHL_SAPO_PRODUCT_CREATE_START'"));
 assert.ok(productUi.includes("type:'DHL_SAPO_PRODUCT_CREATE_RETRY'"));
 assert.ok(productUi.includes('makeApiProducts'));
-assert.ok(productUi.includes('Ảnh dùng link nguồn (src), Sapo tự tải ảnh về'));
-assert.ok(productUi.includes('Tool sẽ kiểm tra alias + SKU để tránh tạo trùng'));
+assert.ok(productUi.includes('dữ liệu từ lượt quét mới'));
+assert.ok(productUi.includes('SKU KHÔNG lấy từ dữ liệu cũ.'));
+assert.ok(productUi.includes('Tool vẫn kiểm tra alias/SKU để tránh tạo trùng'));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
