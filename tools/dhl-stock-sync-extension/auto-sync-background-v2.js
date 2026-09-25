@@ -7,7 +7,8 @@
   const batch=globalThis.DHLBatchStockCore;
   const historyCore=globalThis.DHLStockHistoryCore;
   const resolver=globalThis.DHLSapoInventoryResolver;
-  if(!xlsx||!matcher||!autoCore||!batch||!historyCore||!resolver)return;
+  const rules=globalThis.DHLShopRules;
+  if(!xlsx||!matcher||!autoCore||!batch||!historyCore||!resolver||!rules)return;
 
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const STATUS_KEY='dhlAutoSyncStatusV1';
@@ -153,17 +154,17 @@
 
   async function scanProfile(profile,url,config){
     if(!autoCore.validSourceUrl(url))throw new Error('URL nguồn chưa hợp lệ hoặc đang là trang chi tiết sản phẩm.');
-    const parsed=await parseProfile(profile),hints=matcher.buildScanHints(parsed.catalogData.products);
+    const parsed=await parseProfile(profile),hints=[]; // luôn quét toàn bộ sản phẩm/màu/size của trang nguồn
     let tab=null;
     try{
       tab=await chrome.tabs.create({url,active:false});await waitTabComplete(tab.id);await sleep(500);
       const response=await sendScan(tab.id,hints);
       if(!response||!response.ok)throw new Error(response&&response.error||'Không nhận được dữ liệu nguồn.');
       const sourceResults=Array.isArray(response.result)?response.result:[];
-      const prepared=autoCore.prepareRows(parsed.warehouseData,parsed.catalogData,sourceResults,matcher);
+      const prepared=autoCore.prepareRows(parsed.warehouseData,parsed.catalogData,sourceResults,matcher,rules);
       if(!prepared.rows.length)throw new Error('Quét xong nhưng chưa ghép được dòng tồn kho nào.');
       const branch=text(parsed.warehouseData.warehouseBranchName||profile.branchName);if(!branch)throw new Error('Không đọc được tên chi nhánh từ hồ sơ.');
-      const entry={profileId:profile.id,profileName:text(profile.name)||'Hồ sơ',branch,sourceUrl:url,scannedAt:Date.now(),variantTotal:Number((parsed.catalogData.variants||[]).length),rowCount:prepared.rows.length,missingSkuCount:prepared.missingSku.length,rows:prepared.rows,auto:true};
+      const entry={profileId:profile.id,profileName:text(profile.name)||'Hồ sơ',branch,sourceUrl:url,scannedAt:Date.now(),variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),sourceProductCount:Number(prepared.sourceProductCount||0),generatedSkuCount:Number(prepared.generatedSkuCount||0),rowCount:prepared.rows.length,missingSkuCount:prepared.missingSku.length,rows:prepared.rows,auto:true};
       const s=await chrome.storage.local.get(BATCH_KEY),pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
       await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});await recordHistory(profile,url,sourceResults);return entry;
     }finally{if(tab&&tab.id&&config.closeTabsAfterScan!==false){try{await chrome.tabs.remove(tab.id);}catch{}}}
