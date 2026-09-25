@@ -388,7 +388,7 @@
       dhlCatalogAt:Date.now(),
       dhlCatalogPageTitle:discovered.pageTitle,
       dhlCatalogPageUrl:discovered.pageUrl,
-      dhlCatalogSkuMode:'source-exact'
+      dhlCatalogSkuMode:'alias-size'
     });
     return{results,discovered,itemCount:discovered.items.length};
   }
@@ -402,13 +402,14 @@
       const validResults=results.filter((r)=>r&&typeof r==='object');
       const completeCount=validResults.filter((r)=>r.complete===true).length;
       const variantCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.length:0),0);
-      const exactSkuCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.filter(v=>String(v&&v.sku||'').trim()).length:0),0);
+      const built=productCreate.makeRows(validResults);
+      const skuCount=built.rows.length;
       const failedCount=Math.max(0,itemCount-completeCount);
-      const allComplete=completeCount===itemCount&&validResults.length===itemCount&&exactSkuCount===variantCount;
+      const allComplete=completeCount===itemCount&&validResults.length===itemCount&&skuCount===variantCount;
       exp.disabled=!allComplete;
       state.textContent=allComplete
-        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • ${exactSkuCount} SKU GỐC. Có thể tạo file/đăng Sapo.`
-        : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm đạt • ${variantCount} biến thể • ${exactSkuCount} SKU GỐC • lỗi/thiếu ${failedCount}. Sản phẩm lỗi được giữ để báo cáo.`;
+        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • SKU = Đường dẫn/Alias + Size. Có thể tạo file/đăng Sapo.`
+        : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm đạt • ${variantCount} biến thể • tạo được ${skuCount} SKU Alias+Size • lỗi/thiếu ${failedCount}.`;
     } catch(error) { state.textContent=`Lỗi quét SKU nguồn: ${error.message||String(error)}`; }
     finally { scan.disabled=false;test.disabled=false; }
   }
