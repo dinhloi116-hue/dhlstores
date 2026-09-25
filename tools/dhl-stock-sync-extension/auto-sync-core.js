@@ -59,88 +59,65 @@
     return{matched,total:variants.length,missing,duplicates:index.duplicates.size,master:'products_export_lookup'};
   }
 
-  function sourceGroupKey(group){
-    return `${Number(group&&group.parentId)||0}|${plain(group&&group.parentName)}|${plain(group&&group.color)}`;
-  }
-
   function sourceStandardName(group){
     const parent=text(group&&group.parentName);
     const color=text(group&&group.color);
     return color&&color!=='(không màu)'?`${parent} - ${color}`:parent;
   }
 
-  function fallbackSkuBase(name){
-    const p=plain(name);
-    if(!p)return'';
-    let h=2166136261>>>0;
-    for(let i=0;i<p.length;i+=1){h^=p.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
-    const slug=p.replace(/\s+/g,'-').toUpperCase().slice(0,28).replace(/-+$/,'');
-    return `ABDN-${slug}-${h.toString(36).toUpperCase()}`;
-  }
+  function normalizeSku(value){return text(value).toUpperCase();}
 
-  function prepareRows(warehouseData,catalogData,sourceResults,matcher,rules){
-    if(!matcher||typeof matcher.matchSapoProducts!=='function'||typeof matcher.groupSourceVariants!=='function')throw new Error('Thiếu bộ ghép tồn kho');
+  function prepareRows(warehouseData,catalogData,sourceResults,matcher){
+    if(!matcher||typeof matcher.groupSourceVariants!=='function')throw new Error('Thiếu bộ ghép tồn kho');
 
-    // MASTER của file tồn là KẾT QUẢ QUÉT NGUỒN.
-    // products_export chỉ ưu tiên cung cấp SKU/ID thật đang có trên Sapo.
-    // Nếu một mẫu quét được chưa có trong products_export, dùng cùng quy tắc SKU với luồng tạo sản phẩm mới,
-    // tuyệt đối không loại mẫu đó khỏi file tồn.
-    const catalogProducts=(catalogData&&catalogData.products)||[];
-    const sourceGroups=matcher.groupSourceVariants(sourceResults||[]);
-    const matches=matcher.matchSapoProducts(catalogProducts,sourceResults||[]);
-    const matchedBySource=new Map();
-
-    for(const match of matches){
-      if(!match||!match.matched||!match.best||!match.sapoProduct)continue;
-      matchedBySource.set(sourceGroupKey(match.best),match.sapoProduct);
+    // SOURCE SKU là khóa MASTER tuyệt đối.
+    // Không ghép tên/màu để quyết định SKU nữa. Sapo chỉ được đối chiếu bằng SKU giống hệt nguồn.
+    const sapoBySku=new Map();
+    for(const v of (catalogData&&catalogData.variants)||[]){
+      const key=normalizeSku(v&&v.sku);
+      if(key&&!sapoBySku.has(key))sapoBySku.set(key,v);
     }
 
+    const sourceGroups=matcher.groupSourceVariants(sourceResults||[]);
     const rows=[],missingSku=[],seen=new Set();
-    let sourceVariantCount=0,generatedSkuCount=0,existingSkuCount=0;
+    let sourceVariantCount=0,matchedSkuCount=0,sourceOnlySkuCount=0;
 
     for(const group of sourceGroups){
       const standardName=sourceStandardName(group);
-      if(!standardName)continue;
-      const sapoProduct=matchedBySource.get(sourceGroupKey(group))||null;
-      const existingBySize=new Map();
-      for(const v of (sapoProduct&&sapoProduct.variants)||[]){
-        const size=matcher.normalizeSize?matcher.normalizeSize(v.size||v.sizeFromSku):displaySize(v);
-        if(size&&!existingBySize.has(size))existingBySize.set(size,v);
-      }
-
-      let skuBase='';
-      if(sapoProduct&&typeof matcher.productSkuBase==='function')skuBase=text(matcher.productSkuBase(sapoProduct));
-      if(!skuBase&&rules&&typeof rules.skuBaseForStandardName==='function')skuBase=text(rules.skuBaseForStandardName(standardName));
-      if(!skuBase)skuBase=fallbackSkuBase(standardName);
-
-      const sourceBySize=new Map();
+      const bySize=new Map();
       for(const source of group.variants||[]){
         const size=matcher.normalizeSize?matcher.normalizeSize(source&&source.size):text(source&&source.size).toUpperCase();
         const stock=Number(source&&source.available);
         if(!size||!Number.isFinite(stock)||stock<0)continue;
-        if(!sourceBySize.has(size))sourceBySize.set(size,{source,size,stock});
+        const sku=text(source&&source.sku);
+        if(!sku){
+          missingSku.push(`${standardName} / Size ${size}`);
+          continue;
+        }
+        const sourceKey=normalizeSku(sku);
+        const uniq=`${sourceKey}|${size}`;
+        if(seen.has(uniq))continue;
+        seen.add(uniq);
+        bySize.set(size,{source,size,stock,sku,sourceKey});
       }
-      sourceVariantCount+=sourceBySize.size;
+      sourceVariantCount+=bySize.size;
 
-      for(const {source,size,stock} of sourceBySize.values()){
-        const existing=existingBySize.get(size)||null;
-        const sku=text(existing&&existing.sku)||(skuBase?`${skuBase}-${size}`:'');
-        if(!sku){missingSku.push(`${standardName} / Size ${size}`);continue;}
-        const key=sku.toLowerCase();
-        if(seen.has(key))continue;
-        seen.add(key);
-        if(existing)existingSkuCount+=1;else generatedSkuCount+=1;
+      for(const {source,size,stock,sku,sourceKey} of bySize.values()){
+        const existing=sapoBySku.get(sourceKey)||null;
+        if(existing)matchedSkuCount+=1;else sourceOnlySkuCount+=1;
         rows.push({
-          variantName:`${standardName} / Size ${size}`,
+          variantName:text(source&&source.name)||`${standardName} / Size ${size}`,
           sku,
           stock,
           standardName,
           size,
           variantId:Number(existing&&existing.variantId)||0,
-          productId:Number(existing&&existing.productId||sapoProduct&&sapoProduct.productId)||0,
+          productId:Number(existing&&existing.productId)||0,
           sourceParentId:Number(group.parentId)||0,
+          sourceVariantId:Number(source&&source.id)||0,
           sourceUrl:text(source&&source.sourceUrl||''),
-          generatedSku:!existing
+          sourceSku:true,
+          matchedBy:'exact-source-sku'
         });
       }
     }
@@ -149,9 +126,11 @@
       rows,missingSku,
       sourceProductCount:sourceGroups.length,
       sourceVariantCount,
-      existingSkuCount,
-      generatedSkuCount,
-      master:'source_scan'
+      existingSkuCount:matchedSkuCount,
+      matchedSkuCount,
+      sourceOnlySkuCount,
+      generatedSkuCount:0,
+      master:'source_sku_exact'
     };
   }
 
