@@ -127,7 +127,9 @@
         scannedAt:Date.now(),
         variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),
         sourceProductCount:Number(prepared.sourceProductCount||0),
-        generatedSkuCount:Number(prepared.generatedSkuCount||0),
+        generatedSkuCount:0,
+        matchedSkuCount:Number(prepared.matchedSkuCount||0),
+        sourceOnlySkuCount:Number(prepared.sourceOnlySkuCount||0),
         rowCount:prepared.rows.length,
         missingSkuCount:prepared.missingSku.length,
         rows:prepared.rows,
@@ -139,7 +141,7 @@
       await renderBatchUi();
       const status=document.getElementById('profileStatus');
       if(status){
-        status.textContent=`ĐÃ LƯU CACHE ${entry.profileName}: ${entry.rowCount}/${entry.variantTotal} biến thể quét được • ${entry.sourceProductCount} mẫu/màu • SKU theo quy tắc ${entry.generatedSkuCount}.`;
+        status.textContent=`ĐÃ LƯU CACHE ${entry.profileName}: ${entry.rowCount}/${entry.variantTotal} biến thể SKU GỐC • ${entry.sourceProductCount} mẫu/màu • trùng Sapo ${entry.matchedSkuCount} • SKU nguồn mới ${entry.sourceOnlySkuCount}.`;
         status.style.color='#166534';
       }
     }catch(error){
