@@ -118,9 +118,9 @@
         const size=matcher.normalizeSize?matcher.normalizeSize(source&&source.size):text(source&&source.size).toUpperCase();
         const stock=Number(source&&source.available);
         if(!size||!Number.isFinite(stock)||stock<0)continue;
-        sourceVariantCount+=1;
         if(!sourceBySize.has(size))sourceBySize.set(size,{source,size,stock});
       }
+      sourceVariantCount+=sourceBySize.size;
 
       for(const {source,size,stock} of sourceBySize.values()){
         const existing=existingBySize.get(size)||null;
