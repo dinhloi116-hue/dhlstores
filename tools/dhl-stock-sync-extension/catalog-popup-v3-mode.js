@@ -364,7 +364,7 @@
     return /Receiving end does not exist|Could not establish connection/i.test(String(error&&error.message||error||''));
   }
 
-  async function scanAllExactSourceSku() {
+  async function scanAllNewProducts() {
     const tab=await ensureCategoryTab();
     const discovered=await discoverProducts(tab.id);
     if(!discovered.items.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục.');
@@ -380,7 +380,7 @@
       await sleep(250);
       response=await chrome.tabs.sendMessage(tab.id,message);
     }
-    if(!response||!response.ok)throw new Error(response&&response.error||'Không nhận được dữ liệu quét SKU nguồn.');
+    if(!response||!response.ok)throw new Error(response&&response.error||'Không nhận được dữ liệu quét sản phẩm mới.');
     const results=Array.isArray(response.result)?response.result:[];
     await chrome.storage.local.set({
       dhlCatalogResults:results,
@@ -388,7 +388,7 @@
       dhlCatalogAt:Date.now(),
       dhlCatalogPageTitle:discovered.pageTitle,
       dhlCatalogPageUrl:discovered.pageUrl,
-      dhlCatalogSkuMode:'alias-size'
+      dhlCatalogSkuMode:'new-product-alias-size'
     });
     return{results,discovered,itemCount:discovered.items.length};
   }
@@ -397,8 +397,9 @@
     const scan=document.getElementById('scanCatalogSource'),test=document.getElementById('catalogQuickTest'),exp=document.getElementById('exportCatalogSource'),state=document.getElementById('catalogState');
     scan.disabled=true;test.disabled=true;exp.disabled=true;
     try {
-      state.textContent='Đang quét toàn bộ trang • SKU sẽ lấy từ Đường dẫn/Alias + Size...';
-      const {results,discovered,itemCount}=await scanAllExactSourceSku();
+      await chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples']);
+      state.textContent='Đang quét TẤT CẢ sản phẩm như dữ liệu mới • không đọc SKU cũ • SKU = Đường dẫn/Alias + Size...';
+      const {results,discovered,itemCount}=await scanAllNewProducts();
       const validResults=results.filter((r)=>r&&typeof r==='object');
       const completeCount=validResults.filter((r)=>r.complete===true).length;
       const variantCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.length:0),0);
@@ -408,9 +409,9 @@
       const allComplete=completeCount===itemCount&&validResults.length===itemCount&&skuCount===variantCount;
       exp.disabled=!allComplete;
       state.textContent=allComplete
-        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • SKU = Đường dẫn/Alias + Size. Có thể tạo file/đăng Sapo.`
-        : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm đạt • ${variantCount} biến thể • tạo được ${skuCount} SKU Alias+Size • lỗi/thiếu ${failedCount}.`;
-    } catch(error) { state.textContent=`Lỗi quét SKU nguồn: ${error.message||String(error)}`; }
+        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm mới • ${variantCount} biến thể • ${skuCount} SKU Alias+Size. Không dùng SKU cũ.`
+        : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • tạo được ${skuCount} SKU Alias+Size • lỗi/thiếu ${failedCount}.`;
+    } catch(error) { state.textContent=`Lỗi quét sản phẩm mới: ${error.message||String(error)}`; }
     finally { scan.disabled=false;test.disabled=false; }
   }
 
@@ -424,11 +425,11 @@
     const scan=document.getElementById('scanCatalogSource'),test=document.getElementById('catalogQuickTest'),exp=document.getElementById('exportCatalogSource'),state=document.getElementById('catalogState');
     if(!scan||!test||!exp)return false;
     if(scan.dataset.popupV3==='1')return true;
-    const newScan=replaceAndBind('scanCatalogSource','QUÉT TOÀN BỘ • SKU = ĐƯỜNG DẪN + SIZE',fullScan);
+    const newScan=replaceAndBind('scanCatalogSource','QUÉT TẤT CẢ SẢN PHẨM MỚI',fullScan);
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
-    const newExport=replaceAndBind('exportCatalogSource','TẠO FILE SẢN PHẨM SAPO (.XLSX)',exportProducts);
+    const newExport=replaceAndBind('exportCatalogSource','TẠO FILE TẤT CẢ SP MỚI (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
-    if(state)state.textContent='SKU MASTER: cột A Đường dẫn/Alias là SKU gốc; SKU phiên bản = Alias + Size. Không cần đọc code ẩn website.';
+    if(state)state.textContent='CHẾ ĐỘ SP MỚI: quét cả danh mục 1 lượt, bỏ qua SKU cũ. Cột A Đường dẫn/Alias = mã sản phẩm; SKU phân loại = Alias + Size.';
     return Boolean(newScan&&newTest&&newExport);
   }
 
