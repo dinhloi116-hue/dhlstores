@@ -31,17 +31,17 @@ assert.ok(background.indexOf("'warehouse-sku-link-mode.js'")<background.indexOf(
 assert.ok(background.indexOf("'manual-sapo-background.js'")>background.indexOf("'auto-sync-background-v2.js'"));
 
 const autoCore=read('auto-sync-core.js');
-assert.ok(autoCore.includes("master:'source_sku_exact'"));
+assert.ok(autoCore.includes("master:'alias_size_exact'"));
 assert.ok(autoCore.includes('const sourceGroups=matcher.groupSourceVariants(sourceResults||[])'));
-assert.ok(autoCore.includes("matchedBy:'exact-source-sku'"));
+assert.ok(autoCore.includes("matchedBy:'alias-size-exact'"));
 assert.ok(autoCore.includes('sourceOnlySkuCount'));
 assert.ok(autoCore.includes('generatedSkuCount:0'));
-assert.ok(autoCore.includes('SOURCE SKU là khóa MASTER tuyệt đối'));
+assert.ok(autoCore.includes('MASTER: cột A "Đường dẫn/Alias"'));
 
 const savedProfiles=read('saved-profiles-mode.js');
 assert.ok(savedProfiles.includes('autoCore.prepareRows(activeData.warehouseData, activeData.catalogData, latestSource, matcher, rules)'));
 assert.ok(savedProfiles.includes('const hints = []; // Quét TOÀN BỘ'));
-assert.ok(savedProfiles.includes('SKU GỐC trên aobongda.net là MASTER'));
+assert.ok(savedProfiles.includes('Cột A Đường dẫn/Alias là SKU GỐC'));
 
 const batchCache=read('batch-stock-cache-mode.js');
 assert.ok(batchCache.includes('autoCore.prepareRows(warehouseData,catalogData,sourceResults,matcher,rules)'));
@@ -114,14 +114,14 @@ assert.ok(contentScanner.includes('collectSourceSkuBundle'));
 assert.ok(contentScanner.includes('scanDescriptorApiFast'));
 assert.ok(contentScanner.includes("const concurrency=Math.min(3,Math.max(1,links.length))"));
 assert.ok(contentScanner.includes("stage:'popup-fallback'"));
-assert.ok(contentScanner.includes("scanMethod: 'category-source-sku-exact'"));
-assert.ok(contentScanner.includes('missingSourceSku'));
+assert.ok(contentScanner.includes("scanMethod: 'category-alias-size'"));
+assert.ok(contentScanner.includes("skuRule:'alias+size'"));
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR'"));
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
-assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'source-exact'"));
-assert.ok(catalogScanner.includes('QUÉT TOÀN BỘ + SKU GỐC NGUỒN'));
+assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'alias-size'"));
+assert.ok(catalogScanner.includes('QUÉT TOÀN BỘ • SKU = ĐƯỜNG DẪN + SIZE'));
 assert.ok(catalogScanner.includes("type:'DHL_SCAN_HD_LIVE'"));
 
 const productCore=read('product-create-core.js');
@@ -130,9 +130,9 @@ assert.ok(productCore.includes('images,'));
 assert.ok(productCore.includes('variants')); 
 assert.ok(productCore.includes('validHttpUrl'));
 assert.ok(productCore.includes('variantImage'));
-assert.ok(productCore.includes('nguồn chưa trả SKU thật'));
-assert.ok(productCore.includes('row[16]=item.sku'));
-assert.ok(productCore.includes('sku:item.sku'));
+assert.ok(productCore.includes('Cột A "Đường dẫn/Alias" chính là SKU GỐC'));
+assert.ok(productCore.includes('row[16]=`${skuBase}-${size}`'));
+assert.ok(productCore.includes('sku:`${skuBase}-${size}`'));
 
 const productBg=read('sapo-product-create-background.js');
 assert.ok(productBg.includes("const QUEUE_KEY='dhlSapoProductCreateQueueV1'"));
