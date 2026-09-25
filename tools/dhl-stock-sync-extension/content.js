@@ -500,7 +500,7 @@
     const candidates = quickCandidates(descriptor, card).filter((item) => !inertActionHref(item.el));
     for (const candidate of candidates) {
       await clickQuickCandidate(candidate.el);
-      const root = await waitForPopupRefresh(before, expectedPath, 3200);
+      const root = await waitForPopupRefresh(before, expectedPath, 8000);
       if (root) return { root, cardFound: !!card, candidateCount: candidates.length, reusedPopup: !!existing };
     }
     const error = new Error(`Không bật được popup tồn cho ${descriptor.title} ngay trên trang danh mục.`);
@@ -684,7 +684,7 @@
       confidence: list.length ? (complete ? 'high' : 'medium') : 'low',
       complete,
       scanMethod: 'category-source-sku-exact',
-      sourceUrl: location.href,
+      sourceUrl: String(descriptor.url||location.href),
       expectedFromSapo: expectedHints.length * neededSizes.length,
       domDiagnostics: {
         stockUiFound: true,
@@ -788,6 +788,15 @@
     }
     if (message.type === 'DHL_SCAN_HD_LIVE') {
       scanHdLive(hints, progress).then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
+    }
+    if (message.type === 'DHL_SCAN_ONE_DESCRIPTOR') {
+      const descriptor={...(message.descriptor||{})};
+      descriptor.id=Number(descriptor.id||descriptor.parentId)||0;
+      descriptor.title=core.normalizeText(descriptor.title||descriptor.parentName);
+      descriptor.url=String(descriptor.url||descriptor.sourceUrl||location.href);
+      descriptor.categoryPath=location.pathname;
+      scanOneDescriptor(descriptor,hints,progress).then((result)=>sendResponse({ok:true,result})).catch((error)=>sendResponse({ok:false,error:error.message}));
       return true;
     }
     if (message.type === 'DHL_SCAN_CURRENT_POPUP' || message.type === 'DHL_SCAN_CURRENT_DOM' || message.type === 'DHL_SCAN_CURRENT') {
