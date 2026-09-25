@@ -59,8 +59,10 @@
 
   function prepareRows(warehouseData,catalogData,sourceResults,matcher){
     if(!matcher||typeof matcher.matchSapoProducts!=='function')throw new Error('Thiếu bộ ghép tồn kho');
-    const index=catalogSkuIndex(catalogData).map;
-    const matches=matcher.matchSapoProducts((warehouseData&&warehouseData.products)||[],sourceResults||[]);
+    // products_export là danh sách MASTER cần đồng bộ.
+    // File quản lý kho chỉ dùng cho thông tin chi nhánh; không được làm mất sản phẩm mới đã có trên Sapo.
+    const catalogProducts=(catalogData&&catalogData.products)||[];
+    const matches=matcher.matchSapoProducts(catalogProducts,sourceResults||[]);
     const rows=[],missingSku=[];
     for(const match of matches){
       for(const vm of match.variantMatches||[]){
@@ -68,16 +70,16 @@
         const stock=Number(vm.source.available);
         if(!Number.isFinite(stock)||stock<0)continue;
         const size=displaySize(vm.sapo);
-        const lookup=index.get(rowKey(vm.sapo.name,size));
-        if(!lookup){missingSku.push(`${vm.sapo.name||''} / Size ${size}`);continue;}
+        const sku=text(vm.sapo.sku);
+        if(!sku){missingSku.push(`${vm.sapo.name||''} / Size ${size}`);continue;}
         rows.push({
           variantName:text(vm.sapo.rawProductLabel||`${vm.sapo.name||''}${size?` / Size ${size}`:''}`),
-          sku:lookup.sku,
+          sku,
           stock,
           standardName:text(vm.sapo.name),
           size,
-          variantId:lookup.variantId,
-          productId:lookup.productId
+          variantId:vm.sapo.variantId,
+          productId:vm.sapo.productId
         });
       }
     }
