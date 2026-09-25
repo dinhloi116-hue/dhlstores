@@ -393,6 +393,105 @@
     return{results,discovered,itemCount:discovered.items.length};
   }
 
+  async function sendPopupOnly(tabId,descriptor){
+    const message={type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY',descriptor,hints:[]};
+    try{
+      return await chrome.tabs.sendMessage(tabId,message);
+    }catch(error){
+      if(!noReceiver(error))throw error;
+      for(const file of ['stock-core.js','dom-stock-parser.js','match-core.js','content.js']){
+        await chrome.scripting.executeScript({target:{tabId},files:[file]});
+      }
+      await sleep(250);
+      return chrome.tabs.sendMessage(tabId,message);
+    }
+  }
+
+  async function standardizeAllByPopup(options={}){
+    const onProgress=typeof options.onProgress==='function'?options.onProgress:()=>{};
+    const tab=await ensureCategoryTab();
+    const discovered=await discoverProducts(tab.id);
+    const items=Array.isArray(discovered.items)?discovered.items:[];
+    if(!items.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục.');
+
+    await chrome.storage.local.remove([
+      'dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples','dhlCatalogMaintenanceProgressV1'
+    ]);
+
+    const results=[];
+    let completeCount=0;
+    for(let i=0;i<items.length;i+=1){
+      const descriptor=items[i];
+      const progress={
+        running:true,
+        mode:'popup-standardize-once',
+        index:i,
+        current:i+1,
+        total:items.length,
+        title:descriptor.title||'Sản phẩm',
+        completeCount,
+        failedCount:i-completeCount,
+        startedAt:Date.now()
+      };
+      onProgress(progress);
+      await chrome.storage.local.set({dhlCatalogMaintenanceProgressV1:progress});
+
+      let result=null;
+      try{
+        const response=await sendPopupOnly(tab.id,descriptor);
+        if(!response||!response.ok)throw new Error(response&&response.error||'Popup không trả dữ liệu.');
+        result=response.result;
+      }catch(error){
+        result=failedScanResult(descriptor,error&&error.message||String(error));
+      }
+
+      if(result&&result.complete===true)completeCount+=1;
+      results.push(result);
+
+      // Checkpoint sau TỪNG sản phẩm để đóng popup/tool không làm mất cả lượt.
+      await chrome.storage.local.set({
+        dhlCatalogResults:results,
+        dhlCatalogSkuSamples:{},
+        dhlCatalogAt:Date.now(),
+        dhlCatalogPageTitle:discovered.pageTitle,
+        dhlCatalogPageUrl:discovered.pageUrl,
+        dhlCatalogSkuMode:'maintenance-popup-standardize-once',
+        dhlCatalogMaintenanceProgressV1:{
+          running:true,
+          mode:'popup-standardize-once',
+          index:i+1,
+          current:i+1,
+          total:items.length,
+          title:descriptor.title||'Sản phẩm',
+          completeCount,
+          failedCount:(i+1)-completeCount
+        }
+      });
+      await sleep(180);
+    }
+
+    const variantCount=results.reduce((n,r)=>n+(Array.isArray(r&&r.variants)?r.variants.length:0),0);
+    const failedCount=items.length-completeCount;
+    const done={
+      running:false,
+      done:true,
+      mode:'popup-standardize-once',
+      current:items.length,
+      total:items.length,
+      completeCount,
+      failedCount,
+      variantCount,
+      finishedAt:Date.now()
+    };
+    await chrome.storage.local.set({dhlCatalogMaintenanceProgressV1:done});
+    onProgress(done);
+    return{results,discovered,itemCount:items.length,completeCount,failedCount,variantCount};
+  }
+
+  globalThis.DHLCatalogMaintenance={
+    standardizeAllByPopup
+  };
+
   async function fullScan() {
     const scan=document.getElementById('scanCatalogSource'),test=document.getElementById('catalogQuickTest'),exp=document.getElementById('exportCatalogSource'),state=document.getElementById('catalogState');
     scan.disabled=true;test.disabled=true;exp.disabled=true;
