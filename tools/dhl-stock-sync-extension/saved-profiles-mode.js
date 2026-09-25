@@ -238,7 +238,7 @@
 
   function matchedRows() {
     if (!activeData || !latestSource.length) return [];
-    const matches = matcher.matchSapoProducts(activeData.warehouseData.products, latestSource);
+    const matches = matcher.matchSapoProducts(activeData.catalogData.products, latestSource);
     const rows = [];
     for (const match of matches) {
       for (const vm of match.variantMatches || []) {
@@ -250,26 +250,25 @@
 
   function officialImportRows() {
     if (!activeData) return { rows: [], missingSku: [] };
-    const index = catalogSkuIndex(activeData.catalogData).map;
     const result = [];
     const missingSku = [];
     for (const row of matchedRows()) {
       const stock = Number(row.source.available);
       if (!Number.isFinite(stock) || stock < 0) continue;
       const size = displaySize(row.sapo);
-      const lookup = index.get(rowKey(row.sapo.name, size));
-      if (!lookup) {
+      const sku = text(row.sapo.sku);
+      if (!sku) {
         missingSku.push(`${row.sapo.name || ''} / Size ${size}`);
         continue;
       }
       result.push({
         variantName: text(row.sapo.rawProductLabel || `${row.sapo.name || ''}${size ? ` / Size ${size}` : ''}`),
-        sku: lookup.sku,
+        sku,
         stock,
         standardName: text(row.sapo.name),
         size,
-        variantId: lookup.variantId,
-        productId: lookup.productId
+        variantId: row.sapo.variantId,
+        productId: row.sapo.productId
       });
     }
     return { rows: result, missingSku };
@@ -289,7 +288,7 @@
       const coverage = activeData.coverage;
       if (coverage.matched !== coverage.total) throw new Error(`Hồ sơ chưa đủ SKU: ${coverage.matched}/${coverage.total}. Hãy cập nhật 2 file.`);
       const tab = await ensureCategoryTab();
-      const hints = matcher.buildScanHints(activeData.warehouseData.products);
+      const hints = matcher.buildScanHints(activeData.catalogData.products);
       status(`Đang quét tab đang mở bằng hồ sơ ${profile.name}...`);
       const response = await sendToTab(tab.id, { type: 'DHL_SCAN_HD_LIVE', hints });
       if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu nguồn');
@@ -301,7 +300,7 @@
       profile.lastSourceUrl = String(tab.url || '');
       profile.lastSourceAt = Date.now();
       await saveStore();
-      status(`QUÉT XONG ${profile.name}: ${prepared.rows.length}/${activeData.warehouseData.variants.length} biến thể ghép được • ${groups} mẫu/màu nguồn. Có thể tạo file nhập Sapo.`, 'ok');
+      status(`QUÉT XONG ${profile.name}: ${prepared.rows.length}/${activeData.catalogData.variants.length} biến thể trong products_export ghép được • ${groups} mẫu/màu nguồn. Có thể tạo file nhập Sapo.`, 'ok');
     } catch (error) {
       scannedForSelected = false;
       status(`LỖI QUÉT: ${error.message || String(error)}`, 'error');
@@ -343,7 +342,7 @@
       const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const safeName = text(profile.name).replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, '_');
       download(out.bytes, `SAPO_NHAP_TON_KHO_${safeName}_${stamp}.xlsx`);
-      const skipped = Math.max(0, activeData.warehouseData.variants.length - prepared.rows.length);
+      const skipped = Math.max(0, activeData.catalogData.variants.length - prepared.rows.length);
       status(`ĐÃ TẠO FILE ${profile.name}: ${out.rows} dòng • ${out.zeroCount} dòng tồn = 0 • bỏ qua ${skipped} dòng không thuộc tab vừa quét.`, 'ok');
     } catch (error) {
       status(`LỖI TẠO FILE: ${error.message || String(error)}`, 'error');
@@ -401,8 +400,8 @@
         warehouseBase64,
         catalogBase64,
         branchName: text(parsed.warehouseData.warehouseBranchName),
-        productCount: parsed.warehouseData.products.length,
-        variantCount: parsed.warehouseData.variants.length,
+        productCount: parsed.catalogData.products.length,
+        variantCount: parsed.catalogData.variants.length,
         updatedAt: Date.now(),
         lastSourceUrl: existing ? existing.lastSourceUrl || '' : '',
         lastSourceAt: existing ? existing.lastSourceAt || 0 : 0
