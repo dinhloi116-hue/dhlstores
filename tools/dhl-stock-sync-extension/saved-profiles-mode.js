@@ -270,7 +270,7 @@
       profile.lastSourceUrl = String(tab.url || '');
       profile.lastSourceAt = Date.now();
       await saveStore();
-      status(`QUÉT XONG ${profile.name}: ${prepared.rows.length}/${prepared.sourceVariantCount || prepared.rows.length} biến thể có SKU GỐC • ${prepared.sourceProductCount || groups} mẫu/màu • trùng SKU Sapo ${prepared.matchedSkuCount || 0} • SKU nguồn mới/chưa có Sapo ${prepared.sourceOnlySkuCount || 0}.`, 'ok');
+      status(`QUÉT XONG ${profile.name}: ${prepared.rows.length}/${prepared.sourceVariantCount || prepared.rows.length} biến thể • ${prepared.sourceProductCount || groups} mẫu/màu • SKU = Đường dẫn/Alias + Size • trùng Sapo ${prepared.matchedSkuCount || 0} • mới/chưa có Sapo ${prepared.sourceOnlySkuCount || 0}.`, 'ok');
     } catch (error) {
       scannedForSelected = false;
       status(`LỖI QUÉT: ${error.message || String(error)}`, 'error');
@@ -443,7 +443,7 @@
       const b = intro.querySelector('b');
       const s = intro.querySelector('span');
       if (b) b.textContent = 'DÙNG HẰNG NGÀY: KHÔNG CẦN NẠP LẠI EXCEL';
-      if (s) s.textContent = 'SKU GỐC trên aobongda.net là MASTER. File 2 products_export chỉ dùng đối chiếu xem SKU đó đã tồn tại trên Sapo và lấy ID; tool không tự sinh SKU nữa.';
+      if (s) s.textContent = 'Cột A Đường dẫn/Alias là SKU GỐC của sản phẩm. SKU phiên bản = Alias + Size. File 2 products_export chỉ dùng đối chiếu SKU/ID đang có trên Sapo.';
     }
 
     const section = document.createElement('section');
