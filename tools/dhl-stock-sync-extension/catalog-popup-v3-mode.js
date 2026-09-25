@@ -424,7 +424,7 @@
     const scan=document.getElementById('scanCatalogSource'),test=document.getElementById('catalogQuickTest'),exp=document.getElementById('exportCatalogSource'),state=document.getElementById('catalogState');
     if(!scan||!test||!exp)return false;
     if(scan.dataset.popupV3==='1')return true;
-    const newScan=replaceAndBind('scanCatalogSource','QUÉT TOÀN BỘ + SKU GỐC NGUỒN',fullScan);
+    const newScan=replaceAndBind('scanCatalogSource','QUÉT TOÀN BỘ • SKU = ĐƯỜNG DẪN + SIZE',fullScan);
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
     const newExport=replaceAndBind('exportCatalogSource','TẠO FILE SẢN PHẨM SAPO (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
