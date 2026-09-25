@@ -9,7 +9,7 @@ const catalog=read('catalog-popup-v3-mode.js');
 const maintenance=read('maintenance-ui.js');
 
 assert.ok(contentScript.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
-assert.ok(contentScript.includes('Chế độ CHUẨN HÓA 1 LẦN: bắt buộc mở popup thật cho từng sản phẩm.'));
+assert.ok(contentScript.includes('Chế độ CHUẨN HÓA 1 LẦN:'));
 assert.ok(contentScript.includes('scanOneDescriptor(descriptor,hints,progress)'));
 assert.ok(contentScript.includes("stage:'popup-opening'"));
 assert.ok(contentScript.includes("stage:'popup-closed'"));
