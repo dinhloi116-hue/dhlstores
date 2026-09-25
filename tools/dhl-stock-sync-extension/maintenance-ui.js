@@ -51,15 +51,50 @@
     const standardizeBtn=standardizeBox.querySelector('#maintenancePopupFullScan');
     const standardizeState=standardizeBox.querySelector('#maintenancePopupFullState');
 
+    function failureLine(item){
+      if(!item)return'';
+      const parts=[];
+      if(Array.isArray(item.missingSizes)&&item.missingSizes.length)parts.push(`thiếu size: ${item.missingSizes.join(', ')}`);
+      if(Array.isArray(item.missingColors)&&item.missingColors.length)parts.push(`thiếu màu: ${item.missingColors.join(', ')}`);
+      if(item.reason)parts.push(`lý do: ${item.reason}`);
+      const tail=parts.length?` — ${parts.join(' • ')}`:'';
+      return `${item.index||'?'}\. ${item.name||'Sản phẩm không xác định'}${tail}`;
+    }
+
+    function renderFailureDetails(info){
+      let box=standardizeBox.querySelector('#maintenancePopupFailures');
+      const failures=Array.isArray(info&&info.failures)?info.failures:[];
+      if(!failures.length){
+        if(box)box.remove();
+        return;
+      }
+      if(!box){
+        box=document.createElement('div');
+        box.id='maintenancePopupFailures';
+        box.style.marginTop='8px';
+        box.style.padding='8px';
+        box.style.border='1px solid #fecaca';
+        box.style.borderRadius='7px';
+        box.style.background='#fff1f2';
+        box.style.fontSize='10px';
+        box.style.lineHeight='1.45';
+        standardizeBox.appendChild(box);
+      }
+      box.innerHTML='<b style="color:#991b1b">CHI TIẾT SẢN PHẨM LỖI / THIẾU</b><br>'+
+        failures.map((x)=>failureLine(x)).join('<br>');
+    }
+
     function renderStandardizeProgress(info){
       if(!standardizeState||!info)return;
       if(info.done){
         standardizeState.textContent=`HOÀN TẤT: ${info.completeCount}/${info.total} sản phẩm đạt • ${info.variantCount||0} biến thể • lỗi/thiếu ${info.failedCount||0}.`;
         standardizeState.style.color=info.failedCount?'#92400e':'#166534';
+        renderFailureDetails(info);
         return;
       }
       standardizeState.textContent=`ĐANG POPUP ${info.current||0}/${info.total||0}: ${info.title||'Sản phẩm'} • đạt ${info.completeCount||0} • lỗi ${info.failedCount||0}`;
       standardizeState.style.color='#92400e';
+      renderFailureDetails(info);
     }
 
     standardizeBtn.addEventListener('click', async () => {
@@ -86,7 +121,8 @@
           total:out.itemCount,
           completeCount:out.completeCount,
           failedCount:out.failedCount,
-          variantCount:out.variantCount
+          variantCount:out.variantCount,
+          failures:out.failures||[]
         });
       }catch(error){
         standardizeState.textContent=`LỖI: ${error&&error.message||String(error)}`;
@@ -96,6 +132,32 @@
         standardizeBtn.textContent='CHẠY POPUP TOÀN BỘ 1 LẦN';
       }
     });
+
+    (async()=>{
+      try{
+        const stored=await chrome.storage.local.get(['dhlCatalogMaintenanceProgressV1','dhlCatalogResults']);
+        const info=stored.dhlCatalogMaintenanceProgressV1||null;
+        const results=Array.isArray(stored.dhlCatalogResults)?stored.dhlCatalogResults:[];
+        if(info){
+          let failures=Array.isArray(info.failures)?info.failures:[];
+          if(!failures.length&&results.length){
+            failures=results.map((r,idx)=>{
+              if(!r||r.complete===true)return null;
+              const d=r.domDiagnostics||{};
+              const errors=Array.isArray(r.errors)?r.errors.map(x=>String(x&&x.message||x||'').trim()).filter(Boolean):[];
+              return{
+                index:idx+1,
+                name:String(r.parentName||'Sản phẩm không xác định'),
+                reason:errors[0]||String(r.stopReason||'Dữ liệu popup chưa đầy đủ'),
+                missingSizes:Array.isArray(d.missingSizes)?d.missingSizes.filter(Boolean):[],
+                missingColors:Array.isArray(d.missingColorHints)?d.missingColorHints.filter(Boolean):[]
+              };
+            }).filter(Boolean);
+          }
+          renderStandardizeProgress({...info,failures});
+        }
+      }catch(_){}
+    })();
 
     const devBox = document.createElement('div');
     devBox.style.marginTop = '10px';
