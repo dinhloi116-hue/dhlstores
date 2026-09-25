@@ -67,11 +67,19 @@
 
   function normalizeSku(value){return text(value).toUpperCase();}
 
-  function prepareRows(warehouseData,catalogData,sourceResults,matcher){
+  function aliasForName(name,rules){
+    if(rules&&typeof rules.generatedAliasForStandardName==='function'){
+      return text(rules.generatedAliasForStandardName(name));
+    }
+    return plain(name).replace(/\s+/g,'-');
+  }
+
+  function prepareRows(warehouseData,catalogData,sourceResults,matcher,rules){
     if(!matcher||typeof matcher.groupSourceVariants!=='function')throw new Error('Thiếu bộ ghép tồn kho');
 
-    // SOURCE SKU là khóa MASTER tuyệt đối.
-    // Không ghép tên/màu để quyết định SKU nữa. Sapo chỉ được đối chiếu bằng SKU giống hệt nguồn.
+    // MASTER: cột A "Đường dẫn/Alias".
+    // SKU phiên bản luôn = Alias + "-" + Size.
+    // Không cần đọc code/SKU ẩn từ website và không ghép tên để quyết định SKU.
     const sapoBySku=new Map();
     for(const v of (catalogData&&catalogData.variants)||[]){
       const key=normalizeSku(v&&v.sku);
@@ -84,40 +92,44 @@
 
     for(const group of sourceGroups){
       const standardName=sourceStandardName(group);
+      const alias=aliasForName(standardName,rules);
+      if(!alias){
+        missingSku.push(standardName||'(không tên)');
+        continue;
+      }
+
       const bySize=new Map();
       for(const source of group.variants||[]){
         const size=matcher.normalizeSize?matcher.normalizeSize(source&&source.size):text(source&&source.size).toUpperCase();
         const stock=Number(source&&source.available);
         if(!size||!Number.isFinite(stock)||stock<0)continue;
-        const sku=text(source&&source.sku);
-        if(!sku){
-          missingSku.push(`${standardName} / Size ${size}`);
-          continue;
-        }
+        if(!bySize.has(size))bySize.set(size,{source,size,stock});
+      }
+      sourceVariantCount+=bySize.size;
+
+      for(const {source,size,stock} of bySize.values()){
+        const sku=`${alias}-${size}`;
         const sourceKey=normalizeSku(sku);
         const uniq=`${sourceKey}|${size}`;
         if(seen.has(uniq))continue;
         seen.add(uniq);
-        bySize.set(size,{source,size,stock,sku,sourceKey});
-      }
-      sourceVariantCount+=bySize.size;
 
-      for(const {source,size,stock,sku,sourceKey} of bySize.values()){
         const existing=sapoBySku.get(sourceKey)||null;
         if(existing)matchedSkuCount+=1;else sourceOnlySkuCount+=1;
+
         rows.push({
           variantName:text(source&&source.name)||`${standardName} / Size ${size}`,
           sku,
           stock,
           standardName,
+          alias,
           size,
           variantId:Number(existing&&existing.variantId)||0,
           productId:Number(existing&&existing.productId)||0,
           sourceParentId:Number(group.parentId)||0,
           sourceVariantId:Number(source&&source.id)||0,
           sourceUrl:text(source&&source.sourceUrl||''),
-          sourceSku:true,
-          matchedBy:'exact-source-sku'
+          matchedBy:'alias-size-exact'
         });
       }
     }
@@ -130,7 +142,7 @@
       matchedSkuCount,
       sourceOnlySkuCount,
       generatedSkuCount:0,
-      master:'source_sku_exact'
+      master:'alias_size_exact'
     };
   }
 
