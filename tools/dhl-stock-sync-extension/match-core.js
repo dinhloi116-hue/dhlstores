@@ -123,9 +123,15 @@
     const compatibility=colorCompatibility(sapoColors,sourceColors);
     if(sapoColors.size&&sourceColors.size&&!compatibility)return 0;
 
+    // Tên sản phẩm thật là khóa ghép quan trọng cho CLB / mẫu mới chưa có trong TEAM_PATTERNS.
+    // Không lấy SKU hash ABDN vào điểm tên vì suffix ngẫu nhiên sẽ làm loãng độ giống.
+    const nameSimilarity=jaccard(contentTokens(sapoName),contentTokens(sourceName));
+    if(!st&&!tt&&nameSimilarity<.45)return 0;
+
     let score=0;
-    if(st&&tt&&st===tt)score+=.54;
-    else if(st||tt)score+=.04;
+    if(st&&tt&&st===tt)score+=.50;
+    else if(st||tt)score+=.03;
+    else score+=.56*nameSimilarity;
 
     const sy=yearOf(sText),ty=yearOf(tText);
     if(sy&&ty)score+=sy===ty?.08:-.10;
@@ -134,7 +140,8 @@
     if(sm&&tm)score+=sm===tm?.12:-.08;
 
     score+=.22*compatibility;
-    score+=.08*jaccard(contentTokens(sText),contentTokens(tText));
+    score+=.12*nameSimilarity;
+    score+=.04*jaccard(contentTokens(sText),contentTokens(tText));
     return Math.max(0,Math.min(1,score));
   }
 
@@ -223,7 +230,7 @@
       const complete=matched&&variantMatches.length>0&&variantMatches.every(x=>x.source);
       return{
         sapoProduct:p,matched,best,second,margin,variantMatches,complete,
-        linkMethod:matched?'team + màu tương thích + size chính xác':'unmatched'
+        linkMethod:matched?'tên/đội + màu tương thích + size chính xác':'unmatched'
       };
     });
   }
