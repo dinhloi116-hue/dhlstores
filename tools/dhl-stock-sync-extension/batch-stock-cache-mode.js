@@ -84,8 +84,7 @@
   }
 
   function matchedOfficialRows(warehouseData,catalogData,sourceResults){
-    const index=catalogSkuIndex(catalogData);
-    const matches=matcher.matchSapoProducts(warehouseData.products||[],sourceResults||[]);
+    const matches=matcher.matchSapoProducts((catalogData&&catalogData.products)||[],sourceResults||[]);
     const rows=[];
     const missingSku=[];
     for(const match of matches){
@@ -94,16 +93,16 @@
         const stock=Number(vm.source.available);
         if(!Number.isFinite(stock)||stock<0)continue;
         const size=displaySize(vm.sapo);
-        const lookup=index.get(rowKey(vm.sapo.name,size));
-        if(!lookup){missingSku.push(`${vm.sapo.name||''} / Size ${size}`);continue;}
+        const sku=text(vm.sapo.sku);
+        if(!sku){missingSku.push(`${vm.sapo.name||''} / Size ${size}`);continue;}
         rows.push({
           variantName:text(vm.sapo.rawProductLabel||`${vm.sapo.name||''}${size?` / Size ${size}`:''}`),
-          sku:lookup.sku,
+          sku,
           stock,
           standardName:text(vm.sapo.name),
           size,
-          variantId:lookup.variantId,
-          productId:lookup.productId
+          variantId:vm.sapo.variantId,
+          productId:vm.sapo.productId
         });
       }
     }
@@ -146,7 +145,7 @@
         branch,
         sourceUrl:text(tab&&tab.url),
         scannedAt:Date.now(),
-        variantTotal:Number((warehouseData.variants||[]).length),
+        variantTotal:Number((catalogData.variants||[]).length),
         rowCount:prepared.rows.length,
         missingSkuCount:prepared.missingSku.length,
         rows:prepared.rows,
