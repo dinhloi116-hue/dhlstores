@@ -27,11 +27,28 @@ assert.ok(!background.includes("\n  'auto-sync-background.js',"),'Không đượ
 assert.ok(background.indexOf("'warehouse-sku-link-mode.js'")<background.indexOf("'auto-sync-background-v2.js'"));
 assert.ok(background.indexOf("'manual-sapo-background.js'")>background.indexOf("'auto-sync-background-v2.js'"));
 
+const autoCore=read('auto-sync-core.js');
+assert.ok(autoCore.includes("master:'products_export'"));
+assert.ok(autoCore.includes('const catalogProducts=(catalogData&&catalogData.products)||[]'));
+assert.ok(autoCore.includes('matcher.matchSapoProducts(catalogProducts,sourceResults||[])'));
+assert.ok(!autoCore.includes('matcher.matchSapoProducts((warehouseData&&warehouseData.products)||[],sourceResults||[])'));
+
+const savedProfiles=read('saved-profiles-mode.js');
+assert.ok(savedProfiles.includes('matcher.matchSapoProducts(activeData.catalogData.products, latestSource)'));
+assert.ok(savedProfiles.includes('matcher.buildScanHints(activeData.catalogData.products)'));
+assert.ok(savedProfiles.includes('activeData.catalogData.variants.length'));
+
+const batchCache=read('batch-stock-cache-mode.js');
+assert.ok(batchCache.includes("matcher.matchSapoProducts((catalogData&&catalogData.products)||[],sourceResults||[])"));
+assert.ok(batchCache.includes("variantTotal:Number((catalogData.variants||[]).length)"));
+
 const bg=read('auto-sync-background-v2.js');
 assert.ok(bg.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
 assert.ok(bg.includes("const ALARM='dhl-auto-stock-sync'"));
 assert.ok(bg.includes("const PUSH_ALARM='dhl-sapo-push-queue'"));
 assert.ok(bg.includes("chrome.tabs.create({url,active:false})"));
+assert.ok(bg.includes('matcher.buildScanHints(parsed.catalogData.products)'));
+assert.ok(bg.includes('variantTotal:Number((parsed.catalogData.variants||[]).length)'));
 assert.ok(bg.includes("type:'DHL_SCAN_HD_LIVE'"));
 assert.ok(bg.includes("'/admin/store.json'"));
 assert.ok(bg.includes("'/admin/locations.json'"));
