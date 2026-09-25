@@ -164,7 +164,7 @@
       const prepared=autoCore.prepareRows(parsed.warehouseData,parsed.catalogData,sourceResults,matcher,rules);
       if(!prepared.rows.length)throw new Error('Quét xong nhưng chưa ghép được dòng tồn kho nào.');
       const branch=text(parsed.warehouseData.warehouseBranchName||profile.branchName);if(!branch)throw new Error('Không đọc được tên chi nhánh từ hồ sơ.');
-      const entry={profileId:profile.id,profileName:text(profile.name)||'Hồ sơ',branch,sourceUrl:url,scannedAt:Date.now(),variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),sourceProductCount:Number(prepared.sourceProductCount||0),generatedSkuCount:Number(prepared.generatedSkuCount||0),rowCount:prepared.rows.length,missingSkuCount:prepared.missingSku.length,rows:prepared.rows,auto:true};
+      const entry={profileId:profile.id,profileName:text(profile.name)||'Hồ sơ',branch,sourceUrl:url,scannedAt:Date.now(),variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),sourceProductCount:Number(prepared.sourceProductCount||0),generatedSkuCount:0,matchedSkuCount:Number(prepared.matchedSkuCount||0),sourceOnlySkuCount:Number(prepared.sourceOnlySkuCount||0),rowCount:prepared.rows.length,missingSkuCount:prepared.missingSku.length,rows:prepared.rows,auto:true};
       const s=await chrome.storage.local.get(BATCH_KEY),pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
       await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});await recordHistory(profile,url,sourceResults);return entry;
     }finally{if(tab&&tab.id&&config.closeTabsAfterScan!==false){try{await chrome.tabs.remove(tab.id);}catch{}}}
