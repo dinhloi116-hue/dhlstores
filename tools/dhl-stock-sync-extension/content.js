@@ -76,6 +76,21 @@
     return out;
   }
 
+  function expectedSizesFromRoot(root){
+    const detected=detectedSizesFromRoot(root);
+    const standard=new Set(TARGET_SIZES.map(dom.normalizeSize));
+    const hasAdultSize=detected.some(size=>standard.has(dom.normalizeSize(size)));
+    if(!hasAdultSize)return detected;
+    // Popup áo người lớn đôi khi render thiếu tạm 1 dòng (ví dụ M).
+    // Khi đã thấy size chữ chuẩn, luôn chờ đủ S/M/L/XL/XXL thay vì khóa theo snapshot đầu tiên.
+    const out=[],seen=new Set();
+    for(const raw of [...TARGET_SIZES,...detected]){
+      const size=dom.normalizeSize(raw);
+      if(size&&!seen.has(size)){seen.add(size);out.push(size);}
+    }
+    return out;
+  }
+
     function productTitleFromDocument(doc = document) {
     for (const selector of ['h1', '[itemprop="name"]', '.product-name', '.detail-title', '[class*="product-name"]', '[class*="product-title"]']) {
       const el = doc.querySelector(selector);
@@ -201,7 +216,7 @@
     return rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size));
   }
 
-  async function stableTargetRows(root, targetSizes, timeout = 1500) {
+  async function stableTargetRows(root, targetSizes, timeout = 4000) {
     let best = [];
     let previous = '';
     let stable = 0;
@@ -330,7 +345,7 @@
     const started = Date.now();
     let best = [];
     let seenSelected = alreadySelected;
-    while (Date.now() - started < 2600) {
+    while (Date.now() - started < 6500) {
       await sleep(110);
       currentRoot = findStockRoot() || currentRoot;
       if (isSelectedColor(name, currentRoot)) seenSelected = true;
@@ -342,7 +357,7 @@
       if (seenSelected && hasAllTargetRows(rows, targetSizes)) {
         if (alreadySelected || signature !== previousSignature || elapsed >= 650) {
           await sleep(120);
-          return stableTargetRows(currentRoot, targetSizes, 700);
+          return stableTargetRows(currentRoot, targetSizes, 1800);
         }
       }
     }
@@ -532,7 +547,7 @@
     const parentName = core.normalizeText(descriptor.title || productTitleFromDocument() || `#${parentId}`);
     const hint = hintForTitle(parentName, hints);
     const hintedSizes = targetSizesForHint(hint);
-    const neededSizes = hintedSizes.length ? hintedSizes : detectedSizesFromRoot(root);
+    const neededSizes = hintedSizes.length ? hintedSizes : expectedSizesFromRoot(root);
     const first = await firstVariant(parentId, parentName);
     const fallbackColor = first && first.color ? first.color : '';
 
@@ -639,7 +654,28 @@
     let openInfo = null;
     try {
       openInfo = await openStockPopup(descriptor);
-      return await readOpenedPopup(descriptor, hints, progress, openInfo);
+      let result = await readOpenedPopup(descriptor, hints, progress, openInfo);
+
+      // Nếu popup đã đọc được nhưng còn thiếu size, đóng/mở lại và thử riêng sản phẩm đó 1 lần.
+      // Tránh trường hợp mạng/UI lag làm mất một size như ARS-M.
+      const missing = result&&result.domDiagnostics&&Array.isArray(result.domDiagnostics.missingSizes)
+        ? result.domDiagnostics.missingSizes : [];
+      if(result&&result.variants&&result.variants.length&&missing.length){
+        try{
+          const current=findStockRoot();
+          if(current)await closeStockPopup(current);
+          await sleep(350);
+          const retryOpen=await openStockPopup(descriptor);
+          const retry=await readOpenedPopup(descriptor,hints,progress,retryOpen);
+          const oldCount=Array.isArray(result.variants)?result.variants.length:0;
+          const newCount=Array.isArray(retry&&retry.variants)?retry.variants.length:0;
+          const oldMissing=missing.length;
+          const newMissing=retry&&retry.domDiagnostics&&Array.isArray(retry.domDiagnostics.missingSizes)
+            ? retry.domDiagnostics.missingSizes.length : 999;
+          if(newCount>oldCount||(newCount===oldCount&&newMissing<oldMissing))result=retry;
+        }catch(_){}
+      }
+      return result;
     } catch (error) {
       return {
         parentId: Number(descriptor.id),
