@@ -397,7 +397,7 @@
     const scan=document.getElementById('scanCatalogSource'),test=document.getElementById('catalogQuickTest'),exp=document.getElementById('exportCatalogSource'),state=document.getElementById('catalogState');
     scan.disabled=true;test.disabled=true;exp.disabled=true;
     try {
-      state.textContent='Đang quét toàn bộ trang theo SKU GỐC của aobongda.net...';
+      state.textContent='Đang quét toàn bộ trang • SKU sẽ lấy từ Đường dẫn/Alias + Size...';
       const {results,discovered,itemCount}=await scanAllExactSourceSku();
       const validResults=results.filter((r)=>r&&typeof r==='object');
       const completeCount=validResults.filter((r)=>r.complete===true).length;
@@ -427,7 +427,7 @@
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
     const newExport=replaceAndBind('exportCatalogSource','TẠO FILE SẢN PHẨM SAPO (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
-    if(state)state.textContent='SKU MASTER: quét toàn bộ sản phẩm và lấy đúng SKU/code gốc từ aobongda.net; không tự sinh SKU.';
+    if(state)state.textContent='SKU MASTER: cột A Đường dẫn/Alias là SKU gốc; SKU phiên bản = Alias + Size. Không cần đọc code ẩn website.';
     return Boolean(newScan&&newTest&&newExport);
   }
 
