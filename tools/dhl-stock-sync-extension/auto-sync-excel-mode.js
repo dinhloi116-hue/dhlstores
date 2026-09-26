@@ -67,7 +67,7 @@
       const combined=batch.combineEntries(entries);
       if(!combined.rows.length)throw new Error('Kết quả quét tự động chưa có dòng tồn kho hợp lệ.');
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,combined.rows,combined.branch);
-      if(out.templateSignature!=='SAPO-INVENTORY-TEMPLATE-V2')throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
+      if(out.templateSignature!=='SAPO-INVENTORY-TEMPLATE-V3')throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
       download(out.bytes,`SAPO_TON_KHO_TU_DONG_${fileStamp()}.xlsx`);
       setStatus(`Đã tải file Excel tự động: ${combined.profileCount} hồ sơ • ${out.rows} dòng. Cache và hàng đợi Sapo vẫn được giữ nguyên.`,'ok');
     }catch(error){
