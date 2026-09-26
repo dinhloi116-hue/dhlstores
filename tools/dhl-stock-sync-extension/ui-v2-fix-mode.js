@@ -68,13 +68,13 @@
     return{tab,group,profile};
   }
 
-  function waitScan(timeout=150000){
+  function waitScan(timeout=600000){
     return new Promise((resolve,reject)=>{
       const started=Date.now();
       const timer=setInterval(()=>{
         const status=text(document.getElementById('profileStatus')?.textContent);
         if(/LỖI QUÉT|LỖI LƯU CACHE|chưa ghép được|Hồ sơ chưa đủ SKU/i.test(status)){clearInterval(timer);reject(new Error(status));return;}
-        if(/^ĐÃ LƯU CACHE\s+/i.test(status)){clearInterval(timer);resolve(status);return;}
+        if(/^ĐÃ LƯU CACHE\s+/i.test(status)||/^QUÉT XONG\s+/i.test(status)){clearInterval(timer);resolve(status);return;}
         if(Date.now()-started>timeout){clearInterval(timer);reject(new Error('Quét hoặc lưu cache quá lâu. Mở “Thao tác thủ công / kiểm tra” để thử riêng từng bước.'));}
       },250);
     });
