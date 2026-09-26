@@ -30,6 +30,11 @@ assert.ok(!background.includes("\n  'auto-sync-background.js',"),'Không đượ
 assert.ok(background.indexOf("'warehouse-sku-link-mode.js'")<background.indexOf("'auto-sync-background-v2.js'"));
 assert.ok(background.indexOf("'manual-sapo-background.js'")>background.indexOf("'auto-sync-background-v2.js'"));
 
+const stockImportCore=read('stock-import-core.js');
+assert.ok(stockImportCore.includes("SAPO-INVENTORY-TEMPLATE-V3"));
+assert.ok(stockImportCore.includes('<dimension ref="A1:I${lastRow}"/>'));
+assert.ok(stockImportCore.includes("'Tồn kho','Vị trí lưu kho','Tồn kho','Vị trí lưu kho'"));
+
 const autoCore=read('auto-sync-core.js');
 assert.ok(autoCore.includes("master:'alias_size_exact'"));
 assert.ok(autoCore.includes('const sourceGroups=matcher.groupSourceVariants(sourceResults||[])'));
@@ -42,6 +47,8 @@ const savedProfiles=read('saved-profiles-mode.js');
 assert.ok(savedProfiles.includes('autoCore.prepareRows(activeData.warehouseData, activeData.catalogData, latestSource, matcher, rules)'));
 assert.ok(savedProfiles.includes('const hints = []; // Quét TOÀN BỘ'));
 assert.ok(savedProfiles.includes('Cột A Đường dẫn/Alias là SKU GỐC'));
+assert.ok(savedProfiles.includes("type: 'DHL_SCAN_HD_LIVE_POPUP_ONLY'"));
+assert.ok(savedProfiles.includes('DHLBatchStockCache.cacheSource'));
 
 const batchCache=read('batch-stock-cache-mode.js');
 assert.ok(batchCache.includes('autoCore.prepareRows(warehouseData,catalogData,sourceResults,matcher,rules)'));
@@ -49,6 +56,8 @@ assert.ok(batchCache.includes('sourceProductCount'));
 assert.ok(batchCache.includes('generatedSkuCount:0'));
 assert.ok(batchCache.includes('matchedSkuCount'));
 assert.ok(batchCache.includes('sourceOnlySkuCount'));
+assert.ok(batchCache.includes('globalThis.DHLBatchStockCache'));
+assert.ok(batchCache.includes('async function cacheSource'));
 
 const bg=read('auto-sync-background-v2.js');
 assert.ok(bg.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
@@ -118,6 +127,8 @@ assert.ok(contentScanner.includes("scanMethod: 'category-alias-size'"));
 assert.ok(contentScanner.includes("skuRule:'alias+size'"));
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR'"));
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
+assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_HD_LIVE_POPUP_ONLY'"));
+assert.ok(contentScanner.includes('async function scanHdLivePopupOnly'));
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
