@@ -19,7 +19,6 @@ assert.ok(scanner.includes('async function scanAllNewProducts(options={})'));
 assert.ok(scanner.includes("dhlCatalogSkuMode:'new-product-popup-alias-size'"));
 assert.ok(scanner.includes("sendPopupOnly(tab.id,descriptor)"));
 assert.ok(scanner.includes("mode:'new-product-popup-full'"));
-assert.ok(scanner.includes('CheckPoint'.toLowerCase())===false || true);
 assert.ok(scanner.includes('Checkpoint sau từng sản phẩm'));
 assert.ok(scanner.includes('ĐANG POPUP'));
 assert.ok(scanner.includes('QUÉT TẤT CẢ SẢN PHẨM MỚI'));
