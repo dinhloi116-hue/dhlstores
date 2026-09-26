@@ -13,6 +13,7 @@
   const LEGACY_BATCH_KEY='dhlPendingStockBatchV1';
   const PROFILE_KEY='dhlSavedStockProfilesV1';
   const SELECTED_KEY='dhlSelectedStockProfileId';
+  const CONFIG_KEY='dhlAutoSyncConfigV1';
   let latestSource=[];
   let latestSourceAt=0;
   let caching=false;
@@ -158,6 +159,51 @@
     }
     return cacheCurrentScan();
   }
+  async function cacheSourceOnly(sourceResults,label='Nguồn'){
+    if(!Array.isArray(sourceResults)||!sourceResults.length)throw new Error('Không có dữ liệu nguồn để lưu.');
+    const prepared=autoCore.prepareRows({}, {variants:[]}, sourceResults, matcher, rules);
+    if(!prepared.rows.length)throw new Error('Nguồn chưa tạo được dòng tồn kho theo Alias + Size.');
+
+    const stored=await chrome.storage.local.get([BATCH_KEY,CONFIG_KEY,PROFILE_KEY,SELECTED_KEY]);
+    const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
+    const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
+    const profiles=Array.isArray(stored[PROFILE_KEY])?stored[PROFILE_KEY]:[];
+    const selected=profiles.find(p=>String(p&&p.id)===String(stored[SELECTED_KEY]||''))||null;
+    const branch=text(config&&config.sapo&&config.sapo.locationName)||text(selected&&selected.branchName);
+    if(!branch)throw new Error('Chưa có tên chi nhánh Sapo. Hãy bấm KIỂM TRA KẾT NỐI SAPO một lần.');
+
+    const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
+    const cleanLabel=text(label)||'Nguồn';
+    const slug=plain(cleanLabel).replace(/\s+/g,'-')||'source';
+    const profileId=`source:${slug}`;
+    const entry={
+      profileId,
+      profileName:cleanLabel,
+      branch,
+      sourceUrl:text(tab&&tab.url),
+      scannedAt:Date.now(),
+      variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),
+      sourceProductCount:Number(prepared.sourceProductCount||0),
+      generatedSkuCount:0,
+      matchedSkuCount:0,
+      sourceOnlySkuCount:Number(prepared.rows.length),
+      rowCount:prepared.rows.length,
+      missingSkuCount:prepared.missingSku.length,
+      rows:prepared.rows,
+      sourceOnly:true,
+      auto:false
+    };
+    const next={...pending,[profileId]:entry};
+    await chrome.storage.local.set({[BATCH_KEY]:next});
+    await renderBatchUi();
+    const status=document.getElementById('profileStatus');
+    if(status){
+      status.textContent=`ĐÃ LƯU CACHE ${cleanLabel}: ${entry.rowCount} biến thể • SKU = Đường dẫn/Alias + Size.`;
+      status.style.color='#166534';
+    }
+    return entry;
+  }
+
 
   function download(bytes,fileName){
     const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
@@ -274,6 +320,7 @@
 
   globalThis.DHLBatchStockCache={
     cacheSource,
+    cacheSourceOnly,
     renderBatchUi,
     cacheCurrentScan
   };
