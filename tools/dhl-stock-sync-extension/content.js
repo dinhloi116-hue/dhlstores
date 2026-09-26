@@ -875,13 +875,14 @@
     return results;
   }
 
-  async function scanHdLivePopupOnly(hints,progress){
+  async function scanHdLivePopupOnly(hints,progress,options={}){
     const categoryPath=location.pathname;
     const links=await discoverCurrentCategory();
     links.forEach(item=>{item.categoryPath=categoryPath;});
     progress({stage:'discovered',productTotal:links.length,categoryPath,mode:'popup-stock-full'});
 
     const results=[];
+    const suppressed=new Set((options&&Array.isArray(options.suppressedIds)?options.suppressedIds:[]).map(Number).filter(Boolean));
     const stale=findStockRoot();
     if(stale){
       await closeStockPopup(stale);
@@ -896,10 +897,25 @@
         productIndex:i+1,
         productTotal:links.length,
         descriptor,
-        mode:'popup-stock-full'
+        mode:'popup-stock-full',
+        suppressed:suppressed.has(Number(descriptor.id))
       });
 
-      const result=await scanOneDescriptor(descriptor,hints,progress);
+      let result;
+      if(suppressed.has(Number(descriptor.id))){
+        // Sản phẩm đã 0 tồn >=10 ngày: không mở popup đầy đủ nữa.
+        // Chỉ probe API nhanh để phát hiện hàng quay lại.
+        const probe=await scanDescriptorApiFast(descriptor,progress);
+        const hasPositive=Boolean(probe&&Array.isArray(probe.variants)&&probe.variants.some(v=>Number(v&&v.available)>0));
+        if(hasPositive){
+          progress({stage:'revived-product',descriptor,mode:'popup-stock-full'});
+          result=await scanOneDescriptor(descriptor,hints,progress);
+        }else{
+          result={...probe,suppressedProbe:true,complete:Boolean(probe&&probe.variants&&probe.variants.length)};
+        }
+      }else{
+        result=await scanOneDescriptor(descriptor,hints,progress);
+      }
       results.push(result);
 
       const visiblePopup=findStockRoot();
@@ -937,7 +953,9 @@
       return true;
     }
     if (message.type === 'DHL_SCAN_HD_LIVE_POPUP_ONLY') {
-      scanHdLivePopupOnly(hints, progress).then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+      scanHdLivePopupOnly(hints, progress, {suppressedIds:Array.isArray(message.suppressedIds)?message.suppressedIds:[]})
+        .then((result) => sendResponse({ ok: true, result }))
+        .catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
     }
     if (message.type === 'DHL_SCAN_ONE_DESCRIPTOR') {
