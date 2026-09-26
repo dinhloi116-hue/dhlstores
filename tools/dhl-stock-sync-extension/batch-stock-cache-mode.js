@@ -159,6 +159,18 @@
     }
     return cacheCurrentScan();
   }
+  async function clearSourceOnly(label='Nguồn'){
+    const stored=await chrome.storage.local.get(BATCH_KEY);
+    const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
+    const slug=plain(text(label)||'Nguồn').replace(/\s+/g,'-')||'source';
+    const profileId=`source:${slug}`;
+    const next={...pending};
+    delete next[profileId];
+    await chrome.storage.local.set({[BATCH_KEY]:next});
+    await renderBatchUi();
+    return true;
+  }
+
   async function cacheSourceOnly(sourceResults,label='Nguồn'){
     if(!Array.isArray(sourceResults)||!sourceResults.length)throw new Error('Không có dữ liệu nguồn để lưu.');
     const prepared=autoCore.prepareRows({}, {variants:[]}, sourceResults, matcher, rules);
@@ -321,6 +333,7 @@
   globalThis.DHLBatchStockCache={
     cacheSource,
     cacheSourceOnly,
+    clearSourceOnly,
     renderBatchUi,
     cacheCurrentScan
   };
