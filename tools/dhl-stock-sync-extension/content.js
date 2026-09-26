@@ -907,11 +907,11 @@
         // Chỉ probe API nhanh để phát hiện hàng quay lại.
         const probe=await scanDescriptorApiFast(descriptor,progress);
         const hasPositive=Boolean(probe&&Array.isArray(probe.variants)&&probe.variants.some(v=>Number(v&&v.available)>0));
-        if(hasPositive){
-          progress({stage:'revived-product',descriptor,mode:'popup-stock-full'});
+        if(hasPositive||!probe||probe.complete!==true){
+          progress({stage:hasPositive?'revived-product':'suppressed-probe-verify',descriptor,mode:'popup-stock-full'});
           result=await scanOneDescriptor(descriptor,hints,progress);
         }else{
-          result={...probe,suppressedProbe:true,complete:Boolean(probe&&probe.variants&&probe.variants.length)};
+          result={...probe,suppressedProbe:true,complete:true};
         }
       }else{
         result=await scanOneDescriptor(descriptor,hints,progress);
