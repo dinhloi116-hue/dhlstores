@@ -58,6 +58,8 @@ assert.ok(batchCache.includes('matchedSkuCount'));
 assert.ok(batchCache.includes('sourceOnlySkuCount'));
 assert.ok(batchCache.includes('globalThis.DHLBatchStockCache'));
 assert.ok(batchCache.includes('async function cacheSource'));
+assert.ok(batchCache.includes('async function cacheSourceOnly'));
+assert.ok(batchCache.includes("profileId=`source:${slug}`"));
 
 const bg=read('auto-sync-background-v2.js');
 assert.ok(bg.includes("const BATCH_KEY='dhlPendingStockBatchV1'"));
@@ -212,6 +214,7 @@ assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_MANUAL'"));
 assert.ok(manualUi.includes("x.auto!==true"));
 assert.ok(manualUi.includes('THỬ LẠI ĐẨY SAPO'));
 assert.ok(manualUi.includes("if(el&&el.textContent!==value)el.textContent=value"));
+assert.ok(manualUi.includes('globalThis.DHLManualSapoOutput'));
 
 const batchUi=read('batch-stock-cache-mode.js');
 assert.ok(batchUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
@@ -268,6 +271,13 @@ assert.ok(workflow.includes('BƯỚC 2 — QUÉT TAB NGUỒN'));
 assert.ok(workflow.includes("document.getElementById('catalogMode')"));
 assert.ok(workflow.includes('SP mới: quét cả danh mục 1 lượt'));
 
+
+const uiV2Fix=read('ui-v2-fix-mode.js');
+assert.ok(uiV2Fix.includes('async function sourceOnlySync'));
+assert.ok(uiV2Fix.includes("type:'DHL_SCAN_HD_LIVE_POPUP_ONLY'"));
+assert.ok(uiV2Fix.includes('DHLBatchStockCache.cacheSourceOnly'));
+assert.ok(uiV2Fix.includes('DHLManualSapoOutput.pushManual'));
+assert.ok(uiV2Fix.includes('ĐỒNG BỘ ${ctx.group.label.toUpperCase()}'));
 
 const profileTabs=read('profile-tabs-mode.js');
 assert.ok(profileTabs.includes('profileTabsSignature'));
