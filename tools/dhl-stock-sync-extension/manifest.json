@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "DHL Stock Sync",
+  "version": "0.19.3",
+  "minimum_chrome_version": "116",
+  "description": "Tự quét tồn theo chu kỳ; resolver Sapo ưu tiên variant_id và có báo cáo rõ số dòng nạp thành công/lỗi. Phần kết nối Sapo luôn mở và tự ghi tồn chỉ sau khi xác minh đúng shop/chi nhánh.",
+  "permissions": ["storage", "unlimitedStorage", "activeTab", "tabs", "sidePanel", "scripting", "alarms"],
+  "host_permissions": ["https://si.aobongda.net/*", "https://*.mysapo.net/*"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_title": "Mở DHL Stock Sync"},
+  "side_panel": {"default_path": "popup.html"},
+  "content_scripts": [
+    {
+      "matches": ["https://si.aobongda.net/*"],
+      "js": ["safe-category-guard.js", "stock-core.js", "dom-stock-parser.js", "match-core.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
