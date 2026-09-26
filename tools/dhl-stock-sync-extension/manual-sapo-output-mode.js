@@ -124,6 +124,11 @@
     else setState('BƯỚC 3 sẽ sẵn sàng sau khi quét thành công ít nhất một hồ sơ.');
   }
 
+  globalThis.DHLManualSapoOutput={
+    pushManual,
+    refresh
+  };
+
   function install(){
     injectStyle();
     refresh().catch(()=>{});
