@@ -83,7 +83,7 @@
     el.className=`ui-v2-state${kind?` ${kind}`:''}`;
   }
 
-  function waitForScanDone(timeoutMs=150000){
+  function waitForScanDone(timeoutMs=600000){
     return new Promise((resolve,reject)=>{
       const started=Date.now();
       const timer=setInterval(()=>{
