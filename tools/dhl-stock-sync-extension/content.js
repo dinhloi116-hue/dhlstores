@@ -875,6 +875,46 @@
     return results;
   }
 
+  async function scanHdLivePopupOnly(hints,progress){
+    const categoryPath=location.pathname;
+    const links=await discoverCurrentCategory();
+    links.forEach(item=>{item.categoryPath=categoryPath;});
+    progress({stage:'discovered',productTotal:links.length,categoryPath,mode:'popup-stock-full'});
+
+    const results=[];
+    const stale=findStockRoot();
+    if(stale){
+      await closeStockPopup(stale);
+      await sleep(220);
+    }
+
+    for(let i=0;i<links.length;i+=1){
+      if(location.pathname!==categoryPath)throw new Error('Trang nguồn đã rời danh mục đang quét.');
+      const descriptor=links[i];
+      progress({
+        stage:'popup-stock-product',
+        productIndex:i+1,
+        productTotal:links.length,
+        descriptor,
+        mode:'popup-stock-full'
+      });
+
+      const result=await scanOneDescriptor(descriptor,hints,progress);
+      results.push(result);
+
+      const visiblePopup=findStockRoot();
+      if(visiblePopup){
+        await sleep(180);
+        await closeStockPopup(visiblePopup);
+        await sleep(160);
+      }
+    }
+
+    const finalPopup=findStockRoot();
+    if(finalPopup)await closeStockPopup(finalPopup);
+    return results;
+  }
+
     async function scanCurrentPopup(hints, progress) {
     const root = findStockRoot();
     if (!root) throw new Error('Hãy mở popup chọn màu/size của một sản phẩm trước rồi bấm Test popup đang mở.');
@@ -894,6 +934,10 @@
     }
     if (message.type === 'DHL_SCAN_HD_LIVE') {
       scanHdLive(hints, progress).then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
+    }
+    if (message.type === 'DHL_SCAN_HD_LIVE_POPUP_ONLY') {
+      scanHdLivePopupOnly(hints, progress).then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
     }
     if (message.type === 'DHL_SCAN_ONE_DESCRIPTOR') {
