@@ -364,33 +364,61 @@
     return /Receiving end does not exist|Could not establish connection/i.test(String(error&&error.message||error||''));
   }
 
-  async function scanAllNewProducts() {
+  async function scanAllNewProducts(options={}) {
+    const onProgress=typeof options.onProgress==='function'?options.onProgress:()=>{};
     const tab=await ensureCategoryTab();
     const discovered=await discoverProducts(tab.id);
-    if(!discovered.items.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục.');
-    const message={type:'DHL_SCAN_HD_LIVE',hints:[]};
-    let response;
-    try{
-      response=await chrome.tabs.sendMessage(tab.id,message);
-    }catch(error){
-      if(!noReceiver(error))throw error;
-      for(const file of ['stock-core.js','dom-stock-parser.js','match-core.js','content.js']){
-        await chrome.scripting.executeScript({target:{tabId:tab.id},files:[file]});
+    const items=Array.isArray(discovered.items)?discovered.items:[];
+    if(!items.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục.');
+
+    // QUÉT SẢN PHẨM MỚI = POPUP THẬT 100%.
+    // Không dùng DHL_SCAN_HD_LIVE / API-fast cho lượt này.
+    await chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples']);
+
+    const results=[];
+    let completeCount=0;
+    for(let i=0;i<items.length;i+=1){
+      const descriptor=items[i];
+      onProgress({
+        current:i+1,
+        total:items.length,
+        title:descriptor.title||'Sản phẩm',
+        completeCount,
+        failedCount:i-completeCount,
+        mode:'new-product-popup-full'
+      });
+
+      let result=null;
+      try{
+        const response=await sendPopupOnly(tab.id,descriptor);
+        if(!response||!response.ok)throw new Error(response&&response.error||'Popup không trả dữ liệu.');
+        result=response.result;
+      }catch(error){
+        result=failedScanResult(descriptor,error&&error.message||String(error));
       }
-      await sleep(250);
-      response=await chrome.tabs.sendMessage(tab.id,message);
+
+      if(result&&result.complete===true)completeCount+=1;
+      results.push(result);
+
+      // Checkpoint sau từng sản phẩm: nếu panel đóng/mất kết nối vẫn giữ phần đã quét.
+      await chrome.storage.local.set({
+        dhlCatalogResults:results,
+        dhlCatalogSkuSamples:{},
+        dhlCatalogAt:Date.now(),
+        dhlCatalogPageTitle:discovered.pageTitle,
+        dhlCatalogPageUrl:discovered.pageUrl,
+        dhlCatalogSkuMode:'new-product-popup-alias-size'
+      });
+      await sleep(180);
     }
-    if(!response||!response.ok)throw new Error(response&&response.error||'Không nhận được dữ liệu quét sản phẩm mới.');
-    const results=Array.isArray(response.result)?response.result:[];
-    await chrome.storage.local.set({
-      dhlCatalogResults:results,
-      dhlCatalogSkuSamples:{},
-      dhlCatalogAt:Date.now(),
-      dhlCatalogPageTitle:discovered.pageTitle,
-      dhlCatalogPageUrl:discovered.pageUrl,
-      dhlCatalogSkuMode:'new-product-alias-size'
-    });
-    return{results,discovered,itemCount:discovered.items.length};
+
+    return{
+      results,
+      discovered,
+      itemCount:items.length,
+      completeCount,
+      failedCount:items.length-completeCount
+    };
   }
 
   async function sendPopupOnly(tabId,descriptor){
@@ -520,8 +548,12 @@
     scan.disabled=true;test.disabled=true;exp.disabled=true;
     try {
       await chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples']);
-      state.textContent='Đang quét TẤT CẢ sản phẩm như dữ liệu mới • không đọc SKU cũ • SKU = Đường dẫn/Alias + Size...';
-      const {results,discovered,itemCount}=await scanAllNewProducts();
+      state.textContent='Đang bật popup từng sản phẩm mới • đọc đủ màu/size/tồn • SKU = Đường dẫn/Alias + Size...';
+      const {results,discovered,itemCount}=await scanAllNewProducts({
+        onProgress:(info)=>{
+          state.textContent=`ĐANG POPUP ${info.current}/${info.total}: ${info.title} • đạt ${info.completeCount} • lỗi/thiếu ${info.failedCount}`;
+        }
+      });
       const validResults=results.filter((r)=>r&&typeof r==='object');
       const completeCount=validResults.filter((r)=>r.complete===true).length;
       const variantCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.length:0),0);
@@ -551,7 +583,7 @@
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
     const newExport=replaceAndBind('exportCatalogSource','TẠO FILE TẤT CẢ SP MỚI (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
-    if(state)state.textContent='CHẾ ĐỘ SP MỚI: quét cả danh mục 1 lượt, bỏ qua SKU cũ. Cột A Đường dẫn/Alias = mã sản phẩm; SKU phân loại = Alias + Size.';
+    if(state)state.textContent='CHẾ ĐỘ SP MỚI: tự BẬT POPUP từng sản phẩm để đọc đủ màu/size/tồn. Không dùng SKU cũ. Cột A Đường dẫn/Alias = mã sản phẩm; SKU phân loại = Alias + Size.';
     return Boolean(newScan&&newTest&&newExport);
   }
 
