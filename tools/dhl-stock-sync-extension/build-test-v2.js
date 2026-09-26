@@ -144,9 +144,12 @@ assert.ok(contentScanner.includes("'suppressed-probe-verify'"));
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
-assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'new-product-alias-size'"));
+assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'new-product-popup-alias-size'"));
 assert.ok(catalogScanner.includes('QUÉT TẤT CẢ SẢN PHẨM MỚI'));
-assert.ok(catalogScanner.includes("type:'DHL_SCAN_HD_LIVE'"));
+assert.ok(catalogScanner.includes('async function scanAllNewProducts(options={})'));
+assert.ok(catalogScanner.includes('sendPopupOnly(tab.id,descriptor)'));
+assert.ok(catalogScanner.includes("mode:'new-product-popup-full'"));
+assert.ok(catalogScanner.includes('ĐANG POPUP'));
 assert.ok(catalogScanner.includes("chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples'])"));
 assert.ok(catalogScanner.includes('không đọc SKU cũ'));
 assert.ok(catalogScanner.includes('standardizeAllByPopup'));
