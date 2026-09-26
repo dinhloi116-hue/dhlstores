@@ -14,7 +14,7 @@ assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'));
 for(const file of [
   'background.js','auto-sync-core.js','sapo-inventory-resolver-core.js','auto-sync-background-v2.js',
   'manual-sapo-background.js','sapo-product-create-background.js','auto-sync-safety-background.js','auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js',
-  'manual-sapo-output-mode.js','sapo-product-create-mode.js','single-product-add-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
+  'manual-sapo-output-mode.js','source-zero-stock-policy.js','sapo-product-create-mode.js','single-product-add-mode.js','auto-sync-excel-mode.js','sapo-push-report-mode.js','workflow-order-mode.js',
   'batch-stock-core.js','stock-history-core.js','product-create-core.js','marketplace-sku-mode.js','popup.html','popup.js','content.js'
 ]) assert.ok(fs.existsSync(path.join(dir,file)),`Thiếu ${file}`);
 
@@ -34,6 +34,13 @@ const stockImportCore=read('stock-import-core.js');
 assert.ok(stockImportCore.includes("SAPO-INVENTORY-TEMPLATE-V3"));
 assert.ok(stockImportCore.includes('<dimension ref="A1:I${lastRow}"/>'));
 assert.ok(stockImportCore.includes("'Tồn kho','Vị trí lưu kho','Tồn kho','Vị trí lưu kho'"));
+
+const zeroPolicy=read('source-zero-stock-policy.js');
+assert.ok(zeroPolicy.includes("const KEY='dhlSourceZeroStockPolicyV1'"));
+assert.ok(zeroPolicy.includes('current.zeroDays.length>=10'));
+assert.ok(zeroPolicy.includes('current.suppressed=true'));
+assert.ok(zeroPolicy.includes('current.suppressed=false'));
+assert.ok(zeroPolicy.includes('filterForOutput'));
 
 const autoCore=read('auto-sync-core.js');
 assert.ok(autoCore.includes("master:'alias_size_exact'"));
@@ -131,6 +138,9 @@ assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR'"))
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_HD_LIVE_POPUP_ONLY'"));
 assert.ok(contentScanner.includes('async function scanHdLivePopupOnly'));
+assert.ok(contentScanner.includes('suppressedProbe:true'));
+assert.ok(contentScanner.includes("stage:'revived-product'"));
+assert.ok(contentScanner.includes("stage:'suppressed-probe-verify'"));
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
@@ -191,6 +201,7 @@ assert.ok(popup.includes('auto-sync-excel-mode.js'));
 assert.ok(popup.includes('sapo-push-report-mode.js'));
 assert.ok(popup.includes('workflow-order-mode.js'));
 assert.ok(popup.includes('marketplace-sku-mode.js'));
+assert.ok(popup.includes('source-zero-stock-policy.js'));
 assert.ok(popup.indexOf('sapo-product-create-mode.js')>popup.indexOf('product-branch-mode.js'));
 assert.ok(popup.indexOf('single-product-add-mode.js')>popup.indexOf('sapo-product-create-mode.js'));
 assert.ok(popup.indexOf('manual-sapo-output-mode.js')>popup.indexOf('batch-stock-cache-mode.js'));
@@ -274,6 +285,11 @@ assert.ok(workflow.includes('SP mới: quét cả danh mục 1 lượt'));
 
 const uiV2Fix=read('ui-v2-fix-mode.js');
 assert.ok(uiV2Fix.includes('async function sourceOnlySync'));
+assert.ok(uiV2Fix.includes('function labelFromCategoryTab'));
+assert.ok(uiV2Fix.includes("key:`site:${plain(label)}`"));
+assert.ok(uiV2Fix.includes('DHLSourceZeroStockPolicy'));
+assert.ok(uiV2Fix.includes('suppressedIds'));
+assert.ok(uiV2Fix.includes('filterForOutput'));
 assert.ok(uiV2Fix.includes("type:'DHL_SCAN_HD_LIVE_POPUP_ONLY'"));
 assert.ok(uiV2Fix.includes('DHLBatchStockCache.cacheSourceOnly'));
 assert.ok(uiV2Fix.includes('DHLManualSapoOutput.pushManual'));
