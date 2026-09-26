@@ -3,6 +3,7 @@
 
   const STORAGE_KEY='dhlSavedStockProfilesV1';
   const SELECTED_KEY='dhlSelectedStockProfileId';
+  const CONFIG_KEY='dhlAutoSyncConfigV1';
   let running=false;
   const text=(v)=>String(v==null?'':v).trim();
   const plain=(v)=>text(v).toLowerCase().replace(/đ/g,'d').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
@@ -61,11 +62,59 @@
     const profile=group.key?profileFor(s.profiles,group.key):null;
     if(profile){
       if(select)await selectProfile(profile);
-      setHint(`Tự nhận: ${profile.name}. Bấm ĐỒNG BỘ TAB ĐANG MỞ để lưu cache, chưa tải file.`);
+      setHint(`Tự nhận: ${profile.name}. Bấm ĐỒNG BỘ TAB ĐANG MỞ để quét popup và đồng bộ.`);
     }else if(group.label){
-      setHint(`Đã nhận tab ${group.label}, nhưng chưa có hồ sơ đúng nhóm này.`);
+      setHint(`Đã nhận tab ${group.label}. Không cần tạo hồ sơ: bấm ĐỒNG BỘ TAB ĐANG MỞ để quét popup trực tiếp.`);
     }else setHint('Không nhận diện được nhóm từ tab hiện tại; hãy chọn hồ sơ thủ công.');
     return{tab,group,profile};
+  }
+
+  function noReceiver(error){
+    return /Receiving end does not exist|Could not establish connection/i.test(String(error&&error.message||error||''));
+  }
+
+  async function injectScanner(tabId){
+    for(const file of ['stock-core.js','dom-stock-parser.js','match-core.js','content.js']){
+      await chrome.scripting.executeScript({target:{tabId},files:[file]});
+    }
+    await sleep(180);
+  }
+
+  async function sendPopupScan(tabId){
+    const message={type:'DHL_SCAN_HD_LIVE_POPUP_ONLY',hints:[]};
+    try{
+      return await chrome.tabs.sendMessage(tabId,message);
+    }catch(error){
+      if(!noReceiver(error))throw error;
+      await injectScanner(tabId);
+      return chrome.tabs.sendMessage(tabId,message);
+    }
+  }
+
+  async function sourceOnlySync(ctx){
+    if(!ctx||!ctx.tab||!ctx.tab.id)throw new Error('Không đọc được tab nguồn.');
+    const label=text(ctx.group&&ctx.group.label)||'Nguồn';
+    setSmart(`Đang mở popup từng sản phẩm và quét tồn ${label}...`,'working');
+    const response=await sendPopupScan(ctx.tab.id);
+    if(!response||!response.ok)throw new Error(response&&response.error||'Không nhận được dữ liệu quét tồn.');
+    const results=Array.isArray(response.result)?response.result:[];
+    if(!results.length)throw new Error('Không quét được sản phẩm nào trên tab này.');
+    if(!globalThis.DHLBatchStockCache||typeof globalThis.DHLBatchStockCache.cacheSourceOnly!=='function'){
+      throw new Error('Bộ lưu cache chưa sẵn sàng. Hãy NẠP LẠI TOOL.');
+    }
+    const entry=await globalThis.DHLBatchStockCache.cacheSourceOnly(results,label);
+    const s=await chrome.storage.local.get(CONFIG_KEY);
+    const cfg=s[CONFIG_KEY]&&typeof s[CONFIG_KEY]==='object'?s[CONFIG_KEY]:{};
+    const sapo=cfg.sapo&&typeof cfg.sapo==='object'?cfg.sapo:{};
+    const shouldPush=cfg.autoPushSapo===true&&Boolean(sapo.verifiedAt&&sapo.locationId);
+    if(shouldPush&&globalThis.DHLManualSapoOutput&&typeof globalThis.DHLManualSapoOutput.pushManual==='function'){
+      setSmart(`Quét xong ${label}: ${entry.rowCount} dòng. Đang đẩy tồn lên Sapo...`,'working');
+      await globalThis.DHLManualSapoOutput.pushManual();
+      setSmart(`Đã tạo hàng đợi đồng bộ ${label} lên Sapo • ${entry.rowCount} dòng.`,'ok');
+    }else{
+      setSmart(`Quét xong ${label}: ${entry.rowCount} dòng đã sẵn sàng. Chọn TẢI FILE EXCEL hoặc ĐẨY LÊN SAPO.`,'ok');
+    }
+    return entry;
   }
 
   function waitScan(timeout=600000){
@@ -89,14 +138,20 @@
     try{
       const ctx=await syncContext({select:true});
       if(!ctx.tab)throw new Error('Hãy mở đúng tab danh mục nguồn trước.');
-      if(!ctx.profile)throw new Error(ctx.group.label?`Chưa có hồ sơ ${ctx.group.label}. Hãy tạo hồ sơ này một lần.`:'Không tự nhận được hồ sơ từ tab đang mở.');
-      const scan=document.getElementById('profileScanBtn');
-      if(!scan)throw new Error('Bộ đồng bộ chưa tải xong. Đóng/mở lại panel rồi thử lại.');
-      setSmart(`Đang quét ${ctx.profile.name}...`,'working'); if(btn)btn.textContent='ĐANG QUÉT KHO...';
-      scan.click(); await waitScan();
-      setSmart(`Đã lưu cache ${ctx.profile.name}. Có thể chuyển sang tab khác và đồng bộ tiếp; chưa tải file.`,'ok');
+      if(!ctx.group||!ctx.group.label)throw new Error('Không nhận diện được nhóm nguồn từ tab đang mở.');
+      if(btn)btn.textContent=`ĐANG QUÉT ${ctx.group.label.toUpperCase()}...`;
+      // Luồng thủ công đơn giản nhất: không cần hồ sơ, quét popup trực tiếp từ tab hiện tại.
+      await sourceOnlySync(ctx);
     }catch(error){setSmart(error.message||String(error),'error');}
     finally{running=false;if(btn){btn.disabled=false;btn.textContent=old||'ĐỒNG BỘ TAB ĐANG MỞ';}}
+  }
+
+  async function updateSyncButtonLabel(){
+    const btn=document.getElementById('uiV2SyncBtn');
+    if(!btn||running)return;
+    const ctx=await syncContext({select:false}).catch(()=>null);
+    if(ctx&&ctx.group&&ctx.group.label)btn.textContent=`ĐỒNG BỘ ${ctx.group.label.toUpperCase()}`;
+    else btn.textContent='ĐỒNG BỘ TAB ĐANG MỞ';
   }
 
   async function fixQuickTabs(){
@@ -125,7 +180,7 @@
       if(!btn||btn.dataset.aliasFix==='1')return false;
       btn.dataset.aliasFix='1';
       btn.addEventListener('click',runSmart,true);
-      syncContext({select:true}).catch(()=>{});
+      syncContext({select:true}).then(()=>updateSyncButtonLabel()).catch(()=>{});
       fixQuickTabs().catch(()=>{});
       return true;
     };
@@ -137,8 +192,8 @@
     const paint=new MutationObserver(()=>fixQuickTabs().catch(()=>{}));
     paint.observe(document.documentElement,{childList:true,subtree:true});
     setTimeout(()=>paint.disconnect(),20000);
-    chrome.tabs.onActivated.addListener(()=>setTimeout(()=>syncContext({select:true}).catch(()=>{}),150));
-    chrome.tabs.onUpdated.addListener((id,info,tab)=>{if(info.status==='complete'&&tab.active)setTimeout(()=>syncContext({select:true}).catch(()=>{}),150);});
+    chrome.tabs.onActivated.addListener(()=>setTimeout(()=>{syncContext({select:true}).then(()=>updateSyncButtonLabel()).catch(()=>{});},150));
+    chrome.tabs.onUpdated.addListener((id,info,tab)=>{if(info.status==='complete'&&tab.active)setTimeout(()=>{syncContext({select:true}).then(()=>updateSyncButtonLabel()).catch(()=>{});},150);});
     chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&(changes[STORAGE_KEY]||changes[SELECTED_KEY]))setTimeout(()=>{fixQuickTabs().catch(()=>{});syncContext({select:false}).catch(()=>{});},80);});
   }
 
