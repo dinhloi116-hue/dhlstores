@@ -256,11 +256,11 @@
     try {
       if (!activeData) activeData = await parseProfile(profile);
       const coverage = activeData.coverage;
-      if (coverage.matched !== coverage.total) throw new Error(`Hồ sơ chưa đủ SKU: ${coverage.matched}/${coverage.total}. Hãy cập nhật 2 file.`);
+      // SKU đồng bộ hiện lấy từ nguồn theo quy tắc Alias + Size; products_export chỉ còn dùng đối chiếu ID/SKU Sapo nếu có.
       const tab = await ensureCategoryTab();
       const hints = []; // Quét TOÀN BỘ mẫu/màu/size đang có trên tab nguồn.
-      status(`Đang quét tab đang mở bằng hồ sơ ${profile.name}...`);
-      const response = await sendToTab(tab.id, { type: 'DHL_SCAN_HD_LIVE', hints });
+      status(`Đang mở popup từng sản phẩm và quét tồn ${profile.name}...`);
+      const response = await sendToTab(tab.id, { type: 'DHL_SCAN_HD_LIVE_POPUP_ONLY', hints });
       if (!response || !response.ok) throw new Error(response && response.error ? response.error : 'Không nhận được dữ liệu nguồn');
       latestSource = Array.isArray(response.result) ? response.result : [];
       const prepared = officialImportRows();
@@ -271,6 +271,10 @@
       profile.lastSourceAt = Date.now();
       await saveStore();
       status(`QUÉT XONG ${profile.name}: ${prepared.rows.length}/${prepared.sourceVariantCount || prepared.rows.length} biến thể • ${prepared.sourceProductCount || groups} mẫu/màu • SKU = Đường dẫn/Alias + Size • trùng Sapo ${prepared.matchedSkuCount || 0} • mới/chưa có Sapo ${prepared.sourceOnlySkuCount || 0}.`, 'ok');
+      if(globalThis.DHLBatchStockCache&&typeof globalThis.DHLBatchStockCache.cacheSource==='function'){
+        await globalThis.DHLBatchStockCache.cacheSource(latestSource);
+      }
+
     } catch (error) {
       scannedForSelected = false;
       status(`LỖI QUÉT: ${error.message || String(error)}`, 'error');
@@ -307,7 +311,7 @@
       const branch = text(activeData.warehouseData.warehouseBranchName || profile.branchName);
       if (!branch) throw new Error('Không đọc được tên chi nhánh Sapo từ hồ sơ.');
       const out = stockImport.buildOfficialInventoryWorkbook(xlsx, prepared.rows, branch);
-      if (out.templateSignature !== 'SAPO-INVENTORY-TEMPLATE-V2') throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
+      if (out.templateSignature !== 'SAPO-INVENTORY-TEMPLATE-V3') throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
       const d = new Date();
       const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const safeName = text(profile.name).replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, '_');
@@ -460,7 +464,7 @@
         <small id="activeProfileMeta" style="display:block;margin-top:3px;color:#64748b"></small>
       </div>
       <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
-        <button id="profileScanBtn" type="button" class="primary" style="flex:1;min-width:130px">QUÉT KHO TAB ĐANG MỞ</button>
+        <button id="profileScanBtn" type="button" class="primary" style="flex:1;min-width:130px">MỞ POPUP + QUÉT TỒN</button>
         <button id="profileExportBtn" type="button" class="success" style="flex:1;min-width:130px" disabled>TẠO FILE NHẬP SAPO</button>
       </div>
       <small id="profileStatus" style="display:block;margin-top:8px;color:#475569">Đang tải hồ sơ đã lưu...</small>
