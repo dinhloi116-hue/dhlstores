@@ -5,8 +5,8 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
 
-  const INVENTORY_HEADERS=['Tên phiên bản sản phẩm','SKU*','Mã lô','Ngày sản xuất','Hạn sử dụng','Tồn kho','Vị trí lưu kho'];
-  const TEMPLATE_SIGNATURE='SAPO-INVENTORY-TEMPLATE-V2';
+  const INVENTORY_HEADERS=['Tên phiên bản sản phẩm','SKU*','Mã lô','Ngày sản xuất','Hạn sử dụng','Tồn kho','Vị trí lưu kho','Tồn kho','Vị trí lưu kho'];
+  const TEMPLATE_SIGNATURE='SAPO-INVENTORY-TEMPLATE-V3';
 
   function xmlEscape(value){
     return String(value==null?'':value)
@@ -37,17 +37,28 @@
     const lastRow=Math.max(4,dataRows.length+4);
     const rowXml=[];
 
-    // Bố cục bám đúng file mẫu Sapo do người dùng cung cấp:
-    // A1 tiêu đề; hàng 2 trống; F3 tên chi nhánh; hàng 4 là header; dữ liệu bắt đầu hàng 5.
-    rowXml.push(`<row r="1" spans="1:7" ht="31.5" customHeight="1">${cellXml(xlsx,0,1,'Cập nhật tồn kho phiên bản sản phẩm',1)}</row>`);
-    rowXml.push('<row r="2" spans="1:7"></row>');
-    rowXml.push(`<row r="3" spans="1:7">${cellXml(xlsx,0,3,'',2)}${cellXml(xlsx,1,3,'',2)}${cellXml(xlsx,2,3,'',2)}${cellXml(xlsx,3,3,'',2)}${cellXml(xlsx,4,3,'',2)}${cellXml(xlsx,5,3,branch,11)}${cellXml(xlsx,6,3,'',12)}</row>`);
-    rowXml.push(`<row r="4" spans="1:7">${cellXml(xlsx,0,4,INVENTORY_HEADERS[0],3)}${skuHeaderCell()}${cellXml(xlsx,2,4,INVENTORY_HEADERS[2],3)}${cellXml(xlsx,3,4,INVENTORY_HEADERS[3],10)}${cellXml(xlsx,4,4,INVENTORY_HEADERS[4],10)}${cellXml(xlsx,5,4,INVENTORY_HEADERS[5],3)}${cellXml(xlsx,6,4,INVENTORY_HEADERS[6],3)}</row>`);
+    // Bố cục đúng theo file người dùng vừa cung cấp "Mẫu đẩy tồn kho lên sapo.xlsx":
+    // A1 tiêu đề; hàng 2 trống; F3 là chi nhánh đang cập nhật; H:I giữ cặp chi nhánh thứ 2 trống;
+    // hàng 4 có 9 cột; dữ liệu bắt đầu từ hàng 5.
+    rowXml.push(`<row r="1" spans="1:9" ht="31.5" customHeight="1">${cellXml(xlsx,0,1,'Cập nhật tồn kho phiên bản sản phẩm',1)}</row>`);
+    rowXml.push('<row r="2" spans="1:9"></row>');
+    rowXml.push(`<row r="3" spans="1:9">${cellXml(xlsx,0,3,'',2)}${cellXml(xlsx,1,3,'',2)}${cellXml(xlsx,2,3,'',2)}${cellXml(xlsx,3,3,'',2)}${cellXml(xlsx,4,3,'',2)}${cellXml(xlsx,5,3,branch,11)}${cellXml(xlsx,6,3,'',12)}${cellXml(xlsx,7,3,'',11)}${cellXml(xlsx,8,3,'',12)}</row>`);
+    rowXml.push(`<row r="4" spans="1:9">${cellXml(xlsx,0,4,INVENTORY_HEADERS[0],3)}${skuHeaderCell()}${cellXml(xlsx,2,4,INVENTORY_HEADERS[2],3)}${cellXml(xlsx,3,4,INVENTORY_HEADERS[3],10)}${cellXml(xlsx,4,4,INVENTORY_HEADERS[4],10)}${cellXml(xlsx,5,4,INVENTORY_HEADERS[5],3)}${cellXml(xlsx,6,4,INVENTORY_HEADERS[6],3)}${cellXml(xlsx,7,4,INVENTORY_HEADERS[7],3)}${cellXml(xlsx,8,4,INVENTORY_HEADERS[8],3)}</row>`);
 
     dataRows.forEach((row,index)=>{
       const ri=index+5;
-      const values=[row.variantName||'',row.sku||'',row.lot||'',row.manufactureDate||'',row.expiryDate||'',Number(row.stock),row.storageLocation||''];
-      rowXml.push(`<row r="${ri}" spans="1:7">`+
+      const values=[
+        row.variantName||'',
+        row.sku||'',
+        row.lot||'',
+        row.manufactureDate||'',
+        row.expiryDate||'',
+        Number(row.stock),
+        row.storageLocation||'',
+        '',
+        ''
+      ];
+      rowXml.push(`<row r="${ri}" spans="1:9">`+
         cellXml(xlsx,0,ri,values[0],2)+
         cellXml(xlsx,1,ri,values[1],2)+
         cellXml(xlsx,2,ri,values[2],2)+
@@ -55,12 +66,14 @@
         cellXml(xlsx,4,ri,values[4],4)+
         cellXml(xlsx,5,ri,values[5],2)+
         cellXml(xlsx,6,ri,values[6],2)+
-        `</row>`);
+        cellXml(xlsx,7,ri,values[7],2)+
+        cellXml(xlsx,8,ri,values[8],2)+
+        '</row>');
     });
 
     const sheetXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
       `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`+
-      `<dimension ref="A1:G${lastRow}"/>`+
+      `<dimension ref="A1:I${lastRow}"/>`+
       `<sheetViews><sheetView tabSelected="1" workbookViewId="0"><selection activeCell="F5" sqref="F5"/></sheetView></sheetViews>`+
       `<sheetFormatPr defaultColWidth="14.42578125" defaultRowHeight="15" customHeight="1"/>`+
       `<cols>`+
@@ -70,6 +83,8 @@
       `<col min="5" max="5" width="14.28515625" customWidth="1"/>`+
       `<col min="6" max="6" width="19" customWidth="1"/>`+
       `<col min="7" max="7" width="21.42578125" customWidth="1"/>`+
+      `<col min="8" max="8" width="19" customWidth="1"/>`+
+      `<col min="9" max="9" width="21.42578125" customWidth="1"/>`+
       `</cols>`+
       `<sheetData>${rowXml.join('')}</sheetData>`+
       `</worksheet>`;
@@ -96,7 +111,6 @@
       `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`+
       `</Relationships>`;
 
-    // Style IDs giữ theo bố cục của file mẫu Sapo: title, border, header, date/text, branch pair.
     const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
       `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`+
       `<fonts count="5">`+
