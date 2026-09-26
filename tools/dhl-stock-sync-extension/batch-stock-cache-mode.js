@@ -150,6 +150,15 @@
     }finally{caching=false;}
   }
 
+  async function cacheSource(sourceResults){
+    if(Array.isArray(sourceResults)&&sourceResults.length){
+      latestSource=sourceResults;
+      latestSourceAt=Date.now();
+      lastCacheToken='';
+    }
+    return cacheCurrentScan();
+  }
+
   function download(bytes,fileName){
     const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     const url=URL.createObjectURL(blob);
@@ -174,7 +183,7 @@
       if(!entries.length)throw new Error('Chưa có cache quét thủ công để tạo Excel.');
       const combined=batch.combineEntries(entries);
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,combined.rows,combined.branch);
-      if(out.templateSignature!=='SAPO-INVENTORY-TEMPLATE-V2')throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
+      if(out.templateSignature!=='SAPO-INVENTORY-TEMPLATE-V3')throw new Error('Bộ tạo file nhập tồn chưa đúng phiên bản.');
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_NHAP_TON_KHO_GOP_${stamp}.xlsx`);
@@ -262,6 +271,12 @@
     obs.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
     inspect();
   }
+
+  globalThis.DHLBatchStockCache={
+    cacheSource,
+    renderBatchUi,
+    cacheCurrentScan
+  };
 
   function install(){
     captureMatcher();
