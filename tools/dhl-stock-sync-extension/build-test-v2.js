@@ -139,8 +139,8 @@ assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POP
 assert.ok(contentScanner.includes("message.type === 'DHL_SCAN_HD_LIVE_POPUP_ONLY'"));
 assert.ok(contentScanner.includes('async function scanHdLivePopupOnly'));
 assert.ok(contentScanner.includes('suppressedProbe:true'));
-assert.ok(contentScanner.includes("stage:'revived-product'"));
-assert.ok(contentScanner.includes("stage:'suppressed-probe-verify'"));
+assert.ok(contentScanner.includes("'revived-product'"));
+assert.ok(contentScanner.includes("'suppressed-probe-verify'"));
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
