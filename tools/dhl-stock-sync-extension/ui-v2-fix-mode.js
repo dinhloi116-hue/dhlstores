@@ -18,15 +18,31 @@
     return p;
   }
 
+  function labelFromCategoryTab(tab){
+    if(!tab)return'';
+    let u=null;
+    try{u=new URL(tab.url||'');}catch{return'';}
+    const path=String(u.pathname||'').toLowerCase();
+    if(/-p\d+(?:\.html)?$/i.test(path))return'';
+    const title=text(tab.title||'').replace(/\s*[|｜-]\s*aobongda.*$/i,'').trim();
+    if(title&&plain(title)!=='aobongda')return title;
+    const last=path.split('/').filter(Boolean).pop()||'';
+    const slug=last.replace(/\.html$/i,'').replace(/-pc\d+$/i,'').replace(/[-_]+/g,' ').trim();
+    if(!slug)return'';
+    return slug.replace(/\b\w/g,ch=>ch.toUpperCase());
+  }
+
   function detectGroup(tab){
     if(!tab)return{key:'',label:''};
     let path=''; try{path=new URL(tab.url||'').pathname.toLowerCase();}catch{}
     const hay=plain(`${tab.title||''} ${tab.url||''}`);
+    if(/-p\d+(?:\.html)?$/i.test(path))return{key:'',label:''};
     if(path.includes('ao-tre-em')||path.includes('pc37502')||hay.includes('tre em'))return{key:'tre em',label:'Trẻ em'};
     if(hay.includes('wika'))return{key:'wika',label:'Wika'};
     if(hay.includes('strivend'))return{key:'strivend',label:'Strivend'};
     if(path.includes('/hd-pc36029')||/\bhd\b/.test(plain(tab.title||'')))return{key:'hd',label:'HD'};
-    return{key:'',label:''};
+    const label=labelFromCategoryTab(tab);
+    return label?{key:`site:${plain(label)}`,label}:{key:'',label:''};
   }
 
   async function activeTab(){const [tab]=await chrome.tabs.query({active:true,currentWindow:true});return tab||null;}
@@ -65,7 +81,7 @@
       setHint(`Tự nhận: ${profile.name}. Bấm ĐỒNG BỘ TAB ĐANG MỞ để quét popup và đồng bộ.`);
     }else if(group.label){
       setHint(`Đã nhận tab ${group.label}. Không cần tạo hồ sơ: bấm ĐỒNG BỘ TAB ĐANG MỞ để quét popup trực tiếp.`);
-    }else setHint('Không nhận diện được nhóm từ tab hiện tại; hãy chọn hồ sơ thủ công.');
+    }else setHint('Đây có vẻ là trang chi tiết hoặc trang không phải danh mục. Hãy mở một danh mục bất kỳ trên aobongda.net.');
     return{tab,group,profile};
   }
 
@@ -80,8 +96,8 @@
     await sleep(180);
   }
 
-  async function sendPopupScan(tabId){
-    const message={type:'DHL_SCAN_HD_LIVE_POPUP_ONLY',hints:[]};
+  async function sendPopupScan(tabId,suppressedIds=[]){
+    const message={type:'DHL_SCAN_HD_LIVE_POPUP_ONLY',hints:[],suppressedIds};
     try{
       return await chrome.tabs.sendMessage(tabId,message);
     }catch(error){
@@ -94,25 +110,49 @@
   async function sourceOnlySync(ctx){
     if(!ctx||!ctx.tab||!ctx.tab.id)throw new Error('Không đọc được tab nguồn.');
     const label=text(ctx.group&&ctx.group.label)||'Nguồn';
-    setSmart(`Đang mở popup từng sản phẩm và quét tồn ${label}...`,'working');
-    const response=await sendPopupScan(ctx.tab.id);
+    const policy=globalThis.DHLSourceZeroStockPolicy;
+    const suppressedBefore=policy&&typeof policy.suppressedIds==='function'?await policy.suppressedIds():[];
+    const sleeping=suppressedBefore.length;
+    setSmart(`Đang quét ${label} • mở popup sản phẩm hoạt động${sleeping?` • ${sleeping} SP 0 tồn lâu chỉ kiểm tra nhanh`:''}...`,'working');
+
+    const response=await sendPopupScan(ctx.tab.id,suppressedBefore);
     if(!response||!response.ok)throw new Error(response&&response.error||'Không nhận được dữ liệu quét tồn.');
     const results=Array.isArray(response.result)?response.result:[];
     if(!results.length)throw new Error('Không quét được sản phẩm nào trên tab này.');
+
+    let policyResult={newlySuppressed:[],revived:[]};
+    let outputResults=results;
+    if(policy&&typeof policy.applyScan==='function'){
+      policyResult=await policy.applyScan(results);
+      if(typeof policy.filterForOutput==='function')outputResults=policy.filterForOutput(results,suppressedBefore);
+    }
+
     if(!globalThis.DHLBatchStockCache||typeof globalThis.DHLBatchStockCache.cacheSourceOnly!=='function'){
       throw new Error('Bộ lưu cache chưa sẵn sàng. Hãy NẠP LẠI TOOL.');
     }
-    const entry=await globalThis.DHLBatchStockCache.cacheSourceOnly(results,label);
+
+    let entry=null;
+    if(outputResults.length){
+      entry=await globalThis.DHLBatchStockCache.cacheSourceOnly(outputResults,label);
+    }else if(typeof globalThis.DHLBatchStockCache.clearSourceOnly==='function'){
+      await globalThis.DHLBatchStockCache.clearSourceOnly(label);
+    }
+
     const s=await chrome.storage.local.get(CONFIG_KEY);
     const cfg=s[CONFIG_KEY]&&typeof s[CONFIG_KEY]==='object'?s[CONFIG_KEY]:{};
     const sapo=cfg.sapo&&typeof cfg.sapo==='object'?cfg.sapo:{};
-    const shouldPush=cfg.autoPushSapo===true&&Boolean(sapo.verifiedAt&&sapo.locationId);
+    const shouldPush=Boolean(entry&&cfg.autoPushSapo===true&&sapo.verifiedAt&&sapo.locationId);
+    const sleepText=policyResult.newlySuppressed&&policyResult.newlySuppressed.length?` • mới loại ${policyResult.newlySuppressed.length} SP 0 tồn đủ 10 ngày`:'';
+    const reviveText=policyResult.revived&&policyResult.revived.length?` • khôi phục ${policyResult.revived.length} SP có hàng lại`:'';
+
     if(shouldPush&&globalThis.DHLManualSapoOutput&&typeof globalThis.DHLManualSapoOutput.pushManual==='function'){
-      setSmart(`Quét xong ${label}: ${entry.rowCount} dòng. Đang đẩy tồn lên Sapo...`,'working');
+      setSmart(`Quét xong ${label}: ${entry.rowCount} dòng${sleepText}${reviveText}. Đang đẩy tồn lên Sapo...`,'working');
       await globalThis.DHLManualSapoOutput.pushManual();
-      setSmart(`Đã tạo hàng đợi đồng bộ ${label} lên Sapo • ${entry.rowCount} dòng.`,'ok');
+      setSmart(`Đã tạo hàng đợi đồng bộ ${label} lên Sapo • ${entry.rowCount} dòng${sleepText}${reviveText}.`,'ok');
+    }else if(entry){
+      setSmart(`Quét xong ${label}: ${entry.rowCount} dòng sẵn sàng${sleepText}${reviveText}. Chọn TẢI FILE EXCEL hoặc ĐẨY LÊN SAPO.`,'ok');
     }else{
-      setSmart(`Quét xong ${label}: ${entry.rowCount} dòng đã sẵn sàng. Chọn TẢI FILE EXCEL hoặc ĐẨY LÊN SAPO.`,'ok');
+      setSmart(`Quét xong ${label}: hiện không có sản phẩm hoạt động để xuất/đẩy${sleepText}${reviveText}.`,'ok');
     }
     return entry;
   }
@@ -138,7 +178,7 @@
     try{
       const ctx=await syncContext({select:true});
       if(!ctx.tab)throw new Error('Hãy mở đúng tab danh mục nguồn trước.');
-      if(!ctx.group||!ctx.group.label)throw new Error('Không nhận diện được nhóm nguồn từ tab đang mở.');
+      if(!ctx.group||!ctx.group.label)throw new Error('Hãy mở một trang DANH MỤC bất kỳ trên si.aobongda.net.');
       if(btn)btn.textContent=`ĐANG QUÉT ${ctx.group.label.toUpperCase()}...`;
       // Luồng thủ công đơn giản nhất: không cần hồ sơ, quét popup trực tiếp từ tab hiện tại.
       await sourceOnlySync(ctx);
