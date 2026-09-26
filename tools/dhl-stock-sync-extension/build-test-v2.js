@@ -151,7 +151,7 @@ assert.ok(catalogScanner.includes('sendPopupOnly(tab.id,descriptor)'));
 assert.ok(catalogScanner.includes("mode:'new-product-popup-full'"));
 assert.ok(catalogScanner.includes('ĐANG POPUP'));
 assert.ok(catalogScanner.includes("chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples'])"));
-assert.ok(catalogScanner.includes('không đọc SKU cũ'));
+assert.ok(catalogScanner.includes('Không dùng SKU cũ'));
 assert.ok(catalogScanner.includes('standardizeAllByPopup'));
 assert.ok(catalogScanner.includes("type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
 assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'maintenance-popup-standardize-once'"));
