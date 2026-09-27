@@ -1075,9 +1075,30 @@
     async function scanCurrentPopup(hints, progress) {
     const root = findStockRoot();
     if (!root) throw new Error('Hãy mở popup chọn màu/size của một sản phẩm trước rồi bấm Test popup đang mở.');
-    const parentId = core.extractParentIdFromHtml(document.documentElement.innerHTML, core.extractProductId(location.href));
-    const descriptor = { id: parentId || core.extractProductId(location.href) || 0, title: productTitleFromDocument(), url: location.href };
-    return readOpenedPopup(descriptor, hints, progress, { root, cardFound: null, candidateCount: null });
+
+    // QUÉT 1 SP và QUÉT HÀNG LOẠT phải dùng CÙNG descriptor.
+    // Trước đây QUÉT 1 SP lấy h1/title của trang danh mục (ví dụ "Áo Bulbal"),
+    // còn quét hàng loạt lấy tên đúng trên card (ví dụ "Bộ Bulbal Strivend GO SG1").
+    // Ưu tiên parentId nằm ngay trong popup rồi map ngược về đúng card sản phẩm.
+    const popupParentId=core.extractParentIdFromHtml(root.outerHTML,'');
+    const documentParentId=core.extractParentIdFromHtml(document.documentElement.innerHTML,core.extractProductId(location.href));
+    const parentId=Number(popupParentId||documentParentId||core.extractProductId(location.href))||0;
+
+    const candidates=findProductLinksInDocument(document,location.href);
+    const card=candidates.find(item=>Number(item&&item.id)===parentId)||null;
+    const descriptor={
+      id:parentId,
+      title:core.normalizeText(card&&card.title)||productTitleFromDocument(),
+      url:String(card&&card.url||location.href),
+      imageUrl:normalizeImageUrl(card&&card.imageUrl)||'',
+      categoryPath:location.pathname
+    };
+
+    return readOpenedPopup(descriptor,hints,progress,{
+      root,
+      cardFound:Boolean(card),
+      candidateCount:candidates.length
+    });
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
