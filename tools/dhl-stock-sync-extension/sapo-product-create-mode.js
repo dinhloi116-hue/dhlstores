@@ -35,7 +35,7 @@
       const item=Array.isArray(queue.items)?queue.items[queue.index]:null;
       return `TẠM DỪNG ở ${done}/${total}${item&&item.name?` • ${item.name}`:''}${item&&item.error?` • ${item.error}`:''}`;
     }
-    if(queue.status==='done')return `ĐÃ XONG: ${success}/${total} sản phẩm • tạo mới ${Number(queue.created||0)} • dùng lại sản phẩm trùng alias/SKU ${Number(queue.adopted||0)}.`;
+    if(queue.status==='done')return `ĐÃ XONG: ${success}/${total} sản phẩm • tạo mới ${Number(queue.created||0)} • dùng lại ${Number(queue.adopted||0)} • bỏ qua lỗi ${Number(queue.failed||0)}. Không cần nhập Excel.`;
     return `Trạng thái: ${text(queue.status)||'—'} • ${done}/${total}.`;
   }
 
@@ -139,14 +139,14 @@
         btn.disabled=true;btn.textContent=`ĐANG ĐĂNG ${info?info.percent:0}%...`;btn.dataset.mode='running';
         setState(queueSummary(queue),'working');return;
       }
-      btn.dataset.mode='start';btn.textContent='ĐĂNG THẲNG LÊN SAPO';
+      btn.dataset.mode='start';btn.textContent='ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL';
       btn.disabled=!response.verified;
       if(queue&&queue.status==='done')setState(queueSummary(queue),'ok');
       else if(!response.verified)setState('Chưa xác minh Ứng dụng riêng Sapo. Hãy kiểm tra kết nối ở phần TỰ ĐỘNG ĐỒNG BỘ trước.','bad');
-      else setState(`Sẵn sàng • dữ liệu từ lượt quét mới • SKU = Alias + Size • ${response.shop||'Sapo'} / ${response.locationName||'chi nhánh đã xác minh'}.`,'ok');
+      else setState(`Sẵn sàng đẩy trực tiếp • không cần tải Excel • SKU + ảnh + tồn sẽ ghi thẳng vào ${response.shop||'Sapo'} / ${response.locationName||'chi nhánh đã xác minh'}.`,'ok');
     }catch(error){
       renderProgress(null);
-      btn.disabled=true;btn.textContent='ĐĂNG THẲNG LÊN SAPO';
+      btn.disabled=true;btn.textContent='ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL';
       setState(error.message||String(error),'bad');
     }
   }
@@ -212,8 +212,8 @@
     if(document.getElementById('catalogSapoCreateBtn'))return true;
     const btn=document.createElement('button');
     btn.id='catalogSapoCreateBtn';btn.type='button';btn.className='primary';
-    btn.textContent='ĐĂNG THẲNG LÊN SAPO';btn.dataset.mode='start';btn.disabled=true;
-    btn.title='Tạo sản phẩm trực tiếp qua Ứng dụng riêng Sapo; mỗi SKU phải có link ảnh lấy từ popup nguồn.';
+    btn.textContent='ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL';btn.dataset.mode='start';btn.disabled=true;
+    btn.title='Đẩy thẳng sản phẩm, SKU, ảnh từng phiên bản và tồn kho lên Sapo. Excel chỉ còn là phương án dự phòng.';
     btn.addEventListener('click',startOrRetry);
     exportBtn.insertAdjacentElement('afterend',btn);
     const state=document.createElement('small');
