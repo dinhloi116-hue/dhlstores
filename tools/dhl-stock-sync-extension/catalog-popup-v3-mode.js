@@ -6,6 +6,7 @@
 
   const SOURCE_ORIGIN = 'https://si.aobongda.net';
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  function httpImageUrl(value){try{const u=new URL(String(value||''));return /^https?:$/.test(u.protocol)?u.href:'';}catch{return'';}}
 
   async function activeTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -339,6 +340,12 @@
       const results=Array.isArray(stored.dhlCatalogResults)?stored.dhlCatalogResults:[];
       if (!results.length || results.some((r)=>!r||r.complete!==true)) throw new Error('Dữ liệu chưa đủ 100%. Không xuất file để tránh ghi sai tồn.');
       if (results.some((r)=>r&&(r.variants||[]).some((v)=>v.synthesizedFromExplicitOutOfStock))) throw new Error('Có tồn 0 suy đoán. Tool chặn xuất.');
+      const preview=productCreate.makeRows(results);
+      const missingImages=preview.rows.filter(row=>!httpImageUrl(row.imageUrl));
+      if(missingImages.length){
+        const sample=missingImages.slice(0,5).map(x=>`${x.standardName} / ${x.size} / ${x.sku}`).join(' | ');
+        throw new Error(`Thiếu link ảnh cho ${missingImages.length} SKU. Hãy quét popup lại. ${sample}`);
+      }
       const out=productCreate.buildWorkbook(results);
       const blob=new Blob([out.bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       const url=URL.createObjectURL(blob),a=document.createElement('a'),d=new Date();
@@ -548,7 +555,7 @@
     scan.disabled=true;test.disabled=true;exp.disabled=true;
     try {
       await chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples']);
-      state.textContent='Đang bật popup từng sản phẩm mới • đọc đủ màu/size/tồn • SKU = Đường dẫn/Alias + Size...';
+      state.textContent='Đang bật popup từng sản phẩm mới • đọc màu/size/tồn + link ảnh từng phân loại • SKU = Đường dẫn/Alias + Size...';
       const {results,discovered,itemCount}=await scanAllNewProducts({
         onProgress:(info)=>{
           state.textContent=`ĐANG POPUP ${info.current}/${info.total}: ${info.title} • đạt ${info.completeCount} • lỗi/thiếu ${info.failedCount}`;
@@ -559,12 +566,14 @@
       const variantCount=validResults.reduce((n,r)=>n+(Array.isArray(r.variants)?r.variants.length:0),0);
       const built=productCreate.makeRows(validResults);
       const skuCount=built.rows.length;
+      const imageSkuCount=built.rows.filter(row=>httpImageUrl(row.imageUrl)).length;
+      const missingImageCount=Math.max(0,skuCount-imageSkuCount);
       const failedCount=Math.max(0,itemCount-completeCount);
-      const allComplete=completeCount===itemCount&&validResults.length===itemCount&&skuCount===variantCount;
+      const allComplete=completeCount===itemCount&&validResults.length===itemCount&&skuCount===variantCount&&missingImageCount===0;
       exp.disabled=!allComplete;
       state.textContent=allComplete
-        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm mới • ${variantCount} biến thể • ${skuCount} SKU Alias+Size. Không dùng SKU cũ.`
-        : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • tạo được ${skuCount} SKU Alias+Size • lỗi/thiếu ${failedCount}.`;
+        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm mới • ${variantCount} biến thể • ${skuCount}/${skuCount} SKU có link ảnh • SKU = Alias+Size.`
+        : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • ${imageSkuCount}/${skuCount} SKU có link ảnh • thiếu ảnh ${missingImageCount} • lỗi/thiếu dữ liệu ${failedCount}.`;
     } catch(error) { state.textContent=`Lỗi quét sản phẩm mới: ${error.message||String(error)}`; }
     finally { scan.disabled=false;test.disabled=false; }
   }
@@ -583,7 +592,7 @@
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
     const newExport=replaceAndBind('exportCatalogSource','TẠO FILE TẤT CẢ SP MỚI (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
-    if(state)state.textContent='CHẾ ĐỘ SP MỚI: tự BẬT POPUP từng sản phẩm để đọc đủ màu/size/tồn. Không dùng SKU cũ. Cột A Đường dẫn/Alias = mã sản phẩm; SKU phân loại = Alias + Size.';
+    if(state)state.textContent='CHẾ ĐỘ SP MỚI: tự BẬT POPUP từng sản phẩm để đọc màu/size/tồn + link ảnh từng phân loại. Cột Ảnh đại diện và Ảnh phiên bản sẽ lấy link nguồn; SKU = Alias + Size.';
     return Boolean(newScan&&newTest&&newExport);
   }
 
