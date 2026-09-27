@@ -164,6 +164,10 @@
       if(!sameExpectedSkus(existing,item))throw new Error(`Alias “${item.alias}” đã tồn tại trên Sapo nhưng bộ SKU khác. Tool không ghi đè.`);
       item.productId=Number(existing.id);
       item.adopted=true;
+      if(item.adoptedCounted!==true){
+        queue.adopted=Number(queue.adopted||0)+1;
+        item.adoptedCounted=true;
+      }
       item.status='stock';
       await chrome.storage.local.set({[QUEUE_KEY]:queue});
       return existing;
@@ -173,8 +177,13 @@
     if(!created||!Number(created.id))throw new Error(`${item.name}: Sapo không trả về ID sản phẩm sau khi tạo.`);
     item.productId=Number(created.id);
     item.created=true;
+    if(item.createdCounted!==true){
+      queue.created=Number(queue.created||0)+1;
+      item.createdCounted=true;
+    }
     item.status='stock';
-    // Checkpoint ngay sau POST để service worker dừng cũng không tạo trùng khi chạy lại.
+    // Checkpoint ngay sau POST: sản phẩm đã tồn tại trên Sapo phải được tính là "đã tạo",
+    // kể cả ảnh/tồn ở bước sau có lỗi.
     await chrome.storage.local.set({[QUEUE_KEY]:queue});
     return created;
   }
@@ -359,8 +368,6 @@
       await syncStock(sapo,item,product,queue);
       item.status='done';item.error='';item.finishedAt=Date.now();
       queue.success=Number(queue.success||0)+1;
-      if(item.created)queue.created=Number(queue.created||0)+1;
-      if(item.adopted)queue.adopted=Number(queue.adopted||0)+1;
       queue.index+=1;
       await chrome.storage.local.set({[QUEUE_KEY]:queue});
       if(queue.index>=queue.items.length)await finalize(queue);
