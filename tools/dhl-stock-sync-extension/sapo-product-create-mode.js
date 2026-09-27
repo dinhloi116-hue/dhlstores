@@ -111,6 +111,14 @@
     if(results.some(r=>!r||r.complete!==true))throw new Error('Kết quả quét chưa đủ 100%. Tool không đăng sản phẩm thiếu size/biến thể.');
     const built=productCreate.makeApiProducts(results);
     if(!built.products.length)throw new Error('Không tạo được danh sách sản phẩm để đăng Sapo.');
+    const missingImages=[];
+    for(const product of built.products){
+      if(!Array.isArray(product.images)||!product.images.length)missingImages.push(`${product.name}: thiếu ảnh sản phẩm`);
+      for(const variant of product.variants||[]){
+        if(!variant.imageUrl)missingImages.push(`${product.name} / ${variant.size} / ${variant.sku}: thiếu ảnh phiên bản`);
+      }
+    }
+    if(missingImages.length)throw new Error(`Thiếu link ảnh nguồn cho ${missingImages.length} SKU/ảnh. Hãy quét popup lại. ${missingImages.slice(0,4).join(' | ')}`);
     return built.products;
   }
 
@@ -205,7 +213,7 @@
     const btn=document.createElement('button');
     btn.id='catalogSapoCreateBtn';btn.type='button';btn.className='primary';
     btn.textContent='ĐĂNG THẲNG LÊN SAPO';btn.dataset.mode='start';btn.disabled=true;
-    btn.title='Tạo sản phẩm trực tiếp qua Ứng dụng riêng Sapo; ảnh gửi bằng đường link src.';
+    btn.title='Tạo sản phẩm trực tiếp qua Ứng dụng riêng Sapo; mỗi SKU phải có link ảnh lấy từ popup nguồn.';
     btn.addEventListener('click',startOrRetry);
     exportBtn.insertAdjacentElement('afterend',btn);
     const state=document.createElement('small');
