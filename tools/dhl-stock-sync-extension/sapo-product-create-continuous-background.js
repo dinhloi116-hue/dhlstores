@@ -5,6 +5,12 @@
   const ALARM='dhl-sapo-product-create-queue';
   let repairing=false;
 
+  function isSystemError(message){
+    const value=String(message||'');
+    return /Mất xác minh|Chưa xác minh|API Key|API Secret|Tên shop Sapo|Sapo HTTP (?:401|403|408|429|5\d\d)|Request path is not found|Failed to fetch|NetworkError|network|rate limit|timeout|timed out/i.test(value);
+  }
+
+
   async function continueAfterItemError(){
     if(repairing)return;
     repairing=true;
@@ -16,8 +22,14 @@
       const index=Math.max(0,Number(queue.index||0));
       const item=items[index];
 
-      // Chỉ tự bỏ qua lỗi của 1 sản phẩm cụ thể. Lỗi hệ thống/mất xác minh vẫn phải dừng.
+      // Chỉ tự bỏ qua lỗi của 1 sản phẩm cụ thể. Lỗi hệ thống/mất xác minh/endpoint phải dừng toàn queue.
       if(!item||item.status!=='error'||!item.error)return;
+      if(isSystemError(item.error)){
+        queue.systemPaused=true;
+        queue.systemError=String(item.error||'');
+        await chrome.storage.local.set({[QUEUE_KEY]:queue});
+        return;
+      }
 
       if(item.skipped!==true){
         item.skipped=true;
