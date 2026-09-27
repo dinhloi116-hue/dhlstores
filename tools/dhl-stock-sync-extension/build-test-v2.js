@@ -42,6 +42,12 @@ assert.ok(zeroPolicy.includes('current.suppressed=true'));
 assert.ok(zeroPolicy.includes('current.suppressed=false'));
 assert.ok(zeroPolicy.includes('filterForOutput'));
 
+const genericRules=read('generic-shop-rules.js');
+assert.ok(genericRules.includes('SPECIAL_ALIAS_RULES_V1'));
+assert.ok(genericRules.includes('wika-dong-a-thanh-hoa-fan-vang-short-sku'));
+assert.ok(genericRules.includes("standardPlain:'ao thi dau wika clb dong a thanh hoa ban fan vang'"));
+assert.ok(genericRules.includes("removePrefix:'ao-thi-dau-'"));
+
 const autoCore=read('auto-sync-core.js');
 assert.ok(autoCore.includes("master:'alias_size_exact'"));
 assert.ok(autoCore.includes('const sourceGroups=matcher.groupSourceVariants(sourceResults||[])'));
