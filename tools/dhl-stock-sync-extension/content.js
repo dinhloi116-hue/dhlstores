@@ -110,6 +110,77 @@
     return alt&&alt.length<200?alt:'';
   }
 
+  function normalizeImageUrl(raw,base=location.href){
+    let value=String(raw==null?'':raw).trim();
+    if(!value)return'';
+    const css=value.match(/^url\((['"]?)(.*?)\1\)$/i);
+    if(css)value=css[2];
+    if(/^(?:data:|blob:|javascript:|#)/i.test(value))return'';
+    try{
+      const url=new URL(value,base);
+      return /^https?:$/.test(url.protocol)?url.href:'';
+    }catch{return'';}
+  }
+
+  function firstSrcsetUrl(value,base=location.href){
+    const parts=String(value||'').split(',').map(x=>x.trim()).filter(Boolean);
+    for(let i=parts.length-1;i>=0;i-=1){
+      const raw=parts[i].split(/\s+/)[0];
+      const url=normalizeImageUrl(raw,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
+  function imageUrlFromNode(node,base=location.href){
+    if(!node||!node.getAttribute)return'';
+    const candidates=[];
+    for(const attr of ['src','data-src','data-original','data-lazy-src','data-url','data-image','data-image-url','href']){
+      const value=node.getAttribute(attr);
+      if(value)candidates.push(value);
+    }
+    for(const attr of ['srcset','data-srcset']){
+      const value=node.getAttribute(attr);
+      if(value){
+        const picked=firstSrcsetUrl(value,base);
+        if(picked)candidates.push(picked);
+      }
+    }
+    if(node.currentSrc)candidates.unshift(node.currentSrc);
+    if(node.src)candidates.unshift(node.src);
+    const style=node.style&&node.style.backgroundImage;
+    if(style&&style!=='none')candidates.push(style);
+    for(const raw of candidates){
+      const url=normalizeImageUrl(raw,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
+  function imageUrlFromScope(scope,base=location.href){
+    if(!scope)return'';
+    const own=imageUrlFromNode(scope,base);
+    if(own)return own;
+    const imgs=scope.querySelectorAll?scope.querySelectorAll('img,source,[data-image],[data-image-url],[style*="background-image"]'):[];
+    for(const node of imgs){
+      const url=imageUrlFromNode(node,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
+  function imageUrlNearAnchor(a,base=location.href){
+    if(!a)return'';
+    const direct=imageUrlFromScope(a,base);
+    if(direct)return direct;
+    let el=a.parentElement;
+    for(let depth=0;depth<5&&el&&el!==document.body;depth+=1,el=el.parentElement){
+      const url=imageUrlFromScope(el,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
   function findProductLinksInDocument(doc=document,baseUrl=location.href){
     const base=new URL(baseUrl,location.href),seen=new Map();
     for(const a of doc.querySelectorAll('a[href]')){
@@ -118,8 +189,13 @@
         if(url.host!==location.host)continue;
         const id=core.extractProductId(url.href),title=titleForProductAnchor(a);
         if(!id||!title)continue;
+        const imageUrl=imageUrlNearAnchor(a,base.href);
         const current=seen.get(id);
-        if(!current||title.length>current.title.length)seen.set(id,{id,url:url.href,title,categoryPath:location.pathname});
+        if(!current||title.length>current.title.length){
+          seen.set(id,{id,url:url.href,title,categoryPath:location.pathname,imageUrl:imageUrl||current&&current.imageUrl||''});
+        }else if(imageUrl&&!current.imageUrl){
+          current.imageUrl=imageUrl;
+        }
       }catch(_){}
     }
     return[...seen.values()];
