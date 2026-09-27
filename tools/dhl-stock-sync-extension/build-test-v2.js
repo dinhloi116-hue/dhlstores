@@ -205,6 +205,8 @@ assert.ok(productBg.includes('body.image.variant_ids=variantIds'));
 assert.ok(productBg.includes('imageIndex:0'));
 assert.ok(productBg.includes("'/admin/inventory_levels/set.json'"));
 assert.ok(productBg.includes('inventory_item_id:Number(invId)'));
+assert.ok(productBg.includes('item.createdCounted!==true'));
+assert.ok(productBg.includes('item.adoptedCounted!==true'));
 assert.ok(productBg.includes("options:[{name:'Size'}]"));
 assert.ok(productBg.includes("inventory_management:'bizweb'"));
 assert.ok(productBg.includes("inventory_quantity:0"));
@@ -231,6 +233,11 @@ assert.ok(popup.indexOf('single-product-add-mode.js')>popup.indexOf('sapo-produc
 assert.ok(popup.indexOf('manual-sapo-output-mode.js')>popup.indexOf('batch-stock-cache-mode.js'));
 assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode.js'));
 assert.ok(popup.indexOf('workflow-order-mode.js')>popup.indexOf('sapo-push-report-mode.js'));
+
+const productReport=read('sapo-product-create-report-mode.js');
+assert.ok(productReport.includes('Đã có Product ID trên Sapo'));
+assert.ok(productReport.includes('CẦN XỬ LÝ TIẾP ẢNH / TỒN'));
+assert.ok(productReport.includes('Hoàn tất toàn bộ quy trình'));
 
 const productUi=read('sapo-product-create-mode.js');
 assert.ok(productUi.includes('ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL'));
