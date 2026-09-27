@@ -29,13 +29,18 @@
 
   function queueSummary(queue){
     if(!queue)return'Chưa có lượt đăng sản phẩm trực tiếp.';
-    const total=Number(queue.total||0),done=Number(queue.index||0),success=Number(queue.success||0);
-    if(queue.status==='running')return `ĐANG ĐĂNG SAPO: ${done}/${total} sản phẩm • hoàn tất ${success}.`;
+    const items=Array.isArray(queue.items)?queue.items:[];
+    const total=Number(queue.total||items.length||0);
+    const done=Number(queue.index||0);
+    const onSapo=items.filter(item=>Number(item&&item.productId)>0).length;
+    const fullDone=items.filter(item=>item&&item.status==='done').length;
+    const failed=items.filter(item=>item&&(item.skipped===true||item.status==='error')).length;
+    if(queue.status==='running')return `ĐANG ĐĂNG SAPO: ${done}/${total} xử lý • ${onSapo} đã có Product ID • ${fullDone} hoàn tất ảnh+tồn.`;
     if(queue.status==='paused'){
-      const item=Array.isArray(queue.items)?queue.items[queue.index]:null;
+      const item=items[queue.index]||null;
       return `TẠM DỪNG ở ${done}/${total}${item&&item.name?` • ${item.name}`:''}${item&&item.error?` • ${item.error}`:''}`;
     }
-    if(queue.status==='done')return `ĐÃ XONG: ${success}/${total} sản phẩm • tạo mới ${Number(queue.created||0)} • dùng lại ${Number(queue.adopted||0)} • bỏ qua lỗi ${Number(queue.failed||0)}. Không cần nhập Excel.`;
+    if(queue.status==='done')return `ĐÃ XONG LƯỢT: ${onSapo}/${total} sản phẩm đã có trên Sapo • ${fullDone}/${total} hoàn tất đủ ảnh+tồn • ${failed} cần xử lý tiếp.`;
     return `Trạng thái: ${text(queue.status)||'—'} • ${done}/${total}.`;
   }
 
