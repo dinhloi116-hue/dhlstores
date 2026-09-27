@@ -91,9 +91,13 @@
     const item=info.item;
     const variant=info.currentVariant;
     const productLine=item?`${info.done+1}/${info.total} • ${esc(item.name||'Sản phẩm')}`:`${info.done}/${info.total} sản phẩm`;
+    const retry=item&&item.stockRetry&&running?item.stockRetry:null;
     const variantLine=variant
       ? `Size ${esc(variant.size||'—')} • SKU ${esc(variant.sku||'—')} • tồn ${Number(variant.stock||0)}`
       : (info.variantTotal?`${info.variantDone}/${info.variantTotal} biến thể đã ghi tồn`:'' );
+    const retryLine=retry
+      ? `<div class="catalog-progress-retry">Sapo lỗi tạm thời • tự thử lại ${Math.min(Number(retry.attempt||1)+1,Number(retry.maxAttempts||5))}/${Number(retry.maxAttempts||5)} tại đúng SKU này...</div>`
+      :'';
     const errorLine=paused&&item&&item.error?`<div class="catalog-progress-error">${esc(item.error)}</div>`:'';
     box.hidden=false;
     box.className=`catalog-sapo-progress ${running?'running':paused?'paused':done?'done':''}`;
@@ -106,6 +110,7 @@
       <div class="catalog-progress-product"><b>${productLine}</b></div>
       <div class="catalog-progress-phase">${esc(info.phase)}</div>
       ${variantLine?`<div class="catalog-progress-variant">${variantLine}</div>`:''}
+      ${retryLine}
       ${errorLine}`;
   }
 
@@ -204,7 +209,7 @@
       .catalog-progress-track{height:9px;margin-top:8px;border-radius:999px;overflow:hidden;background:#e2e8f0;box-shadow:inset 0 0 0 1px rgba(15,23,42,.04)}
       .catalog-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,#2563eb,#60a5fa,#2563eb);background-size:160px 100%;transition:width .35s ease;animation:dhlSapoFlow 1.1s linear infinite}
       .catalog-sapo-progress.paused .catalog-progress-fill{background:#ef4444;animation:none}.catalog-sapo-progress.done .catalog-progress-fill{background:#22c55e;animation:none}
-      .catalog-progress-product{margin-top:8px;font-size:11px;color:#0f172a}.catalog-progress-phase{margin-top:3px;font-size:10px;font-weight:700}.catalog-progress-variant{margin-top:3px;font-size:9px;color:#64748b}.catalog-progress-error{margin-top:6px;padding:6px 7px;border-radius:6px;background:#fee2e2;color:#991b1b;font-size:9px;line-height:1.35}
+      .catalog-progress-product{margin-top:8px;font-size:11px;color:#0f172a}.catalog-progress-phase{margin-top:3px;font-size:10px;font-weight:700}.catalog-progress-variant{margin-top:3px;font-size:9px;color:#64748b}.catalog-progress-retry{margin-top:6px;padding:6px 7px;border-radius:6px;background:#fff7ed;color:#9a3412;font-size:9px;line-height:1.35}.catalog-progress-error{margin-top:6px;padding:6px 7px;border-radius:6px;background:#fee2e2;color:#991b1b;font-size:9px;line-height:1.35}
       @keyframes dhlSapoSpin{to{transform:rotate(360deg)}}@keyframes dhlSapoFlow{to{background-position:160px 0}}
       @media(prefers-reduced-motion:reduce){.catalog-progress-spinner,.catalog-progress-fill{animation:none!important}.catalog-progress-fill{transition:none}}
     `;document.head.appendChild(style);
