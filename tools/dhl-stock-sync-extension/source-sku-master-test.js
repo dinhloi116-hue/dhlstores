@@ -45,6 +45,46 @@ assert.deepStrictEqual(prepared.rows.map(r=>r.sku),[
 assert.deepStrictEqual(prepared.rows.map(r=>r.variantId),[901,902,903]);
 assert.strictEqual(prepared.matchedSkuCount,3);
 
+
+const wikaStandard='Áo Thi Đấu Wika CLB Đông Á Thanh Hoá (Bản Fan) - Vàng';
+const wikaAlias=rules.generatedAliasForStandardName(wikaStandard);
+assert.strictEqual(
+  wikaAlias,
+  'wika-clb-dong-a-thanh-hoa-ban-fan-vang-1kre19l',
+  'Riêng Wika Thanh Hoá Fan Vàng phải bỏ tiền tố ao-thi-dau-'
+);
+
+const wikaScanned=[{
+  parentId:77777,
+  parentName:'Áo Thi Đấu Wika CLB Đông Á Thanh Hoá (Bản Fan)',
+  complete:true,
+  variants:[
+    {id:7701,color:'Vàng',size:'S',available:5,name:`${wikaStandard} - S`},
+    {id:7702,color:'Vàng',size:'M',available:4,name:`${wikaStandard} - M`},
+    {id:7703,color:'Vàng',size:'L',available:3,name:`${wikaStandard} - L`},
+    {id:7704,color:'Vàng',size:'XL',available:2,name:`${wikaStandard} - XL`},
+    {id:7705,color:'Vàng',size:'XXL',available:1,name:`${wikaStandard} - XXL`}
+  ]
+}];
+
+const wikaCreated=productCreate.makeApiProducts(wikaScanned).products[0];
+assert.deepStrictEqual(wikaCreated.variants.map(v=>v.sku),[
+  `${wikaAlias}-S`,`${wikaAlias}-M`,`${wikaAlias}-L`,`${wikaAlias}-XL`,`${wikaAlias}-XXL`
+]);
+
+const wikaCatalog={variants:wikaScanned[0].variants.map((v,index)=>({
+  productId:700,
+  variantId:7001+index,
+  name:wikaStandard,
+  size:v.size,
+  sku:`${wikaAlias}-${v.size}`
+}))};
+const wikaPrepared=autoCore.prepareRows({},wikaCatalog,wikaScanned,matcher,rules);
+assert.deepStrictEqual(wikaPrepared.rows.map(r=>r.sku),[
+  `${wikaAlias}-S`,`${wikaAlias}-M`,`${wikaAlias}-L`,`${wikaAlias}-XL`,`${wikaAlias}-XXL`
+]);
+assert.strictEqual(wikaPrepared.matchedSkuCount,5);
+
 const contentScanner=fs.readFileSync(__dirname+'/content.js','utf8');
 assert.ok(contentScanner.includes('scanDescriptorApiFast'));
 assert.ok(contentScanner.includes("const concurrency=Math.min(3,Math.max(1,links.length))"));
@@ -54,5 +94,6 @@ console.log('ALIAS SKU MASTER PASS',{
   skuBase:'column A Đường dẫn/Alias',
   variantSku:'alias + size',
   stockSync:'exact SKU match only',
-  fastScanner:true
+  fastScanner:true,
+  specialWikaSku:wikaAlias
 });
