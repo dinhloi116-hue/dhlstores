@@ -333,6 +333,59 @@
     return '';
   }
 
+  function colorControlScopes(el,root){
+    const out=[];
+    const add=(node)=>{if(node&&node.nodeType===1&&!out.includes(node))out.push(node);};
+    if(el){
+      add(el);
+      if(el.id){
+        try{add((root||document).querySelector(`label[for="${CSS.escape(el.id)}"]`));}catch(_){}
+      }
+      add(el.closest&&el.closest('label'));
+      add(el.nextElementSibling);
+      add(el.previousElementSibling);
+      let parent=el.parentElement;
+      for(let depth=0;depth<4&&parent&&parent!==(root&&root.parentElement);depth+=1,parent=parent.parentElement)add(parent);
+    }
+    return out;
+  }
+
+  function colorImageUrl(name,root,controlEl,fallback=''){
+    const key=plain(name);
+    const current=findColorControl(name,root);
+    const el=current&&current.el?current.el:controlEl;
+    const directCandidates=[];
+    if(current&&current.imageUrl)directCandidates.push(current.imageUrl);
+    for(const scope of colorControlScopes(el,root)){
+      const url=imageUrlFromScope(scope);
+      if(url)directCandidates.push(url);
+    }
+    for(const raw of directCandidates){
+      const url=normalizeImageUrl(raw);
+      if(url)return url;
+    }
+
+    let best=null;
+    const nodes=root&&root.querySelectorAll
+      ? root.querySelectorAll('img,source,[data-image],[data-image-url],[style*="background-image"]')
+      : [];
+    for(const node of nodes){
+      const url=imageUrlFromNode(node);
+      if(!url)continue;
+      const scope=node.closest&&node.closest('label,[data-color],[class*="color"],[class*="variant"],[class*="option"],li,div');
+      const meta=plain(`${node.getAttribute&&node.getAttribute('alt')||''} ${node.getAttribute&&node.getAttribute('title')||''} ${scope?text(scope):''}`);
+      let score=0;
+      if(key&&meta.includes(key))score+=220;
+      if(scope&&/\b(active|selected|checked)\b/i.test(String(scope.className||'')))score+=65;
+      if(visible(node))score+=20;
+      const w=Number(node.naturalWidth||node.width||0),h=Number(node.naturalHeight||node.height||0);
+      if(w>=80&&h>=80)score+=Math.min(50,Math.round((w*h)/20000));
+      if(!best||score>best.score)best={url,score};
+    }
+    if(best&&best.score>=40)return best.url;
+    return normalizeImageUrl(fallback);
+  }
+
   function colorControls(root) {
     if (!root) return [];
     const radios = [];
@@ -343,7 +396,9 @@
       const key = dom.colorKey(name);
       if (!name || !key || seen.has(key)) continue;
       seen.add(key);
-      radios.push({ name, el: input });
+      const scopes=colorControlScopes(input,root);
+      const imageUrl=scopes.map(scope=>imageUrlFromScope(scope)).find(Boolean)||'';
+      radios.push({ name, el: input, imageUrl });
     }
     if (radios.length) return radios;
 
@@ -352,7 +407,8 @@
       const key = dom.colorKey(name);
       if (!name || !key || seen.has(key) || !dom.looksLikeColorName(name)) continue;
       seen.add(key);
-      radios.push({ name, el });
+      const imageUrl=imageUrlFromScope(el)||'';
+      radios.push({ name, el, imageUrl });
     }
     return radios;
   }
@@ -729,10 +785,11 @@
     return ranked[0]&&ranked[0].score>=0.5?ranked[0].v:null;
   }
 
-  function makeVariant(parentId, parentName, color, row, index, sourceVariant=null) {
+  function makeVariant(parentId, parentName, color, row, index, sourceVariant=null, imageUrl='') {
     const cleanColor = core.normalizeText(color) || '(không màu)';
     const size = dom.normalizeSize(row.size);
     const exactSku=core.normalizeText(sourceVariant&&sourceVariant.sku);
+    const resolvedImage=normalizeImageUrl(imageUrl)||normalizeImageUrl(sourceVariant&&sourceVariant.image)||'';
     return {
       id: Number(sourceVariant&&sourceVariant.id)||Number(parentId) * 1000 + index + 1,
       parentId: Number(parentId),
@@ -743,9 +800,9 @@
       size: dom.normalizeSize(sourceVariant&&sourceVariant.size)||size,
       available: Number(row.stock),
       price: Number(sourceVariant&&sourceVariant.price)||0,
-      image: sourceVariant&&sourceVariant.image||'',
+      image: resolvedImage,
       status: Number(row.stock) > 0 ? 2 : 0,
-      scanMethod: 'category-source-sku-exact'
+      scanMethod: 'category-alias-size'
     };
   }
 
@@ -793,8 +850,10 @@
         rows = await stableTargetRows(currentRoot, neededSizes);
       }
       previousSignature = rowsSignature(rows);
+      currentRoot=findStockRoot()||currentRoot;
+      const imageUrl=colorImageUrl(target.name,currentRoot,target.el,target.imageUrl||descriptor.imageUrl||'');
 
-      snapshots.push({ color: target.name, hint: target.hint || '', hintScore: target.hintScore || 0, rows });
+      snapshots.push({ color: target.name, hint: target.hint || '', hintScore: target.hintScore || 0, imageUrl, rows });
       progress({
         stage: 'dom-color',
         descriptor,
@@ -803,10 +862,11 @@
         colorTotal: controls.length,
         rows: rows.length,
         targetRows: neededSizes.length,
-        targetSizes: neededSizes
+        targetSizes: neededSizes,
+        imageUrl
       });
       rows.forEach((row) => {
-        variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,null));
+        variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,null,imageUrl));
       });
     }
 
@@ -817,6 +877,7 @@
     }
 
     const list = [...unique.values()];
+    const imageUrls=[...new Set(list.map(v=>normalizeImageUrl(v&&v.image)).filter(Boolean))];
     const colorKeys = [...new Set(list.map((variant) => dom.colorKey(variant.color)).filter(Boolean))];
     const missing = [];
     for (const color of colorKeys) {
@@ -843,6 +904,8 @@
       complete,
       scanMethod: 'category-alias-size',
       sourceUrl: String(descriptor.url||location.href),
+      imageUrl: imageUrls[0]||normalizeImageUrl(descriptor.imageUrl)||'',
+      imageUrls,
       expectedFromSapo: expectedHints.length * neededSizes.length,
       domDiagnostics: {
         stockUiFound: true,
@@ -857,6 +920,8 @@
         expectedSizes: neededSizes,
         ignoredSizes: [],
         missingSizes: missing,
+        imagesRead:imageUrls.length,
+        missingImageColors:[...new Set(list.filter(v=>!normalizeImageUrl(v&&v.image)).map(v=>core.normalizeText(v.color)).filter(Boolean))],
         skuRule:'alias+size',
         missingSourceSku,
         snapshots
