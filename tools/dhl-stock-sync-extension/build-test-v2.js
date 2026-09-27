@@ -142,6 +142,10 @@ assert.ok(contentScanner.includes('suppressedProbe:true'));
 assert.ok(contentScanner.includes("'revived-product'"));
 assert.ok(contentScanner.includes("'suppressed-probe-verify'"));
 assert.ok(contentScanner.includes('waitForPopupRefresh(before, expectedPath, 8000)'));
+assert.ok(contentScanner.includes('function colorImageUrl'));
+assert.ok(contentScanner.includes('imageUrlFromScope'));
+assert.ok(contentScanner.includes('missingImageColors'));
+assert.ok(contentScanner.includes('imageUrls'));
 
 const catalogScanner=read('catalog-popup-v3-mode.js');
 assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'new-product-popup-alias-size'"));
@@ -150,6 +154,9 @@ assert.ok(catalogScanner.includes('async function scanAllNewProducts(options={})
 assert.ok(catalogScanner.includes('sendPopupOnly(tab.id,descriptor)'));
 assert.ok(catalogScanner.includes("mode:'new-product-popup-full'"));
 assert.ok(catalogScanner.includes('ĐANG POPUP'));
+assert.ok(catalogScanner.includes('missingImageCount'));
+assert.ok(catalogScanner.includes('SKU có link ảnh'));
+assert.ok(catalogScanner.includes('Thiếu link ảnh cho'));
 assert.ok(catalogScanner.includes("chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples'])"));
 assert.ok(catalogScanner.includes('Không dùng SKU cũ'));
 assert.ok(catalogScanner.includes('standardizeAllByPopup'));
@@ -179,6 +186,8 @@ assert.ok(productCore.includes('variantImage'));
 assert.ok(productCore.includes('Cột A "Đường dẫn/Alias" chính là SKU GỐC'));
 assert.ok(productCore.includes('row[16]=`${skuBase}-${size}`'));
 assert.ok(productCore.includes('sku:`${skuBase}-${size}`'));
+assert.ok(productCore.includes('Ảnh phiên bản: ghi link cho TỪNG SKU'));
+assert.ok(productCore.includes('row[29]=skuImage'));
 
 const productBg=read('sapo-product-create-background.js');
 assert.ok(productBg.includes("const QUEUE_KEY='dhlSapoProductCreateQueueV1'"));
@@ -219,6 +228,7 @@ assert.ok(productUi.includes('makeApiProducts'));
 assert.ok(productUi.includes('dữ liệu từ lượt quét mới'));
 assert.ok(productUi.includes('SKU KHÔNG lấy từ dữ liệu cũ.'));
 assert.ok(productUi.includes('Tool vẫn kiểm tra alias/SKU để tránh tạo trùng'));
+assert.ok(productUi.includes('Thiếu link ảnh nguồn'));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
