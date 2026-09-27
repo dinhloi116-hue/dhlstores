@@ -390,7 +390,7 @@
 
     for(let attempt=1;attempt<=delays.length+1;attempt+=1){
       try{
-        const result=await setVariantStockWithRetry(sapo,sapoVariant,expected,item,queue);
+        const result=await setVariantStock(sapo,sapoVariant,expected);
         if(item){
           item.stockRetry=null;
           item.stockRetryHistory=Array.isArray(item.stockRetryHistory)?item.stockRetryHistory:[];
@@ -442,7 +442,7 @@
       const sapoVariant=bySku.get(normSku(expected.sku));
       if(!sapoVariant)throw new Error(`${item.name}: không thấy SKU ${expected.sku} sau khi tạo.`);
 
-      const result=await setVariantStock(sapo,sapoVariant,expected);
+      const result=await setVariantStockWithRetry(sapo,sapoVariant,expected,item,queue);
       item.stockResults[item.variantIndex]={
         index:item.variantIndex,
         size:text(expected.size),
