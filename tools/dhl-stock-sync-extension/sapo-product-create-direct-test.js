@@ -27,6 +27,14 @@ assert.ok(bg.includes('/Sapo HTTP 403:\\s*access_denied/i'));
 assert.ok(bg.includes("method:'variant.inventory_quantity:fallback-403'"));
 assert.ok(bg.includes('item.stockResults=Array.isArray(item.stockResults)?item.stockResults:[]'));
 assert.ok(bg.includes('Checkpoint sau từng size'));
+assert.ok(bg.includes('function retryableStockError'));
+assert.ok(bg.includes('Sapo HTTP (?:500|502|503|504)'));
+assert.ok(bg.includes('async function setVariantStockWithRetry'));
+assert.ok(bg.includes('const delays=[700,1400,2800,5000]'));
+assert.ok(bg.includes('const result=await setVariantStockWithRetry(sapo,sapoVariant,expected,item,queue)'));
+assert.ok(bg.includes('đã tự thử lại ${delays.length+1} lần tại đúng SKU'));
+assert.ok(bg.includes('item.stockRetryHistory'));
+assert.ok(ui.includes('Sapo lỗi tạm thời • tự thử lại'));
 assert.ok(bg.includes('Trùng alias trong lượt đẩy'));
 assert.ok(bg.includes('Trùng SKU trong lượt đẩy'));
 assert.ok(bg.includes('thiếu link ảnh nguồn'));
@@ -40,6 +48,6 @@ assert.ok(ui.includes('Excel chỉ còn là phương án dự phòng'));
 console.log('SAPO PRODUCT CREATE DIRECT PASS',{
   product:'POST direct',
   images:'checkpointed + variant-bound',
-  stock:'location inventory first, Product Variant fallback on 403',
+  stock:'location inventory first, Product Variant fallback on 403, 5xx auto-retry per SKU',
   excel:'fallback only'
 });
