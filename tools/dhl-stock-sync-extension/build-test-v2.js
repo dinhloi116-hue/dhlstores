@@ -199,7 +199,12 @@ const productBg=read('sapo-product-create-background.js');
 assert.ok(productBg.includes("const QUEUE_KEY='dhlSapoProductCreateQueueV1'"));
 assert.ok(productBg.includes("'/admin/products.json'"));
 assert.ok(productBg.includes("sapoFetch(sapo,'/admin/products.json',{method:'POST'"));
-assert.ok(productBg.includes("images:(item.images||[]).map((src,index)=>({src"));
+assert.ok(productBg.includes('function imageGroups(item)'));
+assert.ok(productBg.includes('function imageVariantIds(image)'));
+assert.ok(productBg.includes('body.image.variant_ids=variantIds'));
+assert.ok(productBg.includes('imageIndex:0'));
+assert.ok(productBg.includes("'/admin/inventory_levels/set.json'"));
+assert.ok(productBg.includes('inventory_item_id:Number(invId)'));
 assert.ok(productBg.includes("options:[{name:'Size'}]"));
 assert.ok(productBg.includes("inventory_management:'bizweb'"));
 assert.ok(productBg.includes("inventory_quantity:0"));
@@ -227,7 +232,7 @@ assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode
 assert.ok(popup.indexOf('workflow-order-mode.js')>popup.indexOf('sapo-push-report-mode.js'));
 
 const productUi=read('sapo-product-create-mode.js');
-assert.ok(productUi.includes('ĐĂNG THẲNG LÊN SAPO'));
+assert.ok(productUi.includes('ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL'));
 assert.ok(productUi.includes("type:'DHL_SAPO_PRODUCT_CREATE_START'"));
 assert.ok(productUi.includes("type:'DHL_SAPO_PRODUCT_CREATE_RETRY'"));
 assert.ok(productUi.includes('makeApiProducts'));
