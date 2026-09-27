@@ -23,126 +23,122 @@
     return [];
   }
 
-  function inventoryItemFrom(data) {
-    if (data && data.inventory_item && typeof data.inventory_item === 'object') return data.inventory_item;
-    if (data && data.data && data.data.inventory_item && typeof data.data.inventory_item === 'object') return data.data.inventory_item;
-    if (data && data.data && typeof data.data === 'object' && !Array.isArray(data.data)) return data.data;
-    return data && typeof data === 'object' ? data : null;
-  }
-
-  function syntheticOk(inventoryItemId, locationId, available) {
+  function syntheticOk(inventoryItemId, locationId, available, method='synthetic') {
     return new Response(JSON.stringify({
       inventory_level: {
         inventory_item_id: inventoryItemId,
         location_id: locationId,
         available
-      }
+      },
+      dhl_stock_write_method: method
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
-  async function fallbackVariantAdjustment(origin, init, inventoryItemId, locationId, available, unsupportedResponse) {
-    // Sapo public Admin API documents stock adjustment on Product Variant via
-    // PUT /admin/variants/{id}.json + inventory_quantity_adjustment.
-    // Resolve the variant from the inventory level first so we still respect the selected location.
-    const levelUrl = `${origin}/admin/inventory_levels.json?inventory_item_id=${inventoryItemId}&location_id=${locationId}&limit=5`;
-    let levelResponse;
-    try {
-      levelResponse = await originalFetch(levelUrl, { ...init, method: 'GET', body: undefined });
-    } catch (_) {
-      return unsupportedResponse;
-    }
-
-    let variantId = 0;
-    let currentAvailable = NaN;
-    if (levelResponse.ok) {
-      const levelData = await jsonOf(levelResponse);
-      const levels = inventoryLevelsFrom(levelData);
-      const level = levels.find(x => Number(x && x.inventory_item_id) === inventoryItemId && Number(x && x.location_id) === locationId)
-        || levels.find(x => Number(x && x.inventory_item_id) === inventoryItemId)
-        || levels[0];
-      if (level) {
-        variantId = Number(level.variant_id) || 0;
-        currentAvailable = Number(level.available);
-      }
-    }
-
-    // Fallback resolver for shops whose inventory_levels payload omits variant_id.
-    if (!variantId) {
-      try {
-        const itemResponse = await originalFetch(`${origin}/admin/inventory_items/${inventoryItemId}.json`, { ...init, method: 'GET', body: undefined });
-        if (itemResponse.ok) {
-          const item = inventoryItemFrom(await jsonOf(itemResponse));
-          variantId = Number(item && item.variant_id) || 0;
-        }
-      } catch (_) {}
-    }
-
-    if (!variantId) return unsupportedResponse;
-
-    if (!Number.isFinite(currentAvailable)) {
-      try {
-        const variantResponse = await originalFetch(`${origin}/admin/variants/${variantId}.json`, { ...init, method: 'GET', body: undefined });
-        if (!variantResponse.ok) return unsupportedResponse;
-        const variantData = await jsonOf(variantResponse);
-        const variant = variantData && (variantData.variant || (variantData.data && variantData.data.variant) || variantData.data);
-        currentAvailable = Number(variant && variant.inventory_quantity);
-      } catch (_) {
-        return unsupportedResponse;
-      }
-    }
-
-    if (!Number.isFinite(currentAvailable)) return unsupportedResponse;
-    const adjustment = available - currentAvailable;
-    if (adjustment === 0) return syntheticOk(inventoryItemId, locationId, available);
-
-    return originalFetch(`${origin}/admin/variants/${variantId}.json`, {
-      ...init,
-      method: 'PUT',
-      body: JSON.stringify({
-        variant: {
-          id: variantId,
-          inventory_quantity_adjustment: adjustment
-        }
-      })
-    });
+  function authSafeStatus(response) {
+    const status=Number(response && response.status);
+    return [401,403,408,429].includes(status) || status>=500;
   }
 
-  globalThis.fetch = async function dhlSapoFetchCompat(input, init = {}) {
-    const url = requestUrl(input);
-    const method = String(init && init.method || (input && input.method) || 'GET').toUpperCase();
-    const match = url.match(/^(https:\/\/[^/]+)\/admin\/inventory_items\/(\d+)\/locations\/(\d+)\.json(?:[?#].*)?$/i);
+  function compatStatus(response) {
+    return [400,404,405,409,422].includes(Number(response && response.status));
+  }
 
-    if (method !== 'PUT' || !match) return originalFetch(input, init);
+  async function currentInventoryLevel(origin, init, inventoryItemId, locationId) {
+    const url=`${origin}/admin/inventory_levels.json?inventory_item_id=${inventoryItemId}&location_id=${locationId}&limit=5`;
+    const response=await originalFetch(url,{...init,method:'GET',body:undefined});
+    if(!response.ok)return{response,level:null};
+    const levels=inventoryLevelsFrom(await jsonOf(response));
+    const level=levels.find(x=>Number(x&&x.inventory_item_id)===inventoryItemId&&Number(x&&x.location_id)===locationId)
+      ||levels.find(x=>Number(x&&x.inventory_item_id)===inventoryItemId)
+      ||levels[0]
+      ||null;
+    return{response,level};
+  }
 
-    let payload = {};
-    try {
-      payload = typeof init.body === 'string' ? JSON.parse(init.body) : (init.body || {});
-    } catch (_) {
-      payload = {};
-    }
+  async function adjustAbsolute(origin, init, inventoryItemId, locationId, available, fallbackResponse) {
+    let current;
+    try{current=await currentInventoryLevel(origin,init,inventoryItemId,locationId);}
+    catch(_){return fallbackResponse;}
+    if(!current||!current.level)return fallbackResponse;
 
-    const available = Number(payload && payload.inventory_level && payload.inventory_level.available);
-    if (!Number.isFinite(available) || available < 0) return originalFetch(input, init);
+    const currentAvailable=Number(current.level.available);
+    if(!Number.isFinite(currentAvailable))return fallbackResponse;
+    const adjustment=available-currentAvailable;
+    if(adjustment===0)return syntheticOk(inventoryItemId,locationId,available,'inventory_levels/adjust:no-op');
 
-    const origin = match[1];
-    const locationId = Number(match[3]);
-    const inventoryItemId = Number(match[2]);
-    const nextUrl = `${origin}/admin/inventory_levels/set.json`;
-    const nextBody = {
-      location_id: locationId,
-      inventory_item_id: inventoryItemId,
+    const adjustResponse=await originalFetch(`${origin}/admin/inventory_levels/adjust.json`,{
+      ...init,
+      method:'POST',
+      body:JSON.stringify({
+        location_id:locationId,
+        inventory_item_id:inventoryItemId,
+        available_adjustment:adjustment
+      })
+    });
+    return adjustResponse;
+  }
+
+  async function writeAbsolute(origin, init, inventoryItemId, locationId, available) {
+    const url=`${origin}/admin/inventory_levels/set.json`;
+    const body={
+      location_id:locationId,
+      inventory_item_id:inventoryItemId,
       available
     };
 
-    // Sapo shop thực tế trả 405 cho POST ở endpoint này. Thử PUT trước.
-    const setResponse = await originalFetch(nextUrl, {
+    // Chuẩn Sapo Admin API: POST /inventory_levels/set.json.
+    const postResponse=await originalFetch(url,{
       ...init,
-      method: 'PUT',
-      body: JSON.stringify(nextBody)
+      method:'POST',
+      body:JSON.stringify(body)
     });
-    if (setResponse.ok || ![404, 405].includes(Number(setResponse.status))) return setResponse;
+    if(postResponse.ok || authSafeStatus(postResponse) || !compatStatus(postResponse))return postResponse;
 
-    // Nếu shop không hỗ trợ inventory_levels/set, dùng endpoint Variant đã được Sapo công khai tài liệu.
-    return fallbackVariantAdjustment(origin, init, inventoryItemId, locationId, available, setResponse);
+    // Một số shop/version từng trả 405 cho POST; thử PUT để tương thích ngược.
+    const putResponse=await originalFetch(url,{
+      ...init,
+      method:'PUT',
+      body:JSON.stringify(body)
+    });
+    if(putResponse.ok || authSafeStatus(putResponse) || !compatStatus(putResponse))return putResponse;
+
+    // Nếu set không được, dùng API adjust đã hỗ trợ theo location:
+    // GET tồn hiện tại -> tính delta -> POST /inventory_levels/adjust.json.
+    return adjustAbsolute(origin,init,inventoryItemId,locationId,available,putResponse);
+  }
+
+  function legacyRequest(url,method,init){
+    const match=url.match(/^(https:\/\/[^/]+)\/admin\/inventory_items\/(\d+)\/locations\/(\d+)\.json(?:[?#].*)?$/i);
+    if(method!=='PUT'||!match)return null;
+    let payload={};
+    try{payload=typeof init.body==='string'?JSON.parse(init.body):(init.body||{});}catch(_){}
+    const available=Number(payload&&payload.inventory_level&&payload.inventory_level.available);
+    if(!Number.isFinite(available)||available<0)return null;
+    return{
+      origin:match[1],
+      inventoryItemId:Number(match[2]),
+      locationId:Number(match[3]),
+      available
+    };
+  }
+
+  function setRequest(url,method,init){
+    const match=url.match(/^(https:\/\/[^/]+)\/admin\/inventory_levels\/set\.json(?:[?#].*)?$/i);
+    if(!match||!['POST','PUT'].includes(method))return null;
+    let payload={};
+    try{payload=typeof init.body==='string'?JSON.parse(init.body):(init.body||{});}catch(_){}
+    const inventoryItemId=Number(payload&&payload.inventory_item_id);
+    const locationId=Number(payload&&payload.location_id);
+    const available=Number(payload&&payload.available);
+    if(!inventoryItemId||!locationId||!Number.isFinite(available)||available<0)return null;
+    return{origin:match[1],inventoryItemId,locationId,available};
+  }
+
+  globalThis.fetch=async function dhlSapoFetchCompat(input,init={}){
+    const url=requestUrl(input);
+    const method=String(init&&init.method||(input&&input.method)||'GET').toUpperCase();
+    const target=legacyRequest(url,method,init)||setRequest(url,method,init);
+    if(!target)return originalFetch(input,init);
+    return writeAbsolute(target.origin,init,target.inventoryItemId,target.locationId,target.available);
   };
 })();
