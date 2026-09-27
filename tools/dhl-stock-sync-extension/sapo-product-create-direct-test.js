@@ -15,11 +15,15 @@ assert.ok(bg.includes("body.image.variant_ids=variantIds"));
 assert.ok(bg.includes('/images.json'));
 assert.ok(bg.includes('imageAltMarker'));
 assert.ok(bg.includes('variantIds.every(id=>bound.has(id))'));
-assert.ok(bg.includes("'/admin/inventory_levels/set.json'"));
-assert.ok(bg.includes("method:'POST'"));
-assert.ok(bg.includes('location_id:Number(sapo.locationId)'));
-assert.ok(bg.includes('inventory_item_id:Number(invId)'));
-assert.ok(bg.includes('available:Number(expected.stock)'));
+assert.ok(bg.includes('function setVariantStock'));
+assert.ok(bg.includes('/admin/variants/${variantId}.json'));
+assert.ok(bg.includes("method:'PUT'"));
+assert.ok(bg.includes("inventory_management:'bizweb'"));
+assert.ok(bg.includes('inventory_quantity:Number(expected.stock)'));
+assert.ok(bg.includes("method:'variant.inventory_quantity'"));
+assert.ok(bg.includes('item.stockResults=Array.isArray(item.stockResults)?item.stockResults:[]'));
+assert.ok(bg.includes('Checkpoint sau từng size'));
+assert.ok(!bg.includes("sapoFetch(sapo,'/admin/inventory_levels/set.json'"),'Luồng tạo SP mới không được dùng inventory_levels/set vì shop trả 403 access_denied');
 assert.ok(bg.includes('Trùng alias trong lượt đẩy'));
 assert.ok(bg.includes('Trùng SKU trong lượt đẩy'));
 assert.ok(bg.includes('thiếu link ảnh nguồn'));
@@ -33,6 +37,6 @@ assert.ok(ui.includes('Excel chỉ còn là phương án dự phòng'));
 console.log('SAPO PRODUCT CREATE DIRECT PASS',{
   product:'POST direct',
   images:'checkpointed + variant-bound',
-  stock:'inventory_levels/set',
+  stock:'PUT /admin/variants/:id inventory_quantity',
   excel:'fallback only'
 });
