@@ -26,6 +26,14 @@
     return{Authorization:`Basic ${btoa(`${key}:${secret}`)}`,Accept:'application/json','Content-Type':'application/json'};
   }
 
+  function sapoErrorDetail(data,raw){
+    const candidate=data&&typeof data==='object'?(data.message||data.error||data.errors||data):raw;
+    if(candidate&&typeof candidate==='object'){
+      try{return JSON.stringify(candidate).slice(0,500);}catch{return String(candidate).slice(0,500);}
+    }
+    return text(candidate||raw).slice(0,500);
+  }
+
   async function sapoFetch(sapo,path,{method='GET',body=null}={}){
     const host=storeHost(sapo&&sapo.storeHost);
     const response=await fetch(`https://${host}${path}`,{
@@ -37,11 +45,7 @@
     let data={};
     try{data=raw?JSON.parse(raw):{};}catch{data={raw};}
     if(!response.ok){
-      let detail='';
-      const candidate=data&&typeof data==='object'?(data.message||data.error||data.errors):'';
-      if(candidate&&typeof candidate==='object'){
-        try{detail=JSON.stringify(candidate);}catch{detail=String(candidate);}
-      }else detail=text(candidate||raw);
+      const detail=sapoErrorDetail(data,raw);
       throw new Error(`Sapo HTTP ${response.status}${detail?`: ${detail.slice(0,420)}`:''}`);
     }
     return data||{};
