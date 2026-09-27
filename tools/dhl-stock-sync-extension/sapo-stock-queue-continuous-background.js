@@ -22,6 +22,14 @@
     return /sapo http 405.*not supported request method ['"]?post['"]?/i.test(text(message));
   }
 
+  function isOpaque400(message){
+    return /sapo http 400:\s*\[object object\]/i.test(text(message));
+  }
+
+  function sameErrorKey(message){
+    return text(message).toLowerCase().replace(/\s+/g,' ').slice(0,220);
+  }
+
   async function clearConsumedManualCache(queue){
     const scans=queue&&queue.sourceScans&&typeof queue.sourceScans==='object'?queue.sourceScans:{};
     if(!Object.keys(scans).length)return;
@@ -73,6 +81,44 @@
     return true;
   }
 
+  async function recoverOpaque400Queue(queue,isManual){
+    const errors=Array.isArray(queue&&queue.errors)?queue.errors:[];
+    const processed=Math.max(0,Number(queue&&queue.index||0));
+    if(Number(queue&&queue.success||0)!==0)return false;
+    if(processed<=0||errors.length<2)return false;
+    if(queue.opaque400RecoveredAt)return false;
+    const processedErrors=errors.filter(e=>Number(e&&e.index)>=0&&Number(e&&e.index)<processed);
+    if(processedErrors.length<2||!processedErrors.every(e=>isOpaque400(e&&e.error)))return false;
+
+    // Bản cũ đã bỏ qua hàng loạt do lỗi endpoint/method của chính tool.
+    // Vì success=0 nên chưa có dòng nào ghi được lên Sapo: retry toàn bộ queue cũ là an toàn.
+    queue.recoveryHistory=Array.isArray(queue.recoveryHistory)?queue.recoveryHistory:[];
+    queue.recoveryHistory.push({
+      at:Date.now(),
+      reason:'Opaque Sapo HTTP 400 from stock-write compatibility layer',
+      processed,
+      errors:processedErrors.map(e=>({...e}))
+    });
+    queue.index=0;
+    queue.success=0;
+    queue.successRows=[];
+    queue.failed=0;
+    queue.skippedRows=[];
+    queue.errors=[];
+    queue.finishedAt=0;
+    queue.opaque400RecoveredAt=Date.now();
+    await schedule(queue,isManual,450);
+    return true;
+  }
+
+  function repeatedSystem400(queue,last){
+    if(!last||!/sapo http 400/i.test(text(last.error)))return false;
+    const errors=Array.isArray(queue&&queue.errors)?queue.errors:[];
+    const key=sameErrorKey(last.error);
+    const same=errors.filter(e=>sameErrorKey(e&&e.error)===key);
+    return isOpaque400(last.error)||same.length>=2;
+  }
+
   async function continueAfterRowError(){
     if(repairing)return;
     repairing=true;
@@ -83,15 +129,16 @@
 
       const isManual=queue.source==='manual';
 
-      // Tự cứu queue cũ đã bị bỏ qua hàng loạt vì bản trước gọi POST inventory_levels/set.
+      // Tự cứu các queue cũ bị bỏ qua hàng loạt vì lỗi compatibility endpoint của tool.
       if(await recoverLegacyPost405Queue(queue,isManual))return;
+      if(await recoverOpaque400Queue(queue,isManual))return;
 
       const paused=isManual?queue.manualPaused===true:queue.status==='paused';
       if(!paused)return;
 
       const errors=Array.isArray(queue.errors)?queue.errors:[];
       const last=errors.length?errors[errors.length-1]:null;
-      if(!last||isSystemError(last.error))return;
+      if(!last||isSystemError(last.error)||repeatedSystem400(queue,last))return;
 
       const rows=Array.isArray(queue.rows)?queue.rows:[];
       const index=Math.max(0,Number(queue.index||0));
