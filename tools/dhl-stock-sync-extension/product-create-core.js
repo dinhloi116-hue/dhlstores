@@ -90,6 +90,7 @@
       sizes.forEach((size,index)=>{
         const item=bySize.get(size);
         const first=index===0;
+        const skuImage=validHttpUrl(text(item&&item.variant&&item.variant.image))||validHttpUrl(group.imageUrl)||validHttpUrl(group.parentImageUrl)||'';
         const row=new Array(HEADERS.length).fill('');
         row[0]=alias;
         row[1]=first?group.standardName:'';
@@ -100,12 +101,14 @@
         row[10]=size;
         row[16]=`${skuBase}-${size}`;
         row[18]='Cái';
-        row[19]=first?group.imageUrl:'';
+        // Ảnh đại diện của sản phẩm/màu.
+        row[19]=first?skuImage:'';
         row[24]='Sapo';
-        row[29]=text(item.variant&&item.variant.image)||group.imageUrl;
+        // Ảnh phiên bản: ghi link cho TỪNG SKU/size để import Sapo gắn ảnh đúng biến thể.
+        row[29]=skuImage;
         row[30]='Không';
         row[34]=item.stock;
-        rows.push({values:row,standardName:group.standardName,size,stock:item.stock,sku:row[16],imageUrl:row[29],sourceUrl:group.sourceUrl});
+        rows.push({values:row,standardName:group.standardName,size,stock:item.stock,sku:row[16],imageUrl:skuImage,sourceUrl:group.sourceUrl});
       });
     }
     return{groups,rows};
