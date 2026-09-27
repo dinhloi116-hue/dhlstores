@@ -164,7 +164,7 @@
       if(btn.dataset.mode==='retry'){
         const response=await send({type:'DHL_SAPO_PRODUCT_CREATE_RETRY'});
         if(!response.ok)throw new Error(response.error||'Không chạy lại được hàng đợi.');
-        setState('Đã tiếp tục đúng sản phẩm/biến thể đang dừng. Không tạo lại các sản phẩm đã hoàn tất.','ok');
+        setState('Đã chạy lại TOÀN BỘ sản phẩm chưa hoàn tất, từ đúng checkpoint ảnh/tồn. Sản phẩm đã có Product ID sẽ không tạo lại; sản phẩm hoàn tất được bỏ qua.','ok');
         renderProgress(response.queue||null);
         await refresh();return;
       }
