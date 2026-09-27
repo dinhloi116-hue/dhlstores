@@ -334,10 +334,30 @@
     const variantId=Number(sapoVariant&&sapoVariant.id);
     if(!variantId)throw new Error(`Không có variant ID cho SKU ${expected.sku}.`);
 
-    // Private App đã có write_products vì vừa tạo được Product/Variant.
-    // Sapo document chính thức cho phép cập nhật tồn trực tiếp trên Product Variant:
-    // PUT /admin/variants/{id}.json + inventory_quantity.
-    // Không dùng inventory_levels/set trong luồng TẠO SẢN PHẨM MỚI vì shop này trả 403 access_denied.
+    // Ưu tiên API tồn theo đúng location đã chọn.
+    // Nếu Private App của shop từ chối inventory_levels bằng 403 access_denied,
+    // fallback sang Product Variant API chính thức (cùng quyền write_products đã tạo được SP).
+    try{
+      const invId=await inventoryItemId(sapo,sapoVariant,expected);
+      await sapoFetch(sapo,'/admin/inventory_levels/set.json',{
+        method:'POST',
+        body:{
+          location_id:Number(sapo.locationId),
+          inventory_item_id:Number(invId),
+          available:Number(expected.stock)
+        }
+      });
+      return{
+        method:'inventory_levels.set',
+        variantId,
+        inventoryItemId:Number(invId),
+        available:Number(expected.stock)
+      };
+    }catch(error){
+      const message=error&&error.message||String(error);
+      if(!/Sapo HTTP 403:\s*access_denied/i.test(message))throw error;
+    }
+
     const data=await sapoFetch(sapo,`/admin/variants/${variantId}.json`,{
       method:'PUT',
       body:{
@@ -354,7 +374,7 @@
       throw new Error(`SKU ${expected.sku}: Sapo trả tồn ${actual}, cần ${Number(expected.stock)}.`);
     }
     return{
-      method:'variant.inventory_quantity',
+      method:'variant.inventory_quantity:fallback-403',
       variantId,
       available:Number(expected.stock)
     };
