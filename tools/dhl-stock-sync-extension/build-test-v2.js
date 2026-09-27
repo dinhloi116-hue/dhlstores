@@ -158,7 +158,7 @@ assert.ok(catalogScanner.includes('missingImageCount'));
 assert.ok(catalogScanner.includes('SKU có link ảnh'));
 assert.ok(catalogScanner.includes('Thiếu link ảnh cho'));
 assert.ok(catalogScanner.includes("chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples'])"));
-assert.ok(catalogScanner.includes('Không dùng SKU cũ'));
+assert.ok(catalogScanner.includes('Cột Ảnh đại diện và Ảnh phiên bản sẽ lấy link nguồn'));
 assert.ok(catalogScanner.includes('standardizeAllByPopup'));
 assert.ok(catalogScanner.includes("type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"));
 assert.ok(catalogScanner.includes("dhlCatalogSkuMode:'maintenance-popup-standardize-once'"));
