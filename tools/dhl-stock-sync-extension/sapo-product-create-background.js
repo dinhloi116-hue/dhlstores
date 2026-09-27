@@ -421,6 +421,11 @@
     const sapo=config.sapo||{};
     if(!queue||queue.status!=='running')return;
     if(!sapo.verifiedAt||!sapo.locationId)throw new Error('Mất xác minh Ứng dụng riêng Sapo.');
+
+    // Khi chạy chế độ sửa lỗi, bỏ qua sản phẩm đã hoàn tất để không ghi/tính lại.
+    while(queue.index<queue.items.length&&queue.items[queue.index]&&queue.items[queue.index].status==='done'){
+      queue.index+=1;
+    }
     if(queue.index>=queue.items.length){await finalize(queue);return;}
     const item=queue.items[queue.index];
     try{
@@ -475,9 +480,36 @@
 
   async function retry(){
     const state=await chrome.storage.local.get(QUEUE_KEY),queue=state[QUEUE_KEY];
-    if(!queue||queue.status!=='paused')throw new Error('Không có hàng đợi tạo sản phẩm đang tạm dừng.');
-    const item=queue.items&&queue.items[queue.index];
-    if(item){item.status=Number(item.productId)?'stock':'pending';item.error='';}
+    if(!queue||!['paused','done'].includes(queue.status))throw new Error('Không có hàng đợi tạo sản phẩm cần xử lý lại.');
+
+    const items=Array.isArray(queue.items)?queue.items:[];
+    const unfinished=[];
+    for(let i=0;i<items.length;i+=1){
+      const item=items[i];
+      if(!item||item.status==='done')continue;
+      unfinished.push(i);
+      item.skipped=false;
+      item.skippedAt=0;
+      item.error='';
+      // Giữ nguyên productId/imageIndex/variantIndex để tiếp tục đúng checkpoint,
+      // không tạo lại sản phẩm và không ghi lại các size đã thành công.
+      item.status=Number(item.productId)?'stock':'pending';
+    }
+    if(!unfinished.length)throw new Error('Không còn sản phẩm nào cần xử lý lại.');
+
+    queue.retryHistory=Array.isArray(queue.retryHistory)?queue.retryHistory:[];
+    queue.retryHistory.push({
+      at:Date.now(),
+      unfinished:unfinished.length,
+      firstIndex:unfinished[0],
+      reason:'retry unfinished product/image/stock checkpoints'
+    });
+    queue.index=unfinished[0];
+    queue.success=items.filter(item=>item&&item.status==='done').length;
+    queue.failed=0;
+    queue.finishedAt=0;
+    queue.systemPaused=false;
+    queue.systemError='';
     queue.status='running';
     await chrome.storage.local.set({[QUEUE_KEY]:queue});
     chrome.alarms.create(ALARM,{when:Date.now()+500});
