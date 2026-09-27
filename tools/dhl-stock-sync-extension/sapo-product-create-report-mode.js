@@ -13,14 +13,36 @@
     setTimeout(()=>URL.revokeObjectURL(url),1500);
   }
 
-  function failedItems(queue){
-    return (Array.isArray(queue&&queue.items)?queue.items:[]).filter(item=>item&&(item.skipped===true||item.status==='error'));
+  function itemsOf(queue){return Array.isArray(queue&&queue.items)?queue.items:[];}
+  function failedItems(queue){return itemsOf(queue).filter(item=>item&&(item.skipped===true||item.status==='error'));}
+
+  function metrics(queue){
+    const items=itemsOf(queue);
+    const total=Number(queue&&queue.total||items.length||0);
+    const onSapo=items.filter(item=>Number(item&&item.productId)>0);
+    const created=items.filter(item=>Number(item&&item.productId)>0&&item.created===true);
+    const adopted=items.filter(item=>Number(item&&item.productId)>0&&item.adopted===true);
+    const imageDone=items.filter(item=>Number(item&&item.productId)>0&&item.imagesDone===true);
+    const stockDone=items.filter(item=>{
+      if(!item||!Number(item.productId))return false;
+      const variants=Array.isArray(item.variants)?item.variants:[];
+      return variants.length>0&&Number(item.variantIndex||0)>=variants.length;
+    });
+    const fullDone=items.filter(item=>item&&item.status==='done');
+    const failed=failedItems(queue);
+    return{items,total,onSapo,created,adopted,imageDone,stockDone,fullDone,failed};
+  }
+
+  function failurePhase(item){
+    if(!item||!Number(item.productId))return'TẠO SẢN PHẨM';
+    if(item.imagesDone!==true)return'ẢNH';
+    const variants=Array.isArray(item.variants)?item.variants:[];
+    if(Number(item.variantIndex||0)<variants.length)return'TỒN KHO';
+    return'HOÀN TẤT';
   }
 
   function reportText(queue){
-    const items=Array.isArray(queue&&queue.items)?queue.items:[];
-    const failed=failedItems(queue);
-    const success=items.filter(item=>item&&item.status==='done');
+    const m=metrics(queue);
     const lines=[];
     lines.push('BÁO CÁO ĐĂNG SẢN PHẨM LÊN SAPO');
     lines.push('================================');
@@ -29,39 +51,53 @@
     lines.push(`Chi nhánh: ${text(queue&&queue.locationName)||'—'}`);
     lines.push(`Bắt đầu: ${fmt(queue&&queue.startedAt)}`);
     lines.push(`Kết thúc: ${fmt(queue&&queue.finishedAt)}`);
-    lines.push(`Tổng sản phẩm: ${Number(queue&&queue.total||items.length||0)}`);
-    lines.push(`Thành công: ${Number(queue&&queue.success||success.length||0)}`);
-    lines.push(`Bỏ qua do lỗi: ${failed.length}`);
-    lines.push(`Tạo mới: ${Number(queue&&queue.created||0)}`);
-    lines.push(`Dùng lại sản phẩm có sẵn: ${Number(queue&&queue.adopted||0)}`);
+    lines.push(`Tổng sản phẩm: ${m.total}`);
+    lines.push(`Đã có Product ID trên Sapo: ${m.onSapo.length}/${m.total}`);
+    lines.push(`Trong đó tạo mới: ${m.created.length}`);
+    lines.push(`Dùng lại sản phẩm có sẵn: ${m.adopted.length}`);
+    lines.push(`Đã hoàn tất ảnh: ${m.imageDone.length}/${m.total}`);
+    lines.push(`Đã hoàn tất tồn kho: ${m.stockDone.length}/${m.total}`);
+    lines.push(`Hoàn tất toàn bộ quy trình: ${m.fullDone.length}/${m.total}`);
+    lines.push(`Cần xử lý tiếp ảnh/tồn: ${m.failed.length}`);
     lines.push('');
 
-    lines.push('SẢN PHẨM THÀNH CÔNG');
-    lines.push('-------------------');
-    if(!success.length)lines.push('Không có.');
-    success.forEach((item,i)=>{
-      lines.push(`${i+1}. ${text(item.name)||'—'} | alias=${text(item.alias)||'—'} | productId=${Number(item.productId)||'—'} | biến thể=${Array.isArray(item.variants)?item.variants.length:0}`);
+    lines.push('SẢN PHẨM ĐÃ CÓ TRÊN SAPO');
+    lines.push('-------------------------');
+    if(!m.onSapo.length)lines.push('Không có.');
+    m.onSapo.forEach((item,i)=>{
+      lines.push(`${i+1}. ${text(item.name)||'—'} | alias=${text(item.alias)||'—'} | productId=${Number(item.productId)||'—'} | ${item.created?'TẠO MỚI':item.adopted?'DÙNG LẠI':'ĐÃ CÓ ID'}`);
     });
     lines.push('');
 
-    lines.push('SẢN PHẨM LỖI ĐÃ BỎ QUA');
-    lines.push('----------------------');
-    if(!failed.length)lines.push('Không có.');
-    failed.forEach((item,i)=>{
+    lines.push('SẢN PHẨM HOÀN TẤT ĐỦ ẢNH + TỒN');
+    lines.push('--------------------------------');
+    if(!m.fullDone.length)lines.push('Không có.');
+    m.fullDone.forEach((item,i)=>{
+      lines.push(`${i+1}. ${text(item.name)||'—'} | productId=${Number(item.productId)||'—'} | biến thể=${Array.isArray(item.variants)?item.variants.length:0}`);
+    });
+    lines.push('');
+
+    lines.push('CẦN XỬ LÝ TIẾP ẢNH / TỒN');
+    lines.push('-------------------------');
+    if(!m.failed.length)lines.push('Không có.');
+    m.failed.forEach((item,i)=>{
       const variants=Array.isArray(item.variants)?item.variants:[];
       const vIndex=Math.max(0,Number(item.variantIndex||0));
       const current=variants[vIndex]||null;
+      const phase=failurePhase(item);
       lines.push(`${i+1}. ${text(item.name)||'—'}`);
-      lines.push(`   Alias: ${text(item.alias)||'—'}`);
+      lines.push(`   Trạng thái tạo SP: ${Number(item.productId)?'ĐÃ CÓ TRÊN SAPO':'CHƯA TẠO'}`);
       lines.push(`   Product ID: ${Number(item.productId)||'—'}`);
+      lines.push(`   Bước lỗi: ${phase}`);
+      lines.push(`   Ảnh hoàn tất: ${item.imagesDone===true?'CÓ':'CHƯA'}`);
       lines.push(`   Đã ghi tồn biến thể: ${Math.min(vIndex,variants.length)}/${variants.length}`);
-      if(current)lines.push(`   Biến thể đang lỗi: Size ${text(current.size)||'—'} | SKU ${text(current.sku)||'—'} | tồn ${Number(current.stock)||0}`);
+      if(phase==='TỒN KHO'&&current)lines.push(`   Biến thể đang lỗi: Size ${text(current.size)||'—'} | SKU ${text(current.sku)||'—'} | tồn ${Number(current.stock)||0}`);
       lines.push(`   Lỗi: ${text(item.error)||'Không rõ lỗi'}`);
     });
 
     const systemErrors=(Array.isArray(queue&&queue.errors)?queue.errors:[]).filter(err=>{
       const idx=Number(err&&err.index);
-      return !Number.isFinite(idx)||idx<0||idx>=items.length;
+      return !Number.isFinite(idx)||idx<0||idx>=m.items.length;
     });
     if(systemErrors.length){
       lines.push('');
@@ -102,13 +138,12 @@
     const summary=document.getElementById('catalogSapoReportSummary');
     if(!box||!summary)return;
     if(!queue){box.style.display='none';return;}
-    const total=Number(queue.total||0),processed=Math.min(total,Number(queue.index||0));
-    const failed=failedItems(queue).length;
-    const success=Number(queue.success||0);
+    const m=metrics(queue);
+    const processed=Math.min(m.total,Number(queue.index||0));
     box.style.display='block';
     summary.textContent=queue.status==='running'
-      ? `Đã xử lý ${processed}/${total} • thành công ${success} • lỗi đã bỏ qua ${failed}. Tool vẫn tiếp tục sản phẩm kế tiếp.`
-      : `Kết quả: ${success}/${total} thành công • ${failed} lỗi đã bỏ qua. Báo cáo giữ tên sản phẩm và nguyên nhân lỗi.`;
+      ? `Đã xử lý ${processed}/${m.total} • đã có trên Sapo ${m.onSapo.length} • hoàn tất ảnh+tồn ${m.fullDone.length} • cần xử lý tiếp ${m.failed.length}.`
+      : `Kết quả: ${m.onSapo.length}/${m.total} sản phẩm đã có trên Sapo • ${m.fullDone.length}/${m.total} hoàn tất đủ ảnh+tồn • ${m.failed.length} cần xử lý tiếp.`;
   }
 
   function install(){
