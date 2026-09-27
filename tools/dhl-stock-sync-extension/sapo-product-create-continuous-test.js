@@ -18,6 +18,14 @@ assert.ok(bg.includes("queue.status='running'"));
 assert.ok(bg.includes("chrome.alarms.create(ALARM,{when:Date.now()+650})"));
 assert.ok(bg.includes('Lỗi hệ thống/mất xác minh/endpoint phải dừng toàn queue'));
 
+const productBg=read('sapo-product-create-background.js');
+assert.ok(productBg.includes("while(queue.index<queue.items.length&&queue.items[queue.index]&&queue.items[queue.index].status==='done')"));
+assert.ok(productBg.includes('retry unfinished product/image/stock checkpoints'));
+assert.ok(productBg.includes("item.status=Number(item.productId)?'stock':'pending'"));
+assert.ok(productBg.includes('queue.index=unfinished[0]'));
+assert.ok(productBg.includes("queue.success=items.filter(item=>item&&item.status==='done').length"));
+assert.ok(productBg.includes('Giữ nguyên productId/imageIndex/variantIndex'));
+
 const background=read('background.js');
 assert.ok(background.includes("'sapo-product-create-background.js'"));
 assert.ok(background.includes("'sapo-product-create-continuous-background.js'"));
