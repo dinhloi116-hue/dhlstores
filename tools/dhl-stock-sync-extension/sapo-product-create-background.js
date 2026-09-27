@@ -323,27 +323,69 @@
     throw new Error(`Không tìm thấy inventory item cho SKU ${expected.sku} / variant ${variantId}.`);
   }
 
+  function variantFrom(data){
+    if(data&&data.variant&&typeof data.variant==='object')return data.variant;
+    if(data&&data.data&&data.data.variant&&typeof data.data.variant==='object')return data.data.variant;
+    if(data&&data.data&&typeof data.data==='object'&&!Array.isArray(data.data))return data.data;
+    return null;
+  }
+
+  async function setVariantStock(sapo,sapoVariant,expected){
+    const variantId=Number(sapoVariant&&sapoVariant.id);
+    if(!variantId)throw new Error(`Không có variant ID cho SKU ${expected.sku}.`);
+
+    // Private App đã có write_products vì vừa tạo được Product/Variant.
+    // Sapo document chính thức cho phép cập nhật tồn trực tiếp trên Product Variant:
+    // PUT /admin/variants/{id}.json + inventory_quantity.
+    // Không dùng inventory_levels/set trong luồng TẠO SẢN PHẨM MỚI vì shop này trả 403 access_denied.
+    const data=await sapoFetch(sapo,`/admin/variants/${variantId}.json`,{
+      method:'PUT',
+      body:{
+        variant:{
+          id:variantId,
+          inventory_management:'bizweb',
+          inventory_quantity:Number(expected.stock)
+        }
+      }
+    });
+    const updated=variantFrom(data);
+    const actual=Number(updated&&updated.inventory_quantity);
+    if(Number.isFinite(actual)&&actual!==Number(expected.stock)){
+      throw new Error(`SKU ${expected.sku}: Sapo trả tồn ${actual}, cần ${Number(expected.stock)}.`);
+    }
+    return{
+      method:'variant.inventory_quantity',
+      variantId,
+      available:Number(expected.stock)
+    };
+  }
+
   async function syncStock(sapo,item,product,queue){
     let current=product;
     if(!sameExpectedSkus(current,item))current=await loadProduct(sapo,item.productId);
     const bySku=new Map(variantsOf(current).map(v=>[normSku(v&&v.sku),v]));
     if(bySku.size!==item.variants.length)throw new Error(`${item.name}: Sapo tạo thiếu biến thể (${bySku.size}/${item.variants.length}).`);
+    item.stockResults=Array.isArray(item.stockResults)?item.stockResults:[];
+
     while(item.variantIndex<item.variants.length){
       const expected=item.variants[item.variantIndex];
       const sapoVariant=bySku.get(normSku(expected.sku));
       if(!sapoVariant)throw new Error(`${item.name}: không thấy SKU ${expected.sku} sau khi tạo.`);
-      const invId=await inventoryItemId(sapo,sapoVariant,expected);
-      await sapoFetch(sapo,'/admin/inventory_levels/set.json',{
-        method:'POST',
-        body:{
-          location_id:Number(sapo.locationId),
-          inventory_item_id:Number(invId),
-          available:Number(expected.stock)
-        }
-      });
+
+      const result=await setVariantStock(sapo,sapoVariant,expected);
+      item.stockResults[item.variantIndex]={
+        index:item.variantIndex,
+        size:text(expected.size),
+        sku:text(expected.sku),
+        stock:Number(expected.stock),
+        variantId:Number(result.variantId),
+        method:result.method,
+        at:Date.now()
+      };
       item.variantIndex+=1;
+      // Checkpoint sau từng size: retry sẽ tiếp tục đúng biến thể đang dừng, không ghi lại từ đầu.
       await chrome.storage.local.set({[QUEUE_KEY]:queue});
-      await sleep(450);
+      await sleep(350);
     }
   }
 
