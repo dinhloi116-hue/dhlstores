@@ -9,6 +9,7 @@ const scanner=read('catalog-popup-v3-mode.js');
 const productCore=read('product-create-core.js');
 const workflow=read('workflow-order-mode.js');
 const direct=read('sapo-product-create-mode.js');
+const contentScanner=read('content.js');
 
 assert.ok(shell.includes('BƯỚC 1 — QUÉT TOÀN BỘ SẢN PHẨM MỚI'));
 assert.ok(shell.includes('POPUP THẬT'));
@@ -21,6 +22,9 @@ assert.ok(scanner.includes("sendPopupOnly(tab.id,descriptor)"));
 assert.ok(scanner.includes("mode:'new-product-popup-full'"));
 assert.ok(scanner.includes('Checkpoint sau từng sản phẩm'));
 assert.ok(scanner.includes('ĐANG POPUP'));
+assert.ok(scanner.includes('missingImageCount'));
+assert.ok(scanner.includes('SKU có link ảnh'));
+assert.ok(scanner.includes('Thiếu link ảnh cho'));
 assert.ok(scanner.includes('QUÉT TẤT CẢ SẢN PHẨM MỚI'));
 assert.ok(scanner.includes('TẠO FILE TẤT CẢ SP MỚI (.XLSX)'));
 
@@ -37,6 +41,13 @@ assert.ok(productCore.includes('sku:`${skuBase}-${size}`'));
 assert.ok(workflow.includes("document.getElementById('catalogMode')"));
 assert.ok(workflow.includes('SP mới: quét cả danh mục 1 lượt'));
 assert.ok(direct.includes('SKU KHÔNG lấy từ dữ liệu cũ.'));
+assert.ok(direct.includes('Thiếu link ảnh nguồn'));
+
+assert.ok(contentScanner.includes('function colorImageUrl'));
+assert.ok(contentScanner.includes('imageUrlFromScope'));
+assert.ok(contentScanner.includes('missingImageColors'));
+assert.ok(contentScanner.includes('imageUrls'));
+assert.ok(contentScanner.includes('variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,null,imageUrl))'));
 
 console.log('NEW PRODUCT BATCH PASS',{
   scan:'all category through visible popup',
@@ -44,5 +55,6 @@ console.log('NEW PRODUCT BATCH PASS',{
   checkpoint:'per product',
   oldSku:'ignored',
   productKey:'column A alias',
-  variantSku:'alias + size'
+  variantSku:'alias + size',
+  images:'popup color image -> every SKU image column'
 });
