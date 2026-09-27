@@ -135,7 +135,7 @@
   function imageUrlFromNode(node,base=location.href){
     if(!node||!node.getAttribute)return'';
     const candidates=[];
-    for(const attr of ['src','data-src','data-original','data-lazy-src','data-url','data-image','data-image-url','href']){
+    for(const attr of ['src','data-src','data-original','data-lazy-src','data-url','data-image','data-image-url']){
       const value=node.getAttribute(attr);
       if(value)candidates.push(value);
     }
