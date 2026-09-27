@@ -189,6 +189,12 @@
 
   function imageAlt(image){return text(image&&(image.alt||image.alt_text||image.name));}
 
+  function imageVariantIds(image){
+    const raw=image&&(image.variant_ids||image.variantIds||image.variants);
+    if(!Array.isArray(raw))return[];
+    return raw.map(x=>Number(x&&typeof x==='object'?x.id:x)).filter(Boolean);
+  }
+
   function imageGroups(item){
     const map=new Map();
     for(const variant of item.variants||[]){
@@ -219,24 +225,31 @@
       const group=groups[index];
       const marker=imageAltMarker(item,index);
 
-      // Nếu worker đã upload ảnh nhưng chết trước checkpoint, nhận lại bằng alt marker để không tạo ảnh trùng.
-      const existing=existingImages.find(img=>imageAlt(img)===marker);
-      if(existing){
-        item.imageResults[index]={
-          index,src:group.src,marker,
-          imageId:Number(existing&&existing.id)||0,
-          reused:true
-        };
-        item.imageIndex=index+1;
-        await chrome.storage.local.set({[QUEUE_KEY]:queue});
-        continue;
-      }
-
       const variantIds=[];
       for(const sku of group.skus){
         const variant=bySku.get(normSku(sku));
         if(!variant||!Number(variant.id))throw new Error(`${item.name}: không tìm thấy variant ID cho ảnh SKU ${sku}.`);
         variantIds.push(Number(variant.id));
+      }
+
+      // Nếu worker đã upload ảnh nhưng chết trước checkpoint, hoặc Sapo đã có ảnh gắn đúng bộ variant,
+      // nhận lại ảnh đó thay vì upload trùng.
+      const existing=existingImages.find(img=>{
+        if(imageAlt(img)===marker)return true;
+        if(!variantIds.length)return false;
+        const bound=new Set(imageVariantIds(img));
+        return variantIds.every(id=>bound.has(id));
+      });
+      if(existing){
+        item.imageResults[index]={
+          index,src:group.src,marker,
+          imageId:Number(existing&&existing.id)||0,
+          variantIds,
+          reused:true
+        };
+        item.imageIndex=index+1;
+        await chrome.storage.local.set({[QUEUE_KEY]:queue});
+        continue;
       }
 
       const body={image:{src:group.src,alt:marker}};
