@@ -224,6 +224,10 @@ assert.ok(productBg.includes('findExistingByAlias'));
 assert.ok(productBg.includes('sameExpectedSkus'));
 assert.ok(productBg.includes('Checkpoint ngay sau POST'));
 assert.ok(productBg.includes("message.type==='DHL_SAPO_PRODUCT_CREATE_RETRY'"));
+assert.ok(productBg.includes("while(queue.index<queue.items.length&&queue.items[queue.index]&&queue.items[queue.index].status==='done')"));
+assert.ok(productBg.includes('retry unfinished product/image/stock checkpoints'));
+assert.ok(productBg.includes('queue.index=unfinished[0]'));
+assert.ok(productBg.includes("item.status=Number(item.productId)?'stock':'pending'"));
 
 const popup=read('popup.html');
 assert.ok(popup.includes('manual-sapo-output-mode.js'));
