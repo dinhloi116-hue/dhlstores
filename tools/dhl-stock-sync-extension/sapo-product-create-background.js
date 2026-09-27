@@ -380,6 +380,56 @@
     };
   }
 
+  function retryableStockError(message){
+    return /Sapo HTTP (?:500|502|503|504)\b|Failed to fetch|NetworkError|network error|timeout|timed out/i.test(String(message||''));
+  }
+
+  async function setVariantStockWithRetry(sapo,sapoVariant,expected,item,queue){
+    const delays=[700,1400,2800,5000];
+    let lastError=null;
+
+    for(let attempt=1;attempt<=delays.length+1;attempt+=1){
+      try{
+        const result=await setVariantStockWithRetry(sapo,sapoVariant,expected,item,queue);
+        if(item){
+          item.stockRetry=null;
+          item.stockRetryHistory=Array.isArray(item.stockRetryHistory)?item.stockRetryHistory:[];
+          if(attempt>1)item.stockRetryHistory.push({
+            at:Date.now(),
+            sku:text(expected&&expected.sku),
+            size:text(expected&&expected.size),
+            attempt,
+            recovered:true
+          });
+        }
+        return result;
+      }catch(error){
+        lastError=error;
+        const message=error&&error.message||String(error);
+        if(!retryableStockError(message)||attempt>delays.length)break;
+
+        if(item){
+          item.stockRetry={
+            at:Date.now(),
+            sku:text(expected&&expected.sku),
+            size:text(expected&&expected.size),
+            stock:Number(expected&&expected.stock),
+            attempt,
+            maxAttempts:delays.length+1,
+            error:message
+          };
+          item.stockRetryHistory=Array.isArray(item.stockRetryHistory)?item.stockRetryHistory:[];
+          item.stockRetryHistory.push({...item.stockRetry,recovered:false});
+        }
+        if(queue)await chrome.storage.local.set({[QUEUE_KEY]:queue});
+        await sleep(delays[attempt-1]);
+      }
+    }
+
+    const base=lastError&&lastError.message||String(lastError||'Không rõ lỗi');
+    throw new Error(`${base} • đã tự thử lại ${delays.length+1} lần tại đúng SKU ${text(expected&&expected.sku)}`);
+  }
+
   async function syncStock(sapo,item,product,queue){
     let current=product;
     if(!sameExpectedSkus(current,item))current=await loadProduct(sapo,item.productId);
