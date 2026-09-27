@@ -67,6 +67,8 @@
       stock:Number(v&&v.stock),
       imageUrl:httpUrl(v&&v.imageUrl)
     })).filter(v=>v.size&&v.sku&&Number.isFinite(v.stock)&&v.stock>=0);
+    const missingImageVariant=variants.find(v=>!v.imageUrl);
+    if(missingImageVariant)throw new Error(`${name}: SKU ${missingImageVariant.sku} thiếu link ảnh nguồn.`);
     if(!variants.length)throw new Error(`${name}: không có biến thể Size/SKU/tồn hợp lệ.`);
     const skuSet=new Set();
     for(const v of variants){
@@ -87,7 +89,8 @@
       color:text(raw&&raw.color),
       sourceUrl:httpUrl(raw&&raw.sourceUrl),
       images,variants,
-      productId:0,variantIndex:0,imagesDone:false,status:'pending',created:false,adopted:false,error:''
+      productId:0,variantIndex:0,imageIndex:0,imageResults:[],imagesDone:false,
+      status:'pending',created:false,adopted:false,error:''
     };
   }
 
@@ -131,7 +134,6 @@
         tags:'Nguồn aobongda.net',
         published_on:new Date().toISOString(),
         options:[{name:'Size'}],
-        images:(item.images||[]).map((src,index)=>({src,alt:index===0?item.name:`${item.name} ${index+1}`})),
         variants:(item.variants||[]).map(v=>({
           option1:v.size,
           sku:v.sku,
@@ -173,15 +175,96 @@
     return created;
   }
 
+  function imageAltMarker(item,index){
+    const raw=`DHL:${item.alias}:IMG${index+1}`;
+    return raw.slice(0,240);
+  }
+
+  function imageSrc(image){
+    return httpUrl(image&&(
+      image.src||image.url||image.full_path||image.image_url||
+      image.original_src||image.product_image_url
+    ));
+  }
+
+  function imageAlt(image){return text(image&&(image.alt||image.alt_text||image.name));}
+
+  function imageGroups(item){
+    const map=new Map();
+    for(const variant of item.variants||[]){
+      const src=httpUrl(variant&&variant.imageUrl);
+      if(!src)continue;
+      if(!map.has(src))map.set(src,{src,skus:[]});
+      map.get(src).skus.push(text(variant.sku));
+    }
+    for(const src of item.images||[]){
+      const url=httpUrl(src);
+      if(url&&!map.has(url))map.set(url,{src:url,skus:[]});
+    }
+    return [...map.values()];
+  }
+
   async function ensureProductImages(sapo,item,product,queue){
     if(item.imagesDone)return;
-    if(!(item.images||[]).length){item.imagesDone=true;await chrome.storage.local.set({[QUEUE_KEY]:queue});return;}
-    if(imagesOf(product).length){item.imagesDone=true;await chrome.storage.local.set({[QUEUE_KEY]:queue});return;}
-    // Fallback: nếu POST product không nhận images, dùng API Product Image với src URL.
-    for(const src of item.images){
-      await sapoFetch(sapo,`/admin/products/${Number(item.productId)}/images.json`,{method:'POST',body:{image:{src}}});
+    const groups=imageGroups(item);
+    if(!groups.length)throw new Error(`${item.name}: không có link ảnh nguồn để đẩy Sapo.`);
+
+    let current=product&&Number(product.id)?product:await loadProduct(sapo,item.productId);
+    const bySku=new Map(variantsOf(current).map(v=>[normSku(v&&v.sku),v]));
+    const existingImages=imagesOf(current);
+    item.imageResults=Array.isArray(item.imageResults)?item.imageResults:[];
+
+    while(Number(item.imageIndex||0)<groups.length){
+      const index=Number(item.imageIndex||0);
+      const group=groups[index];
+      const marker=imageAltMarker(item,index);
+
+      // Nếu worker đã upload ảnh nhưng chết trước checkpoint, nhận lại bằng alt marker để không tạo ảnh trùng.
+      const existing=existingImages.find(img=>imageAlt(img)===marker);
+      if(existing){
+        item.imageResults[index]={
+          index,src:group.src,marker,
+          imageId:Number(existing&&existing.id)||0,
+          reused:true
+        };
+        item.imageIndex=index+1;
+        await chrome.storage.local.set({[QUEUE_KEY]:queue});
+        continue;
+      }
+
+      const variantIds=[];
+      for(const sku of group.skus){
+        const variant=bySku.get(normSku(sku));
+        if(!variant||!Number(variant.id))throw new Error(`${item.name}: không tìm thấy variant ID cho ảnh SKU ${sku}.`);
+        variantIds.push(Number(variant.id));
+      }
+
+      const body={image:{src:group.src,alt:marker}};
+      if(variantIds.length)body.image.variant_ids=variantIds;
+      const data=await sapoFetch(
+        sapo,
+        `/admin/products/${Number(item.productId)}/images.json`,
+        {method:'POST',body}
+      );
+      const createdImage=data&&(
+        data.image||
+        (data.data&&data.data.image)||
+        (data.data&&typeof data.data==='object'&&!Array.isArray(data.data)?data.data:null)
+      );
+      item.imageResults[index]={
+        index,src:group.src,marker,
+        imageId:Number(createdImage&&createdImage.id)||0,
+        variantIds
+      };
+      item.imageIndex=index+1;
+      await chrome.storage.local.set({[QUEUE_KEY]:queue});
       await sleep(350);
+
+      // Refresh để lần retry tiếp theo có thể nhận ảnh vừa upload bằng marker.
+      current=await loadProduct(sapo,item.productId);
+      existingImages.splice(0,existingImages.length,...imagesOf(current));
     }
+
     item.imagesDone=true;
     await chrome.storage.local.set({[QUEUE_KEY]:queue});
   }
@@ -224,8 +307,13 @@
       const sapoVariant=bySku.get(normSku(expected.sku));
       if(!sapoVariant)throw new Error(`${item.name}: không thấy SKU ${expected.sku} sau khi tạo.`);
       const invId=await inventoryItemId(sapo,sapoVariant,expected);
-      await sapoFetch(sapo,`/admin/inventory_items/${invId}/locations/${Number(sapo.locationId)}.json`,{
-        method:'PUT',body:{inventory_level:{available:Number(expected.stock)}}
+      await sapoFetch(sapo,'/admin/inventory_levels/set.json',{
+        method:'POST',
+        body:{
+          location_id:Number(sapo.locationId),
+          inventory_item_id:Number(invId),
+          available:Number(expected.stock)
+        }
       });
       item.variantIndex+=1;
       await chrome.storage.local.set({[QUEUE_KEY]:queue});
@@ -276,6 +364,19 @@
     if(old&&['running','paused'].includes(old.status))throw new Error('Đang có hàng đợi tạo sản phẩm Sapo chưa hoàn tất. Hãy tiếp tục hoặc xử lý hàng đợi đó trước.');
     const items=(Array.isArray(products)?products:[]).slice(0,250).map(sanitizeProduct);
     if(!items.length)throw new Error('Không có sản phẩm hợp lệ để đăng lên Sapo.');
+
+    const aliasSeen=new Set(),skuSeen=new Set();
+    for(const item of items){
+      const aliasKey=item.alias.toLowerCase();
+      if(aliasSeen.has(aliasKey))throw new Error(`Trùng alias trong lượt đẩy: ${item.alias}.`);
+      aliasSeen.add(aliasKey);
+      for(const variant of item.variants){
+        const skuKey=normSku(variant.sku);
+        if(skuSeen.has(skuKey))throw new Error(`Trùng SKU trong lượt đẩy: ${variant.sku}.`);
+        skuSeen.add(skuKey);
+      }
+    }
+
     const queue={
       id:`product-create-${Date.now()}`,status:'running',createdAt:Date.now(),startedAt:Date.now(),finishedAt:0,
       shop:storeHost(sapo.storeHost),locationId:Number(sapo.locationId),locationName:text(sapo.locationName),
