@@ -16,7 +16,7 @@ assert.ok(bg.includes('queue.failed=Number(queue.failed||0)+1'));
 assert.ok(bg.includes('queue.index=index+1'));
 assert.ok(bg.includes("queue.status='running'"));
 assert.ok(bg.includes("chrome.alarms.create(ALARM,{when:Date.now()+650})"));
-assert.ok(bg.includes('Lỗi hệ thống/mất xác minh vẫn phải dừng'));
+assert.ok(bg.includes('Lỗi hệ thống/mất xác minh/endpoint phải dừng toàn queue'));
 
 const background=read('background.js');
 assert.ok(background.includes("'sapo-product-create-background.js'"));
