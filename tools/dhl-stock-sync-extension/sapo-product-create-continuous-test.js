@@ -24,9 +24,9 @@ assert.ok(background.includes("'sapo-product-create-continuous-background.js'"))
 assert.ok(background.indexOf("'sapo-product-create-continuous-background.js'")>background.indexOf("'sapo-product-create-background.js'"));
 
 const report=read('sapo-product-create-report-mode.js');
-assert.ok(report.includes('SẢN PHẨM LỖI ĐÃ BỎ QUA'));
+assert.ok(report.includes('CẦN XỬ LÝ TIẾP ẢNH / TỒN'));
 assert.ok(report.includes('TẢI BÁO CÁO ĐĂNG SAPO (.TXT)'));
-assert.ok(report.includes('Tool vẫn tiếp tục sản phẩm kế tiếp'));
+assert.ok(report.includes('cần xử lý tiếp'));
 assert.ok(report.includes('item.skipped===true'));
 
 const popup=read('popup.html');
