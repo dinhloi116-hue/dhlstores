@@ -53,7 +53,7 @@
     if(queue.status==='done')return{percent:100,phase:'Hoàn tất',item:null,done,total,variantDone:0,variantTotal:0,currentVariant:null};
 
     let fraction=0;
-    let phase='Đang chuẩn bị hàng đợi';
+    let phase='Đang chuẩn bị lượt đăng';
     let variantDone=0,variantTotal=0,currentVariant=null;
     if(item){
       const variants=Array.isArray(item.variants)?item.variants:[];
@@ -168,7 +168,7 @@
     try{
       if(btn.dataset.mode==='retry'){
         const response=await send({type:'DHL_SAPO_PRODUCT_CREATE_RETRY'});
-        if(!response.ok)throw new Error(response.error||'Không chạy lại được hàng đợi.');
+        if(!response.ok)throw new Error(response.error||'Không chạy lại được lượt đăng.');
         setState('Đã chạy lại TOÀN BỘ sản phẩm chưa hoàn tất, từ đúng checkpoint ảnh/tồn. Sản phẩm đã có Product ID sẽ không tạo lại; sản phẩm hoàn tất được bỏ qua.','ok');
         renderProgress(response.queue||null);
         await refresh();return;
@@ -181,9 +181,9 @@
       const images=products.reduce((n,p)=>n+(p.images||[]).length,0);
       const ok=confirm(`Đăng ${products.length} sản phẩm từ lượt QUÉT MỚI (${variants} biến thể) lên ${current.shop||'Sapo'}?\n\nSKU KHÔNG lấy từ dữ liệu cũ.\nSKU sản phẩm = Đường dẫn/Alias.\nSKU phân loại = Alias + Size.\nTồn kho: ${current.locationName||'chi nhánh đã xác minh'}\nẢnh: ${images} link nguồn.\n\nTool vẫn kiểm tra alias/SKU để tránh tạo trùng sản phẩm đang tồn tại.`);
       if(!ok){await refresh();return;}
-      setState(`Đang tạo hàng đợi ${products.length} sản phẩm...`,'working');
+      setState(`Đang chuẩn bị đăng ${products.length} sản phẩm...`,'working');
       const response=await send({type:'DHL_SAPO_PRODUCT_CREATE_START',products});
-      if(!response.ok)throw new Error(response.error||'Không khởi tạo được hàng đợi tạo sản phẩm.');
+      if(!response.ok)throw new Error(response.error||'Không bắt đầu được lượt đăng sản phẩm.');
       renderProgress(response.queue||null);
       await refresh();
     }catch(error){
