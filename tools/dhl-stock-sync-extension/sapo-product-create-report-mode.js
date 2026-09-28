@@ -46,7 +46,7 @@
     const lines=[];
     lines.push('BÁO CÁO ĐĂNG SẢN PHẨM LÊN SAPO');
     lines.push('================================');
-    lines.push(`Queue: ${text(queue&&queue.id)||'—'}`);
+    lines.push(`Lượt đăng: ${text(queue&&queue.id)||'—'}`);
     lines.push(`Shop: ${text(queue&&queue.shop)||'—'}`);
     lines.push(`Chi nhánh: ${text(queue&&queue.locationName)||'—'}`);
     lines.push(`Bắt đầu: ${fmt(queue&&queue.startedAt)}`);
