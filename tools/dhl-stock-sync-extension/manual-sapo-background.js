@@ -14,6 +14,7 @@
   const SAPO_MAP_KEY='dhlSapoInventoryMapV1';
   const MANUAL_ALARM='dhl-sapo-manual-push-queue';
   const AUTO_PUSH_ALARM='dhl-sapo-push-queue';
+  const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z');
   const PUSH_CHUNK=20;
   const LIST_PAGE_LIMIT=250;
   const MAX_LIST_PAGES=12;
@@ -77,6 +78,16 @@
       startedAt:Number(queue&&queue.startedAt||queue&&queue.createdAt||0),
       finishedAt:Number(queue&&queue.finishedAt||0),source:'manual',...extra
     };
+  }
+
+  function staleLegacy403Queue(queue){
+    if(!queue||queue.source!=='manual'||queue.manualPaused!==true)return false;
+    const ts=Number(queue.startedAt||queue.createdAt||0);
+    if(!ts||ts>=LEGACY_STOCK_QUEUE_CUTOFF)return false;
+    if(Number(queue.index||0)!==0||Number(queue.success||0)!==0)return false;
+    const errors=Array.isArray(queue.errors)?queue.errors:[];
+    const last=errors.length?errors[errors.length-1]:null;
+    return /sapo http 403:\s*access_denied/i.test(text(last&&last.error));
   }
 
   function sourceScanMap(entries){
@@ -184,8 +195,14 @@
     if(!config.sapo||!config.sapo.verifiedAt||!config.sapo.locationId)throw new Error('Chưa xác minh Ứng dụng riêng Sapo. Hãy KIỂM TRA KẾT NỐI SAPO trước.');
 
     const state=await chrome.storage.local.get([SAPO_QUEUE_KEY,CYCLE_KEY,BATCH_KEY]);
-    const existing=state[SAPO_QUEUE_KEY];
+    let existing=state[SAPO_QUEUE_KEY];
     const cycle=state[CYCLE_KEY];
+    if(staleLegacy403Queue(existing)){
+      await chrome.alarms.clear(MANUAL_ALARM).catch(()=>{});
+      await chrome.alarms.clear(AUTO_PUSH_ALARM).catch(()=>{});
+      await chrome.storage.local.remove(SAPO_QUEUE_KEY);
+      existing=null;
+    }
     if(cycle&&cycle.running)throw new Error('Đang có lượt quét tự động chạy. Chờ quét xong rồi đẩy Sapo thủ công.');
 
     if(existing&&existing.source==='manual'&&existing.status==='running'&&existing.manualPaused===true){
@@ -196,7 +213,7 @@
       chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+500});
       return{resumed:true,total:existing.total,index:existing.index};
     }
-    if(existing&&['running','queued'].includes(existing.status))throw new Error('Đang có hàng đợi ghi Sapo khác. Chờ hàng đợi hiện tại hoàn tất.');
+    if(existing&&['running','queued'].includes(existing.status))throw new Error('Đang có một lượt ghi Sapo khác chạy. Chờ lượt hiện tại hoàn tất.');
 
     const pending=state[BATCH_KEY]&&typeof state[BATCH_KEY]==='object'?state[BATCH_KEY]:{};
     const ids=Array.isArray(profileIds)?profileIds.map(String).filter(Boolean):[];
