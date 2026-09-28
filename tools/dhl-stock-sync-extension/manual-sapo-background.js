@@ -139,33 +139,35 @@
   }
 
   async function resolveInventoryItem(sapo,row,map){
-    const mapKey=`${storeHost(sapo.storeHost)}|${Number(sapo.locationId)}|${Number(row.variantId)}`;
-    if(map[mapKey])return{itemId:Number(map[mapKey]),method:'cache'};
+    const variantId=Number(row&&row.variantId)||0;
+    const skuKey=resolver.normSku(row&&row.sku)||'no-sku';
+    const mapKey=`${storeHost(sapo.storeHost)}|${Number(sapo.locationId)}|${variantId?`v:${variantId}`:`s:${skuKey}`}`;
+    if(map[mapKey]&&variantId)return{itemId:Number(map[mapKey]),variantId,method:'cache'};
     const attempts=[];
 
     if(Number(row.variantId)){
       try{
         const item=await tryInventoryQuery(sapo,row,{variant_id:String(row.variantId)},'variant');
-        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),method:'variant_id'};}
+        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),variantId:Number(item.variant_id)||variantId,method:'variant_id'};}
       }catch(err){attempts.push(err&&err.message||String(err));}
       try{
         const variantData=await sapoFetch(sapo,`/admin/variants/${Number(row.variantId)}.json`);
         const itemId=resolver.variantInventoryItemId(variantData);
-        if(itemId){map[mapKey]=itemId;return{itemId,method:'variant.inventory_item_id'};}
+        if(itemId){map[mapKey]=itemId;return{itemId,variantId,method:'variant.inventory_item_id'};}
       }catch(err){attempts.push(err&&err.message||String(err));}
     }
 
     if(text(row.sku)){
       try{
         const item=await tryInventoryQuery(sapo,row,{sku:text(row.sku)},'sku');
-        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),method:'sku'};}
+        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),variantId:Number(item.variant_id)||variantId,method:'sku'};}
       }catch(err){attempts.push(err&&err.message||String(err));}
     }
 
     if(Number(row.productId)){
       try{
         const item=await tryInventoryQuery(sapo,row,{product_id:String(row.productId)});
-        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),method:'product_id'};}
+        if(item){map[mapKey]=Number(item.id);return{itemId:Number(item.id),variantId:Number(item.variant_id)||variantId,method:'product_id'};}
       }catch(err){attempts.push(err&&err.message||String(err));}
     }
 
@@ -176,18 +178,77 @@
         const data=await sapoFetch(sapo,`/admin/inventory_items.json?${q.toString()}`);
         const candidates=resolver.inventoryCandidates(data);
         const exact=findExactVariant(candidates,row);
-        if(exact&&Number(exact.id)){map[mapKey]=Number(exact.id);return{itemId:Number(exact.id),method:`list-variant-page-${page}`};}
+        if(exact&&Number(exact.id)){map[mapKey]=Number(exact.id);return{itemId:Number(exact.id),variantId:Number(exact.variant_id)||variantId,method:`list-variant-page-${page}`};}
         if(!skuFallback)skuFallback=findSkuFallback(candidates,row);
         if(candidates.length<LIST_PAGE_LIMIT)break;
       }catch(err){attempts.push(err&&err.message||String(err));break;}
     }
     if(skuFallback&&Number(skuFallback.id)){
       map[mapKey]=Number(skuFallback.id);
-      return{itemId:Number(skuFallback.id),method:'list-sku-fallback'};
+      return{itemId:Number(skuFallback.id),variantId:Number(skuFallback.variant_id)||variantId,method:'list-sku-fallback'};
     }
 
     const extra=attempts.length?` • API: ${attempts[attempts.length-1]}`:'';
     throw new Error(`Không tìm thấy inventory item cho SKU ${text(row.sku)||'—'} / variant ${Number(row.variantId)||'—'}${extra}`);
+  }
+
+  function variantFrom(data){
+    if(data&&data.variant&&typeof data.variant==='object')return data.variant;
+    if(data&&data.data&&data.data.variant&&typeof data.data.variant==='object')return data.data.variant;
+    if(data&&data.data&&typeof data.data==='object'&&!Array.isArray(data.data))return data.data;
+    return null;
+  }
+
+  async function resolveVariantIdForStock(sapo,row,resolved){
+    const direct=Number(row&&row.variantId)||Number(resolved&&resolved.variantId)||0;
+    if(direct)return direct;
+    const sku=text(row&&row.sku);
+    if(!sku)return 0;
+    try{
+      const item=await tryInventoryQuery(sapo,row,{sku},'sku');
+      if(item&&Number(item.variant_id))return Number(item.variant_id);
+    }catch(_){}
+    try{
+      const q=new URLSearchParams({sku,limit:'50'});
+      const data=await sapoFetch(sapo,`/admin/variants.json?${q.toString()}`);
+      const list=Array.isArray(data&&data.variants)?data.variants:Array.isArray(data&&data.data)?data.data:[];
+      const wanted=resolver.normSku(sku);
+      const hit=list.find(v=>resolver.normSku(v&&v.sku)===wanted)||list[0];
+      return Number(hit&&hit.id)||0;
+    }catch(_){return 0;}
+  }
+
+  async function writeStockWith403Fallback(sapo,row,resolved){
+    try{
+      await sapoFetch(sapo,`/admin/inventory_items/${Number(resolved.itemId)}/locations/${Number(sapo.locationId)}.json`,{
+        method:'PUT',
+        body:{inventory_level:{available:Number(row.stock)}}
+      });
+      return{method:`${resolved.method}:inventory-location`,variantId:Number(row&&row.variantId)||Number(resolved&&resolved.variantId)||0};
+    }catch(error){
+      const message=error&&error.message||String(error);
+      if(!/Sapo HTTP 403:\s*access_denied/i.test(message))throw error;
+    }
+
+    const variantId=await resolveVariantIdForStock(sapo,row,resolved);
+    if(!variantId)throw new Error(`Sapo HTTP 403: access_denied • không tìm được variant ID để fallback cho SKU ${text(row&&row.sku)||'—'}`);
+
+    const data=await sapoFetch(sapo,`/admin/variants/${variantId}.json`,{
+      method:'PUT',
+      body:{
+        variant:{
+          id:variantId,
+          inventory_management:'bizweb',
+          inventory_quantity:Number(row.stock)
+        }
+      }
+    });
+    const updated=variantFrom(data);
+    const actual=Number(updated&&updated.inventory_quantity);
+    if(Number.isFinite(actual)&&actual!==Number(row.stock)){
+      throw new Error(`SKU ${text(row&&row.sku)||'—'}: Sapo trả tồn ${actual}, cần ${Number(row.stock)}.`);
+    }
+    return{method:`${resolved.method}:variant-fallback-403`,variantId};
   }
 
   async function enqueueOrResume(profileIds){
@@ -258,9 +319,9 @@
         const row=queue.rows[queue.index],rowIndex=queue.index;
         const resolved=await resolveInventoryItem(config.sapo,row,map);
         await sleep(1200);
-        await sapoFetch(config.sapo,`/admin/inventory_items/${resolved.itemId}/locations/${Number(config.sapo.locationId)}.json`,{method:'PUT',body:{inventory_level:{available:Number(row.stock)}}});
+        const written=await writeStockWith403Fallback(config.sapo,row,resolved);
         queue.success=Number(queue.success||0)+1;
-        queue.successRows.push({index:rowIndex,sku:text(row.sku),variantId:Number(row.variantId)||0,productId:Number(row.productId)||0,stock:Number(row.stock),itemId:resolved.itemId,method:resolved.method,at:Date.now()});
+        queue.successRows.push({index:rowIndex,sku:text(row.sku),variantId:Number(written.variantId)||Number(row.variantId)||0,productId:Number(row.productId)||0,stock:Number(row.stock),itemId:resolved.itemId,method:written.method,at:Date.now()});
         queue.index+=1;
         await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
         await writePushStatus(pushState(queue,'running',config));
