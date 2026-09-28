@@ -7,6 +7,7 @@
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const QUEUE_KEY='dhlSapoProductCreateQueueV1';
   const ALARM='dhl-sapo-product-create-queue';
+  const LEGACY_QUEUE_CUTOFF=Date.parse('2026-09-28T06:20:00Z');
   const LIST_PAGE_LIMIT=250;
   const MAX_LIST_PAGES=12;
   const text=(v)=>String(v==null?'':v).trim();
@@ -498,11 +499,30 @@
     }
   }
 
+  async function clearCreateState(){
+    try{await chrome.alarms.clear(ALARM);}catch{}
+    await chrome.storage.local.remove(QUEUE_KEY);
+  }
+
+  async function cleanupLegacyQueue(){
+    const state=await chrome.storage.local.get(QUEUE_KEY);
+    const queue=state[QUEUE_KEY];
+    if(!queue)return false;
+    const ts=Number(queue.createdAt||queue.startedAt||0);
+    if(ts>0&&ts<LEGACY_QUEUE_CUTOFF){
+      await clearCreateState();
+      return true;
+    }
+    return false;
+  }
+
   async function start(products){
     const config=await readConfig(),sapo=config.sapo||{};
     if(!sapo.verifiedAt||!sapo.locationId)throw new Error('Chưa xác minh Ứng dụng riêng Sapo. Bấm KIỂM TRA KẾT NỐI SAPO trước.');
+    await cleanupLegacyQueue();
     const state=await chrome.storage.local.get(QUEUE_KEY),old=state[QUEUE_KEY];
-    if(old&&['running','paused'].includes(old.status))throw new Error('Đang có hàng đợi tạo sản phẩm Sapo chưa hoàn tất. Hãy tiếp tục hoặc xử lý hàng đợi đó trước.');
+    if(old&&old.status==='running')throw new Error('Đang có một lượt đăng Sapo đang chạy. Chờ lượt hiện tại xong rồi thử lại.');
+    if(old)await clearCreateState();
     const items=(Array.isArray(products)?products:[]).slice(0,250).map(sanitizeProduct);
     if(!items.length)throw new Error('Không có sản phẩm hợp lệ để đăng lên Sapo.');
 
@@ -557,6 +577,7 @@
     queue.index=unfinished[0];
     queue.success=items.filter(item=>item&&item.status==='done').length;
     queue.failed=0;
+    queue.errors=[];
     queue.finishedAt=0;
     queue.systemPaused=false;
     queue.systemError='';
@@ -581,7 +602,7 @@
   chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
     if(!message||!message.type)return;
     if(message.type==='DHL_SAPO_PRODUCT_CREATE_GET_STATE'){
-      Promise.all([readConfig(),chrome.storage.local.get(QUEUE_KEY)]).then(([config,s])=>{
+      cleanupLegacyQueue().then(()=>Promise.all([readConfig(),chrome.storage.local.get(QUEUE_KEY)])).then(([config,s])=>{
         const sapo=config.sapo||{};
         sendResponse({ok:true,verified:Boolean(sapo.verifiedAt&&sapo.locationId),shop:text(sapo.storeHost),locationName:text(sapo.locationName),queue:s[QUEUE_KEY]||null});
       }).catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
@@ -593,6 +614,10 @@
     }
     if(message.type==='DHL_SAPO_PRODUCT_CREATE_RETRY'){
       retry().then(queue=>sendResponse({ok:true,queue})).catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
+      return true;
+    }
+    if(message.type==='DHL_SAPO_PRODUCT_CREATE_CLEAR_STATE'){
+      clearCreateState().then(()=>sendResponse({ok:true})).catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
       return true;
     }
   });
