@@ -52,6 +52,25 @@ for(const file of ['manual-sapo-background.js','auto-sync-background-v2.js','sap
   assert.ok(src.includes('JSON.stringify(candidate)'));
 }
 
+const manualBg=read('manual-sapo-background.js');
+assert.ok(manualBg.includes('async function writeStockWith403Fallback'));
+assert.ok(manualBg.includes('/admin/variants/${variantId}.json'));
+assert.ok(manualBg.includes("inventory_management:'bizweb'"));
+assert.ok(manualBg.includes('inventory_quantity:Number(row.stock)'));
+assert.ok(manualBg.includes('/Sapo HTTP 403:\\s*access_denied/i'));
+assert.ok(manualBg.includes("variant-fallback-403"));
+assert.ok(manualBg.includes("const mapKey=`${storeHost(sapo.storeHost)}|${Number(sapo.locationId)}|${variantId?`v:${variantId}`:`s:${skuKey}`}`"));
+assert.ok(manualBg.includes('existing.retryHistory'));
+assert.ok(manualBg.includes('existing.errors=[]'));
+
+const autoBg=read('auto-sync-background-v2.js');
+assert.ok(autoBg.includes('async function writeStockWith403Fallback'));
+assert.ok(autoBg.includes('/admin/variants/${variantId}.json'));
+assert.ok(autoBg.includes('inventory_quantity:Number(row.stock)'));
+assert.ok(autoBg.includes("variant-fallback-403"));
+assert.ok(autoBg.includes("const mapKey=`${storeHost(sapo.storeHost)}|${Number(sapo.locationId)}|${variantId?`v:${variantId}`:`s:${skuKey}`}`"));
+assert.ok(autoBg.includes('if(map[mapKey]&&variantId)'));
+
 const background=read('background.js');
 assert.ok(background.includes("'sapo-inventory-set-compat.js'"));
 assert.ok(background.includes("'sapo-stock-queue-continuous-background.js'"));
