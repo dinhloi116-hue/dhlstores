@@ -4,6 +4,7 @@
   const BATCH_KEY='dhlManualPendingStockBatchV1';
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const QUEUE_KEY='dhlSapoPushQueueV1';
+  const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z');
   const text=(v)=>String(v==null?'':v).trim();
   const setText=(el,value)=>{if(el&&el.textContent!==value)el.textContent=value;};
 
@@ -26,11 +27,25 @@
     if(el.className!==cls)el.className=cls;
   }
 
+  function staleLegacy403(queue){
+    if(!queue||queue.source!=='manual'||queue.manualPaused!==true)return false;
+    const ts=Number(queue.startedAt||queue.createdAt||0);
+    if(!ts||ts>=LEGACY_STOCK_QUEUE_CUTOFF)return false;
+    if(Number(queue.index||0)!==0||Number(queue.success||0)!==0)return false;
+    const errors=Array.isArray(queue.errors)?queue.errors:[];
+    const last=errors.length?errors[errors.length-1]:null;
+    return /sapo http 403:\s*access_denied/i.test(text(last&&last.error));
+  }
+
   async function state(){
     const s=await chrome.storage.local.get([BATCH_KEY,CONFIG_KEY,QUEUE_KEY]);
     const pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
     const config=s[CONFIG_KEY]&&typeof s[CONFIG_KEY]==='object'?s[CONFIG_KEY]:{};
-    const queue=s[QUEUE_KEY]&&typeof s[QUEUE_KEY]==='object'?s[QUEUE_KEY]:null;
+    let queue=s[QUEUE_KEY]&&typeof s[QUEUE_KEY]==='object'?s[QUEUE_KEY]:null;
+    if(staleLegacy403(queue)){
+      await chrome.storage.local.remove(QUEUE_KEY);
+      queue=null;
+    }
     const manualEntries=Object.values(pending).filter(x=>x&&x.auto!==true&&Array.isArray(x.rows)&&x.rows.length);
     return{pending,config,queue,manualEntries};
   }
@@ -44,8 +59,8 @@
       const isResume=s.queue&&s.queue.source==='manual'&&s.queue.status==='running'&&s.queue.manualPaused===true;
       if(!isResume&&!profileIds.length)throw new Error('Chưa có kết quả quét thủ công để đẩy lên Sapo.');
       const response=await send({type:'DHL_SAPO_PUSH_MANUAL',profileIds});
-      if(!response.ok)throw new Error(response.error||'Không tạo được hàng đợi Sapo.');
-      setState(response.result&&response.result.resumed?'Đã tiếp tục hàng đợi Sapo từ đúng dòng đang dừng.':'Đã tạo hàng đợi ghi tồn trực tiếp lên Sapo. Theo dõi báo cáo bên dưới.','ok');
+      if(!response.ok)throw new Error(response.error||'Không bắt đầu được lượt đẩy Sapo.');
+      setState(response.result&&response.result.resumed?'Đã tiếp tục lượt đẩy Sapo từ đúng dòng đang dừng.':'Đã bắt đầu ghi tồn trực tiếp lên Sapo. Theo dõi báo cáo bên dưới.','ok');
       await refresh();
     }catch(error){
       setState(error.message||String(error),'bad');
@@ -116,9 +131,9 @@
     if(push){
       setText(push,paused?'THỬ LẠI ĐẨY SAPO':manualRows?`ĐẨY LÊN SAPO (${manualRows} DÒNG)`:'ĐẨY THẲNG LÊN SAPO');
       push.disabled=paused?false:(!verified||!manualCount||busy);
-      push.title=!verified?'Chưa xác minh Ứng dụng riêng Sapo.':busy?'Đang có hàng đợi Sapo khác.':'Ghi trực tiếp tồn kho qua Ứng dụng riêng Sapo.';
+      push.title=!verified?'Chưa xác minh Ứng dụng riêng Sapo.':busy?'Đang có một lượt đẩy Sapo khác chạy.':'Ghi trực tiếp tồn kho qua Ứng dụng riêng Sapo.';
     }
-    if(paused)setState('Hàng đợi Sapo thủ công đang dừng ở một dòng lỗi. Bấm THỬ LẠI ĐẨY SAPO để tiếp tục đúng dòng đó.','bad');
+    if(paused)setState('Lượt đẩy Sapo đang dừng ở một dòng lỗi. Bấm THỬ LẠI ĐẨY SAPO để tiếp tục đúng dòng đó.','bad');
     else if(!verified)setState('Muốn đẩy trực tiếp: mở phần Sapo bên dưới và bấm KIỂM TRA KẾT NỐI SAPO trước.');
     else if(manualCount)setState(`Quét thủ công đã sẵn sàng: ${manualCount} hồ sơ • ${manualRows} dòng. Chọn TẢI FILE EXCEL hoặc ĐẨY LÊN SAPO.`,'ok');
     else setState('BƯỚC 3 sẽ sẵn sàng sau khi quét thành công ít nhất một hồ sơ.');
