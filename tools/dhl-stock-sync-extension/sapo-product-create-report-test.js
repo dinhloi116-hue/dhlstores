@@ -5,6 +5,8 @@ const report=fs.readFileSync(path.join(__dirname,'sapo-product-create-report-mod
 const bg=fs.readFileSync(path.join(__dirname,'sapo-product-create-background.js'),'utf8');
 const ui=fs.readFileSync(path.join(__dirname,'sapo-product-create-mode.js'),'utf8');
 
+assert.ok(report.includes('Lượt đăng:'));
+assert.ok(!report.includes('Queue:'));
 assert.ok(report.includes('Đã có Product ID trên Sapo'));
 assert.ok(report.includes('Hoàn tất toàn bộ quy trình'));
 assert.ok(report.includes('CẦN XỬ LÝ TIẾP ẢNH / TỒN'));
