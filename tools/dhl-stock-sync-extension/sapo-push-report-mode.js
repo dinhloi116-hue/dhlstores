@@ -56,7 +56,7 @@
     const errors=Array.isArray(q&&q.errors)?q.errors:[],skipped=skippedRows(q),info=statusInfo(q),lines=[];
     lines.push('DHL STOCK SYNC - BÁO CÁO GHI TỒN KHO SAPO');
     lines.push(`Nguồn: ${q&&q.source==='manual'?'Quét thủ công':'Tự động'}`);
-    lines.push(`Queue ID: ${text(q&&q.id)||'—'}`);
+    lines.push(`Lượt đẩy ID: ${text(q&&q.id)||'—'}`);
     lines.push(`Shop: ${text(q&&q.host)||'—'}`);
     lines.push(`Chi nhánh: ${text(q&&q.locationName)||'—'}`);
     lines.push(`Bắt đầu: ${fmt(q&&q.startedAt||q&&q.createdAt)}`);
