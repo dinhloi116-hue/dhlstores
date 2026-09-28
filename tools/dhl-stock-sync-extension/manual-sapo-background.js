@@ -267,6 +267,12 @@
     if(cycle&&cycle.running)throw new Error('Đang có lượt quét tự động chạy. Chờ quét xong rồi đẩy Sapo thủ công.');
 
     if(existing&&existing.source==='manual'&&existing.status==='running'&&existing.manualPaused===true){
+      const oldErrors=Array.isArray(existing.errors)?existing.errors:[];
+      if(oldErrors.length){
+        existing.retryHistory=Array.isArray(existing.retryHistory)?existing.retryHistory:[];
+        existing.retryHistory.push({at:Date.now(),index:Number(existing.index||0),errors:oldErrors.map(e=>({...e}))});
+      }
+      existing.errors=[];
       existing.manualPaused=false;
       await chrome.storage.local.set({[SAPO_QUEUE_KEY]:existing});
       await chrome.alarms.clear(AUTO_PUSH_ALARM);
