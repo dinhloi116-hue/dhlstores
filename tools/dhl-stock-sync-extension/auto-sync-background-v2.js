@@ -263,7 +263,9 @@
   }
 
   async function resolveInventoryItem(sapo,row,map){
-    const mapKey=`${storeHost(sapo.storeHost)}|${Number(sapo.locationId)}|${Number(row.variantId)}`;
+    const variantId=Number(row&&row.variantId)||0;
+    const skuKey=resolver.normSku(row&&row.sku)||'no-sku';
+    const mapKey=`${storeHost(sapo.storeHost)}|${Number(sapo.locationId)}|${variantId?`v:${variantId}`:`s:${skuKey}`}`;
     if(map[mapKey])return{itemId:Number(map[mapKey]),mapKey,cached:true,method:'cache'};
     const attempts=[];
 
@@ -319,6 +321,65 @@
     throw new Error(`Không tìm thấy inventory item cho SKU ${text(row.sku)||'—'} / variant ${Number(row.variantId)||'—'}${extra}`);
   }
 
+  function variantFrom(data){
+    if(data&&data.variant&&typeof data.variant==='object')return data.variant;
+    if(data&&data.data&&data.data.variant&&typeof data.data.variant==='object')return data.data.variant;
+    if(data&&data.data&&typeof data.data==='object'&&!Array.isArray(data.data))return data.data;
+    return null;
+  }
+
+  async function resolveVariantIdForStock(sapo,row,resolved){
+    const direct=Number(row&&row.variantId)||Number(resolved&&resolved.variantId)||0;
+    if(direct)return direct;
+    const sku=text(row&&row.sku);
+    if(!sku)return 0;
+    try{
+      const item=await tryInventoryQuery(sapo,row,{sku},'sku');
+      if(item&&Number(item.variant_id))return Number(item.variant_id);
+    }catch(_){}
+    try{
+      const q=new URLSearchParams({sku,limit:'50'});
+      const data=await sapoFetch(sapo,`/admin/variants.json?${q.toString()}`);
+      const list=Array.isArray(data&&data.variants)?data.variants:Array.isArray(data&&data.data)?data.data:[];
+      const wanted=resolver.normSku(sku);
+      const hit=list.find(v=>resolver.normSku(v&&v.sku)===wanted)||list[0];
+      return Number(hit&&hit.id)||0;
+    }catch(_){return 0;}
+  }
+
+  async function writeStockWith403Fallback(sapo,row,resolved){
+    try{
+      await sapoFetch(sapo,`/admin/inventory_items/${Number(resolved.itemId)}/locations/${Number(sapo.locationId)}.json`,{
+        method:'PUT',
+        body:{inventory_level:{available:Number(row.stock)}}
+      });
+      return{method:`${resolved.method}:inventory-location`,variantId:Number(row&&row.variantId)||Number(resolved&&resolved.variantId)||0};
+    }catch(error){
+      const message=error&&error.message||String(error);
+      if(!/Sapo HTTP 403:\s*access_denied/i.test(message))throw error;
+    }
+
+    const variantId=await resolveVariantIdForStock(sapo,row,resolved);
+    if(!variantId)throw new Error(`Sapo HTTP 403: access_denied • không tìm được variant ID để fallback cho SKU ${text(row&&row.sku)||'—'}`);
+
+    const data=await sapoFetch(sapo,`/admin/variants/${variantId}.json`,{
+      method:'PUT',
+      body:{
+        variant:{
+          id:variantId,
+          inventory_management:'bizweb',
+          inventory_quantity:Number(row.stock)
+        }
+      }
+    });
+    const updated=variantFrom(data);
+    const actual=Number(updated&&updated.inventory_quantity);
+    if(Number.isFinite(actual)&&actual!==Number(row.stock)){
+      throw new Error(`SKU ${text(row&&row.sku)||'—'}: Sapo trả tồn ${actual}, cần ${Number(row.stock)}.`);
+    }
+    return{method:`${resolved.method}:variant-fallback-403`,variantId};
+  }
+
   async function processSapoQueue(){
     const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]),queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
     if(!queue||queue.status!=='running')return;
@@ -338,9 +399,9 @@
         const row=queue.rows[queue.index],rowIndex=queue.index;
         const resolved=await resolveInventoryItem(config.sapo,row,map);
         await sleep(1200);
-        await sapoFetch(config.sapo,`/admin/inventory_items/${resolved.itemId}/locations/${Number(config.sapo.locationId)}.json`,{method:'PUT',body:{inventory_level:{available:Number(row.stock)}}});
+        const written=await writeStockWith403Fallback(config.sapo,row,resolved);
         queue.success=Number(queue.success||0)+1;
-        queue.successRows.push({index:rowIndex,sku:text(row.sku),variantId:Number(row.variantId)||0,productId:Number(row.productId)||0,stock:Number(row.stock),itemId:resolved.itemId,method:resolved.method,at:Date.now()});
+        queue.successRows.push({index:rowIndex,sku:text(row.sku),variantId:Number(written.variantId)||Number(row.variantId)||0,productId:Number(row.productId)||0,stock:Number(row.stock),itemId:resolved.itemId,method:written.method,at:Date.now()});
         queue.index+=1;
 
         // Lưu NGAY sau từng dòng thành công để service worker dừng giữa chừng cũng không ghi lại từ đầu.
