@@ -197,6 +197,13 @@ assert.ok(productCore.includes('row[29]=skuImage'));
 
 const productBg=read('sapo-product-create-background.js');
 assert.ok(productBg.includes("const QUEUE_KEY='dhlSapoProductCreateQueueV1'"));
+assert.ok(productBg.includes("const LEGACY_QUEUE_CUTOFF=Date.parse('2026-09-28T06:20:00Z')"));
+assert.ok(productBg.includes('async function cleanupLegacyQueue'));
+assert.ok(productBg.includes('async function clearCreateState'));
+assert.ok(productBg.includes("if(old&&old.status==='running')"));
+assert.ok(productBg.includes('if(old)await clearCreateState()'));
+assert.ok(productBg.includes('queue.errors=[]'));
+assert.ok(productBg.includes("message.type==='DHL_SAPO_PRODUCT_CREATE_CLEAR_STATE'"));
 assert.ok(productBg.includes("'/admin/products.json'"));
 assert.ok(productBg.includes("sapoFetch(sapo,'/admin/products.json',{method:'POST'"));
 assert.ok(productBg.includes('function imageGroups(item)'));
@@ -250,6 +257,7 @@ assert.ok(popup.indexOf('auto-sync-excel-mode.js')>popup.indexOf('auto-sync-mode
 assert.ok(popup.indexOf('workflow-order-mode.js')>popup.indexOf('sapo-push-report-mode.js'));
 
 const productReport=read('sapo-product-create-report-mode.js');
+assert.ok(productReport.includes('Lượt đăng:'));
 assert.ok(productReport.includes('Đã có Product ID trên Sapo'));
 assert.ok(productReport.includes('CẦN XỬ LÝ TIẾP ẢNH / TỒN'));
 assert.ok(productReport.includes('Hoàn tất toàn bộ quy trình'));
@@ -264,6 +272,7 @@ assert.ok(productUi.includes('không cần tải Excel'));
 assert.ok(productUi.includes('SKU KHÔNG lấy từ dữ liệu cũ.'));
 assert.ok(productUi.includes('Tool vẫn kiểm tra alias/SKU để tránh tạo trùng'));
 assert.ok(productUi.includes('Thiếu link ảnh nguồn'));
+assert.ok(!/hàng đợi/i.test(productUi));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
