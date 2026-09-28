@@ -17,7 +17,8 @@ importScripts(
   'auto-sync-background-v2.js',
   'manual-sapo-background.js',
   'auto-sync-safety-background.js',
-  'sapo-stock-queue-continuous-background.js'
+  'sapo-stock-queue-continuous-background.js',
+  'manual-job-runner-background.js'
 );
 
 async function enableSidePanel() {
