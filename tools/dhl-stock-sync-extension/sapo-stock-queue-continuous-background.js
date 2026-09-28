@@ -5,6 +5,7 @@
   const MANUAL_BATCH_KEY='dhlManualPendingStockBatchV1';
   const MANUAL_ALARM='dhl-sapo-manual-push-queue';
   const AUTO_ALARM='dhl-sapo-push-queue';
+  const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z');
   let repairing=false;
 
   function text(v){return String(v==null?'':v).trim();}
@@ -24,6 +25,26 @@
 
   function isOpaque400(message){
     return /sapo http 400:\s*\[object object\]/i.test(text(message));
+  }
+
+  function isLegacyZeroProgress403(queue){
+    if(!queue||queue.source!=='manual'||queue.manualPaused!==true)return false;
+    const ts=Number(queue.startedAt||queue.createdAt||0);
+    if(!ts||ts>=LEGACY_STOCK_QUEUE_CUTOFF)return false;
+    if(Number(queue.index||0)!==0||Number(queue.success||0)!==0)return false;
+    const errors=Array.isArray(queue.errors)?queue.errors:[];
+    const last=errors.length?errors[errors.length-1]:null;
+    return /sapo http 403:\s*access_denied/i.test(text(last&&last.error));
+  }
+
+  async function purgeLegacyZeroProgress403(){
+    const s=await chrome.storage.local.get(QUEUE_KEY);
+    const queue=s[QUEUE_KEY];
+    if(!isLegacyZeroProgress403(queue))return false;
+    try{await chrome.alarms.clear(MANUAL_ALARM);}catch(_){}
+    try{await chrome.alarms.clear(AUTO_ALARM);}catch(_){}
+    await chrome.storage.local.remove(QUEUE_KEY);
+    return true;
   }
 
   function sameErrorKey(message){
@@ -196,5 +217,8 @@
     if(area==='local'&&changes[QUEUE_KEY])setTimeout(()=>continueAfterRowError().catch(()=>{}),40);
   });
 
-  continueAfterRowError().catch(()=>{});
+  purgeLegacyZeroProgress403()
+    .then(()=>continueAfterRowError())
+    .catch(()=>{});
+
 })();
