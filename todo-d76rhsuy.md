@@ -1151,3 +1151,9 @@
 - [x] Thêm nút `Nhận thông báo khi có hàng` cho từng SKU hết hàng, có xử lý đăng nhập và mutation nhắc hàng hiện có.
 - [x] Thêm progress bar nhỏ dưới số tồn, tỷ lệ trực quan theo mốc 50 sản phẩm và màu đỏ khi khan hiếm.
 - [x] Hồi quy đạt 25/25; TypeScript và build production đạt.
+
+## Ưu tiên sản phẩm mới trong tab 2026-09-28
+- [x] Sắp xếp danh sách hàng vật lý và tài nguyên số theo `createdAt` giảm dần.
+- [x] Dùng `id` giảm dần làm fallback khi thời gian tạo bị thiếu hoặc trùng.
+- [x] Giữ nguyên các lựa chọn sắp xếp thủ công theo giá/tên trong catalog.
+- [x] Hồi quy đạt 26/26; TypeScript và build production đạt.
