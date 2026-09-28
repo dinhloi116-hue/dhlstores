@@ -22,6 +22,10 @@ assert.ok(compat.includes('authSafeStatus'));
 
 const continuous=read('sapo-stock-queue-continuous-background.js');
 assert.ok(continuous.includes("const QUEUE_KEY='dhlSapoPushQueueV1'"));
+assert.ok(continuous.includes("const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z')"));
+assert.ok(continuous.includes('function isLegacyZeroProgress403'));
+assert.ok(continuous.includes('async function purgeLegacyZeroProgress403'));
+assert.ok(continuous.includes('chrome.storage.local.remove(QUEUE_KEY)'));
 assert.ok(continuous.includes('last.skipped=true'));
 assert.ok(continuous.includes('queue.index=index+1'));
 assert.ok(continuous.includes("queue.status=done?'done':'running'"));
@@ -55,14 +59,28 @@ assert.ok(background.indexOf("'sapo-inventory-set-compat.js'")<background.indexO
 assert.ok(background.indexOf("'sapo-inventory-set-compat.js'")<background.indexOf("'manual-sapo-background.js'"));
 assert.ok(background.indexOf("'sapo-stock-queue-continuous-background.js'")>background.indexOf("'manual-sapo-background.js'"));
 
+const manualUi=read('manual-sapo-output-mode.js');
+assert.ok(manualUi.includes("const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z')"));
+assert.ok(manualUi.includes('function staleLegacy403'));
+assert.ok(manualUi.includes('await chrome.storage.local.remove(QUEUE_KEY)'));
+assert.ok(!manualUi.includes('Hàng đợi Sapo thủ công đang dừng'));
+
+const manualBg=read('manual-sapo-background.js');
+assert.ok(manualBg.includes("const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z')"));
+assert.ok(manualBg.includes('function staleLegacy403Queue'));
+assert.ok(manualBg.includes('await chrome.storage.local.remove(SAPO_QUEUE_KEY)'));
+
 const report=read('sapo-push-report-mode.js');
 assert.ok(report.includes('HOÀN TẤT CÓ LỖI'));
 assert.ok(report.includes('ĐÃ BỎ QUA'));
 assert.ok(report.includes('DÒNG LỖI ĐÃ BỎ QUA'));
 assert.ok(report.includes('const processed=Number(q.index||0)'));
+assert.ok(report.includes('Lượt đẩy ID:'));
+assert.ok(!report.includes('Queue ID:'));
 
 console.log('SAPO STOCK WRITE COMPAT PASS',{
   cascade:'POST set -> PUT set -> POST adjust',
   opaque400Recovery:true,
-  structuredErrors:true
+  structuredErrors:true,
+  stale403:'purged without clearing manual cache'
 });
