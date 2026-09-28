@@ -35,6 +35,14 @@ assert.ok(bg.includes('const result=await setVariantStockWithRetry(sapo,sapoVari
 assert.ok(bg.includes('đã tự thử lại ${delays.length+1} lần tại đúng SKU'));
 assert.ok(bg.includes('item.stockRetryHistory'));
 assert.ok(ui.includes('Sapo lỗi tạm thời • tự thử lại'));
+assert.ok(bg.includes("const LEGACY_QUEUE_CUTOFF=Date.parse('2026-09-28T06:20:00Z')"));
+assert.ok(bg.includes('async function clearCreateState'));
+assert.ok(bg.includes('async function cleanupLegacyQueue'));
+assert.ok(bg.includes('if(ts>0&&ts<LEGACY_QUEUE_CUTOFF)'));
+assert.ok(bg.includes("if(old&&old.status==='running')"));
+assert.ok(bg.includes('if(old)await clearCreateState()'));
+assert.ok(bg.includes('queue.errors=[]'));
+assert.ok(bg.includes("message.type==='DHL_SAPO_PRODUCT_CREATE_CLEAR_STATE'"));
 assert.ok(bg.includes('Trùng alias trong lượt đẩy'));
 assert.ok(bg.includes('Trùng SKU trong lượt đẩy'));
 assert.ok(bg.includes('thiếu link ảnh nguồn'));
@@ -44,10 +52,12 @@ assert.ok(ui.includes('ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL'));
 assert.ok(ui.includes('không cần tải Excel'));
 assert.ok(ui.includes('SKU + ảnh + tồn'));
 assert.ok(ui.includes('Excel chỉ còn là phương án dự phòng'));
+assert.ok(!/hàng đợi/i.test(ui),'UI sản phẩm mới không được hiện khái niệm hàng đợi cũ');
 
 console.log('SAPO PRODUCT CREATE DIRECT PASS',{
   product:'POST direct',
   images:'checkpointed + variant-bound',
   stock:'location inventory first, Product Variant fallback on 403, 5xx auto-retry per SKU',
-  excel:'fallback only'
+  excel:'fallback only',
+  staleState:'auto purge legacy paused/done state'
 });
