@@ -113,6 +113,9 @@ assert.ok(!bg.includes('q.index=0'));
 
 const manualBg=read('manual-sapo-background.js');
 assert.ok(manualBg.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
+assert.ok(manualBg.includes("const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z')"));
+assert.ok(manualBg.includes('function staleLegacy403Queue'));
+assert.ok(manualBg.includes('await chrome.storage.local.remove(SAPO_QUEUE_KEY)'));
 assert.ok(manualBg.includes("message.type!=='DHL_SAPO_PUSH_MANUAL'"));
 assert.ok(manualBg.includes("source:'manual'"));
 assert.ok(manualBg.includes('manualPaused'));
@@ -276,6 +279,9 @@ assert.ok(!/hàng đợi/i.test(productUi));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
+assert.ok(manualUi.includes("const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z')"));
+assert.ok(manualUi.includes('function staleLegacy403'));
+assert.ok(manualUi.includes('await chrome.storage.local.remove(QUEUE_KEY)'));
 assert.ok(manualUi.includes('TẢI FILE EXCEL'));
 assert.ok(manualUi.includes('ĐẨY THẲNG LÊN SAPO'));
 assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_MANUAL'"));
@@ -283,6 +289,7 @@ assert.ok(manualUi.includes("x.auto!==true"));
 assert.ok(manualUi.includes('THỬ LẠI ĐẨY SAPO'));
 assert.ok(manualUi.includes("if(el&&el.textContent!==value)el.textContent=value"));
 assert.ok(manualUi.includes('globalThis.DHLManualSapoOutput'));
+assert.ok(!manualUi.includes('Hàng đợi Sapo thủ công đang dừng'));
 
 const batchUi=read('batch-stock-cache-mode.js');
 assert.ok(batchUi.includes("const BATCH_KEY='dhlManualPendingStockBatchV1'"));
@@ -328,6 +335,8 @@ assert.ok(report.includes('Shop:'));
 assert.ok(report.includes('Còn lại:'));
 assert.ok(report.includes('tồn định ghi'));
 assert.ok(report.includes('successRows'));
+assert.ok(report.includes('Lượt đẩy ID:'));
+assert.ok(!report.includes('Queue ID:'));
 
 const workflow=read('workflow-order-mode.js');
 assert.ok(workflow.includes("document.getElementById('profileQuickTabs')"));
