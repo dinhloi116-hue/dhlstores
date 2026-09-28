@@ -20,8 +20,12 @@ export default function Home() {
   const categoriesQuery = trpc.store.categories.useQuery();
   const allProducts = productsQuery.data || [];
   const categories = categoriesQuery.data || [];
-  const physicalProducts = allProducts.filter(product => product.type === "physical");
-  const digitalProducts = allProducts.filter(product => product.type === "digital");
+  const newestFirst = (a: (typeof allProducts)[number], b: (typeof allProducts)[number]) => {
+    const createdDiff = new Date(String(b.createdAt)).getTime() - new Date(String(a.createdAt)).getTime();
+    return Number.isFinite(createdDiff) && createdDiff !== 0 ? createdDiff : b.id - a.id;
+  };
+  const physicalProducts = allProducts.filter(product => product.type === "physical").sort(newestFirst);
+  const digitalProducts = allProducts.filter(product => product.type === "digital").sort(newestFirst);
   const recentProducts = recentProductIds.map(id => allProducts.find(product => product.id === id)).filter((product): product is typeof allProducts[number] => Boolean(product));
   const physicalProductIds = useMemo(() => physicalProducts.map(product => product.id), [physicalProducts]);
   const wholesaleTiersQuery = trpc.store.productWholesaleTiersForProducts.useQuery({ productIds: physicalProductIds.length ? physicalProductIds : [1] }, { enabled: physicalProductIds.length > 0 });

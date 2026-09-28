@@ -22,6 +22,18 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("h-3 w-3 animate-[pulse_1.8s_ease-in-out_infinite]");
   });
 
+  it("puts newest products first within both physical and digital tabs", () => {
+    const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+    const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+
+    expect(homeSource).toContain("const newestFirst");
+    expect(homeSource).toContain(".sort(newestFirst)");
+    expect(catalogSource).toContain("const newestFirst");
+    expect(catalogSource).toContain("products = [...products].sort(newestFirst)");
+    expect(homeSource).toContain("b.id - a.id");
+    expect(catalogSource).toContain("b.id - a.id");
+  });
+
 
   it("keeps SKU and stock in the same compact metadata group", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");

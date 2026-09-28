@@ -85,6 +85,11 @@ export default function Products() {
   if (catalogQuickFilter === "digital") products = products.filter(product => product.type === "digital");
   if (catalogQuickFilter === "physical") products = products.filter(product => product.type === "physical");
   if (catalogQuickFilter === "in-stock") products = products.filter(product => product.type === "digital" || Number(product.stock) > 0);
+  const newestFirst = (a: (typeof products)[number], b: (typeof products)[number]) => {
+    const createdDiff = new Date(String(b.createdAt)).getTime() - new Date(String(a.createdAt)).getTime();
+    return Number.isFinite(createdDiff) && createdDiff !== 0 ? createdDiff : b.id - a.id;
+  };
+  products = [...products].sort(newestFirst);
   const physicalProductIds = useMemo(() => (productsQuery.data || []).filter(product => product.type === "physical").map(product => product.id), [productsQuery.data]);
   const wholesaleTiersQuery = trpc.store.productWholesaleTiersForProducts.useQuery({ productIds: physicalProductIds.length ? physicalProductIds : [1] }, { enabled: isPhysicalCatalog && physicalProductIds.length > 0 });
   const lowestWholesalePriceByProduct = useMemo(() => new Map((wholesaleTiersQuery.data || []).flatMap(entry => { const prices = entry.tiers.map(tier => Number(tier.unitPrice)).filter(price => Number.isFinite(price) && price > 0); return prices.length ? [[entry.productId, Math.min(...prices)] as const] : []; })), [wholesaleTiersQuery.data]);
