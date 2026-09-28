@@ -84,7 +84,6 @@ assert.ok(manualUi.includes('function staleLegacy403'));
 assert.ok(manualUi.includes('await chrome.storage.local.remove(QUEUE_KEY)'));
 assert.ok(!manualUi.includes('Hàng đợi Sapo thủ công đang dừng'));
 
-const manualBg=read('manual-sapo-background.js');
 assert.ok(manualBg.includes("const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z')"));
 assert.ok(manualBg.includes('function staleLegacy403Queue'));
 assert.ok(manualBg.includes('await chrome.storage.local.remove(SAPO_QUEUE_KEY)'));
