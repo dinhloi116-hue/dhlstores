@@ -14,7 +14,6 @@ importScripts(
   'sapo-inventory-set-compat.js',
   'sapo-product-create-background.js',
   'sapo-product-create-continuous-background.js',
-  'auto-sync-background-v2.js',
   'manual-sapo-background.js',
   'auto-sync-safety-background.js',
   'sapo-stock-queue-continuous-background.js',
