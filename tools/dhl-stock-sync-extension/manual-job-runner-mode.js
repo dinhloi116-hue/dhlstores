@@ -1,8 +1,6 @@
 (() => {
   'use strict';
 
-  const PROFILE_KEY = 'dhlSavedStockProfilesV1';
-  const SELECTED_KEY = 'dhlSelectedStockProfileId';
   const JOB_KEY = 'dhlManualScanJobV2';
   const UI_KEY = 'dhlManualScanUiV1';
   let discovery = null;
@@ -21,13 +19,6 @@
         resolve(response);
       });
     });
-  }
-
-  async function selectedProfile() {
-    const stored = await chrome.storage.local.get([PROFILE_KEY, SELECTED_KEY]);
-    const profiles = Array.isArray(stored[PROFILE_KEY]) ? stored[PROFILE_KEY] : [];
-    const id = text(stored[SELECTED_KEY]);
-    return profiles.find((p) => String(p && p.id) === id) || null;
   }
 
   function setStatus(message, kind = '') {
@@ -110,7 +101,7 @@
         for (const input of document.querySelectorAll('#manualProductList input[data-product-id]')) input.checked = Number(input.dataset.productId) === keep;
       }
       updateSelectionCount();
-      setStatus(`Đã nạp ${discovery.items.length} sản phẩm từ ${text(discovery.pageTitle) || 'trang nguồn'}.`, 'ok');
+      setStatus(`Đã nhận tab ${text(discovery.profileName) || text(discovery.pageTitle) || 'nguồn'} • ${discovery.items.length} sản phẩm. Khi chạy, hồ sơ tab này sẽ tự được lưu.`, 'ok');
     } catch (error) {
       setStatus(error.message || String(error), 'bad');
     } finally {
@@ -122,8 +113,6 @@
     const btn = $('manualStartBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'ĐANG KHỞI ĐỘNG...'; }
     try {
-      const profile = await selectedProfile();
-      if (!profile) throw new Error('Chưa chọn hồ sơ.');
       const scope = currentScope();
       if (!discovery || !text(discovery.pageUrl)) {
         const response = await send({ type: 'DHL_MANUAL_JOB_DISCOVER' });
@@ -135,13 +124,14 @@
       if ((scope === 'selected' || scope === 'one') && !ids.length) throw new Error('Hãy chọn sản phẩm cần quét.');
       const response = await send({
         type: 'DHL_MANUAL_JOB_START',
-        profileId: profile.id,
         sourceUrl: discovery.pageUrl,
+        pageTitle: discovery.pageTitle,
+        productCount: Array.isArray(discovery.items) ? discovery.items.length : 0,
         scope,
         selectedIds: ids
       });
       if (!response.ok) throw new Error(response.error || 'Không khởi động được lượt quét.');
-      setStatus('Đã giao việc cho background. Có thể chuyển tab và làm việc khác.', 'ok');
+      setStatus(`Đã bắt đầu ${text(discovery.profileName) || 'tab nguồn'}. Hồ sơ được tạo/cập nhật tự động; có thể chuyển tab làm việc khác.`, 'ok');
       await refreshJob();
     } catch (error) {
       setStatus(error.message || String(error), 'bad');
@@ -192,7 +182,7 @@
     if (resume) resume.hidden = !paused;
 
     if (!job) {
-      if (progress) progress.textContent = 'Chưa có lượt quét nền.';
+      if (progress) progress.textContent = 'Mở tab danh mục cần đồng bộ rồi bấm CHẠY NỀN.';
       return;
     }
 
@@ -205,7 +195,7 @@
     if (Number(job.rowCount || 0)) parts.push(`${Number(job.rowCount)} dòng`);
     if (progress) progress.textContent = parts.join(' • ');
 
-    if (job.status === 'done') setStatus(`QUÉT XONG ${job.profileName}: ${index}/${total} sản phẩm • đã lưu cache vào hồ sơ.`, 'ok');
+    if (job.status === 'done') setStatus(`QUÉT XONG ${job.profileName}: ${index}/${total} sản phẩm • hồ sơ tab đã được lưu tự động${job.needsSapoBranch ? ' • chưa có chi nhánh Sapo nên chưa tạo đầu ra' : ''}.`, 'ok');
     else if (job.status === 'paused') setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau, không quét lại phần đã xong.`, 'ok');
     else if (job.status === 'error') setStatus(`LỖI QUÉT NỀN: ${text(job.lastError)}`, 'bad');
     else if (job.status === 'stopping') setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`, '');
@@ -276,8 +266,8 @@
     panel.id = 'manualJobRunner';
     panel.innerHTML = `
       <div class="manual-head">
-        <div><b>QUÉT NỀN / JOB RUNNER</b><small>Chạy ở tab nền, đóng panel vẫn tiếp tục. Kết quả được checkpoint sau từng sản phẩm.</small></div>
-        <span style="font-size:9px;font-weight:800;color:#64748b">v0.20</span>
+        <div><b>QUÉT & ĐỒNG BỘ TAB ĐANG MỞ</b><small>Mở tab danh mục nào thì chạy tab đó. Tool tự tạo/cập nhật hồ sơ và checkpoint sau từng sản phẩm.</small></div>
+        <span style="font-size:9px;font-weight:800;color:#64748b">v0.21</span>
       </div>
       <select id="manualJobScope">
         <option value="all">QUÉT TOÀN TRANG</option>
