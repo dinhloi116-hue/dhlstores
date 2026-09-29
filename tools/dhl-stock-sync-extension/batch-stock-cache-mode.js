@@ -7,6 +7,7 @@
   if(!xlsx||!stockImport||!batch)return;
 
   const BATCH_KEY='dhlManualPendingStockBatchV1';
+  const CONFIG_KEY='dhlAutoSyncConfigV1';
   const text=(v)=>String(v==null?'':v).trim();
   const esc=(v)=>text(v).replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 
@@ -33,7 +34,10 @@
     try{
       const list=await entries();
       if(!list.length)throw new Error('Chưa có kết quả quét để tạo Excel.');
-      const combined=batch.combineEntries(list);
+      const stored=await chrome.storage.local.get(CONFIG_KEY);
+      const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
+      const branch=text(config&&config.sapo&&config.sapo.locationName);
+      const combined=batch.combineEntries(list.map(entry=>({...entry,branch:text(entry&&entry.branch)||branch})));
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,combined.rows,combined.branch);
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
