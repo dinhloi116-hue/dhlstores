@@ -137,7 +137,7 @@ describe("public SKU inventory presentation", () => {
 
     expect(dbSource).toContain("const stockByProduct = await Promise.all(list.map(async product =>");
     expect(dbSource).toContain("variants.reduce((total, variant) => total + Math.max(0, Number(variant.stock) || 0), 0)");
-    expect(catalogSource).toContain("Number(p.stock) > 0 ? `Còn ${p.stock}` : 'Hết hàng'");
+    expect(catalogSource).toContain("Number(p.stock) > 0");
     expect(catalogSource).toContain("{!isPhysicalCatalog && <p className=\"mt-1 line-clamp-2 text-[10px] text-slate-500 sm:text-[11px]\">");
   });
 
@@ -173,6 +173,16 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("Hàng vật lý bán chạy");
     expect(source).toContain("Number(product.stock) > 0");
     expect(source).not.toContain('>Đặt hàng</span>');
+  });
+
+  it("keeps real product images clean without overlay badges", () => {
+    const assetSource = readFileSync(new URL("../client/src/components/AssetVisual.tsx", import.meta.url), "utf8");
+    const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+
+    expect(assetSource).toContain("data-clean-product-image");
+    expect(assetSource).toContain('className="h-full w-full object-contain"');
+    expect(catalogSource).not.toContain("absolute left-2 top-2 z-20");
+    expect(catalogSource).not.toContain("absolute bottom-2 left-2 z-20");
   });
 
   it("uses a clear pending-price label across customer product surfaces", () => {

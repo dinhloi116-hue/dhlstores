@@ -1163,3 +1163,14 @@
 - [x] Sửa cookie phiên trong môi trường HTTPS qua reverse proxy: nhận diện thêm `Origin`/`Referer` để luôn gắn cờ `Secure` khi cần.
 - [x] Xác minh session giữ được khi chuyển từ trang sản phẩm sang `/admin`, hiển thị quyền `OWNER` và toàn bộ giao diện quản trị.
 - [x] Hồi quy cookie/local auth/logout đạt 7/7; TypeScript và build production đạt.
+
+## Làm sạch ảnh thẻ sản phẩm 2026-09-29
+- [ ] Ảnh sản phẩm thật không còn gradient, lưới, mã loại, tiêu đề, dung lượng hoặc icon phủ lên ảnh.
+- [ ] Bỏ badge loại và tồn kho khỏi vùng ảnh ở trang chủ/catalog; thông tin cần thiết nằm trong phần nội dung thẻ.
+- [ ] Bổ sung hồi quy, kiểm tra desktop/mobile, TypeScript và build production.
+
+
+## Ảnh sản phẩm sạch 2026-09-29
+- [x] Ảnh thật trong `AssetVisual` hiển thị nguyên bản bằng `object-contain`, không lớp gradient/chữ phủ.
+- [x] Gỡ badge loại sản phẩm và tồn kho khỏi trực tiếp trên ảnh ở catalog; thông tin vẫn nằm bên dưới thẻ.
+- [x] Bổ sung hồi quy cho ảnh thật sạch; chạy TypeScript và build production.
