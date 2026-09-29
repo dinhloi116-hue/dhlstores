@@ -19,6 +19,7 @@
       #savedProfilesMode{margin-top:8px!important;border-color:#86efac!important;background:#f0fdf4!important}
       #catalogMode{margin-top:12px!important;border-color:#93c5fd!important;background:#eff6ff!important}
       #savedProfilesMode>small:first-of-type,#catalogMode>span{line-height:1.45}
+      #profileHistory{margin-top:10px!important}
       #manualJobRunner{margin-top:10px!important}
       #batchPendingBox{margin-top:9px!important}
       #profileStatus{font-size:10px!important;margin-top:7px!important}
@@ -42,15 +43,7 @@
     const directTitle=[...host.children].find((el)=>el.tagName==='B');
     const directHint=[...host.children].find((el)=>el.tagName==='SMALL');
     setText(directTitle,'1. ĐỒNG BỘ TỒN KHO');
-    setText(directHint,'Mở tab danh mục cần đồng bộ → chọn phạm vi → CHẠY NỀN. Tool tự tạo/cập nhật hồ sơ của chính tab đó.');
-
-    const runner=document.getElementById('manualJobRunner');
-    if(runner){
-      const title=runner.querySelector('.manual-head b');
-      const hint=runner.querySelector('.manual-head small');
-      setText(title,'QUÉT & ĐỒNG BỘ TỒN KHO');
-      setText(hint,'Chạy ở tab nền, tự lưu sau từng sản phẩm. Không cần giữ panel mở.');
-    }
+    setText(directHint,'Đứng ở tab nguồn cần làm → bấm ĐỒNG BỘ TAB NÀY. Tab mới tự tạo hồ sơ sau lần chạy đầu tiên.');
 
     hide(document.getElementById('uiV3Dashboard'));
     hide(document.getElementById('autoSyncPanel'));
@@ -60,7 +53,6 @@
     hide(document.getElementById('uiV2Manual'));
     hide(document.getElementById('activeProfileCard'));
 
-    show(document.getElementById('profileChips'));
     show(runner);
     show(document.getElementById('batchPendingBox'));
     show(document.getElementById('profileStatus'));
@@ -102,7 +94,7 @@
       const header=document.querySelector('main > header');
       const catalog=document.getElementById('catalogMode');
 
-      setText(document.querySelector('header p'),'Đồng bộ tồn kho ở trên. Khi cần thêm sản phẩm mới, dùng khối bên dưới.');
+      setText(document.querySelector('header p'),'Đứng ở tab nguồn → Đồng bộ tab này. Tùy chọn nâng cao chỉ mở khi cần.');
 
       if(main&&host.parentElement===main){
         const anchor=header?header.nextSibling:main.firstChild;
@@ -113,9 +105,9 @@
       }
 
       const expected=[
-        document.getElementById('profileChips'),
         document.getElementById('manualJobRunner'),
         document.getElementById('batchPendingBox'),
+        document.getElementById('profileHistory'),
         document.getElementById('profileStatus')
       ].filter(node=>node&&node.parentElement===host);
 
