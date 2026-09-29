@@ -596,9 +596,5 @@
     return Boolean(newScan&&newTest&&newExport);
   }
 
-  if(!install()) {
-    const observer=new MutationObserver(()=>{if(install())observer.disconnect();});
-    observer.observe(document.documentElement,{childList:true,subtree:true});
-    setTimeout(()=>observer.disconnect(),5000);
-  }
+  install();
 })();
