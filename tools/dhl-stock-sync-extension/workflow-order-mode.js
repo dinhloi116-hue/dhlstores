@@ -137,11 +137,8 @@
 
   function install(){
     reorder();
-    const observer=new MutationObserver(schedule);
-    observer.observe(document.documentElement,{childList:true,subtree:true});
-    setTimeout(reorder,500);
-    setTimeout(reorder,1400);
-    setTimeout(reorder,3000);
+    requestAnimationFrame(reorder);
+    setTimeout(reorder,180);
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
