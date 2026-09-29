@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.20.1",
+  "version": "0.21.0",
   "minimum_chrome_version": "116",
-  "description": "Giao diện gọn 2 luồng: Đồng bộ tồn kho ở trên với Job Runner chạy nền; Thêm sản phẩm mới ở dưới. Ẩn các khối thử nghiệm, chẩn đoán và bảo trì khỏi màn hình chính.",
+  "description": "Mở tab nguồn nào thì quét tab đó; tool tự tạo/cập nhật hồ sơ theo tab, không còn nạp 2 file Excel để tạo hồ sơ. Job Runner chạy nền và checkpoint từng sản phẩm.",
   "permissions": [
     "storage",
     "unlimitedStorage",
