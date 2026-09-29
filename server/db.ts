@@ -40,6 +40,7 @@ export interface ProductType {
   weightGrams?: number;
   purchaseLayout?: "classic" | "marketplace";
   specs?: string;
+  specsEn?: string;
   featured: boolean;
   isActive?: boolean;
   createdAt: Date;
@@ -527,6 +528,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     weightGrams: product.weightGrams,
     purchaseLayout: product.purchaseLayout ?? "classic",
     specs: product.specs ?? undefined,
+    specsEn: product.specsEn ?? undefined,
     featured: product.featured,
     isActive: product.isActive,
     createdAt: product.createdAt,

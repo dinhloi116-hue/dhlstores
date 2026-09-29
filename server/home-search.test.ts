@@ -6,10 +6,9 @@ describe("home product search", () => {
     const source = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 
     expect(source).toContain('const [searchTerm, setSearchTerm] = useState("")');
-    expect(source).toContain("const searchSuggestions = !normalizedSearchTerm");
-    expect(source).toContain("Tìm nhanh sản phẩm");
-    expect(source).toContain("Gợi ý ${searchSuggestions.length} sản phẩm phù hợp");
+    expect(source).toContain("const suggestions = useMemo(() => !normalizedSearch ? [] : allProducts.filter");
+    expect(source).toContain("Tìm sản phẩm, SKU, tên áo, patch...");
     expect(source).toContain("href={`/product/${product.slug}`}");
-    expect(source).toContain("Không tìm thấy sản phẩm phù hợp");
+    expect(source).toContain("Không tìm thấy sản phẩm");
   });
 });

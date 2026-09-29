@@ -10,8 +10,8 @@ describe("catalog type split", () => {
     expect(home).toContain("/products?type=physical");
     expect(home).toContain("Tài nguyên số");
     expect(home).toContain("Hàng vật lý");
-    expect(home).toContain("Có SKU / tồn kho");
-    expect(home).toContain("Tải file");
+    expect(home).toContain("Chọn sản phẩm, vào chi tiết để chọn SKU và số lượng.");
+    expect(home).toContain("Vào kho tài nguyên số");
   });
 
   it("applies the type query to the real catalog request", () => {

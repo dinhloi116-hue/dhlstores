@@ -277,6 +277,7 @@ export const products = mysqlTable("products", {
   weightGrams: int("weightGrams").default(0).notNull(), // Khối lượng mặc định để tính phí SPX
   purchaseLayout: mysqlEnum("purchaseLayout", ["classic", "marketplace"]).default("classic").notNull(), // Bố cục mua hàng riêng cho sản phẩm vật lý
   specs: text("specs"), // Thông tin chi tiết (chất liệu, định dạng, kích thước...)
+  specsEn: text("specsEn"), // English product specifications / formats
   featured: boolean("featured").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

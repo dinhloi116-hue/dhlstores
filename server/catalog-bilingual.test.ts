@@ -29,4 +29,12 @@ describe("bilingual catalog presentation", () => {
     expect(source).toContain("return 'vi'");
     expect(source).toContain("setSelectedLanguage");
   });
+
+  it("renders localized product specifications with a safe English fallback", async () => {
+    const source = await readFile(path.resolve(process.cwd(), "client/src/pages/ProductDetail.tsx"), "utf8");
+    const schema = await readFile(path.resolve(process.cwd(), "drizzle/schema.ts"), "utf8");
+    expect(source).toContain('lang === "en" ? product.specsEn || product.specs : product.specs');
+    expect(source).toContain("whitespace-pre-line");
+    expect(schema).toContain('specsEn: text("specsEn")');
+  });
 });

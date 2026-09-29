@@ -1174,3 +1174,11 @@
 - [x] Ảnh thật trong `AssetVisual` hiển thị nguyên bản bằng `object-contain`, không lớp gradient/chữ phủ.
 - [x] Gỡ badge loại sản phẩm và tồn kho khỏi trực tiếp trên ảnh ở catalog; thông tin vẫn nằm bên dưới thẻ.
 - [x] Bổ sung hồi quy cho ảnh thật sạch; chạy TypeScript và build production.
+
+
+## Cập nhật nội dung song ngữ FIFA ASEAN Cup 2026 2026-09-29
+- [x] Cập nhật tên VI/EN đầy đủ: tên sản phẩm, định dạng SVG/CDR/PNG/PDF và loại digital download.
+- [x] Cập nhật mô tả VI/EN đầy đủ: nội dung gói nhận được, đối tượng sử dụng, phần mềm tương thích, lưu ý không có hàng vật lý và quyền sử dụng.
+- [x] Bổ sung `specsEn` qua migration `0031_boring_texas_twister.sql`; ProductDetail hiển thị specs theo ngôn ngữ và fallback an toàn.
+- [x] Cập nhật dữ liệu sản phẩm id 150001, giữ giá website 25.000đ và file ZIP hiện tại.
+- [x] Hồi quy bilingual/catalog 4 test, SKU 27 test; TypeScript và build production đạt.
