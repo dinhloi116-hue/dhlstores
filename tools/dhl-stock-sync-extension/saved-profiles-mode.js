@@ -40,20 +40,15 @@
       return;
     }
     box.innerHTML=`
-      <small style="display:block;margin-bottom:6px;color:#475569"><b>HỒ SƠ ĐÃ NHỚ</b> — tự tạo từ các tab đã quét.</small>
+      <small style="display:block;margin-bottom:6px;color:#475569"><b>HỒ SƠ ĐÃ NHỚ</b> — chỉ để theo dõi. Muốn đồng bộ, chọn tab ở khối TAB NGUỒN ĐANG MỞ bên dưới.</small>
       <div id="profileChipButtons" style="display:flex;gap:7px;flex-wrap:wrap"></div>`;
     const row=$('profileChipButtons');
     for(const p of sorted){
-      const active=String(p.id)===selectedId;
-      const btn=document.createElement('button');
-      btn.type='button';
-      btn.className=active?'primary':'secondary';
-      btn.style.padding='7px 10px';
-      btn.style.minWidth='72px';
-      btn.title=`${text(p.name)||'Hồ sơ'}${profileMeta(p)?' • '+profileMeta(p):''}`;
-      btn.innerHTML=`<b style="display:block;font-size:11px">${esc(p.name||'Hồ sơ')}</b>${profileMeta(p)?`<small style="display:block;font-size:9px;opacity:.75;margin-top:2px">${esc(profileMeta(p))}</small>`:''}`;
-      btn.addEventListener('click',()=>selectProfile(p.id));
-      row.appendChild(btn);
+      const card=document.createElement('div');
+      card.style.cssText='padding:7px 10px;min-width:72px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155';
+      card.title=`${text(p.name)||'Hồ sơ'}${profileMeta(p)?' • '+profileMeta(p):''}`;
+      card.innerHTML=`<b style="display:block;font-size:11px">${esc(p.name||'Hồ sơ')}</b>${profileMeta(p)?`<small style="display:block;font-size:9px;opacity:.75;margin-top:2px">${esc(profileMeta(p))}</small>`:''}`;
+      row.appendChild(card);
     }
   }
 
