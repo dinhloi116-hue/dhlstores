@@ -239,15 +239,12 @@
 
   function install(){
     injectStyle();
-    if(!mount()){
-      const obs=new MutationObserver(()=>{if(mount()){obs.disconnect();refresh().catch(()=>{});}});
-      obs.observe(document.documentElement,{childList:true,subtree:true});
-      setTimeout(()=>obs.disconnect(),10000);
-    }else refresh().catch(()=>{});
+    if(!mount())return;
+    refresh().catch(()=>{});
     chrome.storage.onChanged.addListener((changes,area)=>{
       if(area==='local'&&(changes[QUEUE_KEY]||changes[RESULTS_KEY]))refresh().catch(()=>{});
     });
-    setInterval(()=>{if(document.getElementById('catalogSapoCreateBtn'))refresh().catch(()=>{});},1800);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh().catch(()=>{});},{passive:true});
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
