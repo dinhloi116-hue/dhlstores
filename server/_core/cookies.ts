@@ -12,13 +12,21 @@ function isSecureRequest(req: Request) {
   if (req.protocol === "https") return true;
 
   const forwardedProto = req.headers["x-forwarded-proto"];
-  if (!forwardedProto) return false;
+  if (forwardedProto) {
+    const protoList = Array.isArray(forwardedProto)
+      ? forwardedProto
+      : forwardedProto.split(",");
+    if (protoList.some(proto => proto.trim().toLowerCase() === "https")) return true;
+  }
 
-  const protoList = Array.isArray(forwardedProto)
-    ? forwardedProto
-    : forwardedProto.split(",");
-
-  return protoList.some(proto => proto.trim().toLowerCase() === "https");
+  // Some preview/reverse-proxy paths terminate TLS before Express and omit
+  // x-forwarded-proto. The browser still sends an HTTPS Origin/Referer on the
+  // tRPC request; honor it so SameSite=None cookies also carry Secure and are
+  // not silently rejected by modern browsers.
+  const requestOrigin = req.headers.origin;
+  if (typeof requestOrigin === "string" && requestOrigin.toLowerCase().startsWith("https://")) return true;
+  const referer = req.headers.referer;
+  return typeof referer === "string" && referer.toLowerCase().startsWith("https://");
 }
 
 export function getSessionCookieOptions(
