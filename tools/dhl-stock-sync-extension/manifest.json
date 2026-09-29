@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.22.1",
+  "version": "0.22.2",
   "minimum_chrome_version": "116",
-  "description": "Tối ưu tốc độ: dùng trực tiếp tab nguồn đang mở, API-first rồi mới fallback popup, xử lý theo chunk, giảm ghi storage và lazy-load phần Thêm sản phẩm.",
+  "description": "Tạm dừng đẩy tồn kho trực tiếp lên Sapo vì gây chậm/đơ. Giữ quét tồn và xuất Excel; reload sẽ hủy queue/alarm đẩy tồn đang chạy.",
   "permissions": [
     "storage",
     "unlimitedStorage",
