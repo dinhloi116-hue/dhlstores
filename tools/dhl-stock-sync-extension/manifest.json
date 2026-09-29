@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "minimum_chrome_version": "116",
-  "description": "Mở tab nguồn nào thì quét tab đó; tool tự tạo/cập nhật hồ sơ theo tab, không còn nạp 2 file Excel để tạo hồ sơ. Job Runner chạy nền và checkpoint từng sản phẩm.",
+  "description": "Lite startup: chỉ nạp các module đang dùng, không polling/MutationObserver khi mở panel, không đánh thức background chỉ để đọc trạng thái. Đồng bộ tồn kho chạy nền và thêm sản phẩm giữ nguyên.",
   "permissions": [
     "storage",
     "unlimitedStorage",
