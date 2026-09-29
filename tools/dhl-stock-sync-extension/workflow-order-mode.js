@@ -28,8 +28,6 @@
       #maintenancePopupStandardizeBox,#catalogScanDiagnostics{display:none!important}
       #uiV3Dashboard,#autoSyncPanel,#sapoPushReportPanel,#stockHistoryPanel,#uiV2Panel,#uiV2Manual{display:none!important}
       #activeProfileCard,#profileManageToggle,#profileManageBody,#profileQuickTabs{display:none!important}
-      #manualJobRunner .manual-head>span{display:none!important}
-      #manualJobRunner .manual-head small{font-size:10px!important}
       #singleProductAddBox{margin-top:10px!important}
       footer{display:none!important}
     `;
@@ -53,7 +51,7 @@
     hide(document.getElementById('uiV2Manual'));
     hide(document.getElementById('activeProfileCard'));
 
-    show(runner);
+    show(document.getElementById('manualJobRunner'));
     show(document.getElementById('batchPendingBox'));
     show(document.getElementById('profileStatus'));
   }
