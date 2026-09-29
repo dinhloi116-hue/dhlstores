@@ -71,6 +71,7 @@ export default function ProductDetail() {
   const product = productQuery.data;
   const productName = product ? catalogName(product, lang) : "";
   const productDescription = product ? catalogDescription(product, lang) : "";
+  const productSpecs = product ? (lang === "en" ? product.specsEn || product.specs : product.specs) : "";
   const productsQuery = trpc.store.products.useQuery({}, { enabled: Boolean(product?.id), staleTime: 60_000 });
   const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
   const wholesaleTiersQuery = trpc.store.productWholesaleTiers.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
@@ -582,10 +583,10 @@ export default function ProductDetail() {
 
             <Dialog open={Boolean(quickViewProduct)} onOpenChange={open => { if (!open) setQuickViewProduct(null); }}><DialogContent className="max-w-md overflow-hidden rounded-2xl p-0"><DialogHeader className="sr-only"><DialogTitle>Xem nhanh sản phẩm</DialogTitle><DialogDescription>Thông tin nhanh của sản phẩm mua kèm</DialogDescription></DialogHeader>{quickViewProduct && <div><div className="aspect-video bg-slate-100">{quickViewProduct.image ? <img src={quickViewProduct.image} alt={catalogName(quickViewProduct, lang)} className="h-full w-full object-contain" /> : <div className="grid h-full place-items-center font-black text-violet-500">DHL</div>}</div><div className="space-y-3 p-5"><p className="text-xs font-black uppercase tracking-wide text-violet-700">Xem nhanh</p><h3 className="text-lg font-black text-slate-900">{catalogName(quickViewProduct, lang)}</h3><p className="text-xl font-black text-[#ee4d2d]">{formatCurrency(quickViewProduct.price)}</p><div className="grid grid-cols-2 gap-2"><Link href={`/product/${quickViewProduct.slug}`} onClick={() => setQuickViewProduct(null)} className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">Xem chi tiết</Link><button type="button" onClick={() => { if (!isAuthenticated) { toast.info("Đăng nhập để thêm sản phẩm vào giỏ"); startLogin(); return; } setAddingRecommended(quickViewProduct.id); addToCartMutation.mutate({ productId: quickViewProduct.id, quantity: 1 }); setQuickViewProduct(null); }} className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#ee4d2d] px-3 py-2 text-xs font-black text-white hover:bg-[#d94325]"><ShoppingBag className="h-3.5 w-3.5" />Thêm vào giỏ</button></div></div></div>}</DialogContent></Dialog>
 
-            {product.specs && (
+            {productSpecs && (
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">{lang === 'vi' ? 'Thông số kỹ thuật / Định dạng:' : 'Specifications / Format:'}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">{product.specs}</p>
+                <p className="whitespace-pre-line text-xs text-slate-600 leading-relaxed">{productSpecs}</p>
                 {product.fileSize && (
                   <p className="text-xs text-purple-600 font-bold pt-1">File Size: {product.fileSize}</p>
                 )}

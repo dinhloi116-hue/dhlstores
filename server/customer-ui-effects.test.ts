@@ -24,7 +24,7 @@ describe("customer UI effects", () => {
     expect(detail).toContain("availableSizes");
     expect(detail).toContain("không áp dụng bảng số đo chung");
     expect(detail).toContain("allPhysicalSkusOutOfStock");
-    expect(detail).toContain("const canRequestRestock = Boolean(allPhysicalSkusOutOfStock)");
+    expect(detail).toContain("const canRequestRestock = Boolean(product?.type === \"physical\"");
     expect(contactHub).toContain("supportMenuOpen");
     expect(contactHub).toContain("Nhắn cửa hàng");
     expect(contactHub).toContain("Gửi góp ý");
