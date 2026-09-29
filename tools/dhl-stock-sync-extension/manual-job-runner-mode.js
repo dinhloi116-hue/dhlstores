@@ -203,8 +203,8 @@
 
   async function refreshJob() {
     try {
-      const response = await send({ type: 'DHL_MANUAL_JOB_GET' });
-      if (response.ok) renderJob(response.job || null);
+      const stored=await chrome.storage.local.get(JOB_KEY);
+      renderJob(stored[JOB_KEY]&&typeof stored[JOB_KEY]==='object'?stored[JOB_KEY]:null);
     } catch (_) {}
   }
 
