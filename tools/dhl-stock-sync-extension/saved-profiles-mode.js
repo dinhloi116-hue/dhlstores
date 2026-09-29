@@ -105,9 +105,5 @@
     return true;
   }
 
-  if(!mount()){
-    const obs=new MutationObserver(()=>{if(mount())obs.disconnect();});
-    obs.observe(document.documentElement,{childList:true,subtree:true});
-    setTimeout(()=>obs.disconnect(),10000);
-  }
+  mount();
 })();
