@@ -405,45 +405,72 @@
   async function processStep(){
     let job=await readJob();
     if(!job||!job.running)return;
+
+    // Xử lý nhiều SP liên tiếp trong cùng một lần worker thức dậy.
+    // Vẫn checkpoint sau TỪNG SP để có thể resume chính xác.
+    const CHUNK_SIZE=4;
+    let processed=0;
+
     try{
       if(!Array.isArray(job.descriptors)||!job.descriptors.length)job=await initializeJob(job);
-      if(Number(job.index||0)>=Number(job.total||0)){await finalize(job);return;}
 
-      const tab=await ensureJobTab(job);
-      const descriptor=job.descriptors[job.index];
-      job.currentProduct=text(descriptor&&descriptor.title)||`Sản phẩm ${job.index+1}`;
-      job.currentStartedAt=Date.now();
-      job.status='running';
-      job.progress=`${job.index}/${job.total}`;
-      await saveJob(job);
+      while(job.running&&Number(job.index||0)<Number(job.total||0)&&processed<CHUNK_SIZE){
+        const tab=await ensureJobTab(job);
+        const descriptor=job.descriptors[job.index];
 
-      let result=null;
-      try{
-        const response=await sendFastScan(tab.id,descriptor);
-        if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Không nhận được dữ liệu nguồn.');
-        result=response.result;
-      }catch(error){
-        job.errors=Array.isArray(job.errors)?job.errors:[];
-        job.errors.push({id:descriptor&&descriptor.id,title:descriptor&&descriptor.title,error:error.message||String(error),at:Date.now()});
-        if(job.errors.length>MAX_ERRORS)job.errors.splice(0,job.errors.length-MAX_ERRORS);
-        result={parentId:Number(descriptor&&descriptor.id)||0,parentName:text(descriptor&&descriptor.title),sourceUrl:text(descriptor&&descriptor.url),complete:false,scanError:error.message||String(error),colors:[]};
+        job.currentProduct=text(descriptor&&descriptor.title)||`Sản phẩm ${job.index+1}`;
+        job.currentStartedAt=Date.now();
+        job.status='running';
+        job.progress=`${job.index}/${job.total}`;
+        await saveJob(job);
+
+        let result=null;
+        try{
+          const response=await sendFastScan(tab.id,descriptor);
+          if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Không nhận được dữ liệu nguồn.');
+          result=response.result;
+        }catch(error){
+          job.errors=Array.isArray(job.errors)?job.errors:[];
+          job.errors.push({
+            id:descriptor&&descriptor.id,
+            title:descriptor&&descriptor.title,
+            error:error.message||String(error),
+            at:Date.now()
+          });
+          if(job.errors.length>MAX_ERRORS)job.errors.splice(0,job.errors.length-MAX_ERRORS);
+          result={
+            parentId:Number(descriptor&&descriptor.id)||0,
+            parentName:text(descriptor&&descriptor.title),
+            sourceUrl:text(descriptor&&descriptor.url),
+            complete:false,
+            scanError:error.message||String(error),
+            colors:[]
+          };
+        }
+
+        job.results=Array.isArray(job.results)?job.results:[];
+        job.results.push(result);
+        job.index+=1;
+        processed+=1;
+        job.progress=`${job.index}/${job.total}`;
+        job.lastCompletedProduct=text(descriptor&&descriptor.title);
+        job.lastProductMs=Math.max(0,Date.now()-Number(job.currentStartedAt||Date.now()));
+        await checkpoint(job);
+
+        if(job.stopAfterCurrent&&job.index<job.total){
+          job.pausedAt=Date.now();
+          await finalize(job,'paused');
+          return;
+        }
       }
 
-      job.results=Array.isArray(job.results)?job.results:[];
-      job.results.push(result);
-      job.index+=1;
-      job.progress=`${job.index}/${job.total}`;
-      job.lastCompletedProduct=text(descriptor&&descriptor.title);
-      job.lastProductMs=Math.max(0,Date.now()-Number(job.currentStartedAt||Date.now()));
-      await checkpoint(job);
-
-      if(job.stopAfterCurrent&&job.index<job.total){
-        job.pausedAt=Date.now();
-        await finalize(job,'paused');
+      if(Number(job.index||0)>=Number(job.total||0)){
+        await finalize(job);
         return;
       }
-      if(job.index>=job.total){await finalize(job);return;}
-      scheduleNext(350);
+
+      // Chỉ nhường worker sau một chunk, thay vì sau từng sản phẩm.
+      scheduleNext(80);
     }catch(error){
       if(job){
         job.running=false;
