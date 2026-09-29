@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.21.2",
+  "version": "0.21.3",
   "minimum_chrome_version": "116",
-  "description": "Sửa đầu ra sau quét: luôn lưu cache, tự khôi phục lượt quét gần nhất, nút đẩy Sapo tự bật khi có dữ liệu và tự xác minh lại kết nối nếu cần.",
+  "description": "Manual-only mode: mở tool không tự quét; bấm CHẠY NỀN luôn lấy đúng tab đang active. Gỡ auto-sync cũ, dọn alarm/cycle Wika một lần và sửa lỗi Job Runner.",
   "permissions": [
     "storage",
     "unlimitedStorage",
