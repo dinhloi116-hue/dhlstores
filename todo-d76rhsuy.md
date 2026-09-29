@@ -1165,9 +1165,9 @@
 - [x] Hồi quy cookie/local auth/logout đạt 7/7; TypeScript và build production đạt.
 
 ## Làm sạch ảnh thẻ sản phẩm 2026-09-29
-- [ ] Ảnh sản phẩm thật không còn gradient, lưới, mã loại, tiêu đề, dung lượng hoặc icon phủ lên ảnh.
-- [ ] Bỏ badge loại và tồn kho khỏi vùng ảnh ở trang chủ/catalog; thông tin cần thiết nằm trong phần nội dung thẻ.
-- [ ] Bổ sung hồi quy, kiểm tra desktop/mobile, TypeScript và build production.
+- [x] Ảnh sản phẩm thật không còn gradient, lưới, mã loại, tiêu đề, dung lượng hoặc icon phủ lên ảnh.
+- [x] Bỏ badge loại và tồn kho khỏi vùng ảnh ở trang chủ/catalog; thông tin cần thiết nằm trong phần nội dung thẻ.
+- [x] Bổ sung hồi quy, kiểm tra desktop/mobile, TypeScript và build production.
 
 
 ## Ảnh sản phẩm sạch 2026-09-29
