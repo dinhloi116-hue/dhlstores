@@ -4,6 +4,8 @@
   const JOB_KEY = 'dhlManualScanJobV2';
   const UI_KEY = 'dhlManualScanUiV1';
   let discovery = null;
+  let sourceTabs = [];
+  let selectedSourceTabId = 0;
 
   const $ = (id) => document.getElementById(id);
   const text = (v) => String(v == null ? '' : v).trim();
@@ -18,6 +20,72 @@
         resolve(response);
       });
     });
+  }
+
+  function sourceKey(value) {
+    try {
+      const u = new URL(String(value || ''));
+      return `${u.hostname}${u.pathname.replace(/\\/+$/, '') || '/'}`.toLowerCase();
+    } catch (_) {
+      return text(value).toLowerCase();
+    }
+  }
+
+  function renderSourceTabs() {
+    const box = $('manualSourceTabs');
+    if (!box) return;
+    if (!sourceTabs.length) {
+      box.innerHTML = '<small>Chưa có tab danh mục si.aobongda.net nào đang mở.</small>';
+      return;
+    }
+    box.innerHTML = sourceTabs.map((tab) => {
+      const selected = Number(tab.tabId) === Number(selectedSourceTabId);
+      const badge = tab.hasProfile
+        ? `<span class="source-tab-badge saved">ĐÃ CÓ HỒ SƠ${tab.profileName ? ' • ' + esc(tab.profileName) : ''}</span>`
+        : '<span class="source-tab-badge new">MỚI</span>';
+      return `
+        <div class="source-tab-row ${selected ? 'selected' : ''}" data-source-tab-id="${Number(tab.tabId)}">
+          <div class="source-tab-info">
+            <b>${esc(tab.title || tab.url || 'Tab nguồn')}</b>
+            ${badge}
+            <small>${esc(tab.url)}</small>
+          </div>
+          <button type="button" class="${selected ? 'primary' : 'secondary'} source-tab-select" data-source-tab-id="${Number(tab.tabId)}">${selected ? 'ĐÃ CHỌN' : 'CHỌN'}</button>
+        </div>`;
+    }).join('');
+
+    for (const btn of box.querySelectorAll('.source-tab-select')) {
+      btn.addEventListener('click', () => {
+        selectedSourceTabId = Number(btn.dataset.sourceTabId) || 0;
+        discovery = null;
+        for (const input of document.querySelectorAll('#manualProductList input[data-product-id]')) input.checked = false;
+        renderSourceTabs();
+        const tab = sourceTabs.find(x => Number(x.tabId) === selectedSourceTabId);
+        setStatus(tab ? `Đã chọn tab: ${text(tab.title) || text(tab.profileName) || 'nguồn'}.` : 'Đã chọn tab nguồn.', 'ok');
+      });
+    }
+  }
+
+  async function loadOpenSourceTabs({preserveSelection=true}={}) {
+    try {
+      const response = await send({ type: 'DHL_MANUAL_JOB_LIST_TABS' });
+      if (!response.ok) throw new Error(response.error || 'Không đọc được danh sách tab nguồn.');
+      sourceTabs = Array.isArray(response.tabs) ? response.tabs : [];
+      const stillExists = sourceTabs.some(tab => Number(tab.tabId) === Number(selectedSourceTabId));
+      if (!preserveSelection || !stillExists) {
+        const active = sourceTabs.find(tab => tab.active) || null;
+        selectedSourceTabId = active ? Number(active.tabId) : (sourceTabs[0] ? Number(sourceTabs[0].tabId) : 0);
+        discovery = null;
+      }
+      renderSourceTabs();
+      return sourceTabs;
+    } catch (error) {
+      sourceTabs = [];
+      selectedSourceTabId = 0;
+      renderSourceTabs();
+      setStatus(error.message || String(error), 'bad');
+      return [];
+    }
   }
 
   function setStatus(message, kind = '') {
@@ -87,7 +155,9 @@
     const btn = $('manualDiscoverBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'ĐANG NẠP...'; }
     try {
-      const response = await send({ type: 'DHL_MANUAL_JOB_DISCOVER' });
+      if (!selectedSourceTabId) await loadOpenSourceTabs({preserveSelection:false});
+      if (!selectedSourceTabId) throw new Error('Chưa chọn tab nguồn.');
+      const response = await send({ type: 'DHL_MANUAL_JOB_DISCOVER_TAB', tabId: selectedSourceTabId });
       if (!response.ok) throw new Error(response.error || 'Không nạp được danh sách sản phẩm.');
       const old = new Set(selectedIds());
       discovery = response.result || null;
@@ -114,11 +184,12 @@
     try {
       const scope = currentScope();
 
-      // Luôn đọc LẠI tab đang active tại đúng thời điểm bấm CHẠY.
-      // Không dùng discovery của tab trước (ví dụ Wika) khi người dùng đã chuyển tab.
+      // Luôn đọc LẠI đúng tab người dùng đã CHỌN tại thời điểm bấm CHẠY.
+      await loadOpenSourceTabs({preserveSelection:true});
+      if (!selectedSourceTabId) throw new Error('Chưa chọn tab nguồn cần đồng bộ.');
       const previousUrl = text(discovery && discovery.pageUrl);
-      const response = await send({ type: 'DHL_MANUAL_JOB_DISCOVER' });
-      if (!response.ok) throw new Error(response.error || 'Hãy mở trang danh mục nguồn cần quét.');
+      const response = await send({ type: 'DHL_MANUAL_JOB_DISCOVER_TAB', tabId: selectedSourceTabId });
+      if (!response.ok) throw new Error(response.error || 'Không đọc được tab nguồn đã chọn.');
       const nextDiscovery = response.result || null;
       const changedTab = Boolean(previousUrl && text(nextDiscovery && nextDiscovery.pageUrl) && previousUrl !== text(nextDiscovery.pageUrl));
 
@@ -220,6 +291,7 @@
 
   function bind() {
     $('manualJobScope')?.addEventListener('change', syncScopeUi);
+    $('manualRefreshTabsBtn')?.addEventListener('click', () => loadOpenSourceTabs({preserveSelection:true}));
     $('manualDiscoverBtn')?.addEventListener('click', discover);
     $('manualStartBtn')?.addEventListener('click', startJob);
     $('manualStopBtn')?.addEventListener('click', stopAfterCurrent);
@@ -249,6 +321,16 @@
       #manualJobRunner .manual-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
       #manualJobRunner .manual-head small{display:block;color:#64748b;margin-top:2px;font-size:10px}
       #manualJobRunner select,#manualJobRunner button{min-height:38px}
+      #manualJobRunner .source-tab-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px}
+      #manualJobRunner .source-tab-head button{min-height:30px;padding:4px 8px;font-size:9px}
+      #manualSourceTabs{margin-top:6px;border:1px solid #dbeafe;border-radius:8px;background:#fff;overflow:hidden}
+      .source-tab-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-bottom:1px solid #eef2f7}
+      .source-tab-row:last-child{border-bottom:0}.source-tab-row.selected{background:#f0fdf4}
+      .source-tab-info{min-width:0;flex:1}.source-tab-info>b{display:block;font-size:11px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .source-tab-info>small{display:block;margin-top:3px;color:#94a3b8;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .source-tab-badge{display:inline-block;margin-top:4px;padding:2px 5px;border-radius:999px;font-size:8px;font-weight:800}
+      .source-tab-badge.saved{background:#dcfce7;color:#166534}.source-tab-badge.new{background:#fef3c7;color:#92400e}
+      .source-tab-select{min-width:70px!important;min-height:32px!important;padding:4px 8px!important;font-size:9px!important}
       #manualJobRunner select{width:100%;margin-top:7px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
       #manualJobRunner .manual-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
       #manualJobRunner .manual-actions button{flex:1;min-width:120px}
@@ -276,8 +358,13 @@
     panel.innerHTML = `
       <div class="manual-head">
         <div><b>QUÉT & ĐỒNG BỘ TAB ĐANG MỞ</b><small>Mở tab danh mục nào thì chạy tab đó. Tool tự tạo/cập nhật hồ sơ và checkpoint sau từng sản phẩm.</small></div>
-        <span style="font-size:9px;font-weight:800;color:#64748b">v0.21.3</span>
+        <span style="font-size:9px;font-weight:800;color:#64748b">v0.21.4</span>
       </div>
+      <div class="source-tab-head">
+        <b>TAB NGUỒN ĐANG MỞ</b>
+        <button id="manualRefreshTabsBtn" type="button" class="secondary">LÀM MỚI</button>
+      </div>
+      <div id="manualSourceTabs"><small>Đang đọc các tab nguồn...</small></div>
       <select id="manualJobScope">
         <option value="all">QUÉT TOÀN TRANG</option>
         <option value="selected">QUÉT SP ĐÃ CHỌN</option>
@@ -309,12 +396,13 @@
     const scope = stored[UI_KEY] && ['all', 'selected', 'one'].includes(stored[UI_KEY].scope) ? stored[UI_KEY].scope : 'all';
     $('manualJobScope').value = scope;
     syncScopeUi();
+    await loadOpenSourceTabs({preserveSelection:false});
     await refreshJob();
 
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes[JOB_KEY]) renderJob(changes[JOB_KEY].newValue || null);
     });
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshJob().catch(()=>{});},{passive:true});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadOpenSourceTabs({preserveSelection:true}).catch(()=>{});refreshJob().catch(()=>{});}},{passive:true});
     return true;
   }
 
