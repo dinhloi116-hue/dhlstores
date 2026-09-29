@@ -14,9 +14,7 @@ importScripts(
   'sapo-inventory-set-compat.js',
   'sapo-product-create-background.js',
   'sapo-product-create-continuous-background.js',
-  'manual-sapo-background.js',
   'auto-sync-safety-background.js',
-  'sapo-stock-queue-continuous-background.js',
   'manual-job-runner-background.js'
 );
 
@@ -93,6 +91,33 @@ async function migrateToManualOnlyMode() {
   }
 }
 
+const STOP_STOCK_PUSH_MIGRATION_KEY = 'dhlStopStockPushV0222';
+
+async function stopDirectStockPush() {
+  try {
+    const stored = await chrome.storage.local.get([
+      STOP_STOCK_PUSH_MIGRATION_KEY,
+      'dhlSapoPushQueueV1'
+    ]);
+    if (stored[STOP_STOCK_PUSH_MIGRATION_KEY]) return;
+
+    for (const alarmName of [
+      'dhl-sapo-manual-push-queue',
+      'dhl-sapo-push-queue'
+    ]) {
+      try { await chrome.alarms.clear(alarmName); } catch (_) {}
+    }
+
+    // Hủy queue đẩy tồn trực tiếp nhưng GIỮ nguyên cache quét và thông tin kết nối Sapo.
+    await chrome.storage.local.remove('dhlSapoPushQueueV1');
+    await chrome.storage.local.set({
+      [STOP_STOCK_PUSH_MIGRATION_KEY]: Date.now()
+    });
+  } catch (error) {
+    console.warn('Không dừng được queue đẩy tồn Sapo:', error);
+  }
+}
+
 async function enableSidePanel() {
   if (!chrome.sidePanel || !chrome.sidePanel.setPanelBehavior) return;
   try {
@@ -106,3 +131,4 @@ chrome.runtime.onInstalled.addListener(enableSidePanel);
 chrome.runtime.onStartup.addListener(enableSidePanel);
 enableSidePanel();
 migrateToManualOnlyMode();
+stopDirectStockPush();
