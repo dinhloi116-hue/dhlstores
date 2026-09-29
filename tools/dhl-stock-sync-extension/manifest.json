@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.21.3",
+  "version": "0.21.4",
   "minimum_chrome_version": "116",
-  "description": "Manual-only mode: mở tool không tự quét; bấm CHẠY NỀN luôn lấy đúng tab đang active. Gỡ auto-sync cũ, dọn alarm/cycle Wika một lần và sửa lỗi Job Runner.",
+  "description": "Cho phép chọn mọi tab nguồn đang mở, kể cả tab chưa có hồ sơ. Tab mới được gắn nhãn MỚI và tự tạo hồ sơ sau khi quét; hồ sơ cũ chỉ còn là lịch sử theo dõi.",
   "permissions": [
     "storage",
     "unlimitedStorage",
