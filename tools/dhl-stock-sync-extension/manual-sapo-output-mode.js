@@ -4,6 +4,8 @@
   const BATCH_KEY='dhlManualPendingStockBatchV1';
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const QUEUE_KEY='dhlSapoPushQueueV1';
+  const JOB_KEY='dhlManualScanJobV2';
+  let recovering=false;
   const text=(v)=>String(v==null?'':v).trim();
   const setText=(el,value)=>{if(el&&el.textContent!==value)el.textContent=value;};
 
@@ -19,12 +21,13 @@
   }
 
   async function readState(){
-    const s=await chrome.storage.local.get([BATCH_KEY,CONFIG_KEY,QUEUE_KEY]);
+    const s=await chrome.storage.local.get([BATCH_KEY,CONFIG_KEY,QUEUE_KEY,JOB_KEY]);
     const pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
     const config=s[CONFIG_KEY]&&typeof s[CONFIG_KEY]==='object'?s[CONFIG_KEY]:{};
     const queue=s[QUEUE_KEY]&&typeof s[QUEUE_KEY]==='object'?s[QUEUE_KEY]:null;
+    const job=s[JOB_KEY]&&typeof s[JOB_KEY]==='object'?s[JOB_KEY]:null;
     const manualEntries=Object.values(pending).filter(x=>x&&x.auto!==true&&Array.isArray(x.rows)&&x.rows.length);
-    return{config,queue,manualEntries};
+    return{config,queue,job,manualEntries};
   }
 
   function setState(message,kind=''){
@@ -94,7 +97,15 @@
 
   async function refresh(){
     if(!mount())return;
-    const s=await readState();
+    let s=await readState();
+    if(!s.manualEntries.length&&!recovering&&s.job&&['done','paused'].includes(s.job.status)&&Array.isArray(s.job.results)&&s.job.results.length){
+      recovering=true;
+      try{
+        const rebuilt=await send({type:'DHL_MANUAL_JOB_REBUILD_OUTPUT'});
+        if(rebuilt&&rebuilt.ok)s=await readState();
+      }catch(_){}
+      finally{recovering=false;}
+    }
     const excel=document.getElementById('batchExportBtn');
     const push=document.getElementById('manualSapoPushBtn');
     const sapo=s.config&&s.config.sapo||{};
@@ -108,8 +119,8 @@
       setText(push,rows?`ĐẨY LÊN SAPO (${rows} DÒNG)`:'ĐẨY THẲNG LÊN SAPO');
       push.disabled=!verified||!count||busy;
     }
-    if(!verified)setState('Muốn đẩy trực tiếp: cần xác minh kết nối Sapo trước.');
-    else if(count)setState(`${count} hồ sơ • ${rows} dòng sẵn sàng.`,'ok');
+    if(!verified)setState(count?'Đã có dữ liệu quét nhưng kết nối Sapo chưa được xác minh.':'Quét xong một tab thì dữ liệu sẽ xuất hiện ở đây.');
+    else if(count)setState(`${count} hồ sơ • ${rows} dòng sẵn sàng để tải Excel hoặc đẩy thẳng lên Sapo.`,'ok');
     else setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
   }
 
