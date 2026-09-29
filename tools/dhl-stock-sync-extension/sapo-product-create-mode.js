@@ -6,6 +6,7 @@
 
   const RESULTS_KEY='dhlCatalogResults';
   const QUEUE_KEY='dhlSapoProductCreateQueueV1';
+  const CONFIG_KEY='dhlAutoSyncConfigV1';
   const text=(v)=>String(v==null?'':v).trim();
   const esc=(v)=>text(v).replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 
@@ -136,9 +137,11 @@
     if(!mount())return;
     const btn=document.getElementById('catalogSapoCreateBtn');
     try{
-      const response=await send({type:'DHL_SAPO_PRODUCT_CREATE_GET_STATE'});
-      if(!response.ok)throw new Error(response.error||'Không đọc được trạng thái Sapo.');
-      const queue=response.queue||null;
+      const stored=await chrome.storage.local.get([QUEUE_KEY,CONFIG_KEY]);
+      const queue=stored[QUEUE_KEY]&&typeof stored[QUEUE_KEY]==='object'?stored[QUEUE_KEY]:null;
+      const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
+      const sapo=config.sapo||{};
+      const verified=Boolean(sapo.verifiedAt&&sapo.locationId);
       renderProgress(queue);
       if(queue&&queue.status==='paused'){
         btn.disabled=false;btn.textContent='THỬ LẠI ĐĂNG SAPO';btn.dataset.mode='retry';
@@ -149,15 +152,15 @@
         btn.disabled=true;btn.textContent=`ĐANG ĐĂNG ${info?info.percent:0}%...`;btn.dataset.mode='running';
         setState(queueSummary(queue),'working');return;
       }
-      btn.dataset.mode='start';btn.textContent='ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL';
-      btn.disabled=!response.verified;
+      btn.dataset.mode='start';btn.textContent='ĐĂNG SP MỚI LÊN SAPO';
+      btn.disabled=!verified;
       if(queue&&queue.status==='done')setState(queueSummary(queue),'ok');
-      else if(!response.verified)setState('Chưa xác minh Ứng dụng riêng Sapo. Hãy kiểm tra kết nối ở phần TỰ ĐỘNG ĐỒNG BỘ trước.','bad');
-      else setState(`Sẵn sàng đẩy trực tiếp • không cần tải Excel • SKU + ảnh + tồn sẽ ghi thẳng vào ${response.shop||'Sapo'} / ${response.locationName||'chi nhánh đã xác minh'}.`,'ok');
+      else if(!verified)setState('Chưa xác minh kết nối Sapo.','bad');
+      else setState(`Sẵn sàng đăng trực tiếp lên ${text(sapo.storeHost)||'Sapo'} / ${text(sapo.locationName)||'chi nhánh đã xác minh'}.`,'ok');
     }catch(error){
       renderProgress(null);
-      btn.disabled=true;btn.textContent='ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL';
-      setState(error.message||String(error),'bad');
+      btn.disabled=true;
+      setState(`Không đọc được trạng thái Sapo: ${error.message||String(error)}`,'bad');
     }
   }
 
