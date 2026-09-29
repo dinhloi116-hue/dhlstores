@@ -236,6 +236,7 @@
       const response=await send({
         type:'DHL_MANUAL_JOB_START',
         sourceUrl:tab.url,
+        sourceTabId:tab.tabId,
         pageTitle:tab.title,
         productCount:discovery&&Array.isArray(discovery.items)?discovery.items.length:0,
         scope,
@@ -298,6 +299,7 @@
     const errors=Array.isArray(job.errors)?job.errors.length:0;
     const parts=[`${scopeLabel(job.scope)} • ${index}/${total||'?'}`];
     if(job.currentProduct&&(running||stopping))parts.push(job.currentProduct);
+    if(Number(job.lastProductMs||0)>0&&!running)parts.push(`${(Number(job.lastProductMs)/1000).toFixed(1)}s/SP`);
     if(errors)parts.push(`${errors} lỗi`);
     if(Number(job.rowCount||0))parts.push(`${Number(job.rowCount)} dòng`);
     if(progress)progress.textContent=parts.join(' • ');
@@ -306,7 +308,7 @@
     else if(job.status==='paused')setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau.`,'ok');
     else if(job.status==='error')setStatus(`LỖI: ${text(job.lastError)}`,'bad');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
-    else if(running)setStatus(`Đang chạy nền ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''}.`);
+    else if(running)setStatus(`Đang chạy nhanh ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • ưu tiên API, chỉ mở popup khi cần.`);
   }
 
   async function refreshJob(){
