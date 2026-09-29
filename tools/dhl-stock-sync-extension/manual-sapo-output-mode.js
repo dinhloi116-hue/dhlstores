@@ -110,18 +110,21 @@
     const push=document.getElementById('manualSapoPushBtn');
     const sapo=s.config&&s.config.sapo||{};
     const verified=Boolean(sapo.verifiedAt&&sapo.locationId);
+    const hasCredentials=Boolean(text(sapo.storeHost)&&text(sapo.apiKey)&&text(sapo.apiSecret));
     const count=s.manualEntries.length;
     const rows=s.manualEntries.reduce((sum,x)=>sum+Number(x.rowCount||(x.rows||[]).length||0),0);
     const busy=Boolean(s.queue&&['running','queued'].includes(s.queue.status));
 
     if(excel)setText(excel,count?`TẢI FILE EXCEL (${count})`:'TẢI FILE EXCEL');
     if(push){
-      setText(push,rows?`ĐẨY LÊN SAPO (${rows} DÒNG)`:'ĐẨY THẲNG LÊN SAPO');
-      push.disabled=!verified||!count||busy;
+      if(rows)setText(push,verified?`ĐẨY LÊN SAPO (${rows} DÒNG)`:`KẾT NỐI & ĐẨY SAPO (${rows} DÒNG)`);
+      else setText(push,'ĐẨY THẲNG LÊN SAPO');
+      push.disabled=!count||busy||(!verified&&!hasCredentials);
     }
-    if(!verified)setState(count?'Đã có dữ liệu quét nhưng kết nối Sapo chưa được xác minh.':'Quét xong một tab thì dữ liệu sẽ xuất hiện ở đây.');
-    else if(count)setState(`${count} hồ sơ • ${rows} dòng sẵn sàng để tải Excel hoặc đẩy thẳng lên Sapo.`,'ok');
-    else setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
+    if(!count)setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
+    else if(verified)setState(`${count} hồ sơ • ${rows} dòng sẵn sàng để tải Excel hoặc đẩy thẳng lên Sapo.`,'ok');
+    else if(hasCredentials)setState(`Đã có ${rows} dòng. Bấm KẾT NỐI & ĐẨY SAPO; tool sẽ tự xác minh lại rồi đẩy.`,'ok');
+    else setState('Đã có dữ liệu quét nhưng chưa có thông tin kết nối Sapo đã lưu.','bad');
   }
 
   if(mount()){
