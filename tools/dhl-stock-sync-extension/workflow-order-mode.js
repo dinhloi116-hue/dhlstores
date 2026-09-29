@@ -19,16 +19,14 @@
       #savedProfilesMode{margin-top:8px!important;border-color:#86efac!important;background:#f0fdf4!important}
       #catalogMode{margin-top:12px!important;border-color:#93c5fd!important;background:#eff6ff!important}
       #savedProfilesMode>small:first-of-type,#catalogMode>span{line-height:1.45}
-      #profileQuickTabs{margin-top:9px!important}
       #manualJobRunner{margin-top:10px!important}
       #batchPendingBox{margin-top:9px!important}
-      #profileManageToggle{margin-top:10px!important;min-height:36px!important;font-size:10px!important}
       #profileStatus{font-size:10px!important;margin-top:7px!important}
       #catalogMode #catalogQuickTest{display:none!important}
       #catalogMode #toggleCatalogMaintenance,#catalogMode #catalogMaintenanceBody,
       #maintenancePopupStandardizeBox,#catalogScanDiagnostics{display:none!important}
       #uiV3Dashboard,#autoSyncPanel,#sapoPushReportPanel,#stockHistoryPanel,#uiV2Panel,#uiV2Manual{display:none!important}
-      #activeProfileCard{display:none!important}
+      #activeProfileCard,#profileManageToggle,#profileManageBody,#profileQuickTabs{display:none!important}
       #manualJobRunner .manual-head>span{display:none!important}
       #manualJobRunner .manual-head small{font-size:10px!important}
       #singleProductAddBox{margin-top:10px!important}
@@ -44,11 +42,7 @@
     const directTitle=[...host.children].find((el)=>el.tagName==='B');
     const directHint=[...host.children].find((el)=>el.tagName==='SMALL');
     setText(directTitle,'1. ĐỒNG BỘ TỒN KHO');
-    setText(directHint,'Chọn hồ sơ → chọn phạm vi cần quét → CHẠY NỀN. Có thể chuyển sang tab khác làm việc; kết quả tự lưu theo từng sản phẩm.');
-
-    const quick=document.getElementById('profileQuickTabs');
-    const quickHint=quick&&quick.querySelector('small');
-    setHtml(quickHint,'<b>CHỌN HỒ SƠ</b> — HD / Trẻ em / Wika / nhóm khác.');
+    setText(directHint,'Mở tab danh mục cần đồng bộ → chọn phạm vi → CHẠY NỀN. Tool tự tạo/cập nhật hồ sơ của chính tab đó.');
 
     const runner=document.getElementById('manualJobRunner');
     if(runner){
@@ -58,9 +52,6 @@
       setText(hint,'Chạy ở tab nền, tự lưu sau từng sản phẩm. Không cần giữ panel mở.');
     }
 
-    const manage=document.getElementById('profileManageToggle');
-    setText(manage,'QUẢN LÝ / CẬP NHẬT HỒ SƠ');
-
     hide(document.getElementById('uiV3Dashboard'));
     hide(document.getElementById('autoSyncPanel'));
     hide(document.getElementById('sapoPushReportPanel'));
@@ -69,11 +60,10 @@
     hide(document.getElementById('uiV2Manual'));
     hide(document.getElementById('activeProfileCard'));
 
-    show(quick);
+    show(document.getElementById('profileChips'));
     show(runner);
     show(document.getElementById('batchPendingBox'));
     show(document.getElementById('profileStatus'));
-    show(manage);
   }
 
   function decorateCatalog(){
@@ -123,12 +113,10 @@
       }
 
       const expected=[
-        document.getElementById('profileQuickTabs'),
+        document.getElementById('profileChips'),
         document.getElementById('manualJobRunner'),
         document.getElementById('batchPendingBox'),
-        document.getElementById('profileStatus'),
-        document.getElementById('profileManageToggle'),
-        document.getElementById('profileManageBody')
+        document.getElementById('profileStatus')
       ].filter(node=>node&&node.parentElement===host);
 
       const wanted=new Set(expected);
