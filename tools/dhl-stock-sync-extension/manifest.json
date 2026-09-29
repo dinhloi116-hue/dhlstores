@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "minimum_chrome_version": "116",
-  "description": "Lite startup: chỉ nạp các module đang dùng, không polling/MutationObserver khi mở panel, không đánh thức background chỉ để đọc trạng thái. Đồng bộ tồn kho chạy nền và thêm sản phẩm giữ nguyên.",
+  "description": "Sửa đầu ra sau quét: luôn lưu cache, tự khôi phục lượt quét gần nhất, nút đẩy Sapo tự bật khi có dữ liệu và tự xác minh lại kết nối nếu cần.",
   "permissions": [
     "storage",
     "unlimitedStorage",
