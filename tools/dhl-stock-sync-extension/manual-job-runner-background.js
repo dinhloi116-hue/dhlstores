@@ -469,14 +469,45 @@
     return job;
   }
 
+  async function discoverSpecificTab(tabId){
+    const tab=await chrome.tabs.get(Number(tabId));
+    if(!tab||!tab.id||!isCategoryUrl(tab.url))throw new Error('Tab đã chọn không phải trang danh mục si.aobongda.net.');
+    const result=await discoverProducts(tab.id);
+    if(!result.items.length)throw new Error('Không tìm thấy sản phẩm trên tab đã chọn.');
+    result.profileName=profileName(result.pageTitle,result.pageUrl);
+    result.sourceKey=sourceKey(result.pageUrl);
+    result.tabId=tab.id;
+    result.tabTitle=text(tab.title);
+    return result;
+  }
+
   async function discoverActivePage(){
     const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
     if(!tab||!tab.id||!isCategoryUrl(tab.url))throw new Error('Hãy mở trang danh mục si.aobongda.net cần quét.');
-    const result=await discoverProducts(tab.id);
-    if(!result.items.length)throw new Error('Không tìm thấy sản phẩm trên trang đang mở.');
-    result.profileName=profileName(result.pageTitle,result.pageUrl);
-    result.sourceKey=sourceKey(result.pageUrl);
-    return result;
+    return discoverSpecificTab(tab.id);
+  }
+
+  async function listOpenSourceTabs(){
+    const tabs=await chrome.tabs.query({});
+    const state=await getProfiles();
+    const profiles=Array.isArray(state.profiles)?state.profiles:[];
+    return tabs
+      .filter(tab=>tab&&tab.id&&isCategoryUrl(tab.url))
+      .map(tab=>{
+        const key=sourceKey(tab.url);
+        const profile=profiles.find(p=>text(p&&p.sourceKey)===key||sourceKey(p&&p.lastSourceUrl)===key)||null;
+        return{
+          tabId:tab.id,
+          windowId:tab.windowId,
+          active:Boolean(tab.active),
+          title:text(tab.title),
+          url:text(tab.url),
+          sourceKey:key,
+          profileId:profile?text(profile.id):'',
+          profileName:profile?text(profile.name):'',
+          hasProfile:Boolean(profile)
+        };
+      });
   }
 
   async function requestStop(){
@@ -537,6 +568,12 @@
     if(!message||!message.type)return;
     if(message.type==='DHL_MANUAL_JOB_DISCOVER'){
       discoverActivePage().then(result=>sendResponse({ok:true,result})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
+    }
+    if(message.type==='DHL_MANUAL_JOB_DISCOVER_TAB'){
+      discoverSpecificTab(message.tabId).then(result=>sendResponse({ok:true,result})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
+    }
+    if(message.type==='DHL_MANUAL_JOB_LIST_TABS'){
+      listOpenSourceTabs().then(tabs=>sendResponse({ok:true,tabs})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
     }
     if(message.type==='DHL_MANUAL_JOB_START'){
       startJob(message).then(job=>sendResponse({ok:true,job})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
