@@ -67,6 +67,39 @@
     return data||{};
   }
 
+  async function ensureVerifiedSapo(config){
+    const sapo={...(config&&config.sapo||{})};
+    if(sapo.verifiedAt&&sapo.locationId)return config;
+    if(!text(sapo.storeHost)||!text(sapo.apiKey)||!text(sapo.apiSecret)){
+      throw new Error('Chưa có thông tin kết nối Sapo đã lưu.');
+    }
+
+    await sapoFetch(sapo,'/admin/store.json');
+    const locationsData=await sapoFetch(sapo,'/admin/locations.json');
+    const locations=Array.isArray(locationsData&&locationsData.locations)?locationsData.locations:Array.isArray(locationsData&&locationsData.data)?locationsData.data:[];
+    if(!locations.length)throw new Error('Kết nối được Sapo nhưng không đọc được chi nhánh.');
+
+    let location=null;
+    if(Number(sapo.locationId))location=locations.find(x=>Number(x&&x.id)===Number(sapo.locationId))||null;
+    if(!location&&text(sapo.locationName)){
+      const wanted=text(sapo.locationName).toLowerCase();
+      location=locations.find(x=>text(x&&x.name).toLowerCase()===wanted)||null;
+    }
+    if(!location&&locations.length===1)location=locations[0];
+    if(!location)throw new Error('Có nhiều chi nhánh Sapo; cần chọn chi nhánh một lần trước khi đẩy tồn.');
+
+    const verified={
+      ...sapo,
+      storeHost:storeHost(sapo.storeHost),
+      locationId:Number(location.id),
+      locationName:text(location.name),
+      verifiedAt:Date.now()
+    };
+    const next={...config,sapo:verified};
+    await chrome.storage.local.set({[CONFIG_KEY]:next});
+    return next;
+  }
+
   function pushState(queue,status,config,extra={}){
     const total=Number(queue&&queue.total||0),done=Number(queue&&queue.index||0),success=Number(queue&&queue.success||0);
     const errors=Array.isArray(queue&&queue.errors)?queue.errors:[];
@@ -252,8 +285,8 @@
   }
 
   async function enqueueOrResume(profileIds){
-    const config=await readConfig();
-    if(!config.sapo||!config.sapo.verifiedAt||!config.sapo.locationId)throw new Error('Chưa xác minh Ứng dụng riêng Sapo. Hãy KIỂM TRA KẾT NỐI SAPO trước.');
+    let config=await readConfig();
+    config=await ensureVerifiedSapo(config);
 
     const state=await chrome.storage.local.get([SAPO_QUEUE_KEY,CYCLE_KEY,BATCH_KEY]);
     let existing=state[SAPO_QUEUE_KEY];
