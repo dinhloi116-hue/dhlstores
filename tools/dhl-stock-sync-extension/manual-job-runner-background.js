@@ -273,22 +273,28 @@
   }
 
   async function checkpoint(job){
-    await saveJob(job);
+    const now=Date.now();
+    job.updatedAt=now;
+
+    const stored=await chrome.storage.local.get(PROFILE_KEY);
+    const profiles=Array.isArray(stored[PROFILE_KEY])?stored[PROFILE_KEY]:[];
+    const profile=profiles.find(item=>String(item&&item.id)===String(job.profileId));
+    if(profile){
+      Object.assign(profile,{
+        lastSourceUrl:job.sourceUrl,
+        lastSourceAt:now,
+        pageTitle:text(job.pageTitle),
+        productCount:Number(job.total||0),
+        lastScanMode:job.scope,
+        lastScanProgress:`${Math.min(job.index,job.total||0)}/${job.total||0}`,
+        lastScanJobId:job.id
+      });
+    }
+
     await chrome.storage.local.set({
-      dhlCatalogResults:Array.isArray(job.results)?job.results:[],
-      dhlCatalogAt:Date.now(),
-      dhlCatalogPageTitle:text(job.pageTitle),
-      dhlCatalogPageUrl:text(job.sourceUrl),
-      dhlCatalogSkuMode:'manual-background-popup-alias-size'
-    });
-    await saveProfileCheckpoint(job.profileId,{
-      lastSourceUrl:job.sourceUrl,
-      lastSourceAt:Date.now(),
-      pageTitle:text(job.pageTitle),
-      productCount:Number(job.total||0),
-      lastScanMode:job.scope,
-      lastScanProgress:`${Math.min(job.index,job.total||0)}/${job.total||0}`,
-      lastScanJobId:job.id
+      [JOB_KEY]:job,
+      [PROFILE_KEY]:profiles,
+      [SELECTED_KEY]:job.profileId
     });
   }
 
@@ -352,7 +358,14 @@
     job.finishedAt=Date.now();
     job.progress=`${Math.min(job.index,job.total||0)}/${job.total||0}`;
     await closeJobTab(job);
-    await saveJob(job);
+    await chrome.storage.local.set({
+      [JOB_KEY]:job,
+      dhlCatalogResults:Array.isArray(job.results)?job.results:[],
+      dhlCatalogAt:Date.now(),
+      dhlCatalogPageTitle:text(job.pageTitle),
+      dhlCatalogPageUrl:text(job.sourceUrl),
+      dhlCatalogSkuMode:'manual-background-api-first'
+    });
     await saveProfileCheckpoint(job.profileId,{
       name:profileName(job.pageTitle,job.sourceUrl),
       sourceOnly:!(profile.warehouseBase64&&profile.catalogBase64),
@@ -422,7 +435,6 @@
         job.currentStartedAt=Date.now();
         job.status='running';
         job.progress=`${job.index}/${job.total}`;
-        await saveJob(job);
 
         let result=null;
         try{
