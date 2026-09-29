@@ -308,12 +308,5 @@
     return true;
   }
 
-  mount().then((ok) => {
-    if (ok) return;
-    const obs = new MutationObserver(() => {
-      mount().then((mounted) => { if (mounted) obs.disconnect(); }).catch(() => {});
-    });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
-    setTimeout(() => obs.disconnect(), 15000);
-  }).catch(() => {});
+  mount().catch(() => {});
 })();
