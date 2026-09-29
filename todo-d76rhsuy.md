@@ -1157,3 +1157,9 @@
 - [x] Dùng `id` giảm dần làm fallback khi thời gian tạo bị thiếu hoặc trùng.
 - [x] Giữ nguyên các lựa chọn sắp xếp thủ công theo giá/tên trong catalog.
 - [x] Hồi quy đạt 26/26; TypeScript và build production đạt.
+
+## Khôi phục đăng nhập owner 2026-09-29
+- [x] Đặt lại mật khẩu cho tài khoản owner `dinhhoangloi` theo xác nhận trực tiếp của chủ tài khoản; không ghi mật khẩu vào source/Git.
+- [x] Sửa cookie phiên trong môi trường HTTPS qua reverse proxy: nhận diện thêm `Origin`/`Referer` để luôn gắn cờ `Secure` khi cần.
+- [x] Xác minh session giữ được khi chuyển từ trang sản phẩm sang `/admin`, hiển thị quyền `OWNER` và toàn bộ giao diện quản trị.
+- [x] Hồi quy cookie/local auth/logout đạt 7/7; TypeScript và build production đạt.
