@@ -286,7 +286,9 @@
     const ids=Array.isArray(profileIds)?profileIds.map(String).filter(Boolean):[];
     const entries=(ids.length?ids.map(id=>pending[id]):Object.values(pending)).filter(Boolean);
     if(!entries.length)throw new Error('Chưa có kết quả quét thủ công để đẩy lên Sapo.');
-    const combined=batch.combineEntries(entries);
+    const branch=text(config.sapo.locationName);
+    const normalizedEntries=entries.map(entry=>({...entry,branch:text(entry&&entry.branch)||branch}));
+    const combined=batch.combineEntries(normalizedEntries);
     if(!combined.rows.length)throw new Error('Kết quả quét chưa có dòng tồn kho hợp lệ.');
 
     const startedAt=Date.now();
