@@ -155,24 +155,43 @@
   }
 
   async function ensureJobTab(job){
+    // Ưu tiên dùng chính tab nguồn người dùng đã mở. Không reload/clone nếu không cần.
+    const preferredId=Number(job&&job.sourceTabId)||0;
+    if(preferredId){
+      try{
+        const tab=await chrome.tabs.get(preferredId);
+        if(tab&&isCategoryUrl(tab.url)&&sourceKey(tab.url)===sourceKey(job.sourceUrl)){
+          job.tabId=preferredId;
+          job.ownsTab=false;
+          return tab;
+        }
+      }catch{}
+    }
+
     if(job.tabId){
       try{
         const tab=await chrome.tabs.get(job.tabId);
-        if(tab&&isCategoryUrl(tab.url))return tab;
+        if(tab&&isCategoryUrl(tab.url)&&sourceKey(tab.url)===sourceKey(job.sourceUrl))return tab;
       }catch{}
     }
+
+    // Chỉ tạo tab nền dự phòng nếu tab gốc đã bị đóng/đổi URL.
     const tab=await chrome.tabs.create({url:job.sourceUrl,active:false});
     await waitTabComplete(tab.id);
-    await sleep(450);
+    await sleep(120);
     job.tabId=tab.id;
+    job.ownsTab=true;
     await saveJob(job);
     return tab;
   }
 
   async function closeJobTab(job){
     if(!job||!job.tabId)return;
-    try{await chrome.tabs.remove(job.tabId);}catch{}
+    if(job.ownsTab===true){
+      try{await chrome.tabs.remove(job.tabId);}catch{}
+    }
     job.tabId=0;
+    job.ownsTab=false;
   }
 
   async function injectScanner(tabId){
@@ -186,8 +205,9 @@
     return /Receiving end does not exist|Could not establish connection/i.test(String(error&&error.message?error.message:error||''));
   }
 
-  async function sendPopupOnly(tabId,descriptor){
-    const message={type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY',descriptor,hints:[]};
+  async function sendFastScan(tabId,descriptor){
+    // API nguồn trước; content.js chỉ mở popup nếu API chưa xác nhận đủ biến thể.
+    const message={type:'DHL_SCAN_ONE_DESCRIPTOR',descriptor,hints:[]};
     try{return await chrome.tabs.sendMessage(tabId,message);}
     catch(error){
       if(!noReceiver(error))throw error;
@@ -392,14 +412,15 @@
       const tab=await ensureJobTab(job);
       const descriptor=job.descriptors[job.index];
       job.currentProduct=text(descriptor&&descriptor.title)||`Sản phẩm ${job.index+1}`;
+      job.currentStartedAt=Date.now();
       job.status='running';
       job.progress=`${job.index}/${job.total}`;
       await saveJob(job);
 
       let result=null;
       try{
-        const response=await sendPopupOnly(tab.id,descriptor);
-        if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Không nhận được dữ liệu popup.');
+        const response=await sendFastScan(tab.id,descriptor);
+        if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Không nhận được dữ liệu nguồn.');
         result=response.result;
       }catch(error){
         job.errors=Array.isArray(job.errors)?job.errors:[];
@@ -413,6 +434,7 @@
       job.index+=1;
       job.progress=`${job.index}/${job.total}`;
       job.lastCompletedProduct=text(descriptor&&descriptor.title);
+      job.lastProductMs=Math.max(0,Date.now()-Number(job.currentStartedAt||Date.now()));
       await checkpoint(job);
 
       if(job.stopAfterCurrent&&job.index<job.total){
@@ -461,7 +483,10 @@
       descriptors:[],results:[],errors:[],
       index:0,total:0,progress:'0/0',
       stopAfterCurrent:false,
-      createdAt:Date.now(),startedAt:Date.now(),tabId:0
+      createdAt:Date.now(),startedAt:Date.now(),
+      sourceTabId:Number(message.sourceTabId)||0,
+      tabId:Number(message.sourceTabId)||0,
+      ownsTab:false
     };
     await saveJob(job);
     await saveProfileCheckpoint(profile.id,{lastSourceUrl:sourceUrl,lastManualScope:scope,lastScanJobId:job.id});
