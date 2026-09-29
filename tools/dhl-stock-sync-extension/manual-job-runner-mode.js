@@ -113,12 +113,21 @@
     if (btn) { btn.disabled = true; btn.textContent = 'ĐANG KHỞI ĐỘNG...'; }
     try {
       const scope = currentScope();
-      if (!discovery || !text(discovery.pageUrl)) {
-        const response = await send({ type: 'DHL_MANUAL_JOB_DISCOVER' });
-        if (!response.ok) throw new Error(response.error || 'Hãy mở trang danh mục nguồn cần quét.');
-        discovery = response.result;
-        if (scope !== 'all') renderProducts();
+
+      // Luôn đọc LẠI tab đang active tại đúng thời điểm bấm CHẠY.
+      // Không dùng discovery của tab trước (ví dụ Wika) khi người dùng đã chuyển tab.
+      const previousUrl = text(discovery && discovery.pageUrl);
+      const response = await send({ type: 'DHL_MANUAL_JOB_DISCOVER' });
+      if (!response.ok) throw new Error(response.error || 'Hãy mở trang danh mục nguồn cần quét.');
+      const nextDiscovery = response.result || null;
+      const changedTab = Boolean(previousUrl && text(nextDiscovery && nextDiscovery.pageUrl) && previousUrl !== text(nextDiscovery.pageUrl));
+
+      if (changedTab) {
+        for (const input of document.querySelectorAll('#manualProductList input[data-product-id]')) input.checked = false;
       }
+      discovery = nextDiscovery;
+      if (scope !== 'all') renderProducts();
+
       const ids = selectedIds();
       if ((scope === 'selected' || scope === 'one') && !ids.length) throw new Error('Hãy chọn sản phẩm cần quét.');
       const response = await send({
