@@ -25,7 +25,7 @@
   function sourceKey(value) {
     try {
       const u = new URL(String(value || ''));
-      return `${u.hostname}${u.pathname.replace(/\\/+$/, '') || '/'}`.toLowerCase();
+      return `${u.hostname}${u.pathname.replace(/\/+$/, '') || '/'}`.toLowerCase();
     } catch (_) {
       return text(value).toLowerCase();
     }
@@ -66,11 +66,41 @@
     }
   }
 
+  function isSourceCategoryUrl(value) {
+    try {
+      const u = new URL(String(value || ''));
+      if (u.protocol !== 'https:' || u.hostname !== 'si.aobongda.net') return false;
+      return !/-p\d+(?:\.html)?$/i.test(u.pathname);
+    } catch (_) {
+      return false;
+    }
+  }
+
   async function loadOpenSourceTabs({preserveSelection=true}={}) {
     try {
-      const response = await send({ type: 'DHL_MANUAL_JOB_LIST_TABS' });
-      if (!response.ok) throw new Error(response.error || 'Không đọc được danh sách tab nguồn.');
-      sourceTabs = Array.isArray(response.tabs) ? response.tabs : [];
+      const [tabs, stored] = await Promise.all([
+        chrome.tabs.query({}),
+        chrome.storage.local.get('dhlSavedStockProfilesV1')
+      ]);
+      const profiles = Array.isArray(stored.dhlSavedStockProfilesV1) ? stored.dhlSavedStockProfilesV1 : [];
+      sourceTabs = (Array.isArray(tabs) ? tabs : [])
+        .filter(tab => tab && tab.id && isSourceCategoryUrl(tab.url))
+        .map(tab => {
+          const key = sourceKey(tab.url);
+          const profile = profiles.find(p => text(p && p.sourceKey) === key || sourceKey(p && p.lastSourceUrl) === key) || null;
+          return {
+            tabId: Number(tab.id),
+            windowId: Number(tab.windowId),
+            active: Boolean(tab.active),
+            title: text(tab.title),
+            url: text(tab.url),
+            sourceKey: key,
+            profileId: profile ? text(profile.id) : '',
+            profileName: profile ? text(profile.name) : '',
+            hasProfile: Boolean(profile)
+          };
+        });
+
       const stillExists = sourceTabs.some(tab => Number(tab.tabId) === Number(selectedSourceTabId));
       if (!preserveSelection || !stillExists) {
         const active = sourceTabs.find(tab => tab.active) || null;
@@ -174,7 +204,7 @@
     } catch (error) {
       setStatus(error.message || String(error), 'bad');
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = 'NẠP SP TRANG ĐANG MỞ'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'NẠP SP TAB ĐÃ CHỌN'; }
     }
   }
 
@@ -357,7 +387,7 @@
     panel.id = 'manualJobRunner';
     panel.innerHTML = `
       <div class="manual-head">
-        <div><b>QUÉT & ĐỒNG BỘ TAB ĐANG MỞ</b><small>Mở tab danh mục nào thì chạy tab đó. Tool tự tạo/cập nhật hồ sơ và checkpoint sau từng sản phẩm.</small></div>
+        <div><b>QUÉT & ĐỒNG BỘ TAB ĐÃ CHỌN</b><small>Chọn một tab nguồn bên dưới. Tab MỚI vẫn chọn được; quét xong tool tự tạo hồ sơ.</small></div>
         <span style="font-size:9px;font-weight:800;color:#64748b">v0.21.4</span>
       </div>
       <div class="source-tab-head">
