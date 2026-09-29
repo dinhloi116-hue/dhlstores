@@ -227,11 +227,7 @@
 
   function install(){
     style();
-    if(!mount()){
-      const obs=new MutationObserver(()=>{if(mount())obs.disconnect();});
-      obs.observe(document.documentElement,{childList:true,subtree:true});
-      setTimeout(()=>obs.disconnect(),10000);
-    }
+    mount();
     chrome.storage.onChanged.addListener((changes,area)=>{
       if(area==='local'&&changes[QUEUE_KEY])renderQueueState(changes[QUEUE_KEY].newValue);
     });
