@@ -4,7 +4,6 @@
   const JOB_KEY = 'dhlManualScanJobV2';
   const UI_KEY = 'dhlManualScanUiV1';
   let discovery = null;
-  let pollTimer = 0;
 
   const $ = (id) => document.getElementById(id);
   const text = (v) => String(v == null ? '' : v).trim();
@@ -305,7 +304,7 @@
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes[JOB_KEY]) renderJob(changes[JOB_KEY].newValue || null);
     });
-    if (!pollTimer) pollTimer = setInterval(() => refreshJob().catch(() => {}), 1800);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshJob().catch(()=>{});},{passive:true});
     return true;
   }
 
