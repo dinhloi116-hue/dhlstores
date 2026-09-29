@@ -303,7 +303,7 @@
     job.variantTotal=Number(prepared.sourceVariantCount||prepared.rows.length||0);
     job.needsSapoBranch=Boolean(prepared.rows.length&&!branch);
 
-    if(prepared.rows.length&&branch){
+    if(prepared.rows.length){
       const stored=await chrome.storage.local.get(BATCH_KEY);
       const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
       const entry={
@@ -492,6 +492,43 @@
     await saveJob(job);scheduleNext(150);return job;
   }
 
+  async function rebuildLastOutput(){
+    const job=await readJob();
+    if(!job||!Array.isArray(job.results)||!job.results.length)throw new Error('Không có lượt quét gần nhất để khôi phục đầu ra.');
+    const state=await getProfiles();
+    const profile=state.profiles.find(p=>String(p&&p.id)===String(job.profileId));
+    if(!profile)throw new Error('Không tìm thấy hồ sơ của lượt quét gần nhất.');
+
+    const sourceResults=job.results.filter(x=>x&&typeof x==='object');
+    const built=await prepareRows(profile,sourceResults);
+    const prepared=built.prepared;
+    if(!prepared.rows.length)throw new Error('Lượt quét gần nhất chưa tạo được dòng tồn kho.');
+
+    const stored=await chrome.storage.local.get(BATCH_KEY);
+    const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
+    const entry={
+      profileId:profile.id,
+      profileName:text(profile.name)||'Hồ sơ',
+      branch:text(built.branch),
+      sourceUrl:job.sourceUrl,
+      scannedAt:Number(job.finishedAt||job.updatedAt||Date.now()),
+      variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),
+      sourceProductCount:Number(prepared.sourceProductCount||sourceResults.length),
+      generatedSkuCount:0,
+      matchedSkuCount:Number(prepared.matchedSkuCount||0),
+      sourceOnlySkuCount:Number(prepared.sourceOnlySkuCount||0),
+      rowCount:prepared.rows.length,
+      missingSkuCount:prepared.missingSku.length,
+      rows:prepared.rows,
+      auto:false,
+      partial:job.scope!=='all'||Number(job.index||0)<Number(job.total||0),
+      jobId:job.id,
+      recovered:true
+    };
+    await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});
+    return entry;
+  }
+
   chrome.alarms.onAlarm.addListener(alarm=>{
     if(alarm.name===ALARM)processStep().catch(()=>{});
   });
@@ -512,6 +549,9 @@
     }
     if(message.type==='DHL_MANUAL_JOB_RESUME'){
       resumeJob().then(job=>sendResponse({ok:true,job})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
+    }
+    if(message.type==='DHL_MANUAL_JOB_REBUILD_OUTPUT'){
+      rebuildLastOutput().then(entry=>sendResponse({ok:true,entry})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
     }
   });
 })();
