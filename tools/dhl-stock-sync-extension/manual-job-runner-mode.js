@@ -130,7 +130,7 @@
 
       const ids = selectedIds();
       if ((scope === 'selected' || scope === 'one') && !ids.length) throw new Error('Hãy chọn sản phẩm cần quét.');
-      const response = await send({
+      const startResponse = await send({
         type: 'DHL_MANUAL_JOB_START',
         sourceUrl: discovery.pageUrl,
         pageTitle: discovery.pageTitle,
@@ -138,7 +138,7 @@
         scope,
         selectedIds: ids
       });
-      if (!response.ok) throw new Error(response.error || 'Không khởi động được lượt quét.');
+      if (!startResponse.ok) throw new Error(startResponse.error || 'Không khởi động được lượt quét.');
       setStatus(`Đã bắt đầu ${text(discovery.profileName) || 'tab nguồn'}. Hồ sơ được tạo/cập nhật tự động; có thể chuyển tab làm việc khác.`, 'ok');
       await refreshJob();
     } catch (error) {
@@ -206,6 +206,7 @@
     if (job.status === 'done') setStatus(`QUÉT XONG ${job.profileName}: ${index}/${total} sản phẩm • hồ sơ tab đã được lưu tự động${job.needsSapoBranch ? ' • chưa có chi nhánh Sapo nên chưa tạo đầu ra' : ''}.`, 'ok');
     else if (job.status === 'paused') setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau, không quét lại phần đã xong.`, 'ok');
     else if (job.status === 'error') setStatus(`LỖI QUÉT NỀN: ${text(job.lastError)}`, 'bad');
+    else if (job.status === 'cancelled-by-manual-only-upgrade') setStatus('Đã hủy lượt Wika cũ. Tool đang ở chế độ thủ công: mở tab nào thì bấm CHẠY NỀN tab đó.', 'ok');
     else if (job.status === 'stopping') setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`, '');
     else if (running) setStatus(`Đang chạy nền ${index}/${total}${job.currentProduct ? ` • ${job.currentProduct}` : ''}. Bạn có thể làm việc khác.`, '');
   }
@@ -275,7 +276,7 @@
     panel.innerHTML = `
       <div class="manual-head">
         <div><b>QUÉT & ĐỒNG BỘ TAB ĐANG MỞ</b><small>Mở tab danh mục nào thì chạy tab đó. Tool tự tạo/cập nhật hồ sơ và checkpoint sau từng sản phẩm.</small></div>
-        <span style="font-size:9px;font-weight:800;color:#64748b">v0.21</span>
+        <span style="font-size:9px;font-weight:800;color:#64748b">v0.21.3</span>
       </div>
       <select id="manualJobScope">
         <option value="all">QUÉT TOÀN TRANG</option>
