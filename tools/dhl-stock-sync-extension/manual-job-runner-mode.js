@@ -308,7 +308,7 @@
     else if(job.status==='paused')setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau.`,'ok');
     else if(job.status==='error')setStatus(`LỖI: ${text(job.lastError)}`,'bad');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
-    else if(running)setStatus(`Đang chạy nhanh ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • ưu tiên API, chỉ mở popup khi cần.`);
+    else if(running)setStatus(`Đang quét ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • mở popup để đọc đủ màu / size / tồn.`);
   }
 
   async function refreshJob(){
