@@ -15,7 +15,7 @@
   const MANUAL_ALARM='dhl-sapo-manual-push-queue';
   const AUTO_PUSH_ALARM='dhl-sapo-push-queue';
   const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z');
-  const PUSH_CHUNK=3;
+  const PUSH_CHUNK=12;
   const LIST_PAGE_LIMIT=250;
   const MAX_LIST_PAGES=12;
 
@@ -98,6 +98,11 @@
     const next={...config,sapo:verified};
     await chrome.storage.local.set({[CONFIG_KEY]:next});
     return next;
+  }
+
+  function isFatalPushError(message){
+    const s=text(message);
+    return /mất xác minh|chưa xác minh|api key|api secret|tên shop sapo|sapo http (401|403|408|429|5\d\d)|failed to fetch|networkerror|err_internet|err_network|quá nhiều yêu cầu|rate limit/i.test(s);
   }
 
   function pushState(queue,status,config,extra={}){
@@ -342,48 +347,90 @@
     const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]);
     const queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
     if(!queue||queue.source!=='manual'||queue.status!=='running'||queue.manualPaused===true)return;
+
     queue.successRows=Array.isArray(queue.successRows)?queue.successRows:[];
     queue.errors=Array.isArray(queue.errors)?queue.errors:[];
+    queue.skippedRows=Array.isArray(queue.skippedRows)?queue.skippedRows:[];
+    queue.failed=Number(queue.failed||queue.skippedRows.length||0);
+
     if(!config.sapo||!config.sapo.verifiedAt||!config.sapo.locationId){
       queue.manualPaused=true;
       const row=Array.isArray(queue.rows)?queue.rows[queue.index]||{}:{};
-      queue.errors.push({at:Date.now(),index:queue.index,sku:text(row.sku),variantId:Number(row.variantId)||0,stock:Number(row.stock),error:'Mất xác minh Ứng dụng riêng Sapo.'});
+      const lastError={at:Date.now(),index:queue.index,sku:text(row.sku),variantId:Number(row.variantId)||0,stock:Number(row.stock),error:'Mất xác minh Ứng dụng riêng Sapo.'};
+      queue.errors.push(lastError);
       await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
-      await writePushStatus(pushState(queue,'manual-error',config,{error:'Mất xác minh Ứng dụng riêng Sapo.'}));
+      await writePushStatus(pushState(queue,'manual-error',config,{error:lastError.error}));
       return;
     }
 
     const map=s[SAPO_MAP_KEY]&&typeof s[SAPO_MAP_KEY]==='object'?s[SAPO_MAP_KEY]:{};
     const end=Math.min(queue.total,queue.index+PUSH_CHUNK);
-    try{
-      while(queue.index<end){
-        const row=queue.rows[queue.index],rowIndex=queue.index;
+
+    while(queue.index<end){
+      const row=queue.rows[queue.index],rowIndex=queue.index;
+      try{
         const resolved=await resolveInventoryItem(config.sapo,row,map);
-        await sleep(180);
         const written=await writeStockWith403Fallback(config.sapo,row,resolved);
+
         queue.success=Number(queue.success||0)+1;
-        queue.successRows.push({index:rowIndex,sku:text(row.sku),variantId:Number(written.variantId)||Number(row.variantId)||0,productId:Number(row.productId)||0,stock:Number(row.stock),itemId:resolved.itemId,method:written.method,at:Date.now()});
+        queue.successRows.push({
+          index:rowIndex,
+          sku:text(row.sku),
+          variantId:Number(written.variantId)||Number(row.variantId)||0,
+          productId:Number(row.productId)||0,
+          stock:Number(row.stock),
+          itemId:resolved.itemId,
+          method:written.method,
+          at:Date.now()
+        });
         queue.index+=1;
-        await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
-        await writePushStatus(pushState(queue,'running',config));
-        await sleep(180);
+      }catch(err){
+        const message=err&&err.message||String(err);
+        const lastError={
+          at:Date.now(),
+          index:rowIndex,
+          sku:text(row&&row.sku),
+          variantId:Number(row&&row.variantId)||0,
+          stock:Number(row&&row.stock),
+          error:message
+        };
+        queue.errors.push(lastError);
+
+        if(isFatalPushError(message)){
+          queue.manualPaused=true;
+          await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
+          await writePushStatus(pushState(queue,'manual-error',config,{error:message}));
+          return;
+        }
+
+        // Lỗi riêng một SKU không được làm dừng cả queue.
+        lastError.skipped=true;
+        lastError.skippedAt=Date.now();
+        queue.skippedRows.push({...lastError});
+        queue.failed=Number(queue.failed||0)+1;
+        queue.index+=1;
       }
-      if(queue.index>=queue.total){
-        queue.status='done';queue.manualPaused=false;queue.finishedAt=Date.now();
-        await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
-        try{await clearConsumedManualCache(queue);}catch{}
-        await writePushStatus(pushState(queue,'done',config));
-      }else{
-        await writePushStatus(pushState(queue,'running',config));
-        chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+1200});
-      }
-    }catch(err){
-      const row=queue.rows[queue.index]||{};
-      const lastError={at:Date.now(),index:queue.index,sku:text(row.sku),variantId:Number(row.variantId)||0,stock:Number(row.stock),error:err&&err.message||String(err)};
-      queue.manualPaused=true;queue.errors.push(lastError);
+
+      // Checkpoint sau từng SKU; không thêm sleep cố định.
       await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
-      await writePushStatus(pushState(queue,'manual-error',config,{error:lastError.error}));
     }
+
+    if(queue.index>=queue.total){
+      queue.status=queue.failed>0?'done-with-errors':'done';
+      queue.manualPaused=false;
+      queue.finishedAt=Date.now();
+      await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
+
+      // Chỉ dọn cache khi toàn bộ SKU thành công; có lỗi thì giữ cache để retry/xuất Excel.
+      if(queue.failed===0){
+        try{await clearConsumedManualCache(queue);}catch{}
+      }
+      await writePushStatus(pushState(queue,queue.status,config));
+      return;
+    }
+
+    await writePushStatus(pushState(queue,'running',config));
+    chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+80});
   }
 
   async function cancelManualPush(){
