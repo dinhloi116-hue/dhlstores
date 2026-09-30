@@ -51,56 +51,50 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist/dhl-stock-sync-extension
-          cp manifest.json background.js auto-sync-core.js sapo-inventory-resolver-core.js auto-sync-background.js auto-sync-background-v2.js auto-sync-safety-background.js auto-sync-mode.js auto-sync-safety-mode.js auto-sync-ui-sticky-mode.js sapo-push-report-mode.js safe-category-guard.js stock-core.js dom-stock-parser.js content.js match-core.js batch-stock-core.js batch-stock-cache-mode.js stock-history-core.js stock-history-mode.js shop-rules.js generic-shop-rules.js xlsx-lite.js warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js xlsx-preserve.js direct-stock-core.js stock-import-core.js product-create-core.js popup.html popup.css popup.js catalog-mode.js catalog-generic-mode.js catalog-api-mode.js catalog-api-v2-mode.js catalog-popup-v3-mode.js product-branch-mode.js maintenance-ui.js simple-mode.js exact-name-mode.js one-file-mode.js saved-profiles-mode.js profile-tabs-mode.js profile-create-safe-mode.js ui-v2-mode.js ui-v2-fix-mode.js ui-v3-polish-mode.js dist/dhl-stock-sync-extension/
+          files=(
+            manifest.json background.js popup.html popup.css
+            safe-category-guard.js stock-core.js dom-stock-parser.js content.js
+            match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js
+            warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js
+            stock-history-core.js batch-stock-core.js stock-import-core.js auto-sync-core.js
+            sapo-inventory-resolver-core.js sapo-inventory-set-compat.js
+            auto-sync-safety-background.js
+            manual-job-runner-background.js manual-job-runner-mode.js
+            manual-sapo-background.js manual-sapo-output-mode.js
+            saved-profiles-mode.js batch-stock-cache-mode.js
+            sapo-product-create-background.js sapo-product-create-continuous-background.js
+            lazy-product-mode.js workflow-order-mode.js
+            product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
+            sapo-product-create-mode.js single-product-add-mode.js
+          )
+          cp "${files[@]}" dist/dhl-stock-sync-extension/
           cd dist
           zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
 
       - name: Verify packaged files
         run: |
-          test -f dist/dhl-stock-sync-extension/safe-category-guard.js
-          test -f dist/dhl-stock-sync-extension/dom-stock-parser.js
-          test -f dist/dhl-stock-sync-extension/content.js
-          test -f dist/dhl-stock-sync-extension/match-core.js
-          test -f dist/dhl-stock-sync-extension/auto-sync-core.js
-          test -f dist/dhl-stock-sync-extension/sapo-inventory-resolver-core.js
-          test -f dist/dhl-stock-sync-extension/auto-sync-background-v2.js
-          test -f dist/dhl-stock-sync-extension/auto-sync-safety-background.js
-          test -f dist/dhl-stock-sync-extension/auto-sync-mode.js
-          test -f dist/dhl-stock-sync-extension/auto-sync-safety-mode.js
-          test -f dist/dhl-stock-sync-extension/auto-sync-ui-sticky-mode.js
-          test -f dist/dhl-stock-sync-extension/sapo-push-report-mode.js
-          test -f dist/dhl-stock-sync-extension/batch-stock-core.js
-          test -f dist/dhl-stock-sync-extension/batch-stock-cache-mode.js
-          test -f dist/dhl-stock-sync-extension/stock-history-core.js
-          test -f dist/dhl-stock-sync-extension/stock-history-mode.js
-          test -f dist/dhl-stock-sync-extension/shop-rules.js
-          test -f dist/dhl-stock-sync-extension/generic-shop-rules.js
-          test -f dist/dhl-stock-sync-extension/xlsx-lite.js
-          test -f dist/dhl-stock-sync-extension/warehouse-core.js
-          test -f dist/dhl-stock-sync-extension/generic-warehouse-mode.js
-          test -f dist/dhl-stock-sync-extension/kids-product-size-mode.js
-          test -f dist/dhl-stock-sync-extension/warehouse-sku-link-mode.js
-          test -f dist/dhl-stock-sync-extension/xlsx-preserve.js
-          test -f dist/dhl-stock-sync-extension/direct-stock-core.js
-          test -f dist/dhl-stock-sync-extension/stock-import-core.js
-          test -f dist/dhl-stock-sync-extension/product-create-core.js
-          test -f dist/dhl-stock-sync-extension/background.js
-          test -f dist/dhl-stock-sync-extension/catalog-mode.js
-          test -f dist/dhl-stock-sync-extension/catalog-generic-mode.js
-          test -f dist/dhl-stock-sync-extension/catalog-api-mode.js
-          test -f dist/dhl-stock-sync-extension/catalog-api-v2-mode.js
-          test -f dist/dhl-stock-sync-extension/catalog-popup-v3-mode.js
-          test -f dist/dhl-stock-sync-extension/product-branch-mode.js
-          test -f dist/dhl-stock-sync-extension/maintenance-ui.js
-          test -f dist/dhl-stock-sync-extension/simple-mode.js
-          test -f dist/dhl-stock-sync-extension/exact-name-mode.js
-          test -f dist/dhl-stock-sync-extension/one-file-mode.js
-          test -f dist/dhl-stock-sync-extension/saved-profiles-mode.js
-          test -f dist/dhl-stock-sync-extension/profile-tabs-mode.js
-          test -f dist/dhl-stock-sync-extension/profile-create-safe-mode.js
-          test -f dist/dhl-stock-sync-extension/ui-v2-mode.js
-          test -f dist/dhl-stock-sync-extension/ui-v2-fix-mode.js
-          test -f dist/dhl-stock-sync-extension/ui-v3-polish-mode.js
+          files=(
+            manifest.json background.js popup.html popup.css
+            safe-category-guard.js stock-core.js dom-stock-parser.js content.js
+            match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js
+            warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js
+            stock-history-core.js batch-stock-core.js stock-import-core.js auto-sync-core.js
+            sapo-inventory-resolver-core.js sapo-inventory-set-compat.js
+            auto-sync-safety-background.js
+            manual-job-runner-background.js manual-job-runner-mode.js
+            manual-sapo-background.js manual-sapo-output-mode.js
+            saved-profiles-mode.js batch-stock-cache-mode.js
+            sapo-product-create-background.js sapo-product-create-continuous-background.js
+            lazy-product-mode.js workflow-order-mode.js
+            product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
+            sapo-product-create-mode.js single-product-add-mode.js
+          )
+          for file in "${files[@]}"; do
+            test -f "dist/dhl-stock-sync-extension/$file" || {
+              echo "Missing packaged runtime: $file"
+              exit 1
+            }
+          done
 
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
