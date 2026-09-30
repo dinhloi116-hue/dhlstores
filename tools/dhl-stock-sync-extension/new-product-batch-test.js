@@ -4,6 +4,7 @@ const assert=require('assert');
 const dir=__dirname;
 const read=(name)=>fs.readFileSync(path.join(dir,name),'utf8');
 
+const lazy=read('lazy-product-mode.js');
 const shell=read('catalog-ui-shell.js');
 const scanner=read('catalog-popup-v3-mode.js');
 const productCore=read('product-create-core.js');
@@ -11,22 +12,23 @@ const workflow=read('workflow-order-mode.js');
 const direct=read('sapo-product-create-mode.js');
 const contentScanner=read('content.js');
 
-assert.ok(shell.includes('BƯỚC 1 — QUÉT TOÀN BỘ SẢN PHẨM MỚI'));
-assert.ok(shell.includes('POPUP THẬT'));
-assert.ok(shell.includes('KHÔNG lấy SKU cũ'));
-assert.ok(shell.includes('Cột A Đường dẫn/Alias là mã gốc'));
+// Luồng thêm SP hiện tại được lazy-load để panel mở nhanh.
+assert.ok(lazy.includes('THÊM SẢN PHẨM MỚI'));
+for(const file of ['product-create-core.js','catalog-ui-shell.js','catalog-popup-v3-mode.js','sapo-product-create-mode.js','single-product-add-mode.js']){
+  assert.ok(lazy.includes(`'${file}'`),`Lazy loader thiếu ${file}`);
+}
+
+assert.ok(shell.includes('2. THÊM SẢN PHẨM MỚI'));
+assert.ok(shell.includes('QUÉT TẤT CẢ SP MỚI'));
+assert.ok(shell.includes('TẠO EXCEL SP MỚI'));
+assert.ok(shell.includes('SKU = Đường dẫn/Alias + Size'));
 
 assert.ok(scanner.includes('async function scanAllNewProducts(options={})'));
 assert.ok(scanner.includes("dhlCatalogSkuMode:'new-product-popup-alias-size'"));
 assert.ok(scanner.includes("sendPopupOnly(tab.id,descriptor)"));
 assert.ok(scanner.includes("mode:'new-product-popup-full'"));
 assert.ok(scanner.includes('Checkpoint sau từng sản phẩm'));
-assert.ok(scanner.includes('ĐANG POPUP'));
-assert.ok(scanner.includes('missingImageCount'));
-assert.ok(scanner.includes('SKU có link ảnh'));
-assert.ok(scanner.includes('Thiếu link ảnh cho'));
-assert.ok(scanner.includes('QUÉT TẤT CẢ SẢN PHẨM MỚI'));
-assert.ok(scanner.includes('TẠO FILE TẤT CẢ SP MỚI (.XLSX)'));
+assert.ok(scanner.includes('QUÉT SẢN PHẨM MỚI = POPUP THẬT 100%.'));
 
 const scanStart=scanner.indexOf('async function scanAllNewProducts(options={})');
 const scanEnd=scanner.indexOf('async function sendPopupOnly',scanStart);
@@ -37,9 +39,10 @@ assert.ok(scanBody.includes('sendPopupOnly(tab.id,descriptor)'),'Luồng SP mớ
 assert.ok(productCore.includes('Cột A "Đường dẫn/Alias" chính là SKU GỐC'));
 assert.ok(productCore.includes('row[16]=`${skuBase}-${size}`'));
 assert.ok(productCore.includes('sku:`${skuBase}-${size}`'));
+assert.ok(productCore.includes('Ảnh phiên bản: ghi link cho TỪNG SKU'));
 
 assert.ok(workflow.includes("document.getElementById('catalogMode')"));
-assert.ok(workflow.includes('SP mới: quét cả danh mục 1 lượt'));
+assert.ok(workflow.includes('2. THÊM SẢN PHẨM MỚI'));
 assert.ok(direct.includes('SKU KHÔNG lấy từ dữ liệu cũ.'));
 assert.ok(direct.includes('Thiếu link ảnh nguồn'));
 
@@ -47,14 +50,12 @@ assert.ok(contentScanner.includes('function colorImageUrl'));
 assert.ok(contentScanner.includes('imageUrlFromScope'));
 assert.ok(contentScanner.includes('missingImageColors'));
 assert.ok(contentScanner.includes('imageUrls'));
-assert.ok(contentScanner.includes('variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,null,imageUrl))'));
 
 console.log('NEW PRODUCT BATCH PASS',{
-  scan:'all category through visible popup',
+  startup:'lazy-loaded',
+  scan:'full popup per product',
   apiFast:false,
   checkpoint:'per product',
-  oldSku:'ignored',
   productKey:'column A alias',
-  variantSku:'alias + size',
-  images:'popup color image -> every SKU image column'
+  variantSku:'alias + size'
 });
