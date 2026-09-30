@@ -8,6 +8,7 @@
     'catalog-ui-shell.js',
     'catalog-popup-v3-mode.js',
     'sapo-product-create-mode.js',
+    'sapo-product-create-report-mode.js',
     'single-product-add-mode.js',
     'marketplace-sku-mode.js'
   ];
