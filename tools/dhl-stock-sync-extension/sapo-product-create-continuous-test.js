@@ -38,7 +38,9 @@ assert.ok(report.includes('cần xử lý tiếp'));
 assert.ok(report.includes('item.skipped===true'));
 
 const popup=read('popup.html');
-assert.ok(popup.includes('sapo-product-create-report-mode.js'));
-assert.ok(popup.indexOf('sapo-product-create-report-mode.js')>popup.indexOf('sapo-product-create-mode.js'));
+const lazy=read('lazy-product-mode.js');
+assert.ok(!popup.includes('sapo-product-create-report-mode.js'),'Report không nạp lúc mở panel');
+assert.ok(lazy.includes("'sapo-product-create-report-mode.js'"));
+assert.ok(lazy.indexOf("'sapo-product-create-report-mode.js'")>lazy.indexOf("'sapo-product-create-mode.js'"));
 
 console.log('SAPO PRODUCT CREATE CONTINUOUS PASS',{behavior:'item error -> report -> skip -> next product',systemError:'still stops',report:'TXT'});
