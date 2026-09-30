@@ -2,15 +2,18 @@ const fs=require('fs');
 const path=require('path');
 const assert=require('assert');
 const dir=__dirname;
-const retry=fs.readFileSync(path.join(dir,'catalog-lag-retry-mode.js'),'utf8');
 const popup=fs.readFileSync(path.join(dir,'popup.html'),'utf8');
+const lazy=fs.readFileSync(path.join(dir,'lazy-product-mode.js'),'utf8');
+const scanner=fs.readFileSync(path.join(dir,'catalog-popup-v3-mode.js'),'utf8');
 
-assert.ok(retry.includes("type:'DHL_SCAN_ONE_DESCRIPTOR'"));
-assert.ok(retry.includes('yêu cầu đủ màu/size/tồn'));
-assert.ok(retry.includes('lagRetryAttempted'));
-assert.ok(retry.includes('lagRetryRecovered'));
-assert.ok(retry.includes('result&&result.complete===true&&variants.length>0'));
-assert.ok(popup.includes('catalog-lag-retry-mode.js'));
-assert.ok(popup.indexOf('catalog-lag-retry-mode.js')>popup.indexOf('catalog-popup-v3-mode.js'));
+// Retry layer cũ không còn được nạp; scanner popup hiện tại tự quản lý timeout/failure.
+assert.ok(!popup.includes('catalog-lag-retry-mode.js'),'Không nạp lag-retry cũ');
+assert.ok(!lazy.includes('catalog-lag-retry-mode.js'),'Không đưa lag-retry cũ vào lazy bundle');
+assert.ok(lazy.includes("'catalog-popup-v3-mode.js'"));
+assert.ok(scanner.includes('async function waitPopup(timeout = 2500)'));
+assert.ok(scanner.includes('async function stableRows(root, timeout=1800)'));
+assert.ok(scanner.includes('failedScanResult'));
+assert.ok(scanner.includes('Checkpoint sau từng sản phẩm'));
+assert.ok(scanner.includes("sendPopupOnly(tab.id,descriptor)"));
 
-console.log('CATALOG LAG RETRY PASS',{canonicalScanner:true,aliasSkuRule:true});
+console.log('CATALOG LAG HANDLING PASS',{legacyRetry:false,popupWait:true,checkpoint:true});
