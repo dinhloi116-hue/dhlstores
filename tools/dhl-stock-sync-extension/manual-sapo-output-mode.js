@@ -157,8 +157,14 @@
     }
 
     if(busy){
-      const total=Number(queue.total||0),done=Number(queue.index||0);
-      setState(`Đang đẩy ${done}/${total} dòng • xử lý theo nhịp nhỏ để tránh đơ Chrome.`,'ok');
+      const total=Number(queue.total||0),done=Number(queue.index||0),success=Number(queue.success||0),failed=Number(queue.failed||0);
+      setState(`Đang đẩy nhanh ${done}/${total} • thành công ${success}${failed?` • lỗi ${failed}`:''}.`,'ok');
+    }else if(queue&&queue.status==='done-with-errors'){
+      const total=Number(queue.total||0),success=Number(queue.success||0),failed=Number(queue.failed||0);
+      setState(`Đã chạy hết ${total} dòng • thành công ${success} • lỗi ${failed}. Cache vẫn giữ để có thể đẩy lại hoặc tải Excel.`,'bad');
+    }else if(queue&&queue.status==='done'){
+      const total=Number(queue.total||0);
+      setState(`Đã đẩy xong ${total}/${total} dòng lên Sapo.`,'ok');
     }else if(queue&&queue.status==='cancelled'){
       setState('Đã dừng đẩy Sapo. Cache vẫn còn để tải Excel hoặc đẩy lại.','ok');
     }else if(!count){
