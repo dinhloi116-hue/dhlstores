@@ -15,7 +15,7 @@
   const MANUAL_ALARM='dhl-sapo-manual-push-queue';
   const AUTO_PUSH_ALARM='dhl-sapo-push-queue';
   const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z');
-  const PUSH_CHUNK=20;
+  const PUSH_CHUNK=3;
   const LIST_PAGE_LIMIT=250;
   const MAX_LIST_PAGES=12;
 
@@ -310,7 +310,7 @@
       await chrome.storage.local.set({[SAPO_QUEUE_KEY]:existing});
       await chrome.alarms.clear(AUTO_PUSH_ALARM);
       await writePushStatus(pushState(existing,'running',config));
-      chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+500});
+      chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+250});
       return{resumed:true,total:existing.total,index:existing.index};
     }
     if(existing&&['running','queued'].includes(existing.status))throw new Error('Đang có một lượt ghi Sapo khác chạy. Chờ lượt hiện tại hoàn tất.');
@@ -334,7 +334,7 @@
     await chrome.alarms.clear(AUTO_PUSH_ALARM);
     await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
     await writePushStatus(pushState(queue,'queued',config));
-    chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+700});
+    chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+250});
     return{resumed:false,total:queue.total,index:0};
   }
 
@@ -359,14 +359,14 @@
       while(queue.index<end){
         const row=queue.rows[queue.index],rowIndex=queue.index;
         const resolved=await resolveInventoryItem(config.sapo,row,map);
-        await sleep(1200);
+        await sleep(180);
         const written=await writeStockWith403Fallback(config.sapo,row,resolved);
         queue.success=Number(queue.success||0)+1;
         queue.successRows.push({index:rowIndex,sku:text(row.sku),variantId:Number(written.variantId)||Number(row.variantId)||0,productId:Number(row.productId)||0,stock:Number(row.stock),itemId:resolved.itemId,method:written.method,at:Date.now()});
         queue.index+=1;
         await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
         await writePushStatus(pushState(queue,'running',config));
-        await sleep(1200);
+        await sleep(180);
       }
       if(queue.index>=queue.total){
         queue.status='done';queue.manualPaused=false;queue.finishedAt=Date.now();
@@ -375,7 +375,7 @@
         await writePushStatus(pushState(queue,'done',config));
       }else{
         await writePushStatus(pushState(queue,'running',config));
-        chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+65000});
+        chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+1200});
       }
     }catch(err){
       const row=queue.rows[queue.index]||{};
@@ -386,6 +386,21 @@
     }
   }
 
+  async function cancelManualPush(){
+    try{await chrome.alarms.clear(MANUAL_ALARM);}catch(_){}
+    const s=await chrome.storage.local.get(SAPO_QUEUE_KEY);
+    const queue=s[SAPO_QUEUE_KEY]&&typeof s[SAPO_QUEUE_KEY]==='object'?s[SAPO_QUEUE_KEY]:null;
+    if(queue&&queue.source==='manual'){
+      queue.status='cancelled';
+      queue.manualPaused=true;
+      queue.cancelledAt=Date.now();
+      await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+      const config=await readConfig().catch(()=>({}));
+      await writePushStatus(pushState(queue,'cancelled',config));
+    }
+    return queue;
+  }
+
   chrome.alarms.onAlarm.addListener(alarm=>{
     if(alarm.name===MANUAL_ALARM)processManualQueue().catch(async err=>{
       const config=await readConfig().catch(()=>({}));
@@ -394,8 +409,14 @@
   });
 
   chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
-    if(!message||message.type!=='DHL_SAPO_PUSH_MANUAL')return;
-    enqueueOrResume(message.profileIds||[]).then(result=>sendResponse({ok:true,result})).catch(err=>sendResponse({ok:false,error:err&&err.message||String(err)}));
-    return true;
+    if(!message)return;
+    if(message.type==='DHL_SAPO_PUSH_MANUAL'){
+      enqueueOrResume(message.profileIds||[]).then(result=>sendResponse({ok:true,result})).catch(err=>sendResponse({ok:false,error:err&&err.message||String(err)}));
+      return true;
+    }
+    if(message.type==='DHL_SAPO_PUSH_CANCEL'){
+      cancelManualPush().then(queue=>sendResponse({ok:true,queue})).catch(err=>sendResponse({ok:false,error:err&&err.message||String(err)}));
+      return true;
+    }
   });
 })();
