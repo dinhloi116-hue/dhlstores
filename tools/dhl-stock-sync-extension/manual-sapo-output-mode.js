@@ -6,6 +6,7 @@
   const QUEUE_KEY='dhlSapoPushQueueV1';
   const JOB_KEY='dhlManualScanJobV2';
   let recovering=false;
+
   const text=(v)=>String(v==null?'':v).trim();
   const setText=(el,value)=>{if(el&&el.textContent!==value)el.textContent=value;};
 
@@ -46,7 +47,21 @@
       if(!profileIds.length)throw new Error('Chưa có kết quả quét để đẩy lên Sapo.');
       const response=await send({type:'DHL_SAPO_PUSH_MANUAL',profileIds});
       if(!response.ok)throw new Error(response.error||'Không bắt đầu được lượt đẩy Sapo.');
-      setState('Đã bắt đầu ghi tồn lên Sapo.','ok');
+      setState('Đã bắt đầu đẩy tồn lên Sapo theo nhịp nhỏ. Có thể bấm DỪNG bất kỳ lúc nào.','ok');
+    }catch(error){
+      setState(error.message||String(error),'bad');
+    }finally{
+      await refresh().catch(()=>{});
+    }
+  }
+
+  async function cancelPush(){
+    const btn=document.getElementById('manualSapoCancelBtn');
+    if(btn){btn.disabled=true;setText(btn,'ĐANG DỪNG...');}
+    try{
+      const response=await send({type:'DHL_SAPO_PUSH_CANCEL'});
+      if(!response.ok)throw new Error(response.error||'Không dừng được lượt đẩy.');
+      setState('Đã dừng đẩy Sapo. Cache quét vẫn được giữ nguyên.','ok');
     }catch(error){
       setState(error.message||String(error),'bad');
     }finally{
@@ -62,6 +77,7 @@
       .manual-output-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
       .manual-output-actions button{width:100%;min-height:42px;margin-top:0!important;font-size:11px;font-weight:900}
       #manualSapoPushBtn{background:#0f172a;color:#fff;border-color:#0f172a}
+      #manualSapoCancelBtn{margin-top:7px;width:100%;min-height:34px;font-size:10px;font-weight:800}
       .manual-output-state{margin-top:7px;padding:7px 8px;border-radius:7px;background:#f8fafc;color:#475569;font-size:10px;line-height:1.4}
       .manual-output-state.ok{background:#f0fdf4;color:#166534}.manual-output-state.bad{background:#fef2f2;color:#991b1b}
     `;
@@ -84,20 +100,30 @@
     push.id='manualSapoPushBtn';
     push.type='button';
     push.className='primary';
-    push.textContent='ĐẨY THẲNG LÊN SAPO';
+    push.textContent='ĐẨY LÊN SAPO';
     push.addEventListener('click',pushManual);
     actions.appendChild(push);
+
+    const cancel=document.createElement('button');
+    cancel.id='manualSapoCancelBtn';
+    cancel.type='button';
+    cancel.className='secondary';
+    cancel.textContent='DỪNG ĐẨY SAPO';
+    cancel.hidden=true;
+    cancel.addEventListener('click',cancelPush);
+    actions.insertAdjacentElement('afterend',cancel);
 
     const note=document.createElement('div');
     note.id='manualSapoOutputState';
     note.className='manual-output-state';
-    actions.insertAdjacentElement('afterend',note);
+    cancel.insertAdjacentElement('afterend',note);
     return true;
   }
 
   async function refresh(){
     if(!mount())return;
     let s=await readState();
+
     if(!s.manualEntries.length&&!recovering&&s.job&&['done','paused'].includes(s.job.status)&&Array.isArray(s.job.results)&&s.job.results.length){
       recovering=true;
       try{
@@ -106,25 +132,42 @@
       }catch(_){}
       finally{recovering=false;}
     }
+
     const excel=document.getElementById('batchExportBtn');
     const push=document.getElementById('manualSapoPushBtn');
+    const cancel=document.getElementById('manualSapoCancelBtn');
     const sapo=s.config&&s.config.sapo||{};
     const verified=Boolean(sapo.verifiedAt&&sapo.locationId);
     const hasCredentials=Boolean(text(sapo.storeHost)&&text(sapo.apiKey)&&text(sapo.apiSecret));
     const count=s.manualEntries.length;
     const rows=s.manualEntries.reduce((sum,x)=>sum+Number(x.rowCount||(x.rows||[]).length||0),0);
-    const busy=Boolean(s.queue&&['running','queued'].includes(s.queue.status));
+    const queue=s.queue&&s.queue.source==='manual'?s.queue:null;
+    const busy=Boolean(queue&&queue.status==='running'&&queue.manualPaused!==true);
 
     if(excel)setText(excel,count?`TẢI FILE EXCEL (${count})`:'TẢI FILE EXCEL');
+
     if(push){
-      if(rows)setText(push,verified?`ĐẨY LÊN SAPO (${rows} DÒNG)`:`KẾT NỐI & ĐẨY SAPO (${rows} DÒNG)`);
-      else setText(push,'ĐẨY THẲNG LÊN SAPO');
+      setText(push,rows?`ĐẨY LÊN SAPO (${rows} DÒNG)`:'ĐẨY LÊN SAPO');
       push.disabled=!count||busy||(!verified&&!hasCredentials);
     }
-    if(!count)setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
-    else if(verified)setState(`${count} hồ sơ • ${rows} dòng sẵn sàng để tải Excel hoặc đẩy thẳng lên Sapo.`,'ok');
-    else if(hasCredentials)setState(`Đã có ${rows} dòng. Bấm KẾT NỐI & ĐẨY SAPO; tool sẽ tự xác minh lại rồi đẩy.`,'ok');
-    else setState('Đã có dữ liệu quét nhưng chưa có thông tin kết nối Sapo đã lưu.','bad');
+    if(cancel){
+      cancel.hidden=!busy;
+      cancel.disabled=false;
+      setText(cancel,'DỪNG ĐẨY SAPO');
+    }
+
+    if(busy){
+      const total=Number(queue.total||0),done=Number(queue.index||0);
+      setState(`Đang đẩy ${done}/${total} dòng • xử lý theo nhịp nhỏ để tránh đơ Chrome.`,'ok');
+    }else if(queue&&queue.status==='cancelled'){
+      setState('Đã dừng đẩy Sapo. Cache vẫn còn để tải Excel hoặc đẩy lại.','ok');
+    }else if(!count){
+      setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
+    }else if(verified||hasCredentials){
+      setState(`${count} hồ sơ • ${rows} dòng sẵn sàng. Đẩy Sapo chỉ chạy khi anh bấm nút.`,'ok');
+    }else{
+      setState('Đã có dữ liệu quét nhưng chưa có thông tin kết nối Sapo đã lưu.','bad');
+    }
   }
 
   if(mount()){
