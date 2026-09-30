@@ -49,8 +49,8 @@ assert.ok(bg.includes('thiếu link ảnh nguồn'));
 assert.ok(!bg.includes("images:(item.images||[]).map"),'Không upload ảnh trong POST product; ảnh phải đi qua phase có checkpoint + variant_ids');
 
 assert.ok(ui.includes('ĐẨY THẲNG LÊN SAPO — KHÔNG CẦN EXCEL'));
-assert.ok(ui.includes('không cần tải Excel'));
-assert.ok(ui.includes('SKU + ảnh + tồn'));
+assert.ok(ui.includes('KHÔNG CẦN EXCEL'));
+assert.ok(ui.includes('SKU, ảnh từng phiên bản và tồn kho'));
 assert.ok(ui.includes('Excel chỉ còn là phương án dự phòng'));
 assert.ok(!/hàng đợi/i.test(ui),'UI sản phẩm mới không được hiện khái niệm hàng đợi cũ');
 
