@@ -65,7 +65,7 @@ jobs:
             sapo-product-create-background.js sapo-product-create-continuous-background.js
             lazy-product-mode.js workflow-order-mode.js
             product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
-            sapo-product-create-mode.js single-product-add-mode.js
+            sapo-product-create-mode.js single-product-add-mode.js marketplace-sku-mode.js
           )
           cp "${files[@]}" dist/dhl-stock-sync-extension/
           cd dist
@@ -87,7 +87,7 @@ jobs:
             sapo-product-create-background.js sapo-product-create-continuous-background.js
             lazy-product-mode.js workflow-order-mode.js
             product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
-            sapo-product-create-mode.js single-product-add-mode.js
+            sapo-product-create-mode.js single-product-add-mode.js marketplace-sku-mode.js
           )
           for file in "${files[@]}"; do
             test -f "dist/dhl-stock-sync-extension/$file" || {
