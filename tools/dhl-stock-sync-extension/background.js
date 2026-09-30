@@ -15,7 +15,8 @@ importScripts(
   'sapo-product-create-background.js',
   'sapo-product-create-continuous-background.js',
   'auto-sync-safety-background.js',
-  'manual-job-runner-background.js'
+  'manual-job-runner-background.js',
+  'manual-sapo-background.js'
 );
 
 const MANUAL_ONLY_MIGRATION_KEY = 'dhlManualOnlyMigrationV0213';
