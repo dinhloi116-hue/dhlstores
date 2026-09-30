@@ -205,9 +205,10 @@
     return /Receiving end does not exist|Could not establish connection/i.test(String(error&&error.message?error.message:error||''));
   }
 
-  async function sendFastScan(tabId,descriptor){
-    // API nguồn trước; content.js chỉ mở popup nếu API chưa xác nhận đủ biến thể.
-    const message={type:'DHL_SCAN_ONE_DESCRIPTOR',descriptor,hints:[]};
+  async function sendFullPopupScan(tabId,descriptor){
+    // Đồng bộ tồn bắt buộc đọc popup thật để lấy ĐỦ màu / size / tồn.
+    // Không dùng API-first vì API có thể chỉ trả một biến thể đầu tiên (ví dụ chỉ size S).
+    const message={type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY',descriptor,hints:[]};
     try{return await chrome.tabs.sendMessage(tabId,message);}
     catch(error){
       if(!noReceiver(error))throw error;
@@ -364,7 +365,7 @@
       dhlCatalogAt:Date.now(),
       dhlCatalogPageTitle:text(job.pageTitle),
       dhlCatalogPageUrl:text(job.sourceUrl),
-      dhlCatalogSkuMode:'manual-background-api-first'
+      dhlCatalogSkuMode:'manual-background-popup-full'
     });
     await saveProfileCheckpoint(job.profileId,{
       name:profileName(job.pageTitle,job.sourceUrl),
@@ -438,7 +439,7 @@
 
         let result=null;
         try{
-          const response=await sendFastScan(tab.id,descriptor);
+          const response=await sendFullPopupScan(tab.id,descriptor);
           if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Không nhận được dữ liệu nguồn.');
           result=response.result;
         }catch(error){
