@@ -274,6 +274,13 @@
   }
 
   async function checkpoint(job){
+    // Không cho worker cũ ghi đè job đã hủy hoặc một job mới vừa được bắt đầu.
+    const current=await readJob();
+    if(current){
+      if(current.id!==job.id)return false;
+      if(current.status==='cancelled'||current.running===false)return false;
+    }
+
     const now=Date.now();
     job.updatedAt=now;
 
@@ -297,6 +304,7 @@
       [PROFILE_KEY]:profiles,
       [SELECTED_KEY]:job.profileId
     });
+    return true;
   }
 
   async function prepareRows(profile,sourceResults){
@@ -428,6 +436,10 @@
     try{
       if(!Array.isArray(job.descriptors)||!job.descriptors.length)job=await initializeJob(job);
 
+      const afterInit=await readJob();
+      if(!afterInit||afterInit.id!==job.id||afterInit.running!==true||afterInit.status==='cancelled')return;
+      job=afterInit;
+
       while(job.running&&Number(job.index||0)<Number(job.total||0)&&processed<CHUNK_SIZE){
         const tab=await ensureJobTab(job);
         const descriptor=job.descriptors[job.index];
@@ -480,7 +492,8 @@
         job.progress=`${job.index}/${job.total}`;
         job.lastCompletedProduct=text(descriptor&&descriptor.title);
         job.lastProductMs=Math.max(0,Date.now()-Number(job.currentStartedAt||Date.now()));
-        await checkpoint(job);
+        const saved=await checkpoint(job);
+        if(saved===false)return;
 
         if(job.stopAfterCurrent&&job.index<job.total){
           job.pausedAt=Date.now();
@@ -498,12 +511,15 @@
       scheduleNext(80);
     }catch(error){
       if(job){
-        job.running=false;
-        job.status='error';
-        job.lastError=error.message||String(error);
-        job.failedAt=Date.now();
-        await closeJobTab(job);
-        await saveJob(job);
+        const current=await readJob().catch(()=>null);
+        if(current&&current.id===job.id&&current.running===true&&current.status!=='cancelled'){
+          job.running=false;
+          job.status='error';
+          job.lastError=error.message||String(error);
+          job.failedAt=Date.now();
+          await closeJobTab(job);
+          await saveJob(job);
+        }
       }
     }
   }
