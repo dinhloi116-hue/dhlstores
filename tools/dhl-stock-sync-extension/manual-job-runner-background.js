@@ -366,10 +366,16 @@
       matcher
     });
     const previous=list.length?list[list.length-1]:null;
-    const diff=previous?historyCore.compareSnapshots(previous,snapshot):null;
+    const fullComparable=Boolean(
+      snapshot.items.length &&
+      job.scope==='all' &&
+      Number(job.index||0)>=Number(job.total||0) &&
+      job.stopAfterCurrent!==true
+    );
+    const diff=fullComparable&&previous?historyCore.compareSnapshots(previous,snapshot):null;
     const issues=collectScanIssues(job,sourceResults,prepared);
 
-    if(snapshot.items.length){
+    if(fullComparable){
       list.push(snapshot);
       if(list.length>30)list.splice(0,list.length-30);
       history[profile.id]=list;
@@ -383,7 +389,8 @@
       at:Date.now(),
       snapshotAt:Number(snapshot.at||0),
       previousAt:Number(previous&&previous.at||0),
-      firstSnapshot:!previous,
+      firstSnapshot:fullComparable&&!previous,
+      comparable:fullComparable,
       diff:diff?{
         changed:Number(diff.changed||0),
         increased:Number(diff.increased||0),
