@@ -80,6 +80,8 @@
       #manualSapoCancelBtn{margin-top:7px;width:100%;min-height:34px;font-size:10px;font-weight:800}
       .manual-output-state{margin-top:7px;padding:7px 8px;border-radius:7px;background:#f8fafc;color:#475569;font-size:10px;line-height:1.4}
       .manual-output-state.ok{background:#f0fdf4;color:#166534}.manual-output-state.bad{background:#fef2f2;color:#991b1b}
+      #manualSapoProgress{height:6px;margin-top:6px;border-radius:999px;overflow:hidden;background:#e2e8f0}
+      #manualSapoProgressFill{height:100%;width:0;border-radius:inherit;background:#0f172a;transition:width .18s ease}
     `;
     document.head.appendChild(style);
   }
@@ -117,6 +119,12 @@
     note.id='manualSapoOutputState';
     note.className='manual-output-state';
     cancel.insertAdjacentElement('afterend',note);
+
+    const progress=document.createElement('div');
+    progress.id='manualSapoProgress';
+    progress.hidden=true;
+    progress.innerHTML='<div id="manualSapoProgressFill"></div>';
+    note.insertAdjacentElement('afterend',progress);
     return true;
   }
 
@@ -136,6 +144,8 @@
     const excel=document.getElementById('batchExportBtn');
     const push=document.getElementById('manualSapoPushBtn');
     const cancel=document.getElementById('manualSapoCancelBtn');
+    const progress=document.getElementById('manualSapoProgress');
+    const progressFill=document.getElementById('manualSapoProgressFill');
     const sapo=s.config&&s.config.sapo||{};
     const verified=Boolean(sapo.verifiedAt&&sapo.locationId);
     const hasCredentials=Boolean(text(sapo.storeHost)&&text(sapo.apiKey)&&text(sapo.apiSecret));
@@ -154,6 +164,13 @@
       cancel.hidden=!busy;
       cancel.disabled=false;
       setText(cancel,'DỪNG ĐẨY SAPO');
+    }
+
+    if(progress&&progressFill){
+      const total=Number(queue&&queue.total||0),done=Number(queue&&queue.index||0);
+      const visible=Boolean(queue&&total>0);
+      progress.hidden=!visible;
+      progressFill.style.width=visible?`${Math.max(0,Math.min(100,Math.round((done/total)*100)))}%`:'0%';
     }
 
     if(busy){
