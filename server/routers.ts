@@ -22,6 +22,15 @@ const visitorKeySchema = z.string().trim().regex(/^[a-zA-Z0-9_-]{16,96}$/, "Phi�
 const supportMessageSchema = z.string().trim().min(1, "Vui lòng nhập nội dung").max(2000, "Tin nhắn tối đa 2.000 ký tự");
 const supportImageSchema = z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]), base64: z.string().min(1) });
 const supportSubmissionSchema = z.object({ message: z.string().trim().max(2000, "Nội dung tối đa 2.000 ký tự"), image: supportImageSchema.optional() }).refine(value => Boolean(value.message || value.image), "Vui lòng nhập nội dung hoặc chọn một ảnh");
+const reviewImageSchema = z.object({ fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]), base64: z.string().min(1) });
+async function storeReviewImage(userId: number, image?: z.infer<typeof reviewImageSchema>) {
+  if (!image) return undefined;
+  const buffer = Buffer.from(image.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+  if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Ảnh đánh giá phải có dung lượng từ 1 byte đến 5 MB" });
+  const safeName = image.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "review";
+  const stored = await storagePut(`reviews/${userId}/${Date.now()}-${safeName}`, buffer, image.mimeType);
+  return stored.url;
+}
 async function storeSupportImage(visitorKey: string, image?: z.infer<typeof supportImageSchema>) {
   if (!image) return {};
   const buffer = Buffer.from(image.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
@@ -316,10 +325,11 @@ export const appRouter = router({
       .query(({ input }) => db.getProductReviews(input.productId)),
 
 	    submitProductReview: protectedProcedure
-	      .input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10, 'Nội dung đánh giá cần ít nhất 10 ký tự').max(2000) }))
+	      .input(z.object({ productId: z.number().int().positive(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10, 'Nội dung đánh giá cần ít nhất 10 ký tự').max(2000), image: reviewImageSchema.optional() }))
 	      .mutation(async ({ ctx, input }) => {
 	        await requireActiveAccount(ctx.user!.id);
-	        return db.createProductReview({ productId: input.productId, userId: ctx.user!.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body });
+	        const imageUrl = await storeReviewImage(ctx.user!.id, input.image);
+	        return db.createProductReview({ productId: input.productId, userId: ctx.user!.id, displayName: ctx.user.name || ctx.user.username || 'Khách hàng', rating: input.rating, body: input.body, imageUrl });
 	      }),
 
     favorites: protectedProcedure.query(async ({ ctx }) => {

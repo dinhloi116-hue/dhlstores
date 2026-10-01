@@ -302,6 +302,14 @@ describe("public SKU inventory presentation", () => {
     expect(productSource).toContain("from-[#ff3b1f]");
     expect(productSource).toContain("Đánh giá sản phẩm");
     expect(productSource).toContain("reviewAverage");
+    expect(productSource).toContain("buyNowLoading");
+    expect(productSource).toContain("Loader2");
+    expect(productSource).toContain("duration: 3000");
+    expect(productSource).toContain("Đi đến giỏ hàng");
+    expect(productSource).toContain("reviewFilter");
+    expect(productSource).toContain("review.imageUrl");
+    expect(productSource).toContain("Đính kèm ảnh");
+    expect(productSource).toContain("image: reviewImage || undefined");
   });
 
   it("makes inventory editing safer with labeled bulk fields and unsaved-SKU indicators", () => {

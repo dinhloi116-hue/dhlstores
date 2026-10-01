@@ -2861,6 +2861,7 @@ export async function getProductReviews(productId: number) {
     displayName: productReviews.displayName,
     rating: productReviews.rating,
     body: productReviews.body,
+    imageUrl: productReviews.imageUrl,
     createdAt: productReviews.createdAt,
   }).from(productReviews)
     .where(and(eq(productReviews.productId, productId), eq(productReviews.isPublished, true)))
@@ -2868,7 +2869,7 @@ export async function getProductReviews(productId: number) {
 }
 
 /** Tạo đánh giá thật ở trạng thái chờ duyệt; tuyệt đối không tạo nội dung mẫu. */
-export async function createProductReview(input: { productId: number; userId: number; displayName: string; rating: number; body: string }) {
+export async function createProductReview(input: { productId: number; userId: number; displayName: string; rating: number; body: string; imageUrl?: string }) {
   const connection = await getDb();
   if (!connection) return { success: false as const, reason: "DATABASE_UNAVAILABLE" as const };
   const inserted = await connection.insert(productReviews).values({
@@ -2877,6 +2878,7 @@ export async function createProductReview(input: { productId: number; userId: nu
     displayName: input.displayName.trim().slice(0, 128),
     rating: input.rating,
     body: input.body.trim(),
+    imageUrl: input.imageUrl || null,
     isPublished: true,
   });
   return { success: true as const, id: Number(inserted[0].insertId), status: "published" as const };

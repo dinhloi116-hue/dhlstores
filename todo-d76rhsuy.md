@@ -1193,3 +1193,10 @@
 - [x] Đổi màu/nền/đổ bóng nút Mua ngay để nổi bật rõ hơn các nút xung quanh.
 - [x] Hiển thị popup “Sản phẩm vừa được thêm vào giỏ hàng” sau khi thêm giỏ thành công, gồm cả thêm một SKU và thêm nhiều SKU.
 - [x] Bổ sung bảng đánh giá ngắn ở cuối trang cho cả sản phẩm vật lý và tài nguyên số, không tạo dữ liệu đánh giá giả.
+
+## Loading, popup giỏ hàng và ảnh đánh giá 2026-10-01
+- [x] Thêm loading spinner trên nút Mua ngay trong lúc mở luồng thanh toán.
+- [x] Cập nhật popup thêm giỏ tự đóng sau 3 giây và có nút Đi đến giỏ hàng.
+- [x] Thêm bộ lọc đánh giá theo số sao ở bảng đánh giá cuối trang.
+- [x] Cho phép người dùng đính kèm một ảnh trong đánh giá và hiển thị ảnh đã được duyệt.
+- [x] Sửa lỗi HMR/syntax, bổ sung hồi quy, chạy TypeScript/build và kiểm tra responsive.

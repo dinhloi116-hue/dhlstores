@@ -467,6 +467,7 @@ export const productReviews = mysqlTable("product_reviews", {
   displayName: varchar("displayName", { length: 128 }).notNull(),
   rating: int("rating").notNull(),
   body: text("body").notNull(),
+  imageUrl: text("imageUrl"),
   isPublished: boolean("isPublished").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
