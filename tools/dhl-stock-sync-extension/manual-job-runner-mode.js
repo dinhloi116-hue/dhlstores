@@ -260,6 +260,22 @@
     }catch(error){setStatus(error.message||String(error),'bad');}
   }
 
+  async function cancelNow(){
+    const btn=$('manualCancelNowBtn');
+    if(btn){btn.disabled=true;btn.textContent='ĐANG HỦY...';}
+    try{
+      const response=await send({type:'DHL_MANUAL_JOB_CANCEL_NOW'});
+      if(!response.ok)throw new Error(response.error||'Không hủy được lượt quét.');
+      setStatus('ĐÃ HỦY NGAY. Có thể đổi tab và chạy lại ngay. Phần đã quét trước đó vẫn được giữ.','ok');
+      await loadTabs({preferActive:true});
+      await refreshJob();
+    }catch(error){
+      setStatus(error.message||String(error),'bad');
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='HỦY NGAY';}
+    }
+  }
+
   async function resumeJob(){
     try{
       const response=await send({type:'DHL_MANUAL_JOB_RESUME'});
@@ -280,6 +296,7 @@
     const fill=$('manualJobProgressFill');
     const start=$('manualStartBtn');
     const stop=$('manualStopBtn');
+    const cancel=$('manualCancelNowBtn');
     const resume=$('manualResumeBtn');
     const running=Boolean(job&&job.running);
     const stopping=Boolean(job&&job.status==='stopping');
@@ -290,6 +307,7 @@
       else{start.disabled=!selectedTab();start.textContent='ĐỒNG BỘ TAB NÀY';}
     }
     if(stop)stop.hidden=!(running||stopping);
+    if(cancel)cancel.hidden=!(running||stopping);
     if(resume)resume.hidden=!paused;
 
     if(!job){
@@ -314,6 +332,7 @@
     if(job.status==='done')setStatus(`ĐÃ XONG ${job.profileName}: ${index}/${total} sản phẩm.`,'ok');
     else if(job.status==='paused')setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau.`,'ok');
     else if(job.status==='error')setStatus(`LỖI: ${text(job.lastError)}`,'bad');
+    else if(job.status==='cancelled')setStatus(`ĐÃ HỦY tại ${index}/${total}. Có thể đổi tab và chạy lại ngay.`,'ok');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
     else if(running)setStatus(`Đang quét ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • mở popup để đọc đủ màu / size / tồn.`);
   }
@@ -328,6 +347,7 @@
   function bind(){
     $('manualStartBtn')?.addEventListener('click',startJob);
     $('manualStopBtn')?.addEventListener('click',stopAfterCurrent);
+    $('manualCancelNowBtn')?.addEventListener('click',cancelNow);
     $('manualResumeBtn')?.addEventListener('click',resumeJob);
 
     $('manualSourceSelect')?.addEventListener('change',async()=>{
@@ -380,6 +400,7 @@
       .current-source-badge.saved{background:#dcfce7;color:#166534}.current-source-badge.new{background:#fef3c7;color:#92400e}.current-source-badge.empty{background:#f1f5f9;color:#64748b}
       #manualStartBtn{width:100%;min-height:50px;margin-top:9px;font-size:13px;font-weight:900}
       .manual-secondary-actions{display:flex;gap:7px;margin-top:7px}.manual-secondary-actions button{flex:1;min-height:34px;font-size:9px}
+      #manualCancelNowBtn{background:#fff1f2;color:#be123c;border-color:#fda4af;font-weight:900}
       #manualAdvanced{margin-top:9px;border-top:1px solid #dbeafe;padding-top:7px}
       #manualAdvanced>summary{cursor:pointer;font-size:10px;font-weight:800;color:#475569}
       #manualAdvanced select{width:100%;min-height:38px;margin-top:7px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
@@ -419,6 +440,7 @@
 
         <div class="manual-secondary-actions">
           <button id="manualStopBtn" type="button" class="report" hidden>DỪNG SAU SP NÀY</button>
+          <button id="manualCancelNowBtn" type="button" class="secondary" hidden>HỦY NGAY</button>
           <button id="manualResumeBtn" type="button" class="secondary" hidden>TIẾP TỤC</button>
         </div>
 
