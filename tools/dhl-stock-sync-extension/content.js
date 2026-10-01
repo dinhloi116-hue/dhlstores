@@ -7,6 +7,15 @@
   if (!core || !dom || !matcher) return;
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  let popupScanCancelVersion=0;
+  function assertPopupScanActive(version){
+    if(version==null)return;
+    if(version!==popupScanCancelVersion){
+      const error=new Error('Đã hủy quét popup.');
+      error.code='DHL_SCAN_CANCELLED';
+      throw error;
+    }
+  }
   const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
   const TEAM_PATTERNS = [
     ['bo dao nha', 'portugal'], ['tay ban nha', 'spain'], ['nhat ban', 'japan'], ['nhat', 'japan'],
@@ -298,7 +307,9 @@
     let stable = 0;
     const started = Date.now();
     while (Date.now() - started < timeout) {
+      assertPopupScanActive(cancelVersion);
       await sleep(90);
+      assertPopupScanActive(cancelVersion);
       const currentRoot = findStockRoot() || root;
       const rows = readTargetRows(currentRoot, targetSizes);
       const signature = rowsSignature(rows);
@@ -607,7 +618,7 @@
     await clickElement(el);
   }
 
-  async function waitForPopupRefresh(beforeFingerprint, expectedPath, timeout = 3200) {
+  async function waitForPopupRefresh(beforeFingerprint, expectedPath, timeout = 3200, cancelVersion = null) {
     const started = Date.now();
     while (Date.now() - started < timeout) {
       await sleep(90);
@@ -623,7 +634,8 @@
     return null;
   }
 
-  async function openStockPopup(descriptor) {
+  async function openStockPopup(descriptor, cancelVersion = null) {
+    assertPopupScanActive(cancelVersion);
     const expectedPath=descriptor.categoryPath||location.pathname;
     if (location.pathname !== expectedPath) throw new Error('Tool chỉ quét trên đúng trang danh mục đang mở.');
     const existing = findStockRoot();
@@ -631,8 +643,10 @@
     const card = cardForDescriptor(descriptor);
     const candidates = quickCandidates(descriptor, card).filter((item) => !inertActionHref(item.el));
     for (const candidate of candidates) {
+      assertPopupScanActive(cancelVersion);
       await clickQuickCandidate(candidate.el);
-      const root = await waitForPopupRefresh(before, expectedPath, 8000);
+      assertPopupScanActive(cancelVersion);
+      const root = await waitForPopupRefresh(before, expectedPath, 8000, cancelVersion);
       if (root) return { root, cardFound: !!card, candidateCount: candidates.length, reusedPopup: !!existing };
     }
     const error = new Error(`Không bật được popup tồn cho ${descriptor.title} ngay trên trang danh mục.`);
@@ -806,7 +820,8 @@
     };
   }
 
-  async function readOpenedPopup(descriptor, hints, progress, openInfo = null) {
+  async function readOpenedPopup(descriptor, hints, progress, openInfo = null, cancelVersion = null) {
+    assertPopupScanActive(cancelVersion);
     const root = (openInfo && openInfo.root) || findStockRoot();
     if (!root) throw new Error('Chưa có popup tồn kho đang mở');
 
@@ -816,6 +831,7 @@
     const hintedSizes = targetSizesForHint(hint);
     const neededSizes = hintedSizes.length ? hintedSizes : expectedSizesFromRoot(root);
     const first = await firstVariant(parentId, parentName);
+    assertPopupScanActive(cancelVersion);
     const fallbackColor = first && first.color ? first.color : '';
 
     const allControls = colorControls(root);
@@ -841,6 +857,7 @@
     let previousSignature = '';
 
     for (let index = 0; index < controls.length; index += 1) {
+      assertPopupScanActive(cancelVersion);
       const target = controls[index];
       let rows = [];
       let currentRoot = findStockRoot() || root;
@@ -849,6 +866,7 @@
       } else {
         rows = await stableTargetRows(currentRoot, neededSizes);
       }
+      assertPopupScanActive(cancelVersion);
       previousSignature = rowsSignature(rows);
       currentRoot=findStockRoot()||currentRoot;
       const imageUrl=colorImageUrl(target.name,currentRoot,target.el,target.imageUrl||descriptor.imageUrl||'');
@@ -931,11 +949,14 @@
     return result;
   }
 
-  async function scanOneDescriptor(descriptor, hints, progress) {
+  async function scanOneDescriptor(descriptor, hints, progress, cancelVersion = null) {
     let openInfo = null;
     try {
-      openInfo = await openStockPopup(descriptor);
-      let result = await readOpenedPopup(descriptor, hints, progress, openInfo);
+      assertPopupScanActive(cancelVersion);
+      openInfo = await openStockPopup(descriptor, cancelVersion);
+      assertPopupScanActive(cancelVersion);
+      let result = await readOpenedPopup(descriptor, hints, progress, openInfo, cancelVersion);
+      assertPopupScanActive(cancelVersion);
 
       // Nếu popup đã đọc được nhưng còn thiếu size, đóng/mở lại và thử riêng sản phẩm đó 1 lần.
       // Tránh trường hợp mạng/UI lag làm mất một size như ARS-M.
@@ -946,8 +967,10 @@
           const current=findStockRoot();
           if(current)await closeStockPopup(current);
           await sleep(350);
-          const retryOpen=await openStockPopup(descriptor);
-          const retry=await readOpenedPopup(descriptor,hints,progress,retryOpen);
+          assertPopupScanActive(cancelVersion);
+          const retryOpen=await openStockPopup(descriptor, cancelVersion);
+          const retry=await readOpenedPopup(descriptor,hints,progress,retryOpen,cancelVersion);
+          assertPopupScanActive(cancelVersion);
           const oldCount=Array.isArray(result.variants)?result.variants.length:0;
           const newCount=Array.isArray(retry&&retry.variants)?retry.variants.length:0;
           const oldMissing=missing.length;
@@ -958,6 +981,7 @@
       }
       return result;
     } catch (error) {
+      if(error&&error.code==='DHL_SCAN_CANCELLED')throw error;
       return {
         parentId: Number(descriptor.id),
         parentName: descriptor.title || '',
@@ -1106,6 +1130,16 @@
     const hints = Array.isArray(message.hints) ? message.hints : [];
     const progress = (data) => chrome.runtime.sendMessage({ type: 'DHL_STOCK_PROGRESS', data }).catch(() => {});
 
+    if (message.type === 'DHL_CANCEL_POPUP_SCAN') {
+      popupScanCancelVersion+=1;
+      (async()=>{
+        const root=findStockRoot();
+        if(root)await closeStockPopup(root);
+        return true;
+      })().then(()=>sendResponse({ok:true,cancelled:true})).catch(()=>sendResponse({ok:true,cancelled:true}));
+      return true;
+    }
+
     if (message.type === 'DHL_DISCOVER_HD_2026') {
       discoverHd2026().then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
@@ -1146,6 +1180,8 @@
       // 3) giữ popup hiển thị trong lúc đọc màu/size/tồn,
       // 4) đóng popup rồi mới sang sản phẩm tiếp theo.
       (async()=>{
+        const cancelVersion=popupScanCancelVersion;
+        assertPopupScanActive(cancelVersion);
         const stale=findStockRoot();
         if(stale){
           await closeStockPopup(stale);
@@ -1158,8 +1194,9 @@
           mode:'popup-standardize-once'
         });
 
-        const result=await scanOneDescriptor(descriptor,hints,progress);
+        const result=await scanOneDescriptor(descriptor,hints,progress,cancelVersion);
 
+        assertPopupScanActive(cancelVersion);
         const visiblePopup=findStockRoot();
         if(visiblePopup){
           // Giữ popup nhìn thấy rõ một nhịp ngắn sau khi đọc xong rồi mới đóng.
