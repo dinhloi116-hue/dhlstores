@@ -8,7 +8,7 @@ assert.ok(src.includes('const neededSizes = hintedSizes.length ? hintedSizes : e
 assert.ok(src.includes('while (Date.now() - started < 6500)'));
 assert.ok(src.includes('stableTargetRows(currentRoot, targetSizes, 1800)'));
 assert.ok(src.includes('Nếu popup đã đọc được nhưng còn thiếu size'));
-assert.ok(src.includes('const retryOpen=await openStockPopup(descriptor)'));
+assert.ok(src.includes('const retryOpen=await openStockPopup(descriptor, cancelVersion)'));
 assert.ok(src.includes('if(newCount>oldCount||(newCount===oldCount&&newMissing<oldMissing))result=retry'));
 
 console.log('STOCK SIZE COMPLETENESS PASS', {
