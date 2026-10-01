@@ -131,6 +131,7 @@
     setTimeout(reorder,180);
   }
 
+  document.addEventListener('dhl:product-modules-loaded',schedule);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
   else install();
 })();
