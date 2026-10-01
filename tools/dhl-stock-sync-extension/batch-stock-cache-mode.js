@@ -104,7 +104,12 @@
 
     const diff=latest.diff||null;
     const scanIssues=Array.isArray(latest.issues)?latest.issues:[];
-    const pushErrors=queue&&Array.isArray(queue.errors)?queue.errors:[];
+    const queueRelevant=queue&&(
+      !Array.isArray(queue.profileIds)||
+      !queue.profileIds.length||
+      queue.profileIds.map(String).includes(String(latest.profileId))
+    )?queue:null;
+    const pushErrors=queueRelevant&&Array.isArray(queueRelevant.errors)?queueRelevant.errors:[];
     const errors=[
       ...scanIssues.map(x=>({
         source:'QUÉT',
@@ -191,12 +196,33 @@
       box=document.createElement('div');
       box.id='batchPendingBox';
       box.style.cssText='margin-top:9px;padding:9px 10px;border:1px solid #bfdbfe;border-radius:9px;background:#eff6ff;color:#334155';
+      if(!document.getElementById('batchQuickReportStyle')){
+        const style=document.createElement('style');
+        style.id='batchQuickReportStyle';
+        style.textContent=`
+          .quick-report-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:7px;padding-top:7px;border-top:1px solid #dbeafe}
+          .quick-report-head small{color:#64748b;font-size:9px}
+          .quick-report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px}
+          .quick-report-grid>div{padding:7px 5px;border:1px solid #dbeafe;border-radius:7px;background:#fff;text-align:center}
+          .quick-report-grid b{display:block;font-size:14px}.quick-report-grid span{font-size:9px;color:#64748b}
+          .quick-report-empty{margin-top:7px;padding:7px 8px;border-radius:7px;background:#fff;color:#64748b;font-size:10px}
+          .quick-report-details{margin-top:7px;border-top:1px solid #dbeafe;padding-top:6px}
+          .quick-report-details>summary{cursor:pointer;font-size:10px;font-weight:900}
+          .quick-report-list{max-height:210px;overflow:auto;margin-top:5px}
+          .quick-report-row{display:grid;grid-template-columns:auto 1fr auto;gap:6px;padding:5px 0;border-bottom:1px solid #eef2f7;font-size:9px;align-items:start}
+          .quick-report-row>b{white-space:nowrap}.quick-report-row>span{min-width:0}.quick-report-row>small{text-align:right;color:#64748b}
+          .quick-report-row.error{grid-template-columns:auto 1fr}.quick-report-row.error>small{grid-column:1/-1;text-align:left;color:#991b1b}
+          .error-report>summary{color:#991b1b}
+        `;
+        document.head.appendChild(style);
+      }
       box.innerHTML=`
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
           <b id="batchPendingTitle">ĐẦU RA</b>
           <button id="batchClearBtn" type="button" class="secondary" style="padding:5px 8px;font-size:10px">XÓA CACHE</button>
         </div>
         <div id="batchPendingList" style="margin-top:5px;font-size:11px"></div>
+        <div id="stockQuickReports" style="margin-top:8px"></div>
         <button id="batchExportBtn" type="button" class="success" style="width:100%;margin-top:9px;min-height:44px;font-size:12px;font-weight:800" disabled>TẢI FILE EXCEL</button>`;
       const status=document.getElementById('profileStatus');
       if(status)status.insertAdjacentElement('beforebegin',box);else host.appendChild(box);
