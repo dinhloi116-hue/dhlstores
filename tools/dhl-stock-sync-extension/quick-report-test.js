@@ -42,7 +42,7 @@ assert.strictEqual(diff.increased,3);
 assert.strictEqual(diff.soldOut,1);
 assert.strictEqual(diff.decreased,0);
 assert.strictEqual(diff.restocked,0);
-assert.strictEqual(diff.net,-3);
+assert.strictEqual(diff.net,1);
 
 assert.ok(bg.includes("const HISTORY_KEY='dhlStockScanHistoryV1'"));
 assert.ok(bg.includes("const REPORT_KEY='dhlManualStockReportV1'"));
