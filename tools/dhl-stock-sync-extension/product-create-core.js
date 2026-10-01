@@ -51,13 +51,20 @@
     return raw.replace(/-(XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|2XL|3XL|4XL|5XL|FREE)$/i,'');
   }
 
-  function aliasFromSourceUrl(value){
+  function aliasFromSourceUrl(value,color=''){
     try{
       const u=new URL(text(value));
       if(!/^(?:www\.)?si\.aobongda\.net$/i.test(u.hostname))return'';
       let slug=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'').trim();
       slug=slug.replace(/\.html$/i,'').replace(/-p\d+$/i,'').trim();
       if(!slug||/-pc\d+$/i.test(slug))return'';
+
+      const wanted=plain(color);
+      if(wanted&&wanted!=='khong mau'){
+        const slugWords=new Set(plain(slug).split(' ').filter(Boolean));
+        const colorWords=wanted.split(' ').filter(Boolean);
+        if(colorWords.length&&!colorWords.every(word=>slugWords.has(word)))return'';
+      }
       return slug;
     }catch{return'';}
   }
@@ -125,7 +132,7 @@
     )];
     const skuBase=sourceBases.length===1
       ? sourceBases[0]
-      : aliasFromSourceUrl(group.sourceUrl)
+      : aliasFromSourceUrl(group.sourceUrl,group.color)
         || (typeof rules.generatedAliasForStandardName==='function'
           ? rules.generatedAliasForStandardName(group.standardName)
           : plain(group.standardName).replace(/\s+/g,'-'));
