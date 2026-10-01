@@ -22,33 +22,14 @@
   function skuBaseFromVariantSku(sku,size=''){
     const raw=text(sku);
     if(!raw)return'';
-    const normalizedSize=normalizeSize(size);
-    if(normalizedSize){
-      const escaped=normalizedSize.replace(/[.*+?^${}()|[\]\\]/g,'\\  function colorKey(value){return plain(value)||'(khong mau)';}
-  function normalizeSize(value){return matcher&&matcher.normalizeSize?matcher.normalizeSize(value):text(value).toUpperCase();}
-');
-      const re=new RegExp(`-${escaped}(function(root,factory){
-  const api=factory(root.DHLXlsxLite,root.DHLShopRules,root.DHLMatchCore);
-  if(typeof module==='object'&&module.exports)module.exports=api;
-  else root.DHLProductCreateCore=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(xlsx,rules,matcher){
-  'use strict';
-
-  const HEADERS=[
-    'Đường dẫn/Alias','Tên sản phẩm*','Mô tả sản phẩm','Nhãn hiệu','Loại sản phẩm','Nhóm ngành nghề tính thuế GTGT, TNCN','Tags','Yêu cầu vận chuyển','Hiển thị*',
-    'Thuộc tính 1','Giá trị thuộc tính 1','Thuộc tính 2','Giá trị thuộc tính 2','Thuộc tính 3','Giá trị thuộc tính 3','Áp dụng thuế','Mã SKU','Barcode','Đơn vị tính',
-    'Ảnh đại diện','Chú thích ảnh','Thẻ tiêu đề(SEO Title)','Thẻ mô tả(SEO Description)','Mô tả ngắn','Quản lý kho','Quản lý lô - HSD','Số ngày cảnh báo trước hết hạn',
-    'Khối lượng','Đơn vị khối lượng','Ảnh phiên bản','Cho phép tiếp tục mua khi hết hàng','Giá','Giá so sánh','Giá vốn','Cửa hàng chính_Tồn kho','Id phiên bản'
-  ];
-
-  function text(value){return String(value==null?'':value).trim();}
-  function plain(value){
-    return text(value).toLowerCase().replace(/đ/g,'d').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
-  }
-,'i');
-      if(re.test(raw))return raw.replace(re,'');
+    const parts=raw.split('-');
+    if(parts.length>1){
+      const tail=normalizeSize(parts[parts.length-1]);
+      const wanted=normalizeSize(size);
+      if(wanted&&tail===wanted)return parts.slice(0,-1).join('-');
+      if(['XXS','XS','S','M','L','XL','XXL','XXXL','XXXXL','XXXXXL','FREE'].includes(tail))return parts.slice(0,-1).join('-');
     }
-    return raw.replace(/-(XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|2XL|3XL|4XL|5XL|FREE)$/i,'');
+    return raw;
   }
 
   function aliasFromSourceUrl(value,color=''){
@@ -122,9 +103,9 @@
     const sizes=sizeSort([...bySize.keys()]);
     if(!sizes.length)return null;
     // MASTER SKU:
-    // 1) SKU thật từ nguồn nếu popup/API đã đọc được.
-    // 2) Slug thật của URL sản phẩm nguồn (giữ cả suffix định danh như -6qjk3f).
-    // 3) Chỉ fallback sinh alias từ tên nếu nguồn không có định danh thật.
+    // 1) SKU thật từ nguồn nếu scanner đã đọc được.
+    // 2) Slug thật của URL nguồn, giữ suffix định danh như -6qjk3f.
+    // 3) Chỉ fallback sinh alias từ tên khi nguồn không có định danh thật.
     const sourceBases=[...new Set(
       [...bySize.values()]
         .map(item=>skuBaseFromVariantSku(item&&item.variant&&item.variant.sku,item&&item.size))
