@@ -41,6 +41,7 @@
       if(catalog&&stock&&catalog.parentElement===stock.parentElement&&stock.nextSibling!==catalog){
         stock.insertAdjacentElement('afterend',catalog);
       }
+      document.dispatchEvent(new CustomEvent('dhl:product-modules-loaded'));
     }catch(error){
       if(btn){btn.disabled=false;btn.textContent='THÊM SẢN PHẨM MỚI';}
       if(state){state.textContent=error.message||String(error);state.style.color='#b91c1c';}
