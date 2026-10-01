@@ -437,17 +437,29 @@
         job.status='running';
         job.progress=`${job.index}/${job.total}`;
 
-        let result=null;
+        let result=null,scanError=null;
         try{
           const response=await sendFullPopupScan(tab.id,descriptor);
           if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Không nhận được dữ liệu nguồn.');
           result=response.result;
         }catch(error){
+          scanError=error;
+        }
+
+        // Job có thể đã bị HỦY NGAY trong lúc content script đang chờ/đọc popup.
+        // Luôn đọc lại storage trước khi ghi kết quả để response cũ không "sống lại".
+        const latest=await readJob();
+        if(!latest||latest.id!==job.id||latest.running!==true||latest.status==='cancelled'){
+          return;
+        }
+        job=latest;
+
+        if(scanError){
           job.errors=Array.isArray(job.errors)?job.errors:[];
           job.errors.push({
             id:descriptor&&descriptor.id,
             title:descriptor&&descriptor.title,
-            error:error.message||String(error),
+            error:scanError.message||String(scanError),
             at:Date.now()
           });
           if(job.errors.length>MAX_ERRORS)job.errors.splice(0,job.errors.length-MAX_ERRORS);
@@ -456,7 +468,7 @@
             parentName:text(descriptor&&descriptor.title),
             sourceUrl:text(descriptor&&descriptor.url),
             complete:false,
-            scanError:error.message||String(error),
+            scanError:scanError.message||String(scanError),
             colors:[]
           };
         }
@@ -581,6 +593,29 @@
     job.stopAfterCurrent=true;job.status='stopping';await saveJob(job);return job;
   }
 
+  async function cancelNow(){
+    const job=await readJob();
+    if(!job)return null;
+
+    try{await chrome.alarms.clear(ALARM);}catch(_){}
+
+    // Báo content script hủy scan đang dở và đóng popup nếu còn mở.
+    const targetTabId=Number(job.tabId||job.sourceTabId)||0;
+    if(targetTabId){
+      try{await chrome.tabs.sendMessage(targetTabId,{type:'DHL_CANCEL_POPUP_SCAN'});}catch(_){}
+    }
+
+    job.running=false;
+    job.status='cancelled';
+    job.stopAfterCurrent=false;
+    job.cancelledAt=Date.now();
+    job.currentProduct='';
+    job.progress=`${Math.min(Number(job.index||0),Number(job.total||0))}/${Number(job.total||0)}`;
+    await closeJobTab(job);
+    await saveJob(job);
+    return job;
+  }
+
   async function resumeJob(){
     const job=await readJob();
     if(!job||job.status!=='paused')throw new Error('Không có lượt quét đang tạm dừng.');
@@ -648,6 +683,9 @@
     }
     if(message.type==='DHL_MANUAL_JOB_STOP'){
       requestStop().then(job=>sendResponse({ok:true,job})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
+    }
+    if(message.type==='DHL_MANUAL_JOB_CANCEL_NOW'){
+      cancelNow().then(job=>sendResponse({ok:true,job})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
     }
     if(message.type==='DHL_MANUAL_JOB_RESUME'){
       resumeJob().then(job=>sendResponse({ok:true,job})).catch(error=>sendResponse({ok:false,error:error.message||String(error)}));return true;
