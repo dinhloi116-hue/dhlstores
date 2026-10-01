@@ -338,6 +338,34 @@
     job.variantTotal=Number(prepared.sourceVariantCount||prepared.rows.length||0);
     job.needsSapoBranch=Boolean(prepared.rows.length&&!branch);
 
+    const scannedVariantCount=sourceResults.reduce((sum,item)=>sum+(Array.isArray(item&&item.variants)?item.variants.length:0),0);
+    if(!prepared.rows.length){
+      job.running=false;
+      job.status='output-error';
+      job.finishedAt=Date.now();
+      job.lastError=scannedVariantCount
+        ? `Đã quét ${scannedVariantCount} biến thể nhưng không dựng được dòng tồn kho.`
+        : 'Quét xong nhưng không đọc được biến thể size/tồn từ popup.';
+      job.progress=`${Math.min(job.index,job.total||0)}/${job.total||0}`;
+      await closeJobTab(job);
+      await chrome.storage.local.set({
+        [JOB_KEY]:job,
+        dhlCatalogResults:Array.isArray(job.results)?job.results:[],
+        dhlCatalogAt:Date.now(),
+        dhlCatalogPageTitle:text(job.pageTitle),
+        dhlCatalogPageUrl:text(job.sourceUrl),
+        dhlCatalogSkuMode:'manual-background-popup-full'
+      });
+      await saveProfileCheckpoint(job.profileId,{
+        lastScanProgress:job.progress,
+        lastScanJobId:job.id,
+        lastScanRowCount:0,
+        lastScanFinishedAt:job.finishedAt,
+        lastScanError:job.lastError
+      });
+      return;
+    }
+
     if(prepared.rows.length){
       const stored=await chrome.storage.local.get(BATCH_KEY);
       const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
