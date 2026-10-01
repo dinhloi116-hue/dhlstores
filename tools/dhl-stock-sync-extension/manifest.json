@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.22.7",
+  "version": "0.22.8",
   "minimum_chrome_version": "116",
-  "description": "Sửa regression 0.22.6 làm popup đọc size/tồn thành kết quả rỗng: truyền cancel token đúng qua row reader; 0 dòng đầu ra không còn được báo hoàn tất.",
+  "description": "Bổ sung báo cáo nhanh tăng/giảm tồn và báo cáo lỗi quét/Sapo ngay trong ĐẦU RA; lưu snapshot theo hồ sơ, chỉ so sánh trên lượt quét toàn bộ hoàn tất.",
   "permissions": [
     "storage",
     "unlimitedStorage",
