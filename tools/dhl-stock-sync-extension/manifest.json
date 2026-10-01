@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.22.6",
+  "version": "0.22.7",
   "minimum_chrome_version": "116",
-  "description": "Thêm HỦY NGAY cho quét nhầm tab: dừng job tức thời, đóng popup, chặn response/checkpoint cũ ghi đè và cho phép đổi tab chạy lại ngay.",
+  "description": "Sửa regression 0.22.6 làm popup đọc size/tồn thành kết quả rỗng: truyền cancel token đúng qua row reader; 0 dòng đầu ra không còn được báo hoàn tất.",
   "permissions": [
     "storage",
     "unlimitedStorage",
