@@ -301,7 +301,7 @@
     return rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size));
   }
 
-  async function stableTargetRows(root, targetSizes, timeout = 4000) {
+  async function stableTargetRows(root, targetSizes, timeout = 4000, cancelVersion = null) {
     let best = [];
     let previous = '';
     let stable = 0;
@@ -477,7 +477,7 @@
     return control.el.getAttribute('aria-checked') === 'true' || /\b(active|selected|checked)\b/i.test(String(control.el.className || ''));
   }
 
-  async function switchColorAndRead(name, root, targetSizes, previousSignature = '') {
+  async function switchColorAndRead(name, root, targetSizes, previousSignature = '', cancelVersion = null) {
     let currentRoot = findStockRoot() || root;
     const control = findColorControl(name, currentRoot);
     if (!control) return [];
@@ -489,7 +489,9 @@
     let best = [];
     let seenSelected = alreadySelected;
     while (Date.now() - started < 6500) {
+      assertPopupScanActive(cancelVersion);
       await sleep(110);
+      assertPopupScanActive(cancelVersion);
       currentRoot = findStockRoot() || currentRoot;
       if (isSelectedColor(name, currentRoot)) seenSelected = true;
       const rows = readTargetRows(currentRoot, targetSizes);
@@ -500,7 +502,7 @@
       if (seenSelected && hasAllTargetRows(rows, targetSizes)) {
         if (alreadySelected || signature !== previousSignature || elapsed >= 650) {
           await sleep(120);
-          return stableTargetRows(currentRoot, targetSizes, 1800);
+          return stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion);
         }
       }
     }
@@ -864,9 +866,9 @@
       let rows = [];
       let currentRoot = findStockRoot() || root;
       if (target.el) {
-        rows = await switchColorAndRead(target.name, currentRoot, neededSizes, previousSignature);
+        rows = await switchColorAndRead(target.name, currentRoot, neededSizes, previousSignature, cancelVersion);
       } else {
-        rows = await stableTargetRows(currentRoot, neededSizes);
+        rows = await stableTargetRows(currentRoot, neededSizes, 4000, cancelVersion);
       }
       assertPopupScanActive(cancelVersion);
       previousSignature = rowsSignature(rows);
