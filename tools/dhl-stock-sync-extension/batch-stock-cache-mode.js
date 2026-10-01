@@ -8,8 +8,36 @@
 
   const BATCH_KEY='dhlManualPendingStockBatchV1';
   const CONFIG_KEY='dhlAutoSyncConfigV1';
+  const REPORT_KEY='dhlManualStockReportV1';
+  const QUEUE_KEY='dhlSapoPushQueueV1';
   const text=(v)=>String(v==null?'':v).trim();
   const esc=(v)=>text(v).replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+
+  function changeTypeLabel(type){
+    return({
+      increased:'TĂNG',
+      decreased:'GIẢM',
+      restocked:'CÓ HÀNG LẠI',
+      soldout:'HẾT HÀNG',
+      added:'MỚI',
+      missing:'KHÔNG CÒN THẤY'
+    })[type]||text(type).toUpperCase();
+  }
+
+  function fmtDelta(value){
+    const n=Number(value||0);
+    return n>0?`+${n}`:`${n}`;
+  }
+
+  async function reportState(){
+    const s=await chrome.storage.local.get([REPORT_KEY,QUEUE_KEY]);
+    const reports=s[REPORT_KEY]&&typeof s[REPORT_KEY]==='object'?s[REPORT_KEY]:{};
+    const latest=Object.values(reports)
+      .filter(Boolean)
+      .sort((a,b)=>Number(b&&b.at||0)-Number(a&&a.at||0))[0]||null;
+    const queue=s[QUEUE_KEY]&&s[QUEUE_KEY].source==='manual'?s[QUEUE_KEY]:null;
+    return{latest,queue};
+  }
 
   async function entries(){
     const s=await chrome.storage.local.get(BATCH_KEY);
@@ -64,6 +92,76 @@
     await renderBatchUi();
   }
 
+  async function renderQuickReports(){
+    const box=document.getElementById('stockQuickReports');
+    if(!box)return;
+    const {latest,queue}=await reportState();
+
+    if(!latest){
+      box.innerHTML='<small>Chưa có báo cáo. Quét xong một tab sẽ tự tạo báo cáo lỗi và biến động.</small>';
+      return;
+    }
+
+    const diff=latest.diff||null;
+    const scanIssues=Array.isArray(latest.issues)?latest.issues:[];
+    const pushErrors=queue&&Array.isArray(queue.errors)?queue.errors:[];
+    const errors=[
+      ...scanIssues.map(x=>({
+        source:'QUÉT',
+        label:text(x&&x.product)||text(x&&x.sku)||'—',
+        message:text(x&&x.message)
+      })),
+      ...pushErrors.map(x=>({
+        source:'SAPO',
+        label:text(x&&x.sku)||`Dòng ${Number(x&&x.index||0)+1}`,
+        message:text(x&&x.error)
+      }))
+    ];
+
+    let quick='';
+    if(latest.firstSnapshot){
+      quick='<div class="quick-report-empty">Đã lưu mốc tồn đầu tiên. Lần quét toàn bộ tiếp theo sẽ có báo cáo tăng/giảm.</div>';
+    }else if(latest.comparable===false){
+      quick='<div class="quick-report-empty">Lượt quét này không phải toàn bộ danh mục hoàn tất nên không tạo so sánh tăng/giảm.</div>';
+    }else if(diff){
+      const changed=Number(diff.changed||0);
+      quick=`
+        <div class="quick-report-grid">
+          <div><b>${Number(diff.increased||0)+Number(diff.restocked||0)}</b><span>Tăng / có lại</span></div>
+          <div><b>${Number(diff.decreased||0)+Number(diff.soldOut||0)}</b><span>Giảm / hết</span></div>
+          <div><b>${fmtDelta(diff.net)}</b><span>Chênh tổng</span></div>
+        </div>
+        <small style="display:block;margin-top:6px">Tổng tồn: ${Number(diff.oldTotal||0)} → ${Number(diff.newTotal||0)} • ${changed} SKU thay đổi</small>
+        <details class="quick-report-details" ${changed&&changed<=8?'open':''}>
+          <summary>CHI TIẾT TĂNG / GIẢM (${changed})</summary>
+          <div class="quick-report-list">${changed
+            ?(diff.changes||[]).map(change=>{
+              const item=change.item||{};
+              const name=[text(item.name),text(item.color),item.size?`Size ${text(item.size)}`:''].filter(Boolean).join(' • ');
+              const before=change.before==null?'—':change.before;
+              const after=change.after==null?'—':change.after;
+              return `<div class="quick-report-row"><b>${esc(changeTypeLabel(change.type))}</b><span>${esc(name||item.sku||change.key)}</span><small>${before} → ${after}${change.before!=null&&change.after!=null?` (${fmtDelta(change.delta)})`:''}</small></div>`;
+            }).join('')
+            :'<small>Không có thay đổi tồn kho.</small>'}</div>
+        </details>`;
+    }else{
+      quick='<div class="quick-report-empty">Chưa có mốc trước để so sánh.</div>';
+    }
+
+    const errorHtml=`
+      <details class="quick-report-details error-report" ${errors.length?'open':''}>
+        <summary>BÁO CÁO LỖI (${errors.length})</summary>
+        <div class="quick-report-list">${errors.length
+          ?errors.map(err=>`<div class="quick-report-row error"><b>${esc(err.source)}</b><span>${esc(err.label)}</span><small>${esc(err.message)}</small></div>`).join('')
+          :'<small>Không phát hiện lỗi trong lần quét/đẩy gần nhất.</small>'}</div>
+      </details>`;
+
+    box.innerHTML=`
+      <div class="quick-report-head"><b>BÁO CÁO NHANH</b><small>${esc(latest.profileName||'')}</small></div>
+      ${quick}
+      ${errorHtml}`;
+  }
+
   async function renderBatchUi(){
     const list=await entries();
     const rows=list.reduce((sum,x)=>sum+Number(x.rowCount||(x.rows||[]).length||0),0);
@@ -82,6 +180,7 @@
       btn.textContent=list.length?`TẢI FILE EXCEL (${list.length})`:'TẢI FILE EXCEL';
       btn.disabled=!list.length;
     }
+    await renderQuickReports();
   }
 
   function mount(){
@@ -112,7 +211,7 @@
 
   if(mount()){
     chrome.storage.onChanged.addListener((changes,area)=>{
-      if(area==='local'&&changes[BATCH_KEY])renderBatchUi().catch(()=>{});
+      if(area==='local'&&(changes[BATCH_KEY]||changes[REPORT_KEY]||changes[QUEUE_KEY]))renderBatchUi().catch(()=>{});
     });
   }
 })();
