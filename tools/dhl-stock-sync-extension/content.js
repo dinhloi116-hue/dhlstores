@@ -621,7 +621,9 @@
   async function waitForPopupRefresh(beforeFingerprint, expectedPath, timeout = 3200, cancelVersion = null) {
     const started = Date.now();
     while (Date.now() - started < timeout) {
+      assertPopupScanActive(cancelVersion);
       await sleep(90);
+      assertPopupScanActive(cancelVersion);
       if (expectedPath && location.pathname !== expectedPath) throw new Error('Trang nguồn đã rời danh mục đang quét; dừng để tránh sai dữ liệu.');
       const root = findStockRoot();
       if (!root) continue;
