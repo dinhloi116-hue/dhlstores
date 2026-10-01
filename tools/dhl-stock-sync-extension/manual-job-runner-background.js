@@ -5,13 +5,16 @@
   const matcher=globalThis.DHLMatchCore;
   const autoCore=globalThis.DHLAutoSyncCore;
   const rules=globalThis.DHLShopRules;
-  if(!xlsx||!matcher||!autoCore||!rules)return;
+  const historyCore=globalThis.DHLStockHistoryCore;
+  if(!xlsx||!matcher||!autoCore||!rules||!historyCore)return;
 
   const PROFILE_KEY='dhlSavedStockProfilesV1';
   const SELECTED_KEY='dhlSelectedStockProfileId';
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const JOB_KEY='dhlManualScanJobV2';
   const BATCH_KEY='dhlManualPendingStockBatchV1';
+  const HISTORY_KEY='dhlStockScanHistoryV1';
+  const REPORT_KEY='dhlManualStockReportV1';
   const ALARM='dhl-manual-scan-step';
   const MAX_ERRORS=100;
 
@@ -307,6 +310,102 @@
     return true;
   }
 
+  function collectScanIssues(job,sourceResults,prepared){
+    const issues=[];
+    const seen=new Set();
+    const push=(type,message,meta={})=>{
+      const msg=text(message);
+      if(!msg)return;
+      const key=`${type}|${msg}|${text(meta.product)}|${text(meta.sku)}`;
+      if(seen.has(key))return;
+      seen.add(key);
+      issues.push({type,message:msg,...meta});
+    };
+
+    for(const err of (Array.isArray(job&&job.errors)?job.errors:[])){
+      push('scan-error',err&&err.error||'Lỗi quét sản phẩm',{
+        product:text(err&&err.title),
+        productId:Number(err&&err.id)||0
+      });
+    }
+
+    for(const item of sourceResults||[]){
+      const product=text(item&&item.parentName)||`#${Number(item&&item.parentId)||0}`;
+      for(const err of (Array.isArray(item&&item.errors)?item.errors:[])){
+        push('popup-error',err&&err.message||err&&err.error||String(err),{product});
+      }
+      const diag=item&&item.domDiagnostics||{};
+      for(const missing of (Array.isArray(diag.missingSizes)?diag.missingSizes:[])){
+        push('missing-size',`Thiếu size ${missing}`,{product});
+      }
+      for(const color of (Array.isArray(diag.missingColorHints)?diag.missingColorHints:[])){
+        push('missing-color',`Thiếu màu ${color}`,{product});
+      }
+      if(item&&item.complete===false&&!((diag.missingSizes||[]).length)&&!((diag.missingColorHints||[]).length)){
+        push('partial-scan',`Quét chưa đầy đủ: ${text(item.stopReason)||'không rõ nguyên nhân'}`,{product});
+      }
+    }
+
+    for(const name of (Array.isArray(prepared&&prepared.missingSku)?prepared.missingSku:[])){
+      push('missing-sku',`Không dựng được SKU cho ${name}`,{product:text(name)});
+    }
+    return issues;
+  }
+
+  async function buildQuickReport(profile,job,sourceResults,prepared){
+    const stored=await chrome.storage.local.get([HISTORY_KEY,REPORT_KEY]);
+    const history=stored[HISTORY_KEY]&&typeof stored[HISTORY_KEY]==='object'?stored[HISTORY_KEY]:{};
+    const reports=stored[REPORT_KEY]&&typeof stored[REPORT_KEY]==='object'?stored[REPORT_KEY]:{};
+    const list=Array.isArray(history[profile.id])?history[profile.id]:[];
+
+    const snapshot=historyCore.snapshotFromSource(sourceResults,{
+      profileId:profile.id,
+      profileName:text(profile.name)||'Hồ sơ',
+      sourceUrl:job.sourceUrl,
+      at:Date.now(),
+      matcher
+    });
+    const previous=list.length?list[list.length-1]:null;
+    const diff=previous?historyCore.compareSnapshots(previous,snapshot):null;
+    const issues=collectScanIssues(job,sourceResults,prepared);
+
+    if(snapshot.items.length){
+      list.push(snapshot);
+      if(list.length>30)list.splice(0,list.length-30);
+      history[profile.id]=list;
+    }
+
+    const report={
+      profileId:profile.id,
+      profileName:text(profile.name)||'Hồ sơ',
+      jobId:job.id,
+      sourceUrl:job.sourceUrl,
+      at:Date.now(),
+      snapshotAt:Number(snapshot.at||0),
+      previousAt:Number(previous&&previous.at||0),
+      firstSnapshot:!previous,
+      diff:diff?{
+        changed:Number(diff.changed||0),
+        increased:Number(diff.increased||0),
+        decreased:Number(diff.decreased||0),
+        restocked:Number(diff.restocked||0),
+        soldOut:Number(diff.soldOut||0),
+        added:Number(diff.added||0),
+        missing:Number(diff.missing||0),
+        net:Number(diff.net||0),
+        oldTotal:Number(diff.oldTotal||0),
+        newTotal:Number(diff.newTotal||0),
+        changes:(diff.changes||[]).slice(0,300)
+      }:null,
+      issues,
+      issueCount:issues.length,
+      rowCount:Number(prepared&&prepared.rows&&prepared.rows.length||0)
+    };
+    reports[profile.id]=report;
+    await chrome.storage.local.set({[HISTORY_KEY]:history,[REPORT_KEY]:reports});
+    return report;
+  }
+
   async function prepareRows(profile,sourceResults){
     const legacy=await parseLegacyProfile(profile);
     if(legacy){
@@ -366,6 +465,8 @@
       return;
     }
 
+    const report=await buildQuickReport(profile,job,sourceResults,prepared);
+
     if(prepared.rows.length){
       const stored=await chrome.storage.local.get(BATCH_KEY);
       const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
@@ -385,7 +486,8 @@
         rows:prepared.rows,
         auto:false,
         partial:job.scope!=='all'||Number(job.index||0)<Number(job.total||0),
-        jobId:job.id
+        jobId:job.id,
+        report
       };
       await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});
     }
