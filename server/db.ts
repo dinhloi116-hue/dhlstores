@@ -2851,7 +2851,16 @@ export async function confirmSePayPayment(input: {
 }
 
 /** Chỉ trả về đánh giá đã được chủ shop duyệt để hiển thị công khai. */
-export async function getProductReviews(productId: number) {
+export async function getProductReviews(productId: number): Promise<Array<{
+  id: number;
+  productId: number;
+  userId: number;
+  displayName: string;
+  rating: number;
+  body: string;
+  imageUrl: string | null;
+  createdAt: Date;
+}>> {
   const connection = await getDb();
   if (!connection) return [];
   return connection.select({
