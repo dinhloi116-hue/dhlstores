@@ -36,7 +36,7 @@ const scanBody=scanner.slice(scanStart,scanEnd);
 assert.ok(!scanBody.includes("type:'DHL_SCAN_HD_LIVE'"),'Luồng SP mới không được dùng scanner API-fast');
 assert.ok(scanBody.includes('sendPopupOnly(tab.id,descriptor)'),'Luồng SP mới phải popup từng sản phẩm');
 
-assert.ok(productCore.includes('Cột A "Đường dẫn/Alias" chính là SKU GỐC'));
+assert.ok(productCore.includes('MASTER SKU:'));
 assert.ok(productCore.includes('row[16]=`${skuBase}-${size}`'));
 assert.ok(productCore.includes('sku:`${skuBase}-${size}`'));
 assert.ok(productCore.includes('Ảnh phiên bản: ghi link cho TỪNG SKU'));
@@ -56,6 +56,6 @@ console.log('NEW PRODUCT BATCH PASS',{
   scan:'full popup per product',
   apiFast:false,
   checkpoint:'per product',
-  productKey:'column A alias',
+  productKey:'real source alias / SKU base',
   variantSku:'alias + size'
 });
