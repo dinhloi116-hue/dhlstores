@@ -332,6 +332,7 @@
     if(job.status==='done')setStatus(`ĐÃ XONG ${job.profileName}: ${index}/${total} sản phẩm.`,'ok');
     else if(job.status==='paused')setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau.`,'ok');
     else if(job.status==='error')setStatus(`LỖI: ${text(job.lastError)}`,'bad');
+    else if(job.status==='output-error')setStatus(`LỖI ĐẦU RA: ${text(job.lastError)}`,'bad');
     else if(job.status==='cancelled')setStatus(`ĐÃ HỦY tại ${index}/${total}. Có thể đổi tab và chạy lại ngay.`,'ok');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
     else if(running)setStatus(`Đang quét ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • mở popup để đọc đủ màu / size / tồn.`);
