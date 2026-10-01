@@ -276,6 +276,8 @@
 
   function renderJob(job){
     const progress=$('manualJobProgress');
+    const bar=$('manualJobProgressBar');
+    const fill=$('manualJobProgressFill');
     const start=$('manualStartBtn');
     const stop=$('manualStopBtn');
     const resume=$('manualResumeBtn');
@@ -292,10 +294,15 @@
 
     if(!job){
       if(progress)progress.textContent='Sẵn sàng.';
+      if(bar)bar.hidden=true;
+      if(fill)fill.style.width='0%';
       return;
     }
 
     const total=Number(job.total||0),index=Number(job.index||0);
+    const percent=total?Math.max(0,Math.min(100,Math.round((index/total)*100))):0;
+    if(bar)bar.hidden=false;
+    if(fill)fill.style.width=`${percent}%`;
     const errors=Array.isArray(job.errors)?job.errors.length:0;
     const parts=[`${scopeLabel(job.scope)} • ${index}/${total||'?'}`];
     if(job.currentProduct&&(running||stopping))parts.push(job.currentProduct);
@@ -384,6 +391,8 @@
       .manual-job-status{display:block;margin-top:8px;padding:7px 8px;border-radius:7px;background:#f8fafc;color:#475569;font-size:10px;line-height:1.4}
       .manual-job-status.ok{background:#f0fdf4;color:#166534}.manual-job-status.bad{background:#fef2f2;color:#991b1b}
       #manualJobProgress{display:block;margin-top:4px;color:#64748b;font-size:9px}
+      #manualJobProgressBar{height:6px;margin-top:6px;border-radius:999px;overflow:hidden;background:#e2e8f0}
+      #manualJobProgressFill{height:100%;width:0;border-radius:inherit;background:#2563eb;transition:width .18s ease}
     `;
     document.head.appendChild(style);
   }
@@ -432,7 +441,8 @@
         </details>
       </div>
       <small id="manualJobStatus" class="manual-job-status">Sẵn sàng.</small>
-      <small id="manualJobProgress">—</small>`;
+      <small id="manualJobProgress">—</small>
+      <div id="manualJobProgressBar" hidden><div id="manualJobProgressFill"></div></div>`;
 
     const history=$('profileHistory');
     if(history)history.insertAdjacentElement('beforebegin',panel);
