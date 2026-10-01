@@ -40,6 +40,32 @@ const rules=global.DHLShopRules;
     `${alias}-16`,`${alias}-18`,`${alias}-20`
   ]);
 
+
+  const brazilReal=[{
+    parentId:62029,
+    parentName:'ĐT Brazil 2026 HD',
+    sourceUrl:'https://si.aobongda.net/dt-brazil-2026-hd-xanh-den-6qjk3f-p62029.html',
+    imageUrl:'https://cdn.example.com/brazil.jpg',
+    variants:[
+      {id:201,color:'Xanh Đen',size:'S',available:9,image:'https://cdn.example.com/brazil.jpg'},
+      {id:202,color:'Xanh Đen',size:'M',available:8,image:'https://cdn.example.com/brazil.jpg'},
+      {id:203,color:'Xanh Đen',size:'L',available:7,image:'https://cdn.example.com/brazil.jpg'},
+      {id:204,color:'Xanh Đen',size:'XL',available:6,image:'https://cdn.example.com/brazil.jpg'},
+      {id:205,color:'Xanh Đen',size:'XXL',available:5,image:'https://cdn.example.com/brazil.jpg'}
+    ]
+  }];
+  const brazilBuilt=productCreate.makeRows(brazilReal);
+  const brazilAlias='dt-brazil-2026-hd-xanh-den-6qjk3f';
+  assert.strictEqual(brazilBuilt.rows[0].values[0],brazilAlias,'Phải giữ alias thật có suffix nguồn');
+  assert.deepStrictEqual(brazilBuilt.rows.map(r=>r.values[16]),[
+    `${brazilAlias}-S`,`${brazilAlias}-M`,`${brazilAlias}-L`,`${brazilAlias}-XL`,`${brazilAlias}-XXL`
+  ]);
+  const brazilApi=productCreate.makeApiProducts(brazilReal);
+  assert.strictEqual(brazilApi.products[0].alias,brazilAlias);
+  assert.deepStrictEqual(brazilApi.products[0].variants.map(v=>v.sku),[
+    `${brazilAlias}-S`,`${brazilAlias}-M`,`${brazilAlias}-L`,`${brazilAlias}-XL`,`${brazilAlias}-XXL`
+  ]);
+
   const out=productCreate.buildWorkbook(catalog);
   const book=await global.DHLXlsxLite.readFirstSheet(out.bytes);
   assert.strictEqual(book.rows[0][0],'Đường dẫn/Alias');
