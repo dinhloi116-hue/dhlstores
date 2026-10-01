@@ -1182,3 +1182,9 @@
 - [x] Bổ sung `specsEn` qua migration `0031_boring_texas_twister.sql`; ProductDetail hiển thị specs theo ngôn ngữ và fallback an toàn.
 - [x] Cập nhật dữ liệu sản phẩm id 150001, giữ giá website 25.000đ và file ZIP hiện tại.
 - [x] Hồi quy bilingual/catalog 4 test, SKU 27 test; TypeScript và build production đạt.
+
+## Ưu tiên nút mua hàng trên ProductDetail 2026-10-01
+- [x] Đưa CTA Thêm vào giỏ/Mua ngay lên ngay sau khu vực chọn SKU và số lượng.
+- [x] Hạ CustomerHelpCard và gợi ý mua kèm xuống dưới CTA, không chen trước luồng mua.
+- [x] Giữ sticky CTA mobile luôn nhìn thấy, kiểm thử responsive và không làm thay đổi logic thanh toán.
+- [x] Hồi quy ProductDetail/SKU đạt 29/29; TypeScript và build production đạt.
