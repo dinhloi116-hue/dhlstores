@@ -1188,3 +1188,8 @@
 - [x] Hạ CustomerHelpCard và gợi ý mua kèm xuống dưới CTA, không chen trước luồng mua.
 - [x] Giữ sticky CTA mobile luôn nhìn thấy, kiểm thử responsive và không làm thay đổi logic thanh toán.
 - [x] Hồi quy ProductDetail/SKU đạt 29/29; TypeScript và build production đạt.
+
+## Làm nổi bật CTA và đánh giá sản phẩm 2026-10-01
+- [x] Đổi màu/nền/đổ bóng nút Mua ngay để nổi bật rõ hơn các nút xung quanh.
+- [x] Hiển thị popup “Sản phẩm vừa được thêm vào giỏ hàng” sau khi thêm giỏ thành công, gồm cả thêm một SKU và thêm nhiều SKU.
+- [x] Bổ sung bảng đánh giá ngắn ở cuối trang cho cả sản phẩm vật lý và tài nguyên số, không tạo dữ liệu đánh giá giả.
