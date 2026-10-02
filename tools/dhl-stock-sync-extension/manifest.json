@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.23.2",
+  "version": "0.23.3",
   "minimum_chrome_version": "116",
-  "description": "Sửa lỗi SKU stale cache: tồn kho luôn xuất clean SKU hiện tại, catalog cũ chỉ dùng ID tham khảo. Thêm LÀM MỚI TOOL để xóa cache/hồ sơ/job/report/queue nhưng giữ kết nối Sapo.",
+  "description": "Khôi phục tốc độ quét gốc; giữ fix stale SKU cache, clean SKU hiện tại, LÀM MỚI TOOL, HỦY NGAY và báo cáo.",
   "permissions": [
     "storage",
     "unlimitedStorage",
