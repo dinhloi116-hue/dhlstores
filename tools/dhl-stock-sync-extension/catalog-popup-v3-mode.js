@@ -195,7 +195,7 @@
           const btn = [...root.querySelectorAll('button,a,[role="button"]')].find((x) => /^(×|x|đóng|dong|close)$/i.test(norm(x.innerText || x.textContent)) || /close|modal-close/i.test(String(x.className||'')) || x.getAttribute('data-dismiss') === 'modal');
           if (btn) { try { btn.click(); } catch (_) {} }
           document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}));
-          await sleep(650);
+          await sleep(120);
         }
         function colorName(input, root) {
           const vals = [];
@@ -278,7 +278,7 @@
             if (!c.input.checked) {
               try { c.input.click(); } catch (_) {}
               c.input.dispatchEvent(new Event('change',{bubbles:true}));
-              await sleep(700);
+              await sleep(180);
             }
             await capture(c.name);
           }
@@ -327,7 +327,7 @@
       } catch (error) {
         results.push(failedScanResult(items[i],error&&error.message||String(error)));
       }
-      await sleep(650);
+      await sleep(120);
     }
     if (store) await chrome.storage.local.set({dhlCatalogResults:results,dhlCatalogSkuSamples:{},dhlCatalogAt:Date.now(),dhlCatalogPageTitle:discovered.pageTitle,dhlCatalogPageUrl:discovered.pageUrl});
     return {results,discovered,itemCount:items.length};
@@ -416,7 +416,7 @@
         dhlCatalogPageUrl:discovered.pageUrl,
         dhlCatalogSkuMode:'new-product-popup-alias-size'
       });
-      await sleep(700);
+      await sleep(180);
     }
 
     return{
@@ -523,7 +523,7 @@
           failures:failureDetails
         }
       });
-      await sleep(700);
+      await sleep(180);
     }
 
     const variantCount=results.reduce((n,r)=>n+(Array.isArray(r&&r.variants)?r.variants.length:0),0);
