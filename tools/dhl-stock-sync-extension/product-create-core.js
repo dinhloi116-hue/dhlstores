@@ -18,6 +18,9 @@
   }
   function colorKey(value){return plain(value)||'(khong mau)';}
   function normalizeSize(value){return matcher&&matcher.normalizeSize?matcher.normalizeSize(value):text(value).toUpperCase();}
+  function cleanAliasForStandardName(name){
+    return plain(name).replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  }
 
   function skuBaseFromVariantSku(sku,size=''){
     const raw=text(sku);
@@ -102,24 +105,13 @@
     }
     const sizes=sizeSort([...bySize.keys()]);
     if(!sizes.length)return null;
-    // MASTER SKU:
-    // 1) SKU thật từ nguồn nếu scanner đã đọc được.
-    // 2) Slug thật của URL nguồn, giữ suffix định danh như -6qjk3f.
-    // 3) Chỉ fallback sinh alias từ tên khi nguồn không có định danh thật.
-    const sourceBases=[...new Set(
-      [...bySize.values()]
-        .map(item=>skuBaseFromVariantSku(item&&item.variant&&item.variant.sku,item&&item.size))
-        .filter(Boolean)
-    )];
-    const skuBase=sourceBases.length===1
-      ? sourceBases[0]
-      : aliasFromSourceUrl(group.sourceUrl,group.color)
-        || (typeof rules.generatedAliasForStandardName==='function'
-          ? rules.generatedAliasForStandardName(group.standardName)
-          : plain(group.standardName).replace(/\s+/g,'-'));
-    const alias=skuBase;
-    if(!alias)throw new Error(`Không xác định được Đường dẫn/Alias thật cho ${group.standardName}`);
-    return{bySize,sizes,alias,skuBase};
+
+    // SKU mới phải dễ nhớ và giống hệt luồng "QUÉT 1 SP":
+    // Alias = tên chuẩn không dấu, nối bằng dấu "-"; KHÔNG thêm hash/suffix ngẫu nhiên từ URL nguồn.
+    // SKU phiên bản = Alias + "-" + Size.
+    const alias=cleanAliasForStandardName(group.standardName);
+    if(!alias)throw new Error(`Không tạo được Đường dẫn/Alias cho ${group.standardName}`);
+    return{bySize,sizes,alias,skuBase:alias};
   }
 
   function makeRows(catalogResults){
