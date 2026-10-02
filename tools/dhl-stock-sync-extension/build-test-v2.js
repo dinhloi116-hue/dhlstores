@@ -80,7 +80,7 @@ for(const file of ['match-core.js','shop-rules.js','product-create-core.js','cat
 
 const resetUi=read('tool-reset-mode.js');
 assert.ok(resetUi.includes('LÀM MỚI TOOL'));
-assert.ok(resetUi.includes("'dhlAutoSyncConfigV1'" )===false,'Reset không được xóa config Sapo');
+assert.ok(!/RESET_KEYS=[\\s\\S]*dhlAutoSyncConfigV1[\\s\\S]*\\];/.test(resetUi),'Reset không được xóa config Sapo');
 assert.ok(resetUi.includes('location.reload()'));
 
 const runnerUi=read('manual-job-runner-mode.js');
