@@ -68,10 +68,8 @@
   function normalizeSku(value){return text(value).toUpperCase();}
 
   function aliasForName(name,rules){
-    if(rules&&typeof rules.generatedAliasForStandardName==='function'){
-      return text(rules.generatedAliasForStandardName(name));
-    }
-    return plain(name).replace(/\s+/g,'-');
+    // SKU mới: tên chuẩn không dấu + Size, không hash/hậu tố ngẫu nhiên.
+    return plain(name).replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
   }
 
   function prepareRows(warehouseData,catalogData,sourceResults,matcher,rules){
@@ -81,6 +79,7 @@
     // SKU phiên bản luôn = Alias + "-" + Size.
     // Không cần đọc code/SKU ẩn từ website và không ghép tên để quyết định SKU.
     const sapoBySku=new Map();
+    const sapoByNameSize=catalogSkuIndex(catalogData).map;
     for(const v of (catalogData&&catalogData.variants)||[]){
       const key=normalizeSku(v&&v.sku);
       if(key&&!sapoBySku.has(key))sapoBySku.set(key,v);
@@ -108,13 +107,15 @@
       sourceVariantCount+=bySize.size;
 
       for(const {source,size,stock} of bySize.values()){
-        const sku=`${alias}-${size}`;
-        const sourceKey=normalizeSku(sku);
-        const uniq=`${sourceKey}|${size}`;
+        const cleanSku=`${alias}-${size}`;
+        const sourceKey=normalizeSku(cleanSku);
+        const byNameSize=sapoByNameSize.get(rowKey(standardName,size))||null;
+        const existing=sapoBySku.get(sourceKey)||byNameSize||null;
+        const sku=text(existing&&existing.sku)||cleanSku;
+        const uniq=`${normalizeSku(sku)}|${size}`;
         if(seen.has(uniq))continue;
         seen.add(uniq);
 
-        const existing=sapoBySku.get(sourceKey)||null;
         if(existing)matchedSkuCount+=1;else sourceOnlySkuCount+=1;
 
         rows.push({
@@ -129,7 +130,7 @@
           sourceParentId:Number(group.parentId)||0,
           sourceVariantId:Number(source&&source.id)||0,
           sourceUrl:text(source&&source.sourceUrl||''),
-          matchedBy:'alias-size-exact'
+          matchedBy:existing?(sapoBySku.get(sourceKey)?'clean-sku-exact':'existing-name-size'):'clean-alias-size-new'
         });
       }
     }
@@ -142,7 +143,7 @@
       matchedSkuCount,
       sourceOnlySkuCount,
       generatedSkuCount:0,
-      master:'alias_size_exact'
+      master:'clean_alias_with_existing_sku_compat'
     };
   }
 
