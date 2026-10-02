@@ -11,9 +11,11 @@ const sapo=read('manual-sapo-output-mode.js');
 const lazy=read('lazy-product-mode.js');
 const workflow=read('workflow-order-mode.js');
 const profiles=read('saved-profiles-mode.js');
+const reset=read('tool-reset-mode.js');
 
 const order=[
   'saved-profiles-mode.js',
+  'tool-reset-mode.js',
   'manual-job-runner-mode.js',
   'batch-stock-cache-mode.js',
   'manual-sapo-output-mode.js',
@@ -56,7 +58,9 @@ assert.ok(css.includes(':focus-visible'));
 assert.ok(css.includes('@media(prefers-reduced-motion:reduce)'));
 assert.ok(css.includes('transition-duration:.01ms!important'));
 
-const startup=[profiles,runner,sapo,lazy,workflow].join('\n');
+assert.ok(reset.includes('LÀM MỚI TOOL'));
+assert.ok(reset.includes('RESET_KEYS'));
+const startup=[profiles,reset,runner,sapo,lazy,workflow].join('\n');
 assert.ok(!/animation\s*:\s*[^;]*infinite/i.test(startup),'Startup UI không được có animation infinite');
 
 console.log('UI EFFECTS PASS',{
