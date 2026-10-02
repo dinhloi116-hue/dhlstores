@@ -11,7 +11,7 @@ assert.ok(content.includes('async function stableTargetRows(root, targetSizes, t
 assert.ok(content.includes("async function switchColorAndRead(name, root, targetSizes, previousSignature = '', cancelVersion = null)"));
 assert.ok(content.includes('switchColorAndRead(target.name, currentRoot, neededSizes, previousSignature, cancelVersion)'));
 assert.ok(content.includes('stableTargetRows(currentRoot, neededSizes, 4000, cancelVersion)'));
-assert.ok(content.includes('stableTargetRows(currentRoot, targetSizes, 2400, cancelVersion)'));
+assert.ok(content.includes('stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion)'));
 assert.ok(content.includes('assertPopupScanActive(cancelVersion)'));
 
 global.DHLShopRules=require('./shop-rules.js');
