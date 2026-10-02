@@ -22,7 +22,7 @@ const rules=global.DHLShopRules;
   assert.strictEqual(built.groups.length,1);
   assert.strictEqual(built.rows.length,3);
   const productName='ĐT Brazil Trẻ Em 2025 HD - Vàng';
-  const alias=rules.generatedAliasForStandardName(productName);
+  const alias='dt-brazil-tre-em-2025-hd-vang';
   assert.strictEqual(built.rows[0].values[0],alias,'Cột A phải là Đường dẫn/Alias');
   assert.strictEqual(built.rows[0].values[16],`${alias}-16`,'SKU phải dùng cột A làm base');
   assert.strictEqual(built.rows[1].values[16],`${alias}-18`);
@@ -55,8 +55,8 @@ const rules=global.DHLShopRules;
     ]
   }];
   const brazilBuilt=productCreate.makeRows(brazilReal);
-  const brazilAlias='dt-brazil-2026-hd-xanh-den-6qjk3f';
-  assert.strictEqual(brazilBuilt.rows[0].values[0],brazilAlias,'Phải giữ alias thật có suffix nguồn');
+  const brazilAlias='dt-brazil-2026-hd-xanh-den';
+  assert.strictEqual(brazilBuilt.rows[0].values[0],brazilAlias,'Phải dùng alias sạch, dễ nhớ, không suffix nguồn');
   assert.deepStrictEqual(brazilBuilt.rows.map(r=>r.values[16]),[
     `${brazilAlias}-S`,`${brazilAlias}-M`,`${brazilAlias}-L`,`${brazilAlias}-XL`,`${brazilAlias}-XXL`
   ]);
@@ -77,5 +77,5 @@ const rules=global.DHLShopRules;
   assert.strictEqual(book.rows[2][29],'https://cdn.example.com/brazil-kids-yellow.jpg');
   assert.strictEqual(book.rows[3][29],'https://cdn.example.com/brazil-kids-yellow.jpg');
   assert.strictEqual(book.rows[1][34],5);
-  console.log('PRODUCT CREATE PASS',{aliasIsSkuBase:true,rows:out.rows,directSapo:true});
+  console.log('PRODUCT CREATE PASS',{cleanAlias:true,noRandomSuffix:true,aliasIsSkuBase:true,rows:out.rows,directSapo:true});
 })().catch(error=>{console.error(error);process.exit(1);});
