@@ -16,6 +16,7 @@
   const HISTORY_KEY='dhlStockScanHistoryV1';
   const REPORT_KEY='dhlManualStockReportV1';
   const ALARM='dhl-manual-scan-step';
+  const PRODUCT_SETTLE_MS=850;
   const MAX_ERRORS=100;
 
   const text=(v)=>String(v==null?'':v).trim();
@@ -192,13 +193,6 @@
     if(!job||!job.tabId)return;
     if(job.ownsTab===true){
       try{await chrome.tabs.remove(job.tabId);}catch{}
-    }else if(job.sourceUrl){
-      try{
-        const tab=await chrome.tabs.get(job.tabId);
-        if(tab&&text(tab.url)!==text(job.sourceUrl)&&sourceKey(tab.url)===sourceKey(job.sourceUrl)){
-          await chrome.tabs.update(job.tabId,{url:job.sourceUrl});
-        }
-      }catch(_){}
     }
     job.tabId=0;
     job.ownsTab=false;
@@ -230,201 +224,45 @@
   async function discoverProducts(tabId){
     const out=await chrome.scripting.executeScript({
       target:{tabId},
-      func:async()=>{
+      func:()=>{
         const clean=(v)=>String(v==null?'':v).replace(/\s+/g,' ').trim();
         const pid=(v)=>{
           const s=String(v||'');
           const m=s.match(/-p(\d+)(?:\.html)?(?:[?#]|$)/i)||s.match(/[?&](?:psId|productId|id)=(\d+)/i);
           return m?Number(m[1]):0;
         };
-        const startUrl=new URL(location.href);
-        startUrl.hash='';
-        const categoryPath=startUrl.pathname;
-        const pageKey=(value)=>{
-          try{
-            const u=new URL(value,startUrl.href);u.hash='';
-            return u.href;
-          }catch{return'';}
+        const imageUrl=(node)=>{
+          if(!node)return'';
+          const img=node.matches&&node.matches('img')?node:node.querySelector&&node.querySelector('img');
+          if(!img)return'';
+          return String(img.currentSrc||img.src||img.getAttribute('data-src')||img.getAttribute('data-original')||'').trim();
         };
-        const imageUrl=(scope,baseUrl)=>{
-          if(!scope)return'';
-          const imgs=scope.matches&&scope.matches('img')?[scope]:[...(scope.querySelectorAll?scope.querySelectorAll('img'):[])];
-          for(const img of imgs){
-            for(const attr of ['data-src','data-original','data-lazy-src','data-srcset','srcset','src']){
-              let raw=img.getAttribute&&img.getAttribute(attr)||'';
-              if(attr.includes('srcset'))raw=raw.split(',')[0].trim().split(/\s+/)[0]||'';
-              if(!raw||/^data:|^blob:/i.test(raw))continue;
-              try{
-                const u=new URL(raw,baseUrl);
-                if(/loading|placeholder|logo|icon|sprite|zalo|facebook|youtube/i.test(u.href))continue;
-                return u.href;
-              }catch(_){}
-            }
-          }
-          return'';
-        };
-        const titleFor=(a)=>{
-          let title=clean(a&&a.textContent);
-          const img=a&&a.querySelector&&a.querySelector('img');
+        const seen=new Map();
+        for(const a of document.querySelectorAll('a[href]')){
+          let url;
+          try{url=new URL(a.getAttribute('href'),location.href);}catch{continue;}
+          if(url.host!==location.host)continue;
+          const id=pid(url.href);if(!id)continue;
+          let title=clean(a.textContent);
+          const img=a.querySelector('img');
           if((!title||title.length<3)&&img)title=clean(img.alt||img.title);
           let card=a;
-          for(let depth=0;depth<6&&card;depth+=1,card=card.parentElement){
+          for(let depth=0;depth<5&&card&&card!==document.body;depth+=1,card=card.parentElement){
             const t=clean(card.textContent);
             if((!title||title.length<3)&&t&&t.length<260)title=t;
-            if(imageUrl(card,startUrl.href))break;
+            if(imageUrl(card))break;
           }
-          return{title,card:card||a};
-        };
-        const byId=new Map();
-        const addProducts=(doc,pageUrl)=>{
-          let count=0;
-          for(const a of doc.querySelectorAll('a[href]')){
-            let url;
-            try{url=new URL(a.getAttribute('href'),pageUrl);}catch{continue;}
-            if(url.host!==startUrl.host)continue;
-            const id=pid(url.href);if(!id)continue;
-            const info=titleFor(a);
-            const title=info.title;
-            if(!title||title.length>220)continue;
-            const item={
-              id,
-              title,
-              url:url.href,
-              imageUrl:imageUrl(info.card||a,pageUrl),
-              categoryPageUrl:pageKey(pageUrl),
-              categoryPath:new URL(pageUrl).pathname
-            };
-            const old=byId.get(id);
-            if(!old||item.title.length>old.title.length||(!old.imageUrl&&item.imageUrl))byId.set(id,item);
-            count+=1;
-          }
-          return count;
-        };
-        const pageLinks=(doc,pageUrl)=>{
-          const out=[];
-          const seen=new Set();
-          for(const a of doc.querySelectorAll('a[href]')){
-            let u;
-            try{u=new URL(a.getAttribute('href'),pageUrl);}catch{continue;}
-            if(u.host!==startUrl.host||u.pathname!==categoryPath||pid(u.href))continue;
-            u.hash='';
-            const label=clean(a.textContent).toLowerCase();
-            const attrs=[
-              a.getAttribute('rel'),a.getAttribute('class'),a.getAttribute('id'),
-              a.getAttribute('title'),a.getAttribute('aria-label'),
-              a.parentElement&&a.parentElement.getAttribute&&a.parentElement.getAttribute('class'),
-              a.parentElement&&a.parentElement.parentElement&&a.parentElement.parentElement.getAttribute&&a.parentElement.parentElement.getAttribute('class')
-            ].filter(Boolean).join(' ').toLowerCase();
-            let hasPageParam=false;
-            for(const [name,value] of u.searchParams.entries()){
-              if(/^(page|p|pg|pageno|pageindex)$/i.test(name)&&/^\d+$/.test(value)){hasPageParam=true;break;}
-            }
-            const pageish=hasPageParam||/pagination|pager|paging|page-item|page-link|phan.?trang|trang.?sau|trang.?truoc/.test(attrs)||/^(next|prev|previous|sau|trước|truoc|›|»|‹|«)$/i.test(label);
-            const key=pageKey(u.href);
-            if(pageish&&key&&key!==pageKey(startUrl.href)&&!seen.has(key)){seen.add(key);out.push(key);}
-          }
-          return out;
-        };
-        const fetchDoc=async(url,strict=true)=>{
-          let lastError=null;
-          for(let attempt=0;attempt<2;attempt+=1){
-            try{
-              const res=await fetch(url,{credentials:'include',cache:'no-store',headers:{Accept:'text/html,application/xhtml+xml'}});
-              if(!res.ok)throw new Error('HTTP '+res.status);
-              const html=await res.text();
-              return new DOMParser().parseFromString(html,'text/html');
-            }catch(error){lastError=error;}
-          }
-          if(strict)throw lastError||new Error('Không tải được '+url);
-          return null;
-        };
-
-        const queue=[pageKey(startUrl.href)];
-        const queued=new Set(queue);
-        const visited=new Set();
-        const successful=[];
-        const errors=[];
-        let firstPageCount=0;
-
-        while(queue.length&&visited.size<50){
-          const pageUrl=queue.shift();
-          if(!pageUrl||visited.has(pageUrl))continue;
-          visited.add(pageUrl);
-          let doc;
-          try{
-            doc=pageUrl===pageKey(startUrl.href)?document:await fetchDoc(pageUrl,true);
-          }catch(error){
-            errors.push({pageUrl,error:String(error&&error.message||error)});
-            continue;
-          }
-          successful.push(pageUrl);
-          const before=byId.size;
-          addProducts(doc,pageUrl);
-          if(successful.length===1)firstPageCount=byId.size-before;
-          for(const next of pageLinks(doc,pageUrl)){
-            if(!visited.has(next)&&!queued.has(next)){queued.add(next);queue.push(next);}
-          }
+          if(!title||title.length>220)continue;
+          const item={id,title,url:url.href,imageUrl:imageUrl(card||a)};
+          const old=seen.get(id);
+          if(!old||item.title.length>old.title.length)seen.set(id,item);
         }
-
-        // Fallback cho theme không render link phân trang: thử ?page=2,3... rồi dừng khi không có SP mới.
-        if(successful.length===1&&firstPageCount>=12){
-          const base=new URL(startUrl.href);
-          for(const key of [...base.searchParams.keys()]){
-            if(/^(page|p|pg|pageno|pageindex)$/i.test(key))base.searchParams.delete(key);
-          }
-          let foundMode=false;
-          for(const param of ['page','p']){
-            if(foundMode)break;
-            let consecutiveEmpty=0;
-            for(let n=2;n<=50;n+=1){
-              const probe=new URL(base.href);probe.searchParams.set(param,String(n));
-              const probeUrl=pageKey(probe.href);
-              if(visited.has(probeUrl))continue;
-              const doc=await fetchDoc(probeUrl,false);
-              if(!doc)break;
-              const before=byId.size;
-              addProducts(doc,probeUrl);
-              const added=byId.size-before;
-              visited.add(probeUrl);
-              if(added>0){
-                foundMode=true;successful.push(probeUrl);consecutiveEmpty=0;
-                for(const next of pageLinks(doc,probeUrl)){
-                  if(!visited.has(next)&&!queued.has(next)){queued.add(next);queue.push(next);}
-                }
-              }else{
-                consecutiveEmpty+=1;
-                if(!foundMode||consecutiveEmpty>=1)break;
-              }
-            }
-          }
-        }
-
-        return{
-          items:[...byId.values()],
-          pageTitle:clean((document.querySelector('h1')||{}).textContent)||clean(document.title),
-          pageUrl:pageKey(startUrl.href),
-          pageCount:successful.length,
-          pageUrls:successful,
-          discoveryErrors:errors
-        };
+        return{items:[...seen.values()],pageTitle:document.title,pageUrl:location.href};
       }
     });
-    return(out&&out[0]&&out[0].result)||{items:[],pageTitle:'',pageUrl:'',pageCount:0,pageUrls:[],discoveryErrors:[]};
+    return(out&&out[0]&&out[0].result)||{items:[],pageTitle:'',pageUrl:''};
   }
 
-  async function ensureDescriptorPage(job,tab,descriptor){
-    const target=text(descriptor&&descriptor.categoryPageUrl);
-    if(!target)return tab;
-    let current=tab;
-    try{current=await chrome.tabs.get(tab.id);}catch(_){}
-    const currentUrl=text(current&&current.url);
-    if(currentUrl===target)return current;
-    const updated=await chrome.tabs.update(tab.id,{url:target});
-    await waitTabComplete(tab.id);
-    await sleep(140);
-    job.lastCategoryPageUrl=target;
-    return updated;
-  }
   async function saveJob(job){
     job.updatedAt=Date.now();
     await chrome.storage.local.set({[JOB_KEY]:job});
@@ -699,12 +537,6 @@
     const discovered=await discoverProducts(tab.id);
     let items=Array.isArray(discovered.items)?discovered.items:[];
     if(!items.length)throw new Error('Không tìm thấy sản phẩm trên trang nguồn.');
-    if(Array.isArray(discovered.discoveryErrors)&&discovered.discoveryErrors.length){
-      const sample=discovered.discoveryErrors.slice(0,3).map(x=>x.pageUrl+': '+x.error).join(' | ');
-      throw new Error('Không đọc đủ phân trang danh mục. '+sample);
-    }
-    job.pageCount=Number(discovered.pageCount||1);
-    job.pageUrls=Array.isArray(discovered.pageUrls)?discovered.pageUrls:[];
 
     if(job.scope==='selected'||job.scope==='one'){
       const selected=new Set((job.selectedIds||[]).map(Number).filter(Boolean));
@@ -734,9 +566,9 @@
     let job=await readJob();
     if(!job||!job.running)return;
 
-    // Xử lý nhiều SP liên tiếp trong cùng một lần worker thức dậy.
-    // Vẫn checkpoint sau TỪNG SP để có thể resume chính xác.
-    const CHUNK_SIZE=4;
+    // Chế độ đọc chậm, chắc: mỗi worker chỉ xử lý 1 SP.
+    // Tránh popup/card kế tiếp bị "trôi" khi DOM của site chưa ổn định.
+    const CHUNK_SIZE=1;
     let processed=0;
 
     try{
@@ -747,9 +579,8 @@
       job=afterInit;
 
       while(job.running&&Number(job.index||0)<Number(job.total||0)&&processed<CHUNK_SIZE){
-        let tab=await ensureJobTab(job);
+        const tab=await ensureJobTab(job);
         const descriptor=job.descriptors[job.index];
-        tab=await ensureDescriptorPage(job,tab,descriptor);
 
         job.currentProduct=text(descriptor&&descriptor.title)||`Sản phẩm ${job.index+1}`;
         job.currentStartedAt=Date.now();
@@ -814,8 +645,8 @@
         return;
       }
 
-      // Chỉ nhường worker sau một chunk, thay vì sau từng sản phẩm.
-      scheduleNext(80);
+      // Chờ đủ lâu để popup/card của site ổn định hẳn rồi mới sang SP kế tiếp.
+      scheduleNext(PRODUCT_SETTLE_MS);
     }catch(error){
       if(job){
         const current=await readJob().catch(()=>null);
