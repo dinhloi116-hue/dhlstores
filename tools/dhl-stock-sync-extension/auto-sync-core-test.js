@@ -54,7 +54,7 @@ const source=[
 ];
 
 const prepared=core.prepareRows(warehouse,catalog,source,matcher,rules);
-assert.strictEqual(prepared.master,'clean_alias_with_existing_sku_compat');
+assert.strictEqual(prepared.master,'clean_alias_output_stale_cache_safe');
 assert.strictEqual(prepared.sourceProductCount,2);
 assert.strictEqual(prepared.sourceVariantCount,10);
 assert.strictEqual(prepared.rows.length,10);
@@ -64,14 +64,14 @@ assert.strictEqual(prepared.generatedSkuCount,0);
 
 const pink=prepared.rows.filter(x=>x.standardName==='CLB Real 26-27 HD - Hồng');
 const white=prepared.rows.filter(x=>x.standardName==='CLB Real 26-27 HD - Trắng');
-assert.strictEqual(pink[0].sku,`${alias}-S`);
+assert.strictEqual(pink[0].sku,'clb-real-26-27-hd-hong-S');
 assert.strictEqual(pink[0].variantId,228274684);
 const whiteAlias='clb-real-26-27-hd-trang';
 assert.strictEqual(white[0].sku,`${whiteAlias}-S`);
 assert.ok(white.every(x=>x.variantId===0));
 
 console.log('AUTO SYNC CORE PASS',{
-  master:'clean_alias_with_existing_sku_compat',
+  master:'clean_alias_output_stale_cache_safe',
   scannedVariants:prepared.sourceVariantCount,
   matchedSku:prepared.matchedSkuCount,
   sourceOnlySku:prepared.sourceOnlySkuCount
