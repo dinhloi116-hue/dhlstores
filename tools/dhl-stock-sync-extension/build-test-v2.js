@@ -24,7 +24,7 @@ const runtimeFiles=[
   'manual-job-runner-background.js','manual-job-runner-mode.js',
   'manual-sapo-background.js','manual-sapo-output-mode.js',
   'sapo-product-create-background.js','sapo-product-create-continuous-background.js',
-  'auto-sync-safety-background.js','saved-profiles-mode.js','batch-stock-cache-mode.js',
+  'auto-sync-safety-background.js','saved-profiles-mode.js','tool-reset-mode.js','batch-stock-cache-mode.js',
   'lazy-product-mode.js','workflow-order-mode.js',
   'product-create-core.js','catalog-ui-shell.js','catalog-popup-v3-mode.js',
   'sapo-product-create-mode.js','single-product-add-mode.js'
@@ -66,7 +66,7 @@ assert.ok(manualPush.includes('if(isFatalPushError(message))'),'Chỉ lỗi hệ
 
 const popup=read('popup.html');
 for(const file of [
-  'saved-profiles-mode.js','manual-job-runner-mode.js','batch-stock-cache-mode.js',
+  'saved-profiles-mode.js','tool-reset-mode.js','manual-job-runner-mode.js','batch-stock-cache-mode.js',
   'manual-sapo-output-mode.js','lazy-product-mode.js','workflow-order-mode.js'
 ]) assert.ok(popup.includes(file),`Popup thiếu ${file}`);
 for(const old of ['auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js','sapo-push-report-mode.js']){
@@ -77,6 +77,11 @@ const lazy=read('lazy-product-mode.js');
 for(const file of ['match-core.js','shop-rules.js','product-create-core.js','catalog-ui-shell.js','catalog-popup-v3-mode.js','sapo-product-create-mode.js','single-product-add-mode.js']){
   assert.ok(lazy.includes(`'${file}'`),`Lazy product thiếu ${file}`);
 }
+
+const resetUi=read('tool-reset-mode.js');
+assert.ok(resetUi.includes('LÀM MỚI TOOL'));
+assert.ok(resetUi.includes("'dhlAutoSyncConfigV1'" )===false,'Reset không được xóa config Sapo');
+assert.ok(resetUi.includes('location.reload()'));
 
 const runnerUi=read('manual-job-runner-mode.js');
 assert.ok(runnerUi.includes('ĐỒNG BỘ TAB NÀY'));
