@@ -555,7 +555,7 @@
     scan.disabled=true;test.disabled=true;exp.disabled=true;
     try {
       await chrome.storage.local.remove(['dhlCatalogResults','dhlCatalogAt','dhlCatalogSkuSamples']);
-      state.textContent='Đang bật popup từng sản phẩm mới • đọc màu/size/tồn + link ảnh từng phân loại • SKU = Đường dẫn/Alias + Size...';
+      state.textContent='Đang bật popup từng sản phẩm mới • đọc màu/size/tồn + link ảnh từng phân loại • SKU dễ nhớ = Tên chuẩn + Size, không hash/hậu tố ngẫu nhiên...';
       const {results,discovered,itemCount}=await scanAllNewProducts({
         onProgress:(info)=>{
           state.textContent=`ĐANG POPUP ${info.current}/${info.total}: ${info.title} • đạt ${info.completeCount} • lỗi/thiếu ${info.failedCount}`;
@@ -572,7 +572,7 @@
       const allComplete=completeCount===itemCount&&validResults.length===itemCount&&skuCount===variantCount&&missingImageCount===0;
       exp.disabled=!allComplete;
       state.textContent=allComplete
-        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm mới • ${variantCount} biến thể • ${skuCount}/${skuCount} SKU có link ảnh • SKU = Alias+Size.`
+        ? `${discovered.pageTitle}: ĐỦ ${completeCount}/${itemCount} sản phẩm mới • ${variantCount} biến thể • ${skuCount}/${skuCount} SKU có link ảnh • SKU sạch = Tên chuẩn + Size.`
         : `${discovered.pageTitle}: quét ${completeCount}/${itemCount} sản phẩm • ${variantCount} biến thể • ${imageSkuCount}/${skuCount} SKU có link ảnh • thiếu ảnh ${missingImageCount} • lỗi/thiếu dữ liệu ${failedCount}.`;
     } catch(error) { state.textContent=`Lỗi quét sản phẩm mới: ${error.message||String(error)}`; }
     finally { scan.disabled=false;test.disabled=false; }
@@ -592,7 +592,7 @@
     const newTest=replaceAndBind('catalogQuickTest','TEST NHANH 1 SP',quickTest);
     const newExport=replaceAndBind('exportCatalogSource','TẠO FILE TẤT CẢ SP MỚI (.XLSX)',exportProducts);
     if(newScan)newScan.dataset.popupV3='1'; if(newExport)newExport.disabled=true;
-    if(state)state.textContent='CHẾ ĐỘ SP MỚI: tự BẬT POPUP từng sản phẩm để đọc màu/size/tồn + link ảnh từng phân loại. Cột Ảnh đại diện và Ảnh phiên bản sẽ lấy link nguồn; SKU = Alias + Size.';
+    if(state)state.textContent='CHẾ ĐỘ SP MỚI: tự BẬT POPUP từng sản phẩm để đọc màu/size/tồn + link ảnh từng phân loại. Cột Ảnh đại diện và Ảnh phiên bản sẽ lấy link nguồn; SKU sạch = Tên chuẩn + Size, không hash.';
     return Boolean(newScan&&newTest&&newExport);
   }
 
