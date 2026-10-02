@@ -23,37 +23,50 @@ const scanned=[{
 }];
 
 const standard='CLB ARS 26-27 HD - Đỏ';
-const alias=rules.generatedAliasForStandardName(standard);
+const cleanAlias='clb-ars-26-27-hd-do';
 const created=productCreate.makeApiProducts(scanned).products[0];
-assert.strictEqual(created.alias,alias);
+assert.strictEqual(created.alias,cleanAlias);
 assert.deepStrictEqual(created.variants.map(v=>v.sku),[
-  `${alias}-S`,`${alias}-M`,`${alias}-L`
+  `${cleanAlias}-S`,`${cleanAlias}-M`,`${cleanAlias}-L`
 ]);
 
-const catalog={
+// Sapo đã có SKU sạch -> dùng đúng SKU sạch.
+const cleanCatalog={
   variants:[
-    {productId:90,variantId:901,name:standard,size:'S',sku:`${alias}-S`},
-    {productId:90,variantId:902,name:standard,size:'M',sku:`${alias}-M`},
-    {productId:90,variantId:903,name:standard,size:'L',sku:`${alias}-L`}
+    {productId:90,variantId:901,name:standard,size:'S',sku:`${cleanAlias}-S`},
+    {productId:90,variantId:902,name:standard,size:'M',sku:`${cleanAlias}-M`},
+    {productId:90,variantId:903,name:standard,size:'L',sku:`${cleanAlias}-L`}
   ]
 };
-const prepared=autoCore.prepareRows({},catalog,scanned,matcher,rules);
-assert.strictEqual(prepared.master,'alias_size_exact');
-assert.deepStrictEqual(prepared.rows.map(r=>r.sku),[
-  `${alias}-S`,`${alias}-M`,`${alias}-L`
+const cleanPrepared=autoCore.prepareRows({},cleanCatalog,scanned,matcher,rules);
+assert.strictEqual(cleanPrepared.master,'clean_alias_with_existing_sku_compat');
+assert.deepStrictEqual(cleanPrepared.rows.map(r=>r.sku),[
+  `${cleanAlias}-S`,`${cleanAlias}-M`,`${cleanAlias}-L`
 ]);
-assert.deepStrictEqual(prepared.rows.map(r=>r.variantId),[901,902,903]);
-assert.strictEqual(prepared.matchedSkuCount,3);
+assert.deepStrictEqual(cleanPrepared.rows.map(r=>r.variantId),[901,902,903]);
+assert.strictEqual(cleanPrepared.matchedSkuCount,3);
 
+// Tương thích ngược: sản phẩm cũ có hash/hậu tố vẫn phải cập nhật đúng SKU đang tồn tại.
+const legacyAlias=rules.generatedAliasForStandardName(standard);
+assert.notStrictEqual(legacyAlias,cleanAlias);
+const legacyCatalog={
+  variants:[
+    {productId:91,variantId:911,name:standard,size:'S',sku:`${legacyAlias}-S`},
+    {productId:91,variantId:912,name:standard,size:'M',sku:`${legacyAlias}-M`},
+    {productId:91,variantId:913,name:standard,size:'L',sku:`${legacyAlias}-L`}
+  ]
+};
+const legacyPrepared=autoCore.prepareRows({},legacyCatalog,scanned,matcher,rules);
+assert.deepStrictEqual(legacyPrepared.rows.map(r=>r.sku),[
+  `${legacyAlias}-S`,`${legacyAlias}-M`,`${legacyAlias}-L`
+]);
+assert.deepStrictEqual(legacyPrepared.rows.map(r=>r.matchedBy),[
+  'existing-name-size','existing-name-size','existing-name-size'
+]);
+assert.strictEqual(legacyPrepared.matchedSkuCount,3);
 
 const wikaStandard='Áo Thi Đấu Wika CLB Đông Á Thanh Hoá (Bản Fan) - Vàng';
-const wikaAlias=rules.generatedAliasForStandardName(wikaStandard);
-assert.strictEqual(
-  wikaAlias,
-  'wika-clb-dong-a-thanh-hoa-ban-fan-vang-1kre19l',
-  'Riêng Wika Thanh Hoá Fan Vàng phải bỏ tiền tố ao-thi-dau-'
-);
-
+const wikaCleanAlias='ao-thi-dau-wika-clb-dong-a-thanh-hoa-ban-fan-vang';
 const wikaScanned=[{
   parentId:77777,
   parentName:'Áo Thi Đấu Wika CLB Đông Á Thanh Hoá (Bản Fan)',
@@ -68,32 +81,19 @@ const wikaScanned=[{
 }];
 
 const wikaCreated=productCreate.makeApiProducts(wikaScanned).products[0];
+assert.strictEqual(wikaCreated.alias,wikaCleanAlias);
 assert.deepStrictEqual(wikaCreated.variants.map(v=>v.sku),[
-  `${wikaAlias}-S`,`${wikaAlias}-M`,`${wikaAlias}-L`,`${wikaAlias}-XL`,`${wikaAlias}-XXL`
+  `${wikaCleanAlias}-S`,`${wikaCleanAlias}-M`,`${wikaCleanAlias}-L`,`${wikaCleanAlias}-XL`,`${wikaCleanAlias}-XXL`
 ]);
-
-const wikaCatalog={variants:wikaScanned[0].variants.map((v,index)=>({
-  productId:700,
-  variantId:7001+index,
-  name:wikaStandard,
-  size:v.size,
-  sku:`${wikaAlias}-${v.size}`
-}))};
-const wikaPrepared=autoCore.prepareRows({},wikaCatalog,wikaScanned,matcher,rules);
-assert.deepStrictEqual(wikaPrepared.rows.map(r=>r.sku),[
-  `${wikaAlias}-S`,`${wikaAlias}-M`,`${wikaAlias}-L`,`${wikaAlias}-XL`,`${wikaAlias}-XXL`
-]);
-assert.strictEqual(wikaPrepared.matchedSkuCount,5);
 
 const contentScanner=fs.readFileSync(__dirname+'/content.js','utf8');
 assert.ok(contentScanner.includes('scanDescriptorApiFast'));
 assert.ok(contentScanner.includes("const concurrency=Math.min(3,Math.max(1,links.length))"));
 assert.ok(contentScanner.includes("stage:'popup-fallback'"));
 
-console.log('ALIAS SKU MASTER PASS',{
-  skuBase:'column A Đường dẫn/Alias',
-  variantSku:'alias + size',
-  stockSync:'exact SKU match only',
-  fastScanner:true,
-  specialWikaSku:wikaAlias
+console.log('CLEAN SKU MASTER PASS',{
+  newProduct:'clean standard-name alias + size',
+  randomSuffix:false,
+  legacySapoSkuCompatible:true,
+  fastScanner:true
 });
