@@ -61,7 +61,7 @@ jobs:
             auto-sync-safety-background.js
             manual-job-runner-background.js manual-job-runner-mode.js
             manual-sapo-background.js manual-sapo-output-mode.js
-            saved-profiles-mode.js batch-stock-cache-mode.js
+            saved-profiles-mode.js tool-reset-mode.js batch-stock-cache-mode.js
             sapo-product-create-background.js sapo-product-create-continuous-background.js
             lazy-product-mode.js workflow-order-mode.js
             product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
@@ -83,7 +83,7 @@ jobs:
             auto-sync-safety-background.js
             manual-job-runner-background.js manual-job-runner-mode.js
             manual-sapo-background.js manual-sapo-output-mode.js
-            saved-profiles-mode.js batch-stock-cache-mode.js
+            saved-profiles-mode.js tool-reset-mode.js batch-stock-cache-mode.js
             sapo-product-create-background.js sapo-product-create-continuous-background.js
             lazy-product-mode.js workflow-order-mode.js
             product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
