@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.23.0",
+  "version": "0.23.1",
   "minimum_chrome_version": "116",
-  "description": "Chuẩn hóa SKU dễ nhớ cho cả quét 1 SP và quét hàng loạt: tên chuẩn không dấu + Size, không hash/hậu tố ngẫu nhiên; đồng bộ tồn vẫn tương thích SKU cũ đang có trên Sapo.",
+  "description": "Quét popup chậm và ổn định hơn: 1 sản phẩm mỗi nhịp, nghỉ 850ms giữa sản phẩm, tăng thời gian settle/đọc popup để tránh trôi hoặc bỏ sót.",
   "permissions": [
     "storage",
     "unlimitedStorage",
