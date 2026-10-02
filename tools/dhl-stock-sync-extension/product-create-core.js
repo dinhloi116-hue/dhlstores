@@ -22,37 +22,6 @@
     return plain(name).replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
   }
 
-  function skuBaseFromVariantSku(sku,size=''){
-    const raw=text(sku);
-    if(!raw)return'';
-    const parts=raw.split('-');
-    if(parts.length>1){
-      const tail=normalizeSize(parts[parts.length-1]);
-      const wanted=normalizeSize(size);
-      if(wanted&&tail===wanted)return parts.slice(0,-1).join('-');
-      if(['XXS','XS','S','M','L','XL','XXL','XXXL','XXXXL','XXXXXL','FREE'].includes(tail))return parts.slice(0,-1).join('-');
-    }
-    return raw;
-  }
-
-  function aliasFromSourceUrl(value,color=''){
-    try{
-      const u=new URL(text(value));
-      if(!/^(?:www\.)?si\.aobongda\.net$/i.test(u.hostname))return'';
-      let slug=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'').trim();
-      slug=slug.replace(/\.html$/i,'').replace(/-p\d+$/i,'').trim();
-      if(!slug||/-pc\d+$/i.test(slug))return'';
-
-      const wanted=plain(color);
-      if(wanted&&wanted!=='khong mau'){
-        const slugWords=new Set(plain(slug).split(' ').filter(Boolean));
-        const colorWords=wanted.split(' ').filter(Boolean);
-        if(colorWords.length&&!colorWords.every(word=>slugWords.has(word)))return'';
-      }
-      return slug;
-    }catch{return'';}
-  }
-
   function sizeSort(values){
     const preferred=['XXS','XS','S','M','L','XL','XXL','XXXL','XXXXL','XXXXXL','FREE'];
     return [...new Set(values.map(normalizeSize).filter(Boolean))].sort((a,b)=>{
