@@ -39,14 +39,14 @@ const cleanCatalog={
   ]
 };
 const cleanPrepared=autoCore.prepareRows({},cleanCatalog,scanned,matcher,rules);
-assert.strictEqual(cleanPrepared.master,'clean_alias_with_existing_sku_compat');
+assert.strictEqual(cleanPrepared.master,'clean_alias_output_stale_cache_safe');
 assert.deepStrictEqual(cleanPrepared.rows.map(r=>r.sku),[
   `${cleanAlias}-S`,`${cleanAlias}-M`,`${cleanAlias}-L`
 ]);
 assert.deepStrictEqual(cleanPrepared.rows.map(r=>r.variantId),[901,902,903]);
 assert.strictEqual(cleanPrepared.matchedSkuCount,3);
 
-// Tương thích ngược: sản phẩm cũ có hash/hậu tố vẫn phải cập nhật đúng SKU đang tồn tại.
+// Cache/catalog cũ có SKU hash/hậu tố: chỉ dùng ID tham khảo, đầu ra vẫn phải là clean SKU hiện tại.
 const legacyAlias=rules.generatedAliasForStandardName(standard);
 assert.notStrictEqual(legacyAlias,cleanAlias);
 const legacyCatalog={
@@ -58,10 +58,10 @@ const legacyCatalog={
 };
 const legacyPrepared=autoCore.prepareRows({},legacyCatalog,scanned,matcher,rules);
 assert.deepStrictEqual(legacyPrepared.rows.map(r=>r.sku),[
-  `${legacyAlias}-S`,`${legacyAlias}-M`,`${legacyAlias}-L`
+  `${cleanAlias}-S`,`${cleanAlias}-M`,`${cleanAlias}-L`
 ]);
 assert.deepStrictEqual(legacyPrepared.rows.map(r=>r.matchedBy),[
-  'existing-name-size','existing-name-size','existing-name-size'
+  'legacy-name-size-id-only','legacy-name-size-id-only','legacy-name-size-id-only'
 ]);
 assert.strictEqual(legacyPrepared.matchedSkuCount,3);
 
@@ -94,6 +94,6 @@ assert.ok(contentScanner.includes("stage:'popup-fallback'"));
 console.log('CLEAN SKU MASTER PASS',{
   newProduct:'clean standard-name alias + size',
   randomSuffix:false,
-  legacySapoSkuCompatible:true,
+  staleCatalogSkuIgnored:true,
   fastScanner:true
 });
