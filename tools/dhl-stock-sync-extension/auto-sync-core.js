@@ -111,7 +111,9 @@
         const sourceKey=normalizeSku(cleanSku);
         const byNameSize=sapoByNameSize.get(rowKey(standardName,size))||null;
         const existing=sapoBySku.get(sourceKey)||byNameSize||null;
-        const sku=text(existing&&existing.sku)||cleanSku;
+        // SKU đầu ra LUÔN là clean SKU hiện tại. Catalog/profile cũ chỉ được dùng
+        // để tham khảo variantId/productId, tuyệt đối không được ghi đè SKU.
+        const sku=cleanSku;
         const uniq=`${normalizeSku(sku)}|${size}`;
         if(seen.has(uniq))continue;
         seen.add(uniq);
@@ -130,7 +132,7 @@
           sourceParentId:Number(group.parentId)||0,
           sourceVariantId:Number(source&&source.id)||0,
           sourceUrl:text(source&&source.sourceUrl||''),
-          matchedBy:existing?(sapoBySku.get(sourceKey)?'clean-sku-exact':'existing-name-size'):'clean-alias-size-new'
+          matchedBy:sapoBySku.get(sourceKey)?'clean-sku-exact':(byNameSize?'legacy-name-size-id-only':'clean-alias-size-new')
         });
       }
     }
@@ -143,7 +145,7 @@
       matchedSkuCount,
       sourceOnlySkuCount,
       generatedSkuCount:0,
-      master:'clean_alias_with_existing_sku_compat'
+      master:'clean_alias_output_stale_cache_safe'
     };
   }
 
