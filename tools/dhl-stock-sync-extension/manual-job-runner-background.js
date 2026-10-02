@@ -16,7 +16,6 @@
   const HISTORY_KEY='dhlStockScanHistoryV1';
   const REPORT_KEY='dhlManualStockReportV1';
   const ALARM='dhl-manual-scan-step';
-  const PRODUCT_SETTLE_MS=850;
   const MAX_ERRORS=100;
 
   const text=(v)=>String(v==null?'':v).trim();
@@ -566,9 +565,9 @@
     let job=await readJob();
     if(!job||!job.running)return;
 
-    // Chế độ đọc chậm, chắc: mỗi worker chỉ xử lý 1 SP.
-    // Tránh popup/card kế tiếp bị "trôi" khi DOM của site chưa ổn định.
-    const CHUNK_SIZE=1;
+    // Xử lý nhiều SP liên tiếp trong cùng một lần worker thức dậy.
+    // Vẫn checkpoint sau TỪNG SP để có thể resume chính xác.
+    const CHUNK_SIZE=4;
     let processed=0;
 
     try{
@@ -645,8 +644,8 @@
         return;
       }
 
-      // Chờ đủ lâu để popup/card của site ổn định hẳn rồi mới sang SP kế tiếp.
-      scheduleNext(PRODUCT_SETTLE_MS);
+      // Nhường worker sau một chunk; tốc độ cũ trước khi thử nghiệm slow-scan.
+      scheduleNext(80);
     }catch(error){
       if(job){
         const current=await readJob().catch(()=>null);
