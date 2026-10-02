@@ -26,7 +26,7 @@ assert.ok(catalog.includes('maintenanceFailureDetail'));
 assert.ok(catalog.includes('missingSizes'));
 assert.ok(catalog.includes('failures'));
 assert.ok(catalog.includes('globalThis.DHLCatalogMaintenance'));
-assert.ok(catalog.includes('await sleep(700)'));
+assert.ok(catalog.includes('await sleep(180)'));
 
 assert.ok(maintenance.includes('CHUẨN HÓA 1 LẦN — POPUP TOÀN BỘ'));
 assert.ok(maintenance.includes('CHẠY POPUP TOÀN BỘ 1 LẦN'));
