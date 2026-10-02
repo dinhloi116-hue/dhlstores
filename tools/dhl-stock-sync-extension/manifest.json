@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.22.9",
+  "version": "0.23.0",
   "minimum_chrome_version": "116",
-  "description": "Chuẩn hóa SKU sản phẩm mới theo SKU/alias thật của nguồn: ưu tiên SKU thật, sau đó slug URL nguồn giữ suffix định danh như -6qjk3f, chỉ fallback sinh từ tên khi cần.",
+  "description": "Chuẩn hóa SKU dễ nhớ cho cả quét 1 SP và quét hàng loạt: tên chuẩn không dấu + Size, không hash/hậu tố ngẫu nhiên; đồng bộ tồn vẫn tương thích SKU cũ đang có trên Sapo.",
   "permissions": [
     "storage",
     "unlimitedStorage",
