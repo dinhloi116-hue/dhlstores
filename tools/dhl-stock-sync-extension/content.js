@@ -308,7 +308,7 @@
     const started = Date.now();
     while (Date.now() - started < timeout) {
       assertPopupScanActive(cancelVersion);
-      await sleep(90);
+      await sleep(130);
       assertPopupScanActive(cancelVersion);
       const currentRoot = findStockRoot() || root;
       const rows = readTargetRows(currentRoot, targetSizes);
@@ -317,8 +317,8 @@
       if (signature && signature === previous) stable += 1;
       else stable = 0;
       previous = signature;
-      if (hasAllTargetRows(rows, targetSizes) && stable >= 1) return rows;
-      if (rows.length > 0 && stable >= 3) return rows;
+      if (hasAllTargetRows(rows, targetSizes) && stable >= 2) return rows;
+      if (rows.length > 0 && stable >= 5) return rows;
     }
     return best;
   }
@@ -500,9 +500,9 @@
       const elapsed = Date.now() - started;
 
       if (seenSelected && hasAllTargetRows(rows, targetSizes)) {
-        if (alreadySelected || signature !== previousSignature || elapsed >= 650) {
-          await sleep(120);
-          return stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion);
+        if (alreadySelected || signature !== previousSignature || elapsed >= 850) {
+          await sleep(220);
+          return stableTargetRows(currentRoot, targetSizes, 2400, cancelVersion);
         }
       }
     }
@@ -590,7 +590,7 @@
       .sort((a, b) => b.score - a.score);
     if (candidates[0]) await clickElement(candidates[0].el);
     else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
-    await sleep(260);
+    await sleep(420);
     return !findStockRoot();
   }
 
@@ -624,14 +624,14 @@
     const started = Date.now();
     while (Date.now() - started < timeout) {
       assertPopupScanActive(cancelVersion);
-      await sleep(90);
+      await sleep(130);
       assertPopupScanActive(cancelVersion);
       if (expectedPath && location.pathname !== expectedPath) throw new Error('Trang nguồn đã rời danh mục đang quét; dừng để tránh sai dữ liệu.');
       const root = findStockRoot();
       if (!root) continue;
       const fp = popupFingerprint(root);
       if (!beforeFingerprint || (fp && fp !== beforeFingerprint)) {
-        await sleep(220);
+        await sleep(420);
         return findStockRoot() || root;
       }
     }
@@ -970,7 +970,7 @@
         try{
           const current=findStockRoot();
           if(current)await closeStockPopup(current);
-          await sleep(350);
+          await sleep(550);
           assertPopupScanActive(cancelVersion);
           const retryOpen=await openStockPopup(descriptor, cancelVersion);
           const retry=await readOpenedPopup(descriptor,hints,progress,retryOpen,cancelVersion);
@@ -1189,7 +1189,7 @@
         const stale=findStockRoot();
         if(stale){
           await closeStockPopup(stale);
-          await sleep(220);
+          await sleep(380);
         }
 
         progress({
@@ -1204,9 +1204,9 @@
         const visiblePopup=findStockRoot();
         if(visiblePopup){
           // Giữ popup nhìn thấy rõ một nhịp ngắn sau khi đọc xong rồi mới đóng.
-          await sleep(260);
+          await sleep(450);
           await closeStockPopup(visiblePopup);
-          await sleep(180);
+          await sleep(420);
         }
 
         progress({
