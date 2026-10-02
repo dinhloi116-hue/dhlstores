@@ -48,7 +48,8 @@ assert.ok(runnerBg.includes("type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"),'Quét 
 assert.ok(!runnerBg.includes("type:'DHL_SCAN_ONE_DESCRIPTOR',descriptor"),'Không được API-first cho tồn kho');
 assert.ok(runnerBg.includes('sourceTabId:Number(message.sourceTabId)||0'),'Phải tái sử dụng tab nguồn đang mở');
 assert.ok(runnerBg.includes('if(job.ownsTab===true)'),'Chỉ được đóng tab do tool tự tạo');
-assert.ok(runnerBg.includes('const CHUNK_SIZE=4'),'Quét phải checkpoint theo chunk');
+assert.ok(runnerBg.includes('const CHUNK_SIZE=1'),'Quét phải xử lý từng SP để tránh trôi popup');
+assert.ok(runnerBg.includes('const PRODUCT_SETTLE_MS=850'),'Phải có nhịp nghỉ giữa hai sản phẩm');
 assert.ok(runnerBg.includes('await checkpoint(job)'),'Phải checkpoint sau từng sản phẩm');
 assert.ok(runnerBg.includes("dhlCatalogSkuMode:'manual-background-popup-full'"));
 
