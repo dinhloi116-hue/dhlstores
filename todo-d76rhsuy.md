@@ -1200,3 +1200,9 @@
 - [x] Thêm bộ lọc đánh giá theo số sao ở bảng đánh giá cuối trang.
 - [x] Cho phép người dùng đính kèm một ảnh trong đánh giá và hiển thị ảnh đã được duyệt.
 - [x] Sửa lỗi HMR/syntax, bổ sung hồi quy, chạy TypeScript/build và kiểm tra responsive.
+
+## Liên quan, nén ảnh và âm thanh giỏ hàng 2026-10-01
+- [x] Thêm danh sách sản phẩm liên quan/cùng loại ngay dưới phần đánh giá sản phẩm.
+- [x] Tự động nén ảnh đính kèm review trên trình duyệt trước khi upload.
+- [x] Phát âm thanh phản hồi nhỏ khi thêm sản phẩm vào giỏ thành công.
+- [x] Bổ sung hồi quy, chạy test/build và kiểm tra responsive.

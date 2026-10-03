@@ -310,6 +310,11 @@ describe("public SKU inventory presentation", () => {
     expect(productSource).toContain("review.imageUrl");
     expect(productSource).toContain("Đính kèm ảnh");
     expect(productSource).toContain("image: reviewImage || undefined");
+    expect(productSource).toContain("Sản phẩm liên quan");
+    expect(productSource).toContain("compressReviewImage");
+    expect(productSource).toContain('canvas.toDataURL(\"image/jpeg\", quality)');
+    expect(productSource).toContain("playCartSuccessSound");
+    expect(productSource).toContain("AudioContext");
   });
 
   it("makes inventory editing safer with labeled bulk fields and unsaved-SKU indicators", () => {

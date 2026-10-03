@@ -20,6 +20,47 @@ function formatVariantOptions(variant: { size?: string; color?: string; attribut
   return [variant.size && `Size: ${variant.size}`, variant.color && `Màu: ${variant.color}`, ...(variant.attributes || "").split(/\n|;/).map(item => item.trim()).filter(Boolean)].filter(Boolean).join(" · ") || "Phiên bản chuẩn";
 }
 
+async function compressReviewImage(file: File) {
+  const maxDimension = 1280;
+  const quality = 0.82;
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Không thể xử lý ảnh trên thiết bị này");
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const dataUrl = canvas.toDataURL("image/jpeg", quality);
+  const base64 = dataUrl.split(",")[1] || "";
+  if (!base64) throw new Error("Không thể đọc ảnh sau khi nén");
+  return { fileName: file.name.replace(/\.[^.]+$/, "") + ".jpg", mimeType: "image/jpeg" as const, base64 };
+}
+
+function playCartSuccessSound() {
+  if (typeof window === "undefined") return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(740, context.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(1180, context.currentTime + 0.09);
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.045, context.currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.13);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.14);
+    window.setTimeout(() => void context.close(), 220);
+  } catch {
+    // Audio is optional feedback; never block adding an item to the cart.
+  }
+}
+
 function getVariantOptions(variant: { size?: string; color?: string; attributes?: string }) {
   const options: Array<{ name: string; value: string }> = [];
   if (variant.color) options.push({ name: "Màu sắc", value: variant.color });
@@ -268,6 +309,7 @@ export default function ProductDetail() {
 
   const addToCartMutation = trpc.store.addToCart.useMutation({
     onSuccess: () => {
+      playCartSuccessSound();
       animateProductToCart();
       const recommendedToast = addingRecommended !== null;
       toast.success(recommendedToast ? (lang === "vi" ? "Sản phẩm vừa được thêm vào giỏ hàng" : "Product just added to your cart") : (lang === 'vi' ? "Sản phẩm vừa được thêm vào giỏ hàng" : "Product just added to your cart"), { duration: 3000, position: "bottom-right", action: { label: lang === "vi" ? "Đi đến giỏ hàng" : "Go to cart", onClick: () => { window.location.href = "/cart"; } } });
@@ -283,6 +325,7 @@ export default function ProductDetail() {
   });
   const addManyToCartMutation = trpc.store.addManyToCart.useMutation({
     onSuccess: result => {
+      playCartSuccessSound();
       animateProductToCart();
       toast.success(lang === "vi" ? `Sản phẩm vừa được thêm vào giỏ hàng · ${result.addedCount} SKU` : `${result.addedCount} products just added to your cart`, { duration: 3000, position: "bottom-right", action: { label: lang === "vi" ? "Đi đến giỏ hàng" : "Go to cart", onClick: () => { window.location.href = "/cart"; } } });
       utils.store.cart.invalidate();
@@ -664,12 +707,13 @@ export default function ProductDetail() {
             <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black text-slate-700">Chấm điểm:</span>{Array.from({ length: 5 }).map((_, index) => <button key={index} type="button" aria-label={`Chấm ${index + 1} sao`} onClick={() => setReviewRating(index + 1)} className="text-amber-500 transition-transform hover:scale-110"><Star className={`h-5 w-5 ${index < reviewRating ? 'fill-current' : ''}`} /></button>)}</div>
             <textarea value={reviewBody} onChange={event => setReviewBody(event.target.value)} className="mt-3 min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" placeholder={isAuthenticated ? 'Chia sẻ trải nghiệm thật của bạn (tối thiểu 10 ký tự)…' : 'Đăng nhập để gửi đánh giá sau khi mua hàng…'} disabled={!isAuthenticated} />
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-orange-300"><span>Đính kèm ảnh</span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" disabled={!isAuthenticated || submitReviewMutation.isPending} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 5 * 1024 * 1024) { toast.error("Ảnh đánh giá tối đa 5 MB"); return; } if (!(file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp" || file.type === "image/gif")) { toast.error("Chỉ nhận ảnh JPG, PNG, WebP hoặc GIF"); return; } const reader = new FileReader(); reader.onload = () => { const dataUrl = String(reader.result || ""); const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : ""; if (base64) setReviewImage({ fileName: file.name, mimeType: file.type as "image/jpeg" | "image/png" | "image/webp" | "image/gif", base64 }); }; reader.readAsDataURL(file); }} /></label>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-orange-300"><span>Đính kèm ảnh</span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" disabled={!isAuthenticated || submitReviewMutation.isPending} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 5 * 1024 * 1024) { toast.error("Ảnh đánh giá tối đa 5 MB"); return; } if (!(file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp" || file.type === "image/gif")) { toast.error("Chỉ nhận ảnh JPG, PNG, WebP hoặc GIF"); return; } void compressReviewImage(file).then(compressed => { setReviewImage(compressed); toast.success("Ảnh đã được nén để tải nhanh hơn."); }).catch(error => toast.error(error instanceof Error ? error.message : "Không thể nén ảnh")); }} /></label>
               {reviewImage && <div className="flex items-center gap-2"><img src={`data:${reviewImage.mimeType};base64,${reviewImage.base64}`} alt="Ảnh sẽ đính kèm" className="h-12 w-12 rounded-md border border-orange-200 object-cover" /><button type="button" onClick={() => setReviewImage(null)} className="text-[10px] font-black text-rose-700 hover:underline">Bỏ ảnh</button></div>}
             </div>
             <Button type="submit" disabled={submitReviewMutation.isPending || !reviewBody.trim()} className="mt-3 bg-[#ee4d2d] font-black text-white hover:bg-[#d94325]">{isAuthenticated ? (submitReviewMutation.isPending ? 'ĐANG GỬI…' : 'GỬI ĐÁNH GIÁ') : 'ĐĂNG NHẬP ĐỂ ĐÁNH GIÁ'}</Button>
           </form>
         </section>}
+        {recommendedProducts.length > 0 && <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-label="Sản phẩm liên quan"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Có thể bạn cũng thích</p><h2 className="mt-1 text-xl font-black text-slate-900">Sản phẩm liên quan</h2><p className="mt-1 text-xs text-slate-500">Các sản phẩm cùng loại hoặc phù hợp với lựa chọn hiện tại.</p></div><Sparkles className="h-5 w-5 text-violet-600" /></div><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{recommendedProducts.map(related => <article key={`related-${related.id}`} className="group overflow-hidden rounded-xl border border-slate-100 bg-slate-50 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"><Link href={`/product/${related.slug}`} className="block"><div className="aspect-square overflow-hidden bg-white">{related.image ? <img src={related.image} alt={catalogName(related, lang)} loading="lazy" decoding="async" className="h-full w-full object-contain transition duration-200 group-hover:scale-105" /> : <div className="grid h-full place-items-center text-xs font-black text-violet-500">DHL</div>}</div><div className="p-3"><p className="line-clamp-2 text-xs font-black leading-snug text-slate-900 group-hover:text-violet-700">{catalogName(related, lang)}</p><p className="mt-1 text-xs font-black text-[#ee4d2d]">{formatCurrency(related.price)}</p></div></Link></article>)}</div></section>}
       </div>
       {hoveredPreview && hoveredVariant?.image && <div className="pointer-events-none fixed z-[90] hidden w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl md:block" style={{ left: hoveredPreview.x, top: hoveredPreview.y }}><img src={hoveredVariant.image} alt={formatVariantOptions(hoveredVariant)} className="aspect-square w-full rounded-lg object-contain" /><p className="mt-1.5 truncate px-0.5 text-[10px] font-bold text-slate-700">{formatVariantOptions(hoveredVariant)}</p></div>}
       <Dialog open={previewVariantId !== null} onOpenChange={open => { if (!open) setPreviewVariantId(null); }}><DialogContent className="max-w-sm border-slate-200 bg-white"><DialogHeader><DialogTitle className="text-left text-base font-black text-slate-900">Ảnh SKU</DialogTitle><DialogDescription className="text-left text-xs text-slate-500">{previewVariant ? formatVariantOptions(previewVariant) : ""}</DialogDescription></DialogHeader>{previewVariant?.image && <img src={previewVariant.image} alt={formatVariantOptions(previewVariant)} className="aspect-square w-full rounded-xl border border-slate-200 bg-slate-50 object-contain" />}</DialogContent></Dialog>
