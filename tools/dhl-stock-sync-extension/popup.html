@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DHL Stock Sync</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>DHL STOCK SYNC</h1>
+        <p>Mở tab nguồn → chạy nền → tự lưu hồ sơ → chọn đầu ra.</p>
+      </div>
+      <span class="badge">LITE</span>
+    </header>
+  </main>
+
+  <!-- Core tối thiểu -->
+  <script src="batch-stock-core.js"></script>
+  <script src="xlsx-lite.js"></script>
+  <script src="stock-import-core.js"></script>
+
+  <!-- Đồng bộ tồn kho -->
+  <script src="saved-profiles-mode.js"></script>
+  <script src="tool-reset-mode.js"></script>
+  <script src="manual-job-runner-mode.js"></script>
+  <script src="batch-stock-cache-mode.js"></script>
+  <script src="manual-sapo-output-mode.js"></script>
+
+  <!-- Thêm sản phẩm: chỉ tải khi người dùng mở phần này -->
+  <script src="lazy-product-mode.js"></script>
+
+  <!-- Sắp xếp giao diện cuối cùng -->
+  <script src="workflow-order-mode.js"></script>
+</body>
+</html>
