@@ -98,7 +98,7 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('Kho: {variant.stock}');
-    expect(source).toContain('Tồn: {outOfStock ? "Hết" : variant.stock}');
+    expect(source).toContain('Kho: {outOfStock ? "Hết" : variant.stock}');
     expect(source).toContain('variant.stock < 10 ? "text-rose-700" : "text-emerald-800"');
     expect(source).toContain('title="Hàng đặt trước, dự kiến giao trong 7–10 ngày"');
     expect(source).toContain('const nextQuantity = Math.min(max, Math.max(0, Math.floor(requestedQuantity)))');

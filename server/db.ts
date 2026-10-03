@@ -41,10 +41,12 @@ export interface ProductType {
   purchaseLayout?: "classic" | "marketplace";
   specs?: string;
   specsEn?: string;
+  supplierUrl?: string;
   featured: boolean;
   isActive?: boolean;
   createdAt: Date;
 }
+export type AdminProductType = ProductType & { supplierUrl?: string };
 
 export interface ProductVariantType {
   id: number;
@@ -533,6 +535,10 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     isActive: product.isActive,
     createdAt: product.createdAt,
   };
+}
+
+function toAdminProductType(product: typeof products.$inferSelect): AdminProductType {
+  return { ...toProductType(product), supplierUrl: product.supplierUrl ?? undefined };
 }
 
 function toProductVariantType(variant: typeof productVariants.$inferSelect): ProductVariantType {
@@ -1585,6 +1591,7 @@ export type CatalogProductInput = {
   fileUrl?: string;
   fileSize?: string;
   specs?: string;
+  supplierUrl?: string;
   stock: number;
   weightGrams?: number;
   purchaseLayout?: "classic" | "marketplace";
@@ -1652,9 +1659,9 @@ export async function getAdminProducts() {
   const connection = await getDb();
   if (connection) {
     await ensureDefaultCatalog(connection);
-    return (await connection.select().from(products)).map(toProductType);
+    return (await connection.select().from(products)).map(toAdminProductType);
   }
-  return [...memoryProducts];
+  return [...memoryProducts] as AdminProductType[];
 }
 
 export async function createProduct(input: CatalogProductInput) {
@@ -1680,6 +1687,7 @@ export async function createProduct(input: CatalogProductInput) {
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       specs: input.specs ?? null,
+      supplierUrl: input.supplierUrl ?? null,
       featured: input.featured,
       isActive: input.isActive,
     });
@@ -1706,6 +1714,7 @@ export async function createProduct(input: CatalogProductInput) {
     weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
     purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
     specs: input.specs,
+    supplierUrl: input.supplierUrl,
     featured: input.featured,
     isActive: input.isActive,
     createdAt: new Date(),
@@ -1736,6 +1745,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       specs: input.specs ?? null,
+      supplierUrl: input.supplierUrl ?? null,
       featured: input.featured,
       isActive: input.isActive,
     }).where(eq(products.id, productId));

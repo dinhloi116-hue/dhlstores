@@ -278,6 +278,7 @@ export const products = mysqlTable("products", {
   purchaseLayout: mysqlEnum("purchaseLayout", ["classic", "marketplace"]).default("classic").notNull(), // Bố cục mua hàng riêng cho sản phẩm vật lý
   specs: text("specs"), // Thông tin chi tiết (chất liệu, định dạng, kích thước...)
   specsEn: text("specsEn"), // English product specifications / formats
+  supplierUrl: text("supplierUrl"), // Chỉ dùng nội bộ quản trị; không hiển thị cho khách
   featured: boolean("featured").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

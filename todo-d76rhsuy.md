@@ -1206,3 +1206,9 @@
 - [x] Tự động nén ảnh đính kèm review trên trình duyệt trước khi upload.
 - [x] Phát âm thanh phản hồi nhỏ khi thêm sản phẩm vào giỏ thành công.
 - [x] Bổ sung hồi quy, chạy test/build và kiểm tra responsive.
+
+## Nguồn nội bộ và bộ chọn số lượng 2026-10-03
+- [x] Đưa link 1688 vào trường `supplierUrl` chỉ trả về API quản trị; xóa khỏi thông số công khai của Nameset Messi.
+- [x] Thêm trường nguồn nhập nội bộ trong form quản trị sản phẩm.
+- [x] Làm nổi bật cụm Kho / số lượng / nút −/+ bằng nền cam-vàng, viền 2px, ring và shadow; giữ CTA Mua ngay riêng biệt.
+- [x] Cập nhật hồi quy: 186 test passed, 2 skipped; TypeScript, build và diff check đạt.

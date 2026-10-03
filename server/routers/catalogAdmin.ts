@@ -27,6 +27,7 @@ const productInput = z.object({
   fileUrl: z.string().trim().max(4096).optional(),
   fileSize: z.string().trim().max(64).optional(),
   specs: z.string().trim().max(5000).optional(),
+  supplierUrl: z.string().trim().max(4096).optional(),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
   weightGrams: z.coerce.number().int().min(0).max(100_000).default(0),
   purchaseLayout: z.enum(["classic", "marketplace"]).default("classic"),
@@ -82,7 +83,7 @@ export const catalogAdminRouter = router({
 
   products: adminProcedure.query(() => db.getAdminProducts()),
   createProduct: adminProcedure.input(productInput).mutation(({ input }) =>
-    db.createProduct({ ...input, price: String(input.price), fileUrl: input.fileUrl || undefined, fileSize: input.fileSize || undefined, specs: input.specs || undefined }),
+    db.createProduct({ ...input, price: String(input.price), fileUrl: input.fileUrl || undefined, fileSize: input.fileSize || undefined, specs: input.specs || undefined, supplierUrl: input.supplierUrl || undefined }),
   ),
   updateProduct: adminProcedure.input(z.object({ productId: z.number().int().positive(), data: productInput })).mutation(({ input }) =>
     db.updateProduct(input.productId, {
@@ -91,6 +92,7 @@ export const catalogAdminRouter = router({
       fileUrl: input.data.fileUrl || undefined,
       fileSize: input.data.fileSize || undefined,
       specs: input.data.specs || undefined,
+      supplierUrl: input.data.supplierUrl || undefined,
     }),
   ),
 
