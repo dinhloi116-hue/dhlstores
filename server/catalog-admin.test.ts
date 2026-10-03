@@ -203,4 +203,18 @@ describe("catalogAdmin", () => {
     await expect(owner.catalogAdmin.deleteProductVariant({ variantId: variant!.id })).resolves.toMatchObject({ success: true, productId: product!.id });
     expect((await owner.catalogAdmin.productVariants({ productId: product!.id })).some(item => item.id === variant!.id)).toBe(false);
   });
+
+  it("lets only the owner delete an unused product and removes its catalog variants", async () => {
+    const owner = appRouter.createCaller(createContext("owner"));
+    const regularUser = appRouter.createCaller(createContext("user"));
+    const suffix = `product-delete-${Date.now().toString(36)}`;
+    const category = (await owner.catalogAdmin.categories()).find(item => item.slug === "patch-tay");
+    const product = await owner.catalogAdmin.createProduct({ name: `Sản phẩm xóa ${suffix}`, slug: `san-pham-xoa-${suffix}`, description: "Kiểm thử xóa sản phẩm", price: 99000, categoryId: category!.id, image: "/manus-storage/catalog/delete-product-test.png", stock: 0, featured: false, isActive: true });
+    const variant = await owner.catalogAdmin.createProductVariant({ productId: product!.id, sku: `PRODUCT-DELETE-${suffix}`, priceAdjustment: 0, stock: 0, isActive: true });
+
+    await expect(regularUser.catalogAdmin.deleteProduct({ productId: product!.id })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(owner.catalogAdmin.deleteProduct({ productId: product!.id })).resolves.toEqual({ success: true, productId: product!.id });
+    expect((await owner.catalogAdmin.products()).some(item => item.id === product!.id)).toBe(false);
+    expect((await owner.catalogAdmin.productVariants({ productId: product!.id })).some(item => item.id === variant!.id)).toBe(false);
+  });
 });

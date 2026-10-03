@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, orderTrackingEvents as orderTrackingEventsTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, sapoSyncEvents, sapoVariantMappings, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
@@ -1923,6 +1923,49 @@ export async function deleteProductVariant(variantId: number) {
   memoryRestockSubscriptions = memoryRestockSubscriptions.filter(item => item.variantId !== variantId);
   memoryProductVariants = memoryProductVariants.filter(item => item.id !== variantId);
   return { success: true, productId: variant.productId };
+}
+
+/** Hard-delete a catalog product only when it has never appeared in an order. */
+export async function deleteProduct(productId: number) {
+  const connection = await getDb();
+  if (connection) {
+    const product = (await connection.select().from(products).where(eq(products.id, productId)).limit(1))[0];
+    if (!product) throw new Error("Không tìm thấy sản phẩm cần xóa");
+    const orderReference = await connection.select({ id: orderItemsTable.id }).from(orderItemsTable).where(eq(orderItemsTable.productId, productId)).limit(1);
+    if (orderReference.length) throw new Error("Sản phẩm đã xuất hiện trong lịch sử đơn hàng; hãy chuyển sang Ẩn thay vì xóa");
+    const variants = await connection.select({ id: productVariants.id }).from(productVariants).where(eq(productVariants.productId, productId));
+    const variantIds = variants.map(variant => variant.id);
+    await connection.transaction(async transaction => {
+      await transaction.delete(cartItems).where(eq(cartItems.productId, productId));
+      await transaction.delete(customerFavorites).where(eq(customerFavorites.productId, productId));
+      await transaction.delete(restockSubscriptions).where(eq(restockSubscriptions.productId, productId));
+      await transaction.delete(productReviews).where(eq(productReviews.productId, productId));
+      await transaction.delete(productDownloadLinks).where(eq(productDownloadLinks.productId, productId));
+      await transaction.delete(productWholesaleTiers).where(eq(productWholesaleTiers.productId, productId));
+      await transaction.delete(productOptionGroups).where(eq(productOptionGroups.productId, productId));
+      await transaction.delete(inventoryMovements).where(eq(inventoryMovements.productId, productId));
+      if (variantIds.length) {
+        await transaction.delete(sapoSyncEvents).where(inArray(sapoSyncEvents.localVariantId, variantIds));
+        await transaction.delete(sapoVariantMappings).where(inArray(sapoVariantMappings.localVariantId, variantIds));
+        await transaction.delete(productVariants).where(inArray(productVariants.id, variantIds));
+      }
+      await transaction.delete(products).where(eq(products.id, productId));
+    });
+    return { success: true, productId };
+  }
+  const product = memoryProducts.find(item => item.id === productId);
+  if (!product) throw new Error("Không tìm thấy sản phẩm cần xóa");
+  if (memoryOrderItems.some(item => item.productId === productId)) throw new Error("Sản phẩm đã xuất hiện trong lịch sử đơn hàng; hãy chuyển sang Ẩn thay vì xóa");
+  const variantIds = new Set(memoryProductVariants.filter(item => item.productId === productId).map(item => item.id));
+  memoryCart = memoryCart.filter(item => item.productId !== productId);
+  memoryCustomerFavorites = memoryCustomerFavorites.filter(item => item.productId !== productId);
+  memoryRestockSubscriptions = memoryRestockSubscriptions.filter(item => item.productId !== productId);
+  memoryProductOptionGroups = memoryProductOptionGroups.filter(item => item.productId !== productId);
+  memoryProductWholesaleTiers = memoryProductWholesaleTiers.filter(item => item.productId !== productId);
+  memoryProductVariants = memoryProductVariants.filter(item => !variantIds.has(item.id));
+  const index = memoryProducts.findIndex(item => item.id === productId);
+  memoryProducts.splice(index, 1);
+  return { success: true, productId };
 }
 
 export async function bulkUpdateProductVariants(input: { productId: number; changes: Array<{ variantId: number; stock?: number; priceAdjustment?: string; costPrice?: string; isActive?: boolean }> }) {

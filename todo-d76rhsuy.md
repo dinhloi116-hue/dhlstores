@@ -1218,3 +1218,9 @@
 - [x] Tải lại dữ liệu sản phẩm từ bảng mẫu, giữ đúng giá/tồn/SKU/ảnh và không tạo bản trùng.
 - [x] Cập nhật phần quản trị để mẫu Excel này là mẫu chung cho các lần nhập sản phẩm sau.
 - [x] Chạy test, TypeScript, build và kiểm tra quyền owner-only trước khi phát hành.
+
+## Xóa sản phẩm cho tài khoản owner dinhhoangloi — 2026-10-04
+- [x] Thêm procedure `catalogAdmin.deleteProduct` dùng `adminProcedure`, nên chỉ danh tính owner hợp lệ mới gọi được.
+- [x] Xóa sạch dữ liệu phụ thuộc của sản phẩm chưa từng có trong đơn hàng; từ chối xóa nếu đã có lịch sử đơn.
+- [x] Thêm nút Xóa trong Catalog với hộp thoại xác nhận và hồi quy owner-only.
+- [x] Chạy test catalog, TypeScript, build production và diff check.

@@ -95,6 +95,9 @@ export const catalogAdminRouter = router({
       supplierUrl: input.data.supplierUrl || undefined,
     }),
   ),
+  deleteProduct: adminProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) =>
+    db.deleteProduct(input.productId),
+  ),
 
   productVariants: adminProcedure.input(z.object({ productId: z.number().int().positive().optional() }).optional()).query(({ input }) =>
     db.getAdminProductVariants(input?.productId),
