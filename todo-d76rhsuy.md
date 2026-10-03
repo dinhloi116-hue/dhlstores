@@ -1212,3 +1212,9 @@
 - [x] Thêm trường nguồn nhập nội bộ trong form quản trị sản phẩm.
 - [x] Làm nổi bật cụm Kho / số lượng / nút −/+ bằng nền cam-vàng, viền 2px, ring và shadow; giữ CTA Mua ngay riêng biệt.
 - [x] Cập nhật hồi quy: 186 test passed, 2 skipped; TypeScript, build và diff check đạt.
+
+## Chuẩn hóa mẫu Excel sản phẩm — 2026-10-04
+- [x] Đọc lại bảng Google Sheets mẫu và đối chiếu parser nhập sản phẩm hiện tại.
+- [x] Tải lại dữ liệu sản phẩm từ bảng mẫu, giữ đúng giá/tồn/SKU/ảnh và không tạo bản trùng.
+- [x] Cập nhật phần quản trị để mẫu Excel này là mẫu chung cho các lần nhập sản phẩm sau.
+- [x] Chạy test, TypeScript, build và kiểm tra quyền owner-only trước khi phát hành.

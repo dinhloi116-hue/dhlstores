@@ -14,6 +14,23 @@ function makeWorkbook() {
   return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 }
 
+function makeCommonWorkbook() {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
+    ["HỒ SƠ SẢN PHẨM"], ["Trường", "Giá trị / lựa chọn"],
+    ["Tên sản phẩm", "Nameset Messi 10"], ["Loại", "B"], ["Đặc tính", "Chống nhiễm màu"], ["Hoàn thiện bề mặt", "Mạ đồng bóng"],
+    ["SKU sản phẩm dự kiến", "DHL-MESSI"], ["Giá vốn / sản phẩm (đ)", 14350], ["Giá bán Shopee (đ)", 79000], ["Tồn kho", 10], ["Cân nặng đóng gói (g)", 100],
+    ["Link sản phẩm gốc (1688)", "https://1688.example/item"], ["Ảnh bìa / AVT", "https://drive.example/cover"],
+    ...Array.from({ length: 16 }, () => [] as string[]),
+    ["Mốc số lượng", "Giá / cái"], ["1–9 cái", 49000], ["10–19 cái", 42000], ["20–29 cái", 36000], ["30–49 cái", 32000], ["Từ 50 cái", 27000],
+  ]), "01_Ho so san pham");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["PHÂN TÍCH"], ["Ghi chú"], ["Nhóm", "Chi tiết"], ["Bề mặt", "Ánh kim"], ["Nhiệt độ ép", "160 độ"]]), "02_Cau tao thong so");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([[], [], [], [], [], [], [], ["KẾT QUẢ", "", "", "", "", "", "Thực thu sau phí", 49142]]), "03_Phan loai va gia");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Kênh", "Mục", "Nội dung"], ["BigSeller", "Mô tả", "Mô tả nameset"], ["Shopee", "Từ khóa chính", "Messi, nameset"]]), "04_Noi dung san pham");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Loại ảnh", "Tên file", "Link Google Drive"], ["Ảnh bìa", "avt.png", "https://drive.example/cover"], ["Ảnh 1", "1.png", "https://drive.example/detail"]]), "09_Link anh");
+  return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+}
+
 function adminContext(): TrpcContext {
   return {
     user: { id: 880001, openId: "excel-admin", name: "Excel admin", email: "excel@example.com", loginMethod: "local", role: "owner", status: "active", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() },
@@ -37,6 +54,15 @@ describe("excel product import", () => {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{ "Đường dẫn/Alias": "san-pham-loi", "Tên sản phẩm*": "", "Giá": "10,000" }]), "Sản phẩm");
     const parsed = parseExcelProducts(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }));
     expect(parsed.errors).toEqual(expect.arrayContaining([expect.objectContaining({ row: 2, message: expect.stringContaining("Tên sản phẩm") })]));
+  });
+
+  it("reads the shared multi-tab product template with stock, cost, source, specs and tiers", () => {
+    const parsed = parseExcelProducts(makeCommonWorkbook());
+    expect(parsed.products).toHaveLength(1);
+    expect(parsed.products[0]).toMatchObject({ name: "Nameset Messi 10", price: 49142, stock: 10, costPrice: 14350, supplierUrl: "https://1688.example/item" });
+    expect(parsed.products[0].variants[0]).toMatchObject({ sku: "DHL-MESSI", price: 49142, stock: 10, costPrice: 14350, weightGrams: 100 });
+    expect(parsed.products[0].wholesaleTiers).toEqual(expect.arrayContaining([{ minQuantity: 1, unitPrice: 49000 }, { minQuantity: 10, unitPrice: 42000 }, { minQuantity: 50, unitPrice: 27000 }]));
+    expect(parsed.products[0].specs).toContain("Bề mặt: Ánh kim");
   });
 
   it("previews and imports the workbook into a physical catalog category", async () => {

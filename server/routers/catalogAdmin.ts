@@ -155,7 +155,7 @@ export const catalogAdminRouter = router({
       variantCount: parsed.products.reduce((count, product) => count + product.variants.length, 0),
       errors: parsed.errors,
       duplicates: parsed.products.filter(product => existingSlugs.has(product.slug)).map(product => product.name),
-      products: parsed.products.slice(0, 20).map(product => ({ name: product.name, slug: product.slug, price: product.price, image: product.image, tags: product.tags, variants: product.variants.length, options: toOptionGroups(product) })),
+      products: parsed.products.slice(0, 20).map(product => ({ name: product.name, slug: product.slug, price: product.price, image: product.image, tags: product.tags, stock: product.stock, variants: product.variants.length, options: toOptionGroups(product) })),
     };
   }),
   importExcelProducts: adminProcedure.input(excelImportInput.extend({ categoryId: z.number().int().positive(), skipDuplicates: z.boolean().default(true) })).mutation(async ({ input }) => {
@@ -172,7 +172,7 @@ export const catalogAdminRouter = router({
         throw new Error(`Slug ${imported.slug} đã tồn tại`);
       }
       const basePrice = imported.variants.length ? Math.min(...imported.variants.map(variant => variant.price || imported.price)) : imported.price;
-      const product = await db.createProduct({ name: imported.name, slug: imported.slug, description: imported.description.slice(0, 5000), price: String(basePrice), categoryId: category.id, image: imported.image, specs: imported.tags ? `Tags: ${imported.tags}` : undefined, stock: 0, featured: false, isActive: true });
+      const product = await db.createProduct({ name: imported.name, slug: imported.slug, description: imported.description.slice(0, 5000), price: String(basePrice), categoryId: category.id, image: imported.image, specs: [imported.tags ? `Tags: ${imported.tags}` : "", imported.specs].filter(Boolean).join("\n"), supplierUrl: imported.supplierUrl, stock: imported.stock, weightGrams: imported.weightGrams, purchaseLayout: "marketplace", featured: false, isActive: true });
       if (!product) throw new Error(`Không thể tạo sản phẩm ${imported.name}`);
       createdProducts += 1;
       existingSlugs.add(imported.slug);
@@ -183,9 +183,10 @@ export const catalogAdminRouter = router({
           const attributes = variant.attributes.map(attribute => `${attribute.name}: ${attribute.value}`).join("\n");
           const color = variant.attributes.find(attribute => /màu|color/i.test(attribute.name))?.value;
           const size = variant.attributes.find(attribute => /size|kích thước/i.test(attribute.name))?.value;
-          const created = await db.createProductVariant({ productId: product.id, size, color, attributes: attributes || undefined, sku: variant.sku || undefined, image: variant.image || undefined, priceAdjustment: String(Math.max(0, variant.price - basePrice)), stock: 0, isActive: true });
+          const created = await db.createProductVariant({ productId: product.id, size, color, attributes: attributes || undefined, sku: variant.sku || undefined, image: variant.image || undefined, priceAdjustment: String(Math.max(0, variant.price - basePrice)), costPrice: String(variant.costPrice), stock: variant.stock, weightGrams: variant.weightGrams, isActive: true });
           if (created) createdVariants += 1;
         }
+        if (imported.wholesaleTiers.length) await db.replaceProductWholesaleTiers({ productId: product.id, tiers: imported.wholesaleTiers.map(tier => ({ minQuantity: tier.minQuantity, unitPrice: String(tier.unitPrice) })) });
       }
     }
     return { createdProducts, createdVariants, skipped, totalRows: parsed.rowCount };
