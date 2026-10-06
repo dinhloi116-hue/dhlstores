@@ -400,6 +400,27 @@ const memoryProducts: ProductType[] = [
     specs: "Toàn bộ thư viện DHL Stores v2026 trọn đời bản quyền thương mại.",
     featured: true,
     createdAt: new Date(),
+  },
+  {
+    id: 11,
+    name: "Halloween Cute PNG Bundle 20 Mẫu — File Digital Nền Trong Suốt",
+    nameEn: "Halloween Cute PNG Bundle — 20 Kawaii Halloween Designs",
+    slug: "halloween-cute-png-bundle-20-mau",
+    description: "BST 01 — HALLOWEEN CUTE gồm 20 thiết kế Halloween phong cách cute/kawaii, phù hợp in DTF/DTG, áo thun, sticker, túi vải, cốc, thiệp và đồ handmade. Đây là sản phẩm DIGITAL DOWNLOAD, không kèm sản phẩm vật lý.",
+    descriptionEn: "BST 01 — HALLOWEEN CUTE is a collection of 20 cute/kawaii Halloween designs for DTF/DTG, T-shirts, stickers, tote bags, mugs, cards and crafts. DIGITAL DOWNLOAD only; no physical item is included.",
+    price: "50000",
+    priceUsd: "3",
+    type: "digital",
+    categoryId: 10,
+    image: "/products/halloween-cute-cover.svg",
+    gallery: ["/products/halloween-cute-cover.svg"],
+    fileUrl: "https://drive.google.com/drive/folders/1YHTLPAhkoDbx37sMLQSdpBqjpjEfn6KB",
+    fileSize: "20 PNG · transparent background · high resolution",
+    stock: 9999,
+    specs: "20 file PNG nền trong suốt, mã M01–M20. Phù hợp in DTF/DTG và các sản phẩm thủ công. Giấy phép: dùng cá nhân và thành phẩm vật lý quy mô nhỏ; không bán lại hoặc phân phối file digital.",
+    specsEn: "20 transparent PNG files, M01–M20. Suitable for DTF/DTG and craft products. License: personal use and small-business physical end products; do not resell or redistribute the digital files.",
+    featured: true,
+    createdAt: new Date(),
   }
 ];
 
