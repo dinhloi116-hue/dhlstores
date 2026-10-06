@@ -1026,20 +1026,20 @@
 - [x] Lưu checkpoint hợp nhất và push an toàn lên GitHub `main`.
 
 ## Cấu hình R2 sau hợp nhất GitHub 2026-09-10
-- [ ] Bổ sung cấu hình R2 production/dev: endpoint, access key ID, secret access key và bucket. **Đang chờ người dùng cung cấp 4 secret; hiện cả 4 biến đều thiếu.**
-- [ ] Kiểm tra lại StorageProxy sau khi đủ secret; build hiện đã đạt, không commit secret vào GitHub.
+- [x] Tạm dừng cấu hình R2 production/dev theo yêu cầu; đã xác nhận 4 secret (endpoint, access key ID, secret access key, bucket) đều chưa được cung cấp và không ghi secret vào GitHub.
+- [x] Giữ kiểm tra StorageProxy ở trạng thái chờ secret; build vẫn đạt, không tự tạo hoặc lưu secret.
 
 ## Kết nối domain dhlstores.com 2026-09-10
 - [x] Kiểm tra trạng thái domain production hiện tại của DHL Stores: project hiện có domain `cuahangtoit-9a4r8wsz.manus.space`, còn `dhlstores.com` chưa phân giải DNS.
-- [ ] Gắn `dhlstores.com` vào dự án nếu hệ thống cho phép và không thay đổi DNS ngoài ý muốn.
-- [ ] Xác minh DNS/HTTPS hoặc đưa bản ghi chính xác để người dùng hoàn tất.
+- [x] Tạm dừng gắn `dhlstores.com` theo yêu cầu; không thay đổi DNS hoặc quyền sở hữu domain.
+- [x] Ghi nhận DNS/HTTPS chưa thể xác minh vì `dhlstores.com` và `www.dhlstores.com` chưa phân giải; chỉ cung cấp bản ghi khi người dùng chủ động tiếp tục cấu hình domain.
 
 ## Migration độc lập GitHub–Render–TiDB–R2 2026-09-10
 - [x] Đối chiếu `github/main` mới nhất với workspace và giữ nguyên dữ liệu/Manus production.
 - [x] Kiểm tra toàn bộ phụ thuộc Manus Forge/OAuth, R2 và danh sách env cần cho Render.
 - [x] Kiểm tra `pnpm run build` và `pnpm run start` mà không reset database; production server khởi động thành công trên cổng thử nghiệm.
-- [ ] Kiểm tra kết nối TiDB TLS và StorageProxy R2 sau khi đủ secret; hiện chưa thể xác minh R2 vì thiếu cấu hình.
-- [ ] Xác minh checklist production trước khi trỏ Cloudflare DNS `dhlstores.com` và `www.dhlstores.com`; chỉ thực hiện sau khi Render, TiDB, R2 và OAuth custom-domain được cấu hình.
+- [x] Tạm dừng kiểm tra TiDB TLS/StorageProxy R2 độc lập; DATABASE_URL hiện có nhưng R2 thiếu cấu hình, không tự thay đổi môi trường.
+- [x] Tạm dừng checklist production và Cloudflare DNS; chưa trỏ `dhlstores.com`/`www.dhlstores.com` khi Render, R2 và OAuth custom-domain chưa được người dùng cấu hình.
 
 ## Khôi phục bộ số lượng ở bảng SKU 2026-09-18
 - [x] Hiển thị lại cột số lượng với nút giảm, ô nhập và nút tăng cho từng SKU.
