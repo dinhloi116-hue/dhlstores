@@ -27,7 +27,7 @@ function makeCommonWorkbook() {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["PHÂN TÍCH"], ["Ghi chú"], ["Nhóm", "Chi tiết"], ["Bề mặt", "Ánh kim"], ["Nhiệt độ ép", "160 độ"]]), "02_Cau tao thong so");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([[], [], [], [], [], [], [], ["KẾT QUẢ", "", "", "", "", "", "Thực thu sau phí", 49142]]), "03_Phan loai va gia");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Kênh", "Mục", "Nội dung"], ["BigSeller", "Mô tả", "Mô tả nameset"], ["Shopee", "Từ khóa chính", "Messi, nameset"]]), "04_Noi dung san pham");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Loại ảnh", "Tên file", "Link Google Drive"], ["Ảnh bìa", "avt.png", "https://drive.example/cover"], ["Ảnh 1", "1.png", "https://drive.example/detail"]]), "09_Link anh");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Loại ảnh", "Tên file", "Link Google Drive"], ["Ảnh bìa", "avt.png", "https://drive.example/cover"], ["Ảnh 1", "1.png", "https://drive.example/detail"], ["Ảnh 2", "2.png", "https://drive.example/detail-2"]]), "09_Link anh");
   return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 }
 
@@ -66,6 +66,7 @@ describe("excel product import", () => {
     const parsed = parseExcelProducts(makeCommonWorkbook());
     expect(parsed.products).toHaveLength(1);
     expect(parsed.products[0]).toMatchObject({ name: "Nameset Messi 10", price: 49142, stock: 10, costPrice: 14350, supplierUrl: "https://1688.example/item" });
+    expect(parsed.products[0].gallery).toEqual(["https://drive.example/cover", "https://drive.example/detail", "https://drive.example/detail-2"]);
     expect(parsed.products[0].variants[0]).toMatchObject({ sku: "DHL-MESSI", price: 49142, stock: 10, costPrice: 14350, weightGrams: 100 });
     expect(parsed.products[0].wholesaleTiers).toEqual(expect.arrayContaining([{ minQuantity: 1, unitPrice: 49000 }, { minQuantity: 10, unitPrice: 42000 }, { minQuantity: 50, unitPrice: 27000 }]));
     expect(parsed.products[0].specs).toContain("Bề mặt: Ánh kim");

@@ -1235,3 +1235,8 @@
 - [x] Tạo sản phẩm digital `FIFA ASEAN Cup 2026 Patch Vector Pack`, giá bán 25.000đ, danh mục Patch & Badge.
 - [x] Gắn link tải khách: `https://drive.google.com/open?id=16VxFoV5HfIBg4TYliaBQcChFAmDq7iP9&usp=drive_fs`.
 - [x] Đưa 3 ảnh preview/gốc vào storage và hiển thị gallery trên trang chi tiết.
+
+## Nhập đủ ảnh từ mẫu Excel Google Sheets — 2026-10-06
+- [x] Phân tích cả URL ảnh và ảnh nhúng trong workbook; mẫu này dùng 8 URL ảnh trong sheet `09_Link anh`, không có ảnh nhúng binary.
+- [x] Parser/import giữ đủ gallery theo sản phẩm; parser thật trả về 8 ảnh và import truyền đủ `gallery` vào catalog.
+- [x] Bổ sung hồi quy gallery, tải 8 ảnh vào storage cho Nameset Messi và xác nhận tRPC public trả đủ 8 URL; screenshot route vẫn bị preview browser giữ trạng thái loading/404 nên đã ghi nhận giới hạn kiểm tra UI.
