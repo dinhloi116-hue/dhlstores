@@ -31,6 +31,8 @@ export interface ProductType {
   description: string;
   descriptionEn?: string;
   price: string;
+  /** Giá USD cố định cho một số tài nguyên số; bỏ trống thì giao diện dùng quy đổi mặc định. */
+  priceUsd?: string;
   type: 'digital' | 'physical';
   categoryId: number;
   image: string;
@@ -480,23 +482,53 @@ async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<t
   const idBySlug = new Map(persistedCategories.map(category => [category.slug, category.id]));
   const categorySlugByLegacyId = new Map(memoryCategories.map(category => [category.id, category.slug]));
   const existingProduct = await connection.select({ id: products.id }).from(products).limit(1);
-  if (existingProduct.length > 0) return;
+  if (existingProduct.length === 0) {
+    await connection.insert(products).values(memoryProducts.map(product => ({
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      price: product.price,
+      type: product.type,
+      categoryId: idBySlug.get(categorySlugByLegacyId.get(product.categoryId) ?? "") ?? 1,
+      image: product.image,
+      fileUrl: product.fileUrl ?? null,
+      fileSize: product.fileSize ?? null,
+      stock: product.stock,
+      specs: product.specs ?? null,
+      featured: product.featured,
+      isActive: true,
+    }))).onDuplicateKeyUpdate({ set: { name: sql`VALUES(name)` } });
+  }
 
-  await connection.insert(products).values(memoryProducts.map(product => ({
-    name: product.name,
-    slug: product.slug,
-    description: product.description,
-    price: product.price,
-    type: product.type,
-    categoryId: idBySlug.get(categorySlugByLegacyId.get(product.categoryId) ?? "") ?? 1,
-    image: product.image,
-    fileUrl: product.fileUrl ?? null,
-    fileSize: product.fileSize ?? null,
-    stock: product.stock,
-    specs: product.specs ?? null,
-    featured: product.featured,
+  // Sản phẩm được quản lý bằng mã nguồn để bản deploy mới tự đồng bộ vào DB hiện hữu.
+  const halloweenCuteSlug = "halloween-cute-png-bundle-20-mau";
+  const halloweenCuteValues = {
+    name: "Halloween Cute PNG Bundle 20 Mẫu — File Digital Nền Trong Suốt",
+    nameEn: "Halloween Cute PNG Bundle — 20 Kawaii Halloween Designs",
+    slug: halloweenCuteSlug,
+    description: "BST 01 — HALLOWEEN CUTE gồm 20 thiết kế Halloween phong cách cute/kawaii, phù hợp in DTF/DTG, áo thun, sticker, túi vải, cốc, thiệp và đồ handmade. Đây là sản phẩm DIGITAL DOWNLOAD, không kèm sản phẩm vật lý.",
+    descriptionEn: "BST 01 — HALLOWEEN CUTE is a collection of 20 cute/kawaii Halloween designs for DTF/DTG, T-shirts, stickers, tote bags, mugs, cards and crafts. DIGITAL DOWNLOAD only; no physical item is included.",
+    price: "50000",
+    type: "digital" as const,
+    categoryId: idBySlug.get("combo-design-bundle") ?? 1,
+    image: "/products/halloween-cute-cover.svg",
+    gallery: JSON.stringify(["/products/halloween-cute-cover.svg"]),
+    fileUrl: "https://drive.google.com/drive/folders/1YHTLPAhkoDbx37sMLQSdpBqjpjEfn6KB",
+    fileSize: "20 PNG · transparent background · high resolution",
+    stock: 9999,
+    weightGrams: 0,
+    purchaseLayout: "classic" as const,
+    specs: "20 file PNG nền trong suốt, mã M01–M20. Phù hợp in DTF/DTG và các sản phẩm thủ công. Giấy phép: dùng cá nhân và thành phẩm vật lý quy mô nhỏ; không bán lại hoặc phân phối file digital.",
+    specsEn: "20 transparent PNG files, M01–M20. Suitable for DTF/DTG and craft products. License: personal use and small-business physical end products; do not resell or redistribute the digital files.",
+    featured: true,
     isActive: true,
-  }))).onDuplicateKeyUpdate({ set: { name: sql`VALUES(name)` } });
+  };
+  const halloweenCuteExisting = await connection.select({ id: products.id }).from(products).where(eq(products.slug, halloweenCuteSlug)).limit(1);
+  if (halloweenCuteExisting[0]) {
+    await connection.update(products).set(halloweenCuteValues).where(eq(products.id, halloweenCuteExisting[0].id));
+  } else {
+    await connection.insert(products).values(halloweenCuteValues);
+  }
 }
 
 function toCategoryType(category: typeof categories.$inferSelect): CategoryType {
@@ -523,6 +555,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     description: product.description ?? "",
     descriptionEn: product.descriptionEn ?? undefined,
     price: String(product.price),
+    priceUsd: product.slug === "halloween-cute-png-bundle-20-mau" ? "3" : undefined,
     type: product.type,
     categoryId: product.categoryId,
     image: product.image,
