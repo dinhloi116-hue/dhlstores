@@ -34,6 +34,7 @@ export interface ProductType {
   type: 'digital' | 'physical';
   categoryId: number;
   image: string;
+  gallery?: string[];
   fileUrl?: string;
   fileSize?: string;
   stock: number;
@@ -513,6 +514,7 @@ function toCategoryType(category: typeof categories.$inferSelect): CategoryType 
 }
 
 function toProductType(product: typeof products.$inferSelect): ProductType {
+  const gallery = (() => { try { const parsed = product.gallery ? JSON.parse(product.gallery) : []; return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string" && value.length > 0) : []; } catch { return []; } })();
   return {
     id: product.id,
     name: product.name,
@@ -524,6 +526,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     type: product.type,
     categoryId: product.categoryId,
     image: product.image,
+    gallery: gallery.length ? gallery : [product.image],
     fileUrl: product.fileUrl ?? undefined,
     fileSize: product.fileSize ?? undefined,
     stock: product.stock,
@@ -1588,6 +1591,7 @@ export type CatalogProductInput = {
   price: string;
   categoryId: number;
   image: string;
+  gallery?: string[];
   fileUrl?: string;
   fileSize?: string;
   specs?: string;
@@ -1681,6 +1685,7 @@ export async function createProduct(input: CatalogProductInput) {
       type: productType,
       categoryId: input.categoryId,
       image: input.image,
+      gallery: input.gallery?.length ? JSON.stringify(input.gallery) : null,
       fileUrl: input.fileUrl ?? null,
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,
@@ -1708,6 +1713,7 @@ export async function createProduct(input: CatalogProductInput) {
     type: productType,
     categoryId: input.categoryId,
     image: input.image,
+    gallery: input.gallery,
     fileUrl: input.fileUrl,
     fileSize: input.fileSize,
     stock: productType === "physical" ? input.stock : 9999,
@@ -1739,6 +1745,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       type: productType,
       categoryId: input.categoryId,
       image: input.image,
+      gallery: input.gallery?.length ? JSON.stringify(input.gallery) : null,
       fileUrl: input.fileUrl ?? null,
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,

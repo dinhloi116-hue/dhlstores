@@ -239,6 +239,13 @@
       "when": 1791031166906,
       "tag": "0033_warm_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1791170755653,
+      "tag": "0034_bizarre_namorita",
+      "breakpoints": true
     }
   ]
 }

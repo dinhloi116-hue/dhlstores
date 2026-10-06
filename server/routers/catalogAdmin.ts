@@ -24,6 +24,7 @@ const productInput = z.object({
   price: z.coerce.number().min(0).max(999_999_999),
   categoryId: z.number().int().positive(),
   image: z.string().trim().min(1).max(4096),
+  gallery: z.array(z.string().trim().min(1).max(4096)).max(20).default([]),
   fileUrl: z.string().trim().max(4096).optional(),
   fileSize: z.string().trim().max(64).optional(),
   specs: z.string().trim().max(5000).optional(),
@@ -175,7 +176,7 @@ export const catalogAdminRouter = router({
         throw new Error(`Slug ${imported.slug} đã tồn tại`);
       }
       const basePrice = imported.variants.length ? Math.min(...imported.variants.map(variant => variant.price || imported.price)) : imported.price;
-      const product = await db.createProduct({ name: imported.name, slug: imported.slug, description: imported.description.slice(0, 5000), price: String(basePrice), categoryId: category.id, image: imported.image, specs: [imported.tags ? `Tags: ${imported.tags}` : "", imported.specs].filter(Boolean).join("\n"), supplierUrl: imported.supplierUrl, stock: imported.stock, weightGrams: imported.weightGrams, purchaseLayout: "marketplace", featured: false, isActive: true });
+      const product = await db.createProduct({ name: imported.name, slug: imported.slug, description: imported.description.slice(0, 5000), price: String(basePrice), categoryId: category.id, image: imported.image, gallery: imported.gallery, specs: [imported.tags ? `Tags: ${imported.tags}` : "", imported.specs].filter(Boolean).join("\n"), supplierUrl: imported.supplierUrl, stock: imported.stock, weightGrams: imported.weightGrams, purchaseLayout: "marketplace", featured: false, isActive: true });
       if (!product) throw new Error(`Không thể tạo sản phẩm ${imported.name}`);
       createdProducts += 1;
       existingSlugs.add(imported.slug);

@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import { parseExcelProducts } from "./excelProductImport";
+import { normalizeImageUrl, parseExcelProducts } from "./excelProductImport";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -40,6 +40,12 @@ function adminContext(): TrpcContext {
 }
 
 describe("excel product import", () => {
+  it("normalizes Google Drive file links into browser-loadable image URLs", () => {
+    expect(normalizeImageUrl("https://drive.google.com/file/d/1cqOtdBq8uAUttY0navqjB_dPcC2UX4bC/view?usp=drivesdk")).toBe("https://lh3.googleusercontent.com/d/1cqOtdBq8uAUttY0navqjB_dPcC2UX4bC=w1200");
+    expect(normalizeImageUrl("https://drive.google.com/open?id=abc123")).toBe("https://lh3.googleusercontent.com/d/abc123=w1200");
+    expect(normalizeImageUrl("https://cdn.example.com/product.png")).toBe("https://cdn.example.com/product.png");
+  });
+
   it("groups Bizweb-style rows into one product with variants", () => {
     const parsed = parseExcelProducts(makeWorkbook());
     expect(parsed).toMatchObject({ sheetName: "Sản phẩm", rowCount: 2 });

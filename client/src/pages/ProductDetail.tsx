@@ -145,6 +145,7 @@ export default function ProductDetail() {
   const [skuSort, setSkuSort] = useState<"stock_priority" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc">("stock_priority");
   const [hoveredPreview, setHoveredPreview] = useState<{ variantId: number; x: number; y: number } | null>(null);
   const [previewVariantId, setPreviewVariantId] = useState<number | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"wallet_balance" | "qr">("qr");
   const [inlinePayment, setInlinePayment] = useState<InlinePayment | null>(null);
@@ -196,7 +197,8 @@ export default function ProductDetail() {
   const unitPrice = Number(applicableWholesaleTier?.unitPrice ?? product?.price ?? 0) + Number(selectedVariant?.priceAdjustment || 0);
   const previewVariant = variants.find(variant => variant.id === previewVariantId);
   const hoveredVariant = variants.find(variant => variant.id === hoveredPreview?.variantId);
-  const primaryImageUrl = selectedVariant?.image || product?.image || "";
+  const galleryImages = useMemo(() => Array.from(new Set([selectedVariant?.image, ...(product?.gallery || []), product?.image].filter((value): value is string => Boolean(value)))), [product?.gallery, product?.image, selectedVariant?.image]);
+  const primaryImageUrl = galleryImages[galleryIndex] || galleryImages[0] || "";
   const recommendedProducts = useMemo(() => {
     if (!product) return [];
     const all = productsQuery.data || [];
@@ -238,7 +240,8 @@ export default function ProductDetail() {
     setPrimaryImageFailed(false);
     setZoomPoint(null);
     setMobileZoomOpen(false);
-  }, [product?.image, selectedVariant?.image]);
+    setGalleryIndex(0);
+  }, [product?.slug, selectedVariant?.id]);
 
   useEffect(() => {
     if (product?.type === "physical" && fulfillmentMode === 'in_stock' && availableStock > 0) setQuantity(current => Math.min(current, availableStock));
@@ -590,6 +593,7 @@ export default function ProductDetail() {
                 {zoomPoint && primaryImageUrl && !primaryImageFailed ? <div className="h-full min-h-[22rem] w-full bg-no-repeat" role="img" aria-label={`Vùng phóng to của ${productName}`} style={{ backgroundImage: `url(${primaryImageUrl})`, backgroundPosition: `${zoomPoint.x}% ${zoomPoint.y}%`, backgroundSize: '220%' }} /> : <div className="grid min-h-[22rem] place-items-center p-6 text-center text-xs font-bold text-slate-400"><ZoomIn className="mb-2 h-5 w-5" />Rê chuột lên ảnh để xem chi tiết</div>}
               </div>
             </div>
+            {galleryImages.length > 1 && <div className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Thư viện ảnh sản phẩm">{galleryImages.map((image, index) => <button key={`${image}-${index}`} type="button" onClick={() => { setGalleryIndex(index); setPrimaryImageFailed(false); }} aria-label={`Xem ảnh ${index + 1}`} className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white transition ${galleryIndex === index ? "border-[#ee4d2d] ring-2 ring-orange-100" : "border-slate-200 hover:border-orange-300"}`}><img src={image} alt={`Ảnh sản phẩm ${index + 1}`} loading="lazy" className="h-full w-full object-contain" /></button>)}</div>}
             <Dialog open={mobileZoomOpen} onOpenChange={setMobileZoomOpen}><DialogContent className="max-w-[calc(100vw-2rem)] border-slate-200 bg-white p-3 sm:max-w-3xl"><DialogHeader><DialogTitle>{productName}</DialogTitle><DialogDescription>Ảnh phóng to của sản phẩm</DialogDescription></DialogHeader>{primaryImageUrl && !primaryImageFailed ? <img src={primaryImageUrl} alt={productName} className="max-h-[75vh] w-full object-contain" /> : <AssetVisual categoryId={product.categoryId} title={productName} fileSize={product.fileSize} />}</DialogContent></Dialog>
             {productDescription && <>
               {product.type === 'physical' && <details className="mt-3 border-y border-slate-200 bg-white px-4 py-3 sm:hidden"><summary className="cursor-pointer list-none text-base font-bold text-slate-800">{lang === 'vi' ? 'Thông số & Mô tả' : 'Details & description'} <span className="float-right text-slate-400">⌄</span></summary><p className="mt-3 text-sm leading-relaxed text-slate-600">{productDescription}</p></details>}

@@ -16,6 +16,7 @@ export type ImportedProduct = {
   name: string;
   description: string;
   image: string;
+  gallery: string[];
   tags: string;
   specs: string;
   supplierUrl?: string;
@@ -29,6 +30,15 @@ export type ImportedProduct = {
 
 const headers = { alias: "Đường dẫn/Alias", name: "Tên sản phẩm*", sku: "Mã SKU", image: "Ảnh đại diện", variantImage: "Ảnh phiên bản", description: "Mô tả sản phẩm", tags: "Tags", price: "Giá" };
 function text(value: unknown) { return String(value ?? "").trim(); }
+export function normalizeImageUrl(value: unknown) {
+  const raw = text(value);
+  if (!raw) return "";
+  const fileMatch = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+  const queryMatch = raw.match(/[?&]id=([^&]+)/i);
+  const fileId = fileMatch?.[1] || queryMatch?.[1];
+  if (fileId) return `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=w1200`;
+  return raw;
+}
 function amount(value: unknown) {
   if (typeof value === "number") return Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
   const parsed = Number(text(value).replace(/[^\d,-]/g, "").replace(/,/g, ""));
@@ -76,18 +86,19 @@ function parseCommonWorkbook(workbook: XLSX.WorkBook) {
   const stock = amount(profile.get("Tồn kho"));
   const costPrice = amount(profile.get("Giá vốn / sản phẩm (đ)"));
   const weightGrams = amount(profile.get("Cân nặng đóng gói (g)"));
-  const cover = profile.get("Ảnh bìa / AVT") || "";
+  const cover = normalizeImageUrl(profile.get("Ảnh bìa / AVT"));
   const supplierUrl = profile.get("Link sản phẩm gốc (1688)") || findCellByLabel(workbook, contentSheet, "Link sản phẩm 1688");
   const specs = (specSheet ? sheetRows(workbook, specSheet).slice(3, 30) : []).filter(row => text(row[0]) && text(row[1]) && !text(row[0]).includes("THÔNG SỐ KỸ THUẬT")).map(row => `${text(row[0])}: ${text(row[1])}`).join("\n");
   const attributes = [["Loại", profile.get("Loại")], ["Hoàn thiện", profile.get("Hoàn thiện bề mặt")], ["Đặc tính", profile.get("Đặc tính")]].filter(([, value]) => value).map(([name, value]) => ({ name: name as string, value: value as string }));
   const profileRows = sheetRows(workbook, profileSheet);
   const wholesaleTiers = [31, 32, 33, 34, 35].map(rowNumber => { const row = profileRows[rowNumber - 1] || []; const match = text(row[0]).match(/(\d+)/); return { minQuantity: match ? Number(match[1]) : 0, unitPrice: amount(row[1]) }; }).filter(tier => tier.minQuantity > 0 && tier.unitPrice > 0);
-  const imageLinks = linksSheet ? sheetRows(workbook, linksSheet).slice(2).map(row => text(row[2])).filter(Boolean) : [];
-  const image = cover || imageLinks[0] || "generated:catalog-cover";
+  const imageLinks = linksSheet ? sheetRows(workbook, linksSheet).slice(2).map(row => normalizeImageUrl(row[2])).filter(Boolean) : [];
+  const gallery = Array.from(new Set([cover, ...imageLinks].filter(Boolean)));
+  const image = gallery[0] || "generated:catalog-cover";
   const slug = slugify(name);
   const sku = profile.get("SKU sản phẩm dự kiến") || "";
   const variant: ImportedVariant = { sku, price, image, stock, costPrice, weightGrams, attributes };
-  return { sheetName: profileSheet, rowCount: Math.max(...workbook.SheetNames.map(sheet => sheetRows(workbook, sheet).length)), products: [{ sourceKey: slug, slug, name, description, image, tags, specs, supplierUrl: supplierUrl || undefined, price, stock, costPrice, weightGrams, variants: [variant], wholesaleTiers }], errors: [] };
+  return { sheetName: profileSheet, rowCount: Math.max(...workbook.SheetNames.map(sheet => sheetRows(workbook, sheet).length)), products: [{ sourceKey: slug, slug, name, description, image, gallery, tags, specs, supplierUrl: supplierUrl || undefined, price, stock, costPrice, weightGrams, variants: [variant], wholesaleTiers }], errors: [] };
 }
 
 export function parseExcelProducts(buffer: Buffer) {
@@ -107,11 +118,15 @@ export function parseExcelProducts(buffer: Buffer) {
     activeKey = sourceKey; const price = amount(row[headers.price]); let product = bySourceKey.get(sourceKey);
     if (!product) {
       if (!name) { errors.push({ row: index + 2, message: "Dòng mở đầu một sản phẩm cần có Tên sản phẩm*" }); continue; }
-      product = { sourceKey, slug: slugify(alias || name), name, description: cleanDescription(row[headers.description]), image: text(row[headers.image]) || text(row[headers.variantImage]) || "generated:catalog-cover", tags: text(row[headers.tags]), specs: "", price, stock: 0, costPrice: 0, variants: [], wholesaleTiers: [] };
+      const imageColumns = Object.keys(row).filter(key => /^Hình ảnh\s*\d+$/i.test(key)).sort((a, b) => Number(a.match(/\d+/)?.[0] || 0) - Number(b.match(/\d+/)?.[0] || 0));
+      const gallery = Array.from(new Set([row[headers.image], ...imageColumns.map(key => row[key])].map(normalizeImageUrl).filter(Boolean)));
+      product = { sourceKey, slug: slugify(alias || name), name, description: cleanDescription(row[headers.description]), image: gallery[0] || normalizeImageUrl(row[headers.variantImage]) || "generated:catalog-cover", gallery, tags: text(row[headers.tags]), specs: "", price, stock: 0, costPrice: 0, variants: [], wholesaleTiers: [] };
       bySourceKey.set(sourceKey, product); optionNamesByProduct.set(sourceKey, new Map());
     }
+    const extraImages = Object.keys(row).filter(key => /^Hình ảnh\s*\d+$/i.test(key)).map(key => normalizeImageUrl(row[key])).filter(Boolean);
+    product.gallery = Array.from(new Set([...product.gallery, ...extraImages]));
     const attributes = optionPairs(row, optionNamesByProduct.get(sourceKey) || new Map()); const sku = text(row[headers.sku]);
-    if (attributes.length || sku) product.variants.push({ sku, price, image: text(row[headers.variantImage]) || product.image, stock: 0, costPrice: 0, attributes });
+    if (attributes.length || sku) product.variants.push({ sku, price, image: normalizeImageUrl(row[headers.variantImage]) || product.image, stock: 0, costPrice: 0, attributes });
   }
   const products = Array.from(bySourceKey.values());
   if (!products.length && !errors.length) throw new Error("Không tìm thấy sản phẩm hợp lệ trong file Excel");

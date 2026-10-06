@@ -1224,3 +1224,14 @@
 - [x] Xóa sạch dữ liệu phụ thuộc của sản phẩm chưa từng có trong đơn hàng; từ chối xóa nếu đã có lịch sử đơn.
 - [x] Thêm nút Xóa trong Catalog với hộp thoại xác nhận và hồi quy owner-only.
 - [x] Chạy test catalog, TypeScript, build production và diff check.
+
+## Sửa ảnh sản phẩm khi nhập Excel — 2026-10-05
+- [x] Chuẩn hóa link Google Drive trong parser sang URL ảnh trực tiếp, không lưu link `/file/d/.../view`.
+- [x] Sửa dữ liệu Nameset Messi đã nhập để ảnh bìa không còn vỡ.
+- [x] Bổ sung hồi quy parser và kiểm tra storefront sau khi sửa.
+
+## FIFA ASEAN Cup 2026 digital pack — 2026-10-05
+- [x] Đọc thư mục Drive `FIFA ASEAN CUP 2026`, master nội dung song ngữ và gói ZIP bán hàng.
+- [x] Tạo sản phẩm digital `FIFA ASEAN Cup 2026 Patch Vector Pack`, giá bán 25.000đ, danh mục Patch & Badge.
+- [x] Gắn link tải khách: `https://drive.google.com/open?id=16VxFoV5HfIBg4TYliaBQcChFAmDq7iP9&usp=drive_fs`.
+- [x] Đưa 3 ảnh preview/gốc vào storage và hiển thị gallery trên trang chi tiết.
