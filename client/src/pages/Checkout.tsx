@@ -142,9 +142,13 @@ export default function Checkout() {
     onError: error => toast.error(error.message || (lang === "vi" ? "Không thể tạo đơn hàng" : "Could not create order")),
   });
 
-  const formatCurrency = (value: number, usdOverride?: number) => lang === "en"
-    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number.isFinite(usdOverride) && Number(usdOverride) >= 0 ? Number(usdOverride) : value / 25000)
-    : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
+  const formatCurrency = (value: number, usdOverride?: number) => {
+    if (lang === "en") {
+      const usd = Number(usdOverride);
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number.isFinite(usd) && usd >= 0 ? usd : value / 25000);
+    }
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
+  };
 
   if (!isAuthenticated) {
     return (
