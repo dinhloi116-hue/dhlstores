@@ -1,3 +1,4 @@
+# DHL Nameset Layout updater V8.22 compatibility marker for older installed launchers
 $ErrorActionPreference = 'Stop'
 
 $repoBase = 'https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3'
