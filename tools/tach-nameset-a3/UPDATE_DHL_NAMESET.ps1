@@ -6,10 +6,10 @@ $tmpBase = Join-Path $env:TEMP 'DockerUI_DHL_Base.html'
 $tmpOut = Join-Path $env:TEMP 'DockerUI_DHL_Layout_V823.html'
 $log = Join-Path $env:TEMP 'DHL_NAMESET_UPDATE_LOG.txt'
 $patchNames = @(
-  'V77_PATCH.html','V78_PATCH.html','V79_PATCH.html','V80_PATCH.html','V81_PATCH.html','V82_PATCH.html','V83_PATCH.html','V84_PATCH.html','V85_PATCH.html','V86_PATCH.html','V88_FONT_FIX.html','V89_FONT_FREEZE_FIX.html','V810_WORKFLOW_ORDER.html','V811_FONT_ORDER.html','V812_FONT_LOAD_FIX.html','V813_PAGE_READY_FIX.html','V814_SMART_ROTATION_NEST.html','V815_DEEP_NEST.html','V816_SEARCH_NEST.html','V817_BEAM_NEST.html','V818_FRAME_UI.html','V819_EASY_FRAME_UI.html','V820_SIM_TEST_FIX.html','V821_BULK_HEIGHT.html','V823_UPDATE_RECOVERY.html'
+  'V77_PATCH.html','V78_PATCH.html','V79_PATCH.html','V80_PATCH.html','V81_PATCH.html','V82_PATCH.html','V83_PATCH.html','V84_PATCH.html','V85_PATCH.html','V86_PATCH.html','V88_FONT_FIX.html','V89_FONT_FREEZE_FIX.html','V810_WORKFLOW_ORDER.html','V811_FONT_ORDER.html','V812_FONT_LOAD_FIX.html','V813_PAGE_READY_FIX.html','V814_SMART_ROTATION_NEST.html','V815_DEEP_NEST.html','V816_SEARCH_NEST.html','V817_BEAM_NEST.html','V818_FRAME_UI.html','V819_EASY_FRAME_UI.html','V820_SIM_TEST_FIX.html','V821_BULK_HEIGHT.html','V822_UPDATE_RECOVERY.html','V823_INTERNAL_CLEAN.html'
 )
 $markers = @{
-  'V77_PATCH.html'='dhl-v77-features'; 'V78_PATCH.html'='dhl-v78-outline-fix'; 'V79_PATCH.html'='dhl-v79-cm-ui'; 'V80_PATCH.html'='dhl-v80-modes'; 'V81_PATCH.html'='dhl-v81-guillotine'; 'V82_PATCH.html'='dhl-v82-tabs'; 'V83_PATCH.html'='dhl-v83-roll45'; 'V84_PATCH.html'='dhl-v84-excel'; 'V85_PATCH.html'='dhl-v85-copy-size'; 'V86_PATCH.html'='dhl-v86-excel-rowgroups'; 'V88_FONT_FIX.html'='dhl-v88-font-fix'; 'V89_FONT_FREEZE_FIX.html'='dhl-v89-font-freeze-fix'; 'V810_WORKFLOW_ORDER.html'='dhl-v810-workflow-order'; 'V811_FONT_ORDER.html'='dhl-v811-font-order'; 'V812_FONT_LOAD_FIX.html'='dhl-v812-font-load-fix'; 'V813_PAGE_READY_FIX.html'='dhl-v813-page-ready-fix'; 'V814_SMART_ROTATION_NEST.html'='dhl-v814-smart-rotation-nest'; 'V815_DEEP_NEST.html'='dhl-v815-deep-nest'; 'V816_SEARCH_NEST.html'='dhl-v816-search-nest'; 'V817_BEAM_NEST.html'='dhl-v817-beam-nest'; 'V818_FRAME_UI.html'='dhl-v818-frame-ui'; 'V819_EASY_FRAME_UI.html'='dhl-v819-easy-frame-ui'; 'V820_SIM_TEST_FIX.html'='dhl-v820-sim-test-fix'; 'V821_BULK_HEIGHT.html'='dhl-v821-bulk-height'; 'V823_UPDATE_RECOVERY.html'='dhl-v822-update-recovery'
+  'V77_PATCH.html'='dhl-v77-features'; 'V78_PATCH.html'='dhl-v78-outline-fix'; 'V79_PATCH.html'='dhl-v79-cm-ui'; 'V80_PATCH.html'='dhl-v80-modes'; 'V81_PATCH.html'='dhl-v81-guillotine'; 'V82_PATCH.html'='dhl-v82-tabs'; 'V83_PATCH.html'='dhl-v83-roll45'; 'V84_PATCH.html'='dhl-v84-excel'; 'V85_PATCH.html'='dhl-v85-copy-size'; 'V86_PATCH.html'='dhl-v86-excel-rowgroups'; 'V88_FONT_FIX.html'='dhl-v88-font-fix'; 'V89_FONT_FREEZE_FIX.html'='dhl-v89-font-freeze-fix'; 'V810_WORKFLOW_ORDER.html'='dhl-v810-workflow-order'; 'V811_FONT_ORDER.html'='dhl-v811-font-order'; 'V812_FONT_LOAD_FIX.html'='dhl-v812-font-load-fix'; 'V813_PAGE_READY_FIX.html'='dhl-v813-page-ready-fix'; 'V814_SMART_ROTATION_NEST.html'='dhl-v814-smart-rotation-nest'; 'V815_DEEP_NEST.html'='dhl-v815-deep-nest'; 'V816_SEARCH_NEST.html'='dhl-v816-search-nest'; 'V817_BEAM_NEST.html'='dhl-v817-beam-nest'; 'V818_FRAME_UI.html'='dhl-v818-frame-ui'; 'V819_EASY_FRAME_UI.html'='dhl-v819-easy-frame-ui'; 'V820_SIM_TEST_FIX.html'='dhl-v820-sim-test-fix'; 'V821_BULK_HEIGHT.html'='dhl-v821-bulk-height'; 'V822_UPDATE_RECOVERY.html'='dhl-v822-update-recovery'; 'V823_INTERNAL_CLEAN.html'='dhl-v823-internal-clean'
 }
 $tmpPatches = @{}
 function Log([string]$s){ $line='['+(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')+'] '+$s; Add-Content -LiteralPath $log -Value $line -Encoding UTF8; Write-Host $s }
@@ -24,12 +24,12 @@ try {
   if($raw.IndexOf('DHL_UI_VERSION=7.4') -lt 0){ throw 'GitHub base UI is not V7.4.' }
   $append=New-Object System.Text.StringBuilder
   foreach($name in $patchNames){ $txt=[IO.File]::ReadAllText($tmpPatches[$name]); $marker=[string]$markers[$name]; if($txt.IndexOf($marker) -lt 0){ throw ($name+' is missing marker '+$marker) }; [void]$append.Append($txt); [void]$append.Append("`r`n") }
-  $raw=$raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.22').Replace('v7.4','v8.23')
+  $raw=$raw.Replace('DHL_UI_VERSION=7.4','DHL_UI_VERSION=8.23').Replace('v7.4','v8.23')
   if($raw.IndexOf('</body>') -lt 0){ throw 'Base UI is missing </body>.' }
   $raw=$raw.Replace('</body>',$append.ToString()+'</body>')
   $utf8=New-Object Text.UTF8Encoding($false); [IO.File]::WriteAllText($tmpOut,$raw,$utf8)
   $verify=[IO.File]::ReadAllText($tmpOut)
-  if($verify.IndexOf('DHL_UI_VERSION=8.22') -lt 0 -or $verify.IndexOf('dhl-v822-update-recovery') -lt 0 -or $verify.IndexOf('dhl-v821-bulk-height') -lt 0){ throw 'Could not build V8.23 UI.' }
+  if($verify.IndexOf('DHL_UI_VERSION=8.23') -lt 0 -or $verify.IndexOf('dhl-v823-internal-clean') -lt 0 -or $verify.IndexOf('dhl-v821-bulk-height') -lt 0 -or $verify.IndexOf('dhl-v87-commercial-license') -ge 0){ throw 'Could not build clean V8.23 UI.' }
   Log ('Built V8.23 UI: '+(Get-Item -LiteralPath $tmpOut).Length+' bytes')
 
   $targets=New-Object System.Collections.Generic.List[string]
@@ -38,7 +38,7 @@ try {
   if($targets.Count -eq 0){ throw 'Khong tim thay thu muc DHL_A3_Nameset nao dang duoc cai.' }
   $success=0; $failed=0
   foreach($target in ($targets|Sort-Object -Unique)){
-    try{ $dst=Join-Path $target 'DockerUI.html'; Copy-Item -LiteralPath $tmpOut -Destination $dst -Force; Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue; foreach($f in @('AppUI.xslt','UserUI.xslt')){ $p=Join-Path $target $f; if(Test-Path -LiteralPath $p){$t=[IO.File]::ReadAllText($p); $t=$t.Replace('Tách Nameset A3','DHL Nameset Layout').Replace('Tach Nameset A3','DHL Nameset Layout'); [IO.File]::WriteAllText($p,$t,$utf8)}}; $check=[IO.File]::ReadAllText($dst); if($check.IndexOf('DHL_UI_VERSION=8.22') -lt 0){throw 'Verification failed after write.'}; $success++; Log ('UPDATED V8.23: '+$dst) } catch { $failed++; Log ('SKIP FAILED TARGET: '+$target+' | '+$_.Exception.Message) }
+    try{ $dst=Join-Path $target 'DockerUI.html'; Copy-Item -LiteralPath $tmpOut -Destination $dst -Force; Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue; foreach($f in @('AppUI.xslt','UserUI.xslt')){ $p=Join-Path $target $f; if(Test-Path -LiteralPath $p){$t=[IO.File]::ReadAllText($p); $t=$t.Replace('Tách Nameset A3','DHL Nameset Layout').Replace('Tach Nameset A3','DHL Nameset Layout'); [IO.File]::WriteAllText($p,$t,$utf8)}}; $check=[IO.File]::ReadAllText($dst); if($check.IndexOf('DHL_UI_VERSION=8.23') -lt 0 -or $check.IndexOf('dhl-v87-commercial-license') -ge 0){throw 'Verification failed after write.'}; $success++; Log ('UPDATED V8.23: '+$dst) } catch { $failed++; Log ('SKIP FAILED TARGET: '+$target+' | '+$_.Exception.Message) }
   }
   if($success -lt 1){ throw ('Khong cap nhat duoc bat ky ban Corel nao. Xem log: '+$log) }
   Remove-Item -LiteralPath $tmpBase,$tmpOut -Force -ErrorAction SilentlyContinue; foreach($name in $patchNames){ if($tmpPatches.ContainsKey($name)){Remove-Item -LiteralPath $tmpPatches[$name] -Force -ErrorAction SilentlyContinue} }
