@@ -43,9 +43,10 @@ export default function Home() {
     return () => window.removeEventListener("dhlstores-customer-tools", refresh);
   }, []);
 
-  const formatCurrency = (value: string | number) => {
+  const formatCurrency = (value: string | number, priceUsd?: string | number | null) => {
     const amount = Number(value);
     if (!Number.isFinite(amount) || amount <= 0) return lang === "vi" ? "Đang cập nhật" : "Updating";
+    if (lang === "en" && priceUsd) return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(priceUsd));
     return lang === "en" ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount / 25000) : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
   };
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase("vi");
