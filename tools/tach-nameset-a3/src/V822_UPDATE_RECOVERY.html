@@ -17,7 +17,7 @@ function reloadV822(){var b=E('reloadGit'),sh,fso,temp,launcher,tf,pexe,script,c
  +"    if(Test-Path $curl){ & $curl -L --fail --silent --show-error -o $p $u; if($LASTEXITCODE -ne 0){throw 'curl download failed'} } else { (New-Object Net.WebClient).DownloadFile($u,$p) }\r\n"
  +"  }\r\n"
  +"  if(!(Test-Path $p)){throw 'Updater was not downloaded'}\r\n"
- +"  $txt=[IO.File]::ReadAllText($p); if($txt.IndexOf('DHL Nameset Layout updater V8.22') -lt 0){throw 'Downloaded updater is not V8.22'}\r\n"
+ +"  $txt=[IO.File]::ReadAllText($p); if($txt.IndexOf('DHL Nameset Layout updater V8.22') -lt 0 -and $txt.IndexOf('DHL Nameset Layout updater V8.23') -lt 0){throw 'Downloaded updater is not a supported DHL Nameset updater'}\r\n"
  +"  $ps=Join-Path $PSHOME 'powershell.exe'\r\n"
  +"  $pr=Start-Process -FilePath $ps -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$p) -Verb RunAs -Wait -PassThru\r\n"
  +"  Add-Content -LiteralPath $log -Value ('Updater exit code: '+$pr.ExitCode) -Encoding UTF8\r\n"
