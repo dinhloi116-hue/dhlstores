@@ -1,0 +1,141 @@
+<style id="dhl-v826-true-contour-style"></style>
+<script id="dhl-v826-true-contour-nest" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}
+function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return'vi';}}
+function N(id,d){var x=E(id),v=x?Number(x.value):d;return isFinite(v)?v:d;}
+function app(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(L()==='vi'?'Không kết nối được CorelDRAW.':'Cannot connect to CorelDRAW.');}
+function selected(a){var sr=a.ActiveSelectionRange,out=[],i;if(!sr)return out;for(i=1;i<=sr.Count;i++)out.push(sr.Item(i));return out;}
+function boxOf(s){var w=Math.abs(Number(s.SizeWidth)),h=Math.abs(Number(s.SizeHeight)),cx=Number(s.CenterX),cy=Number(s.CenterY);return{l:cx-w/2,r:cx+w/2,b:cy-h/2,t:cy+h/2,w:w,h:h};}
+function leaves(s,out,depth){var kids=null,c=0,i;if(depth>10){out.push(s);return;}try{kids=s.Shapes;c=kids?kids.Count:0;}catch(e){c=0;}if(c>0){for(i=1;i<=c;i++){try{leaves(kids.Item(i),out,depth+1);}catch(x){}}}else out.push(s);}
+function addPtBox(bb,p){if(p.x<bb.l)bb.l=p.x;if(p.x>bb.r)bb.r=p.x;if(p.y<bb.t)bb.t=p.y;if(p.y>bb.b)bb.b=p.y;}
+function loopBox(pts){var bb={l:1e30,r:-1e30,t:1e30,b:-1e30},i;for(i=0;i<pts.length;i++)addPtBox(bb,pts[i]);bb.w=bb.r-bb.l;bb.h=bb.b-bb.t;return bb;}
+function rectLoop(lb,root){var l=lb.l-root.l,r=lb.r-root.l,t=root.t-lb.t,b=root.t-lb.b;return{closed:true,pts:[{x:l,y:t},{x:r,y:t},{x:r,y:b},{x:l,y:b}],bb:{l:l,r:r,t:t,b:b,w:r-l,h:b-t}};}
+function sampleLeaf(s,root){
+ var crv=null,sps=null,loops=[],i,sp,len,n,k,t,p,pts,closed,bb,lb;
+ try{crv=s.DisplayCurve;sps=crv?crv.SubPaths:null;}catch(e){sps=null;}
+ if(sps){
+  for(i=1;i<=sps.Count;i++){
+   try{
+    sp=sps.Item(i);len=Math.abs(Number(sp.Length))||0;closed=!!sp.Closed;
+    n=Math.max(closed?10:2,Math.min(96,Math.ceil(len/1.25)));
+    pts=[];
+    for(k=0;k<(closed?n:n+1);k++){
+     t=closed?(k/n):(k/n);
+     p=sp.GetPointPositionAt(t);
+     if(p&&isFinite(Number(p.x))&&isFinite(Number(p.y)))pts.push({x:Number(p.x)-root.l,y:root.t-Number(p.y)});
+    }
+    if(pts.length>=(closed?3:2)){bb=loopBox(pts);loops.push({closed:closed,pts:pts,bb:bb});}
+   }catch(one){}
+  }
+ }
+ if(!loops.length){try{lb=boxOf(s);loops.push(rectLoop(lb,root));}catch(x){}}
+ if(!loops.length)return null;
+ bb={l:1e30,r:-1e30,t:1e30,b:-1e30};
+ for(i=0;i<loops.length;i++){if(loops[i].bb.l<bb.l)bb.l=loops[i].bb.l;if(loops[i].bb.r>bb.r)bb.r=loops[i].bb.r;if(loops[i].bb.t<bb.t)bb.t=loops[i].bb.t;if(loops[i].bb.b>bb.b)bb.b=loops[i].bb.b;}
+ bb.w=bb.r-bb.l;bb.h=bb.b-bb.t;
+ return{loops:loops,bb:bb};
+}
+function anchors(item){
+ var a=[],seen={},i,j,pts,step,p,k;
+ function put(x,y){var key=Math.round(x*2)+','+Math.round(y*2);if(!seen[key]){seen[key]=1;a.push({x:x,y:y});}}
+ put(0,0);put(item.w,0);put(0,item.h);put(item.w,item.h);
+ for(i=0;i<item.leaves.length;i++)for(j=0;j<item.leaves[i].loops.length;j++){
+  pts=item.leaves[i].loops[j].pts;step=Math.max(1,Math.ceil(pts.length/10));
+  for(k=0;k<pts.length;k+=step){p=pts[k];put(p.x,p.y);}
+ }
+ if(a.length>32)a=a.slice(0,32);
+ return a;
+}
+function footprint(shape){
+ var root=boxOf(shape),ls=[],out=[],i,l;
+ leaves(shape,ls,0);
+ for(i=0;i<ls.length;i++){l=sampleLeaf(ls[i],root);if(l)out.push(l);}
+ if(!out.length)out=[{loops:[rectLoop(root,root)],bb:{l:0,r:root.w,t:0,b:root.h,w:root.w,h:root.h}}];
+ var it={shape:shape,w:root.w,h:root.h,leaves:out,area:root.w*root.h};
+ it.anchors=anchors(it);return it;
+}
+function rangesOverlap(a1,a2,b1,b2,g){return !(a2+g<=b1+.001||b2+g<=a1+.001);}
+function bbNear(a,ax,ay,b,bx,by,g){return rangesOverlap(ax+a.l,ax+a.r,bx+b.l,bx+b.r,g)&&rangesOverlap(ay+a.t,ay+a.b,by+b.t,by+b.b,g);}
+function orient(a,b,c){return (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);}
+function onSeg(a,b,p){return p.x>=Math.min(a.x,b.x)-.001&&p.x<=Math.max(a.x,b.x)+.001&&p.y>=Math.min(a.y,b.y)-.001&&p.y<=Math.max(a.y,b.y)+.001;}
+function segInter(a,b,c,d){
+ var o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b),e=.0001;
+ if(((o1>e&&o2<-e)||(o1<-e&&o2>e))&&((o3>e&&o4<-e)||(o3<-e&&o4>e)))return true;
+ if(Math.abs(o1)<=e&&onSeg(a,b,c))return true;if(Math.abs(o2)<=e&&onSeg(a,b,d))return true;if(Math.abs(o3)<=e&&onSeg(c,d,a))return true;if(Math.abs(o4)<=e&&onSeg(c,d,b))return true;return false;
+}
+function ptSegD2(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=vx*wx+vy*wy,c2=vx*vx+vy*vy,t,dx,dy;if(c2<=1e-12){dx=p.x-a.x;dy=p.y-a.y;return dx*dx+dy*dy;}t=c1/c2;if(t<0)t=0;else if(t>1)t=1;dx=p.x-(a.x+t*vx);dy=p.y-(a.y+t*vy);return dx*dx+dy*dy;}
+function segD2(a,b,c,d){if(segInter(a,b,c,d))return 0;return Math.min(ptSegD2(a,c,d),ptSegD2(b,c,d),ptSegD2(c,a,b),ptSegD2(d,a,b));}
+function pointInLoop(p,loop,ox,oy){var pts=loop.pts,inside=false,i,j,xi,yi,xj,yj,hit;for(i=0,j=pts.length-1;i<pts.length;j=i++){xi=ox+pts[i].x;yi=oy+pts[i].y;xj=ox+pts[j].x;yj=oy+pts[j].y;hit=((yi>p.y)!==(yj>p.y))&&(p.x<(xj-xi)*(p.y-yi)/((yj-yi)||1e-20)+xi);if(hit)inside=!inside;}return inside;}
+function pointInLeaf(p,leaf,ox,oy){var inside=false,i;for(i=0;i<leaf.loops.length;i++)if(leaf.loops[i].closed&&pointInLoop(p,leaf.loops[i],ox,oy))inside=!inside;return inside;}
+function boundariesNear(la,ax,ay,lb,bx,by,g){
+ var i,j,k,m,A,B,a1,a2,b1,b2,g2=g*g;
+ for(i=0;i<la.loops.length;i++){A=la.loops[i];for(j=0;j<lb.loops.length;j++){B=lb.loops[j];if(!bbNear(A.bb,ax,ay,B.bb,bx,by,g))continue;
+  for(k=0;k<A.pts.length;k++){a1={x:ax+A.pts[k].x,y:ay+A.pts[k].y};a2={x:ax+A.pts[(k+1)%A.pts.length].x,y:ay+A.pts[(k+1)%A.pts.length].y};if(!A.closed&&k===A.pts.length-1)break;
+   for(m=0;m<B.pts.length;m++){b1={x:bx+B.pts[m].x,y:by+B.pts[m].y};b2={x:bx+B.pts[(m+1)%B.pts.length].x,y:by+B.pts[(m+1)%B.pts.length].y};if(!B.closed&&m===B.pts.length-1)break;if(segD2(a1,a2,b1,b2)<=g2+.0001)return true;}
+  }
+ }}
+ return false;
+}
+function filledOverlap(la,ax,ay,lb,bx,by){
+ var i,j,lp,p,step;
+ for(i=0;i<la.loops.length;i++){lp=la.loops[i];if(!lp.closed)continue;step=Math.max(1,Math.floor(lp.pts.length/4));for(j=0;j<lp.pts.length;j+=step){p={x:ax+lp.pts[j].x,y:ay+lp.pts[j].y};if(pointInLeaf(p,lb,bx,by))return true;}}
+ for(i=0;i<lb.loops.length;i++){lp=lb.loops[i];if(!lp.closed)continue;step=Math.max(1,Math.floor(lp.pts.length/4));for(j=0;j<lp.pts.length;j+=step){p={x:bx+lp.pts[j].x,y:by+lp.pts[j].y};if(pointInLeaf(p,la,ax,ay))return true;}}
+ return false;
+}
+function collide(ax,ay,A,bx,by,B,g){
+ var i,j,la,lb;if(!rangesOverlap(ax,ax+A.w,bx,bx+B.w,g)||!rangesOverlap(ay,ay+A.h,by,by+B.h,g))return false;
+ for(i=0;i<A.leaves.length;i++){la=A.leaves[i];for(j=0;j<B.leaves.length;j++){lb=B.leaves[j];if(!bbNear(la.bb,ax,ay,lb.bb,bx,by,g))continue;if(boundariesNear(la,ax,ay,lb,bx,by,g))return true;if(filledOverlap(la,ax,ay,lb,bx,by))return true;}}
+ return false;
+}
+function valid(x,y,it,placed,W,H,g){var i,p;if(x<-.001||y<-.001||x+it.w>W+.001||y+it.h>H+.001)return false;for(i=0;i<placed.length;i++){p=placed[i];if(collide(x,y,it,p.x,p.y,p.item,g))return false;}return true;}
+function addX(list,seen,v,max){var k;if(!isFinite(v)||v<-.001||v>max+.001)return;v=Math.max(0,Math.min(max,v));k=Math.round(v*4)/4;if(!seen[k]){seen[k]=1;list.push(k);}}
+function xCandidates(it,placed,W,g,currentX){
+ var xs=[],seen={},i,j,k,p,a,b,max=W-it.w;
+ addX(xs,seen,0,max);addX(xs,seen,max,max);addX(xs,seen,currentX,max);
+ for(i=0;i<placed.length;i++){p=placed[i];addX(xs,seen,p.x+p.item.w+g,max);addX(xs,seen,p.x-it.w-g,max);
+  for(j=0;j<it.anchors.length;j++)for(k=0;k<p.item.anchors.length;k++){a=it.anchors[j];b=p.item.anchors[k];addX(xs,seen,p.x+b.x-a.x,max);addX(xs,seen,p.x+b.x+g-a.x,max);addX(xs,seen,p.x+b.x-g-a.x,max);}
+ }
+ xs.sort(function(a,b){return a-b;});
+ if(xs.length>140){var cut=[],step=xs.length/140,q;for(q=0;q<140;q++)cut.push(xs[Math.floor(q*step)]);xs=cut;}
+ return xs;
+}
+function firstYAtX(x,it,placed,H,g,limit){
+ var coarse=Math.max(.75,Math.min(2.5,g>0?g/2:1.5)),y=0,lastBad=-coarse,hi=Math.min(H-it.h,limit),fine,yy;
+ for(y=0;y<=hi+.001;y+=coarse){if(valid(x,y,it,placed,1e30,H,g)){fine=Math.max(0,lastBad);for(yy=fine;yy<=y+.001;yy+=.2)if(valid(x,yy,it,placed,1e30,H,g))return yy;return y;}lastBad=y;}
+ return null;
+}
+function pack(items,W,H,g){
+ var ord=items.slice(0),placed=[],i,it,xs,j,x,y,best,origY;
+ ord.sort(function(a,b){return a._y-b._y||a._x-b._x||b.area-a.area;});
+ for(i=0;i<ord.length;i++){it=ord[i];origY=Math.max(0,it._y);xs=xCandidates(it,placed,W,g,it._x);best=null;
+  for(j=0;j<xs.length;j++){x=xs[j];y=firstYAtX(x,it,placed,H,g,best?best.y:origY+Math.max(20,g*2));if(y===null)continue;if(!best||(y+it.h)<(best.y+it.h)-.001||(Math.abs(y-best.y)<.001&&x<best.x))best={x:x,y:y,item:it};}
+  if(!best){if(valid(it._x,it._y,it,placed,W,H,g))best={x:it._x,y:it._y,item:it};else return null;}
+  placed.push(best);
+ }
+ return placed;
+}
+function frameIndexFor(shape,baseLeft,W,fg){var cx=Number(shape.CenterX),step=W+fg,idx=Math.round((cx-(baseLeft+W/2))/step);return idx<0?0:idx;}
+function contourCompact(){
+ var a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=selected(a),W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,fg=N('v77FrameGapInput',0)*10,mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,uw=W-ml-mr,uh=H-mt-mb,page,baseLeft,baseBottom,bins={},i,idx,key,it,root,left,top,plan,p,cmd=false,opt=false,moved=0;
+ if(ss.length<2||uw<=0||uh<=0)return false;
+ try{
+  doc.Unit=3;page=a.ActivePage;baseLeft=Number(page.CenterX)-W/2;baseBottom=Number(page.CenterY)-H/2;
+  for(i=0;i<ss.length;i++){idx=frameIndexFor(ss[i],baseLeft,W,fg);key=String(idx);if(!bins[key])bins[key]=[];it=footprint(ss[i]);root=boxOf(ss[i]);left=baseLeft+idx*(W+fg)+ml;top=baseBottom+H-mt;it._x=root.l-left;it._y=top-root.t;bins[key].push(it);}
+  doc.BeginCommandGroup('DHL Nameset Layout - True Contour Nest V8.26');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  for(key in bins)if(bins.hasOwnProperty(key)){plan=pack(bins[key],uw,uh,g);if(!plan)continue;idx=parseInt(key,10)||0;left=baseLeft+idx*(W+fg)+ml;top=baseBottom+H-mt;for(i=0;i<plan.length;i++){p=plan[i];p.item.shape.CenterX=left+p.x+p.item.w/2;p.item.shape.CenterY=top-p.y-p.item.h/2;moved++;}}
+  try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(r){}return moved>0;
+ }catch(e){try{if(opt)a.Optimization=false;}catch(x){}try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(x2){}try{doc.Unit=old;}catch(x3){}return false;}
+}
+var oldRun=null,oldUndo=null,lastContour=false,hooked=false;
+function run(){var ok=oldRun?oldRun():false,res;if(ok!==false){lastContour=contourCompact();if(lastContour){res=E('v77NestResult');if(res)res.innerHTML+='<br><span class="v815-sub">'+(L()==='vi'?'✓ Dàn tinh theo ĐƯỜNG BAO THỰC của đối tượng/Group (DisplayCurve), cho phép chồng bounding box nếu đường bao thật không va nhau.':'✓ Final packing uses the TRUE OBJECT/GROUP CONTOUR (DisplayCurve), so bounding boxes may overlap when real contours do not.')+'</span>';}}return ok;}
+function undo(){var a;if(lastContour){try{a=app();a.ActiveDocument.Undo();}catch(e){}lastContour=false;}if(oldUndo)return oldUndo();}
+function finish(){
+ var b=E('v77NestBtn'),u=E('v77UndoNest'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
+ if(!b){setTimeout(finish,250);return;}if(!hooked){oldRun=window.V77NestSelected;oldUndo=window.V77Undo;hooked=true;}
+ window.V77NestSelected=run;window.V77Undo=undo;b.onclick=run;if(u)u.onclick=undo;
+ if(v&&v.length)v[0].innerHTML='v8.26';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.26 · true-contour nesting · VI / EN';
+}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,13400);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,13400);});else setTimeout(finish,13600);
+})();
+</script>

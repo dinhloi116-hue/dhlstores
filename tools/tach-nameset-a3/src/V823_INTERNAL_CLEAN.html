@@ -1,0 +1,27 @@
+<style id="dhl-v823-internal-clean-style">
+#v87LicenseBar{display:none!important}
+</style>
+<script id="dhl-v823-internal-clean" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}
+function clean(){
+  var b=E('reloadGit'),lic=E('v87LicenseBar'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
+  if(lic&&lic.parentNode){try{lic.parentNode.removeChild(lic);}catch(e){}}
+  window.DHLLicenseGate=function(){return true;};
+  window.DHLShowLicense=function(){return false;};
+  if(b){
+    b.style.display='inline-block';
+    b.disabled=false;
+    b.removeAttribute('aria-hidden');
+    b.removeAttribute('tabindex');
+    b.title=(typeof currentLang!=='undefined'&&currentLang==='en')?'Manual update from GitHub':'Cập nhật thủ công từ GitHub';
+  }
+  if(v&&v.length)v[0].innerHTML='v8.23';
+  if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.23 · internal dual-Corel · VI / EN';
+}
+clean();
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(clean,300);setTimeout(clean,10600);},false);
+else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(clean,300);setTimeout(clean,10600);});
+else{setTimeout(clean,500);setTimeout(clean,10800);}
+})();
+</script>
