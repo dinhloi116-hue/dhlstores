@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>DHL Nameset Layout</title>
-<!-- DHL_UI_VERSION=8.27 -->
+<!-- DHL_UI_VERSION=8.28 -->
 <style>
 *{box-sizing:border-box!important}
 html,body{margin:0!important;min-height:100%!important;background:#fff!important;color:#111!important;font:12px "Segoe UI",Arial,sans-serif!important;line-height:1.4!important}
@@ -1282,8 +1282,22 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 })();
 </script>
 
-<style id="dhl-v827-true-contour-style"></style>
-<script id="dhl-v827-true-contour-nest" type="text/javascript">
+<style id="dhl-v828-true-contour-style">
+#v83RotHint{display:none!important}
+#v77NestResult .v817-sub{display:none!important}
+#v77NestResult{font-size:10px!important;line-height:1.35!important;padding:7px 8px!important;min-height:0!important}
+.v817-plan{font-size:10px!important;line-height:1.35!important;margin-top:4px!important}
+.v818-box{margin:5px 0!important;padding:7px!important}
+.v85-prep{margin:5px 0!important;padding:7px!important}
+.v85-prep-title{margin-bottom:4px!important}
+.v85-lock{margin-top:5px!important}
+.v85-actions{margin-top:5px!important}
+.v85-status{font-size:9px!important;line-height:1.25!important;margin-top:4px!important}
+.v80-modebar{margin:5px 0 2px!important}
+.v80-modehint{font-size:9px!important;line-height:1.25!important;margin:2px 0 5px!important}
+#v77NestBtn,#v77UndoNest{min-height:30px!important}
+</style>
+<script id="dhl-v828-true-contour-nest" type="text/javascript">
 (function(){
 function E(id){return document.getElementById(id);}
 function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return'vi';}}
@@ -1405,29 +1419,30 @@ function pack(items,W,H,g){
  return placed;
 }
 function frameIndexFor(shape,baseLeft,W,fg){var cx=Number(shape.CenterX),step=W+fg,idx=Math.round((cx-(baseLeft+W/2))/step);return idx<0?0:idx;}
-function contourCompact(){
- var a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=selected(a),W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,fg=N('v77FrameGapInput',0)*10,mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,uw=W-ml-mr,uh=H-mt-mb,page,baseLeft,baseBottom,bins={},i,idx,key,it,root,left,top,plan,p,cmd=false,opt=false,moved=0;
+function contourCompact(sourceShapes){
+ var a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=(sourceShapes&&sourceShapes.length)?sourceShapes:selected(a),W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,fg=N('v77FrameGapInput',0)*10,mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,uw=W-ml-mr,uh=H-mt-mb,page,baseLeft,baseBottom,bins={},i,idx,key,it,root,left,top,plan,p,cmd=false,opt=false,moved=0;
  if(ss.length<2||uw<=0||uh<=0)return false;
  try{
   doc.Unit=3;page=a.ActivePage;baseLeft=Number(page.CenterX)-W/2;baseBottom=Number(page.CenterY)-H/2;
   for(i=0;i<ss.length;i++){idx=frameIndexFor(ss[i],baseLeft,W,fg);key=String(idx);if(!bins[key])bins[key]=[];it=footprint(ss[i]);root=boxOf(ss[i]);left=baseLeft+idx*(W+fg)+ml;top=baseBottom+H-mt;it._x=root.l-left;it._y=top-root.t;bins[key].push(it);}
-  doc.BeginCommandGroup('DHL Nameset Layout - True Contour Nest V8.27');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  doc.BeginCommandGroup('DHL Nameset Layout - True Contour Nest V8.28');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
   for(key in bins)if(bins.hasOwnProperty(key)){plan=pack(bins[key],uw,uh,g);if(!plan)continue;idx=parseInt(key,10)||0;left=baseLeft+idx*(W+fg)+ml;top=baseBottom+H-mt;for(i=0;i<plan.length;i++){p=plan[i];p.item.shape.CenterX=left+p.x+p.item.w/2;p.item.shape.CenterY=top-p.y-p.item.h/2;moved++;}}
   try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(r){}return moved>0;
  }catch(e){try{if(opt)a.Optimization=false;}catch(x){}try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(x2){}try{doc.Unit=old;}catch(x3){}return false;}
 }
 var oldRun=null,oldUndo=null,lastContour=false,hooked=false;
-function run(){var ok=oldRun?oldRun():false,res;if(ok!==false){lastContour=contourCompact();if(lastContour){res=E('v77NestResult');if(res)res.innerHTML+='<br><span class="v815-sub">'+(L()==='vi'?'✓ V8.27: dàn sâu theo ĐƯỜNG BAO THỰC. Group lớn giữ nguyên; vật nhỏ được thử nhét vào khe/lỗ rỗng của contour. Bounding box được phép chồng nếu contour thật vẫn giữ đúng khoảng cách.':'✓ V8.27 deep-packs by TRUE OBJECT/GROUP CONTOURS. Large groups stay intact; smaller objects are searched inside contour gaps/holes while keeping the requested gap.')+'</span>';}}return ok;}
+function run(){var a0,saved=[],range,i,ok,res;try{a0=app();saved=selected(a0);}catch(e){}ok=oldRun?oldRun():false;if(ok!==false){try{if(a0&&saved.length){range=a0.CreateShapeRange();for(i=0;i<saved.length;i++)range.Add(saved[i]);range.CreateSelection();}}catch(rs){}lastContour=contourCompact(saved);res=E('v77NestResult');if(res){if(lastContour)res.innerHTML+='<br><span class="v828-contour-ok">'+(L()==='vi'?'✓ V8.28: đã dàn tinh theo đường bao thực của đúng các vật được chọn trước khi tạo khung.':'✓ V8.28: contour refinement used the exact objects selected before frames were created.')+'</span>';else if(saved.length>1)res.innerHTML+='<br><span class="v828-contour-warn">'+(L()==='vi'?'⚠ Bước dàn contour chưa áp dụng được; giữ kết quả Beam Search.':'⚠ Contour refinement could not be applied; Beam Search result was kept.')+'</span>';}}return ok;}
 function undo(){var a;if(lastContour){try{a=app();a.ActiveDocument.Undo();}catch(e){}lastContour=false;}if(oldUndo)return oldUndo();}
 function finish(){
  var b=E('v77NestBtn'),u=E('v77UndoNest'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
  if(!b){setTimeout(finish,250);return;}if(!hooked){oldRun=window.V77NestSelected;oldUndo=window.V77Undo;hooked=true;}
  window.V77NestSelected=run;window.V77Undo=undo;b.onclick=run;if(u)u.onclick=undo;
- if(v&&v.length)v[0].innerHTML='v8.27';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.27 · deep true-contour nesting · VI / EN';
+ if(v&&v.length)v[0].innerHTML='v8.28';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.28 · contour-safe + compact UI · VI / EN';
 }
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,13400);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,13400);});else setTimeout(finish,13600);
 })();
 </script>
+
 
 
 </body>
