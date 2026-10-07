@@ -1,0 +1,123 @@
+<style id="dhl-v829-ui-outline-style">
+/* V8.29: clearer controls across the whole docker */
+input[type=text],input[type=number],input[type=file],select,textarea{
+  background:#fff!important;color:#111!important;opacity:1!important;
+  border:1px solid #666!important;font-weight:600!important;
+  box-shadow:none!important
+}
+input[disabled],select[disabled],textarea[disabled]{
+  opacity:1!important;color:#222!important;background:#f2f2f2!important;
+  border-color:#999!important;-webkit-text-fill-color:#222!important
+}
+input:focus,select:focus,textarea:focus{
+  background:#fffceb!important;border:2px solid #b77a00!important;
+  outline:none!important;box-shadow:0 0 0 2px rgba(183,122,0,.14)!important
+}
+.v810-locked,.v811-locked{opacity:1!important}
+.v810-locked input,.v810-locked select,.v810-locked button,
+.v811-locked input,.v811-locked select,.v811-locked button{opacity:1!important}
+.v77-mini,.mini,.muted,.v85-mini,.v86-mini,.v810-subnote,.v811-fontload-note{color:#333!important}
+#v77OutlineCard .v77-hint{font-size:10px!important;line-height:1.35!important;color:#333!important}
+#v77OutlineResult{min-height:22px!important;font-size:10px!important;line-height:1.35!important}
+</style>
+<script id="dhl-v829-ui-outline" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}
+function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return'vi';}}
+function app(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(L()==='vi'?'Không kết nối được CorelDRAW.':'Cannot connect to CorelDRAW.');}
+function num(id,d){var x=E(id),v=x?Number(x.value):d;return isFinite(v)?v:d;}
+function sel(a){var r=a.ActiveSelectionRange,o=[],i;if(!r)return o;for(i=1;i<=r.Count;i++)o.push(r.Item(i));return o;}
+function bounds(sr){var i,s,l=1e30,r=-1e30,b=1e30,t=-1e30,w,h,cx,cy;if(!sr||!sr.Count)throw new Error('empty range');for(i=1;i<=sr.Count;i++){s=sr.Item(i);w=Math.abs(Number(s.SizeWidth));h=Math.abs(Number(s.SizeHeight));cx=Number(s.CenterX);cy=Number(s.CenterY);l=Math.min(l,cx-w/2);r=Math.max(r,cx+w/2);b=Math.min(b,cy-h/2);t=Math.max(t,cy+h/2);}return{l:l,r:r,b:b,t:t};}
+function isBitmap(s){try{return !!s.Bitmap;}catch(e){return false;}}
+function delRange(sr){var i;if(!sr)return;try{for(i=sr.Count;i>=1;i--)try{sr.Item(i).Delete();}catch(x){}}catch(e){}}
+function boundaryFromRange(sr){
+ var bb=bounds(sr),b=null;
+ try{b=sr.CreateBoundary(bb.l-50,bb.b-50,false,false);}catch(e){}
+ if(!b)try{b=sr.CreateBoundary(bb.l-50,bb.b-50,true,false);}catch(e2){}
+ if(!b)throw new Error(L()==='vi'?'Corel không tạo được boundary từ vùng chọn.':'Corel could not create a boundary from the selected range.');
+ return b;
+}
+function baseBoundary(a,s){
+ var tr=null,ts=null,sr=null,b=null;
+ if(isBitmap(s)){
+  try{ts=s.Bitmap.Trace(3);}catch(e0){throw new Error('TRACE: '+e0.message);}
+  try{ts.Smoothing=20;}catch(e1){}
+  try{ts.DetailLevelPercent=95;}catch(e2){}
+  try{ts.RemoveBackground=true;}catch(e3){}
+  try{ts.DeleteOriginalObject=false;}catch(e4){}
+  try{ts.MergeAdjacentObjects=true;}catch(e5){}
+  try{ts.RemoveOverlap=true;}catch(e6){}
+  try{tr=ts.Finish();}catch(e7){throw new Error('TRACE FINISH: '+e7.message);}
+  if(!tr||!tr.Count)throw new Error(L()==='vi'?'Trace ảnh không tạo được vector tạm.':'Bitmap trace produced no temporary vector.');
+  try{b=boundaryFromRange(tr);}finally{delRange(tr);}
+  return b;
+ }
+ sr=a.CreateShapeRange();sr.Add(s);
+ return boundaryFromRange(sr);
+}
+function offsetAll(base,off){
+ var eff=null,sep=null,outer=null,bb=null,i,best=null,bestArea=-1,s,area;
+ if(!(off>0))return base;
+ try{eff=base.CreateContour(1,off,1);}catch(e0){throw new Error((L()==='vi'?'Không tạo được contour offset: ':'Could not create offset contour: ')+e0.message);}
+ try{sep=eff.Separate();}catch(e1){throw new Error((L()==='vi'?'Không tách được contour: ':'Could not separate contour: ')+e1.message);}
+ if(!sep||!sep.Count)throw new Error(L()==='vi'?'Contour offset không có kết quả.':'Offset contour produced no result.');
+ try{
+   outer=boundaryFromRange(sep);
+ }catch(allErr){
+   for(i=1;i<=sep.Count;i++){s=sep.Item(i);area=Math.abs(Number(s.SizeWidth))*Math.abs(Number(s.SizeHeight));if(area>bestArea){bestArea=area;best=s;}}
+   if(best)outer=best.Duplicate();
+ }
+ try{delRange(sep);}catch(dx){}
+ try{base.Delete();}catch(dx2){}
+ if(!outer)throw new Error(L()==='vi'?'Không tạo được đường bao sau offset.':'Could not create the final offset boundary.');
+ return outer;
+}
+function whiteStyle(s,src){try{s.Fill.UniformColor.RGBAssign(255,255,255);}catch(e){}try{s.Outline.SetNoOutline();}catch(e2){}try{s.OrderBackOf(src);}catch(e3){try{s.OrderBackOne();}catch(e4){}}}
+function cutStyle(s,stroke){try{s.Fill.ApplyNoFill();}catch(e){}try{s.Outline.Width=stroke;}catch(e2){}try{s.Outline.Color.CMYKAssign(0,100,0,0);}catch(e3){}}
+function groupResult(a,src,outer,makeWhite,makeCut,stroke){
+ var white=null,cut=null,r=a.CreateShapeRange(),g;
+ if(makeWhite){white=outer.Duplicate();whiteStyle(white,src);}
+ if(makeCut){cut=outer.Duplicate();cutStyle(cut,stroke);try{cut.OrderFrontOf(src);}catch(e){}}
+ try{outer.Delete();}catch(dx){}
+ r.Add(src);if(white)r.Add(white);if(cut)r.Add(cut);
+ g=r.Group();try{g.Name='DHL_OUTLINE_GROUP';}catch(n){}
+ return g;
+}
+function run(){
+ var a,doc,old,opt=false,cmd=false,ss,offCm,strokeCm,off,stroke,makeWhite,makeCut,i,base=null,outer=null,out=a?null:null,created=[],range,res=E('v77OutlineResult');
+ try{
+  a=app();doc=a.ActiveDocument;ss=sel(a);if(!ss.length)throw new Error(L()==='vi'?'Chưa chọn ảnh/vector.':'No image/vector selected.');
+  offCm=num('v77OutlineOffset',0.3);strokeCm=num('v77OutlineStroke',0.02);
+  off=offCm*10;stroke=strokeCm*10;
+  makeWhite=!!(E('v77MakeWhite')&&E('v77MakeWhite').checked);makeCut=!!(E('v77MakeCut')&&E('v77MakeCut').checked);
+  if(off<0||stroke<=0)throw new Error(L()==='vi'?'Khoảng cách/độ dày không hợp lệ.':'Invalid outline distance/width.');
+  if(!makeWhite&&!makeCut)throw new Error(L()==='vi'?'Chọn ít nhất NỀN TRẮNG hoặc CUTLINE.':'Choose at least WHITE BORDER or CUTLINE.');
+  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.29');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  for(i=0;i<ss.length;i++){
+   base=null;outer=null;
+   base=baseBoundary(a,ss[i]);
+   outer=offsetAll(base,off);base=null;
+   created.push(groupResult(a,ss[i],outer,makeWhite,makeCut,stroke));outer=null;
+  }
+  try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;
+  if(created.length){try{range=a.CreateShapeRange();for(i=0;i<created.length;i++)range.Add(created[i]);range.CreateSelection();}catch(re){}}
+  try{a.ActiveWindow.Refresh();}catch(rx){}
+  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.29: đã tạo đường bao cho ':'✓ V8.29: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
+  return true;
+ }catch(e){
+  try{if(outer)outer.Delete();}catch(c1){}try{if(base)base.Delete();}catch(c2){}try{if(opt&&a)a.Optimization=false;}catch(c3){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(c4){}try{if(cmd&&doc){doc.EndCommandGroup();doc.Undo();}}catch(c5){}
+  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'Không tạo được đường bao: ':'Could not create outline: ')+String(e.message||e);}
+  return false;
+ }
+}
+function tuneUI(){
+ var btn=E('v77OutlineBtn'),hint=E('v77OutlineHint'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
+ if(btn){btn.onclick=run;btn.innerHTML=L()==='vi'?'TẠO ĐƯỜNG BAO + GROUP':'CREATE OUTLINE + GROUP';}
+ window.V77CreateOutline=run;window.V76CreateOutline=run;
+ if(hint)hint.innerHTML=L()==='vi'?'Chọn ảnh PNG/vector → nhập khoảng cách viền → chọn Nền trắng và/hoặc Cutline → TẠO ĐƯỜNG BAO. Tool giữ nguyên đối tượng gốc và Group kết quả.':'Select PNG/vector → set outline distance → choose White border and/or Cutline → CREATE OUTLINE. The original object is preserved and the result is grouped.';
+ if(v&&v.length)v[0].innerHTML='v8.29';
+ if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.29 · outline + clearer UI · VI / EN';
+}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(tuneUI,14500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(tuneUI,14500);});else setTimeout(tuneUI,14700);
+})();
+</script>
