@@ -58,6 +58,7 @@ const productOptionGroupsInput = z.array(z.object({
 const allowedMime = /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm)|application\/(pdf|zip|x-zip-compressed))$/;
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const MAX_EXCEL_IMPORT_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORTED_IMAGE_BYTES = 10 * 1024 * 1024;
 
 function sanitizeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-").slice(0, 180) || "upload";
@@ -73,6 +74,43 @@ function readExcelImport(input: z.infer<typeof excelImportInput>) {
   const buffer = Buffer.from(input.base64, "base64");
   if (!buffer.length || buffer.length > MAX_EXCEL_IMPORT_BYTES) throw new Error("File Excel phải có dung lượng từ 1 byte đến 10 MB");
   return parseExcelProducts(buffer);
+}
+
+function isGoogleDriveImageUrl(value: string) {
+  return /^https:\/\/lh3\.googleusercontent\.com\/d\//i.test(value) || /^https:\/\/drive\.google\.com\/uc\?/i.test(value);
+}
+
+function imageExtension(contentType: string) {
+  return contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : contentType.includes("gif") ? "gif" : "jpg";
+}
+
+async function materializeImportedImages(product: Awaited<ReturnType<typeof readExcelImport>>["products"][number]) {
+  const urls = Array.from(new Set([product.image, ...product.gallery, ...product.variants.map(variant => variant.image)].filter(url => isGoogleDriveImageUrl(url))));
+  const replacements = new Map<string, string>();
+  const warnings: string[] = [];
+  for (const sourceUrl of urls.slice(0, 20)) {
+    try {
+      const response = await fetch(sourceUrl, { signal: AbortSignal.timeout(12_000) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const contentType = (response.headers.get("content-type") || "").split(";")[0].toLowerCase();
+      const contentLength = Number(response.headers.get("content-length") || 0);
+      if (!/^image\/(png|jpeg|webp|gif)$/.test(contentType)) throw new Error("nguồn không trả về file ảnh hợp lệ");
+      if (contentLength > MAX_IMPORTED_IMAGE_BYTES) throw new Error("ảnh vượt quá 10 MB");
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (!buffer.length || buffer.length > MAX_IMPORTED_IMAGE_BYTES) throw new Error("ảnh vượt quá 10 MB");
+      const stored = await storagePut(`catalog/excel-drive/${Date.now()}-${nanoid(8)}.${imageExtension(contentType)}`, buffer, contentType);
+      replacements.set(sourceUrl, stored.url);
+    } catch (error) {
+      warnings.push(`${product.name}: không thể sao chép ảnh Drive (${String(error instanceof Error ? error.message : error)})`);
+    }
+  }
+  if (!replacements.size) return { product, warnings, copied: 0 };
+  const replace = (url: string) => replacements.get(url) || url;
+  return {
+    product: { ...product, image: replace(product.image), gallery: product.gallery.map(replace), variants: product.variants.map(variant => ({ ...variant, image: replace(variant.image) })) },
+    warnings,
+    copied: replacements.size,
+  };
 }
 
 export const catalogAdminRouter = router({
@@ -159,7 +197,8 @@ export const catalogAdminRouter = router({
       variantCount: parsed.products.reduce((count, product) => count + product.variants.length, 0),
       errors: parsed.errors,
       duplicates: parsed.products.filter(product => existingSlugs.has(product.slug)).map(product => product.name),
-      products: parsed.products.slice(0, 20).map(product => ({ name: product.name, slug: product.slug, price: product.price, image: product.image, tags: product.tags, stock: product.stock, variants: product.variants.length, options: toOptionGroups(product) })),
+      imageWarnings: parsed.products.filter(product => product.image === "generated:catalog-cover" || product.gallery.length === 0).map(product => `${product.name}: chưa có ảnh bìa hoặc ảnh gallery`),
+      products: parsed.products.slice(0, 20).map(product => ({ name: product.name, slug: product.slug, price: product.price, image: product.image, imageCount: product.gallery.length, hasImage: product.image !== "generated:catalog-cover" && product.gallery.length > 0, tags: product.tags, stock: product.stock, variants: product.variants.length, options: toOptionGroups(product) })),
     };
   }),
   importExcelProducts: adminProcedure.input(excelImportInput.extend({ categoryId: z.number().int().positive(), skipDuplicates: z.boolean().default(true) })).mutation(async ({ input }) => {
@@ -170,7 +209,13 @@ export const catalogAdminRouter = router({
     let createdProducts = 0;
     let createdVariants = 0;
     const skipped: string[] = [];
-    for (const imported of parsed.products) {
+    let copiedImages = 0;
+    const imageWarnings: string[] = [];
+    for (const rawImported of parsed.products) {
+      const materialized = await materializeImportedImages(rawImported);
+      const imported = materialized.product;
+      copiedImages += materialized.copied;
+      imageWarnings.push(...materialized.warnings);
       if (existingSlugs.has(imported.slug)) {
         if (input.skipDuplicates) { skipped.push(imported.name); continue; }
         throw new Error(`Slug ${imported.slug} đã tồn tại`);
@@ -193,7 +238,7 @@ export const catalogAdminRouter = router({
         if (imported.wholesaleTiers.length) await db.replaceProductWholesaleTiers({ productId: product.id, tiers: imported.wholesaleTiers.map(tier => ({ minQuantity: tier.minQuantity, unitPrice: String(tier.unitPrice) })) });
       }
     }
-    return { createdProducts, createdVariants, skipped, totalRows: parsed.rowCount };
+    return { createdProducts, createdVariants, skipped, totalRows: parsed.rowCount, copiedImages, imageWarnings };
   }),
 
   media: adminProcedure.query(() => db.getMediaAssets()),

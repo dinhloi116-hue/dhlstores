@@ -80,7 +80,8 @@ describe("excel product import", () => {
     const fileName = "products.xlsx";
     const base64 = makeWorkbook().toString("base64");
     const preview = await caller.catalogAdmin.previewExcelImport({ fileName, base64 });
-    expect(preview).toMatchObject({ productCount: 1, variantCount: 2 });
+    expect(preview).toMatchObject({ productCount: 1, variantCount: 2, imageWarnings: [] });
+    expect(preview.products[0]).toMatchObject({ hasImage: true, imageCount: 3 });
     const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "quan-ao-bong-da");
     const result = await caller.catalogAdmin.importExcelProducts({ fileName, base64, categoryId: physicalCategory!.id, skipDuplicates: true });
     expect(result).toMatchObject({ createdProducts: 1, createdVariants: 2 });

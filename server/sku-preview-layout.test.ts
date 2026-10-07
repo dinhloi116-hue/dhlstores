@@ -340,6 +340,19 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("h-8 w-8 rounded object-cover");
   });
 
+  it("keeps the product gallery usable and warns admins about missing Excel images", () => {
+    const productSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+    const adminSource = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
+    expect(productSource).toContain('aria-label="Thư viện ảnh sản phẩm"');
+    expect(productSource).toContain("galleryImages.map");
+    expect(productSource).toContain("setGalleryIndex(index)");
+    expect(productSource).toContain("overflow-x-auto");
+    expect(adminSource).toContain("imageWarnings");
+    expect(adminSource).toContain("Cảnh báo ảnh trước khi nhập");
+    expect(adminSource).toContain("Thiếu ảnh");
+    expect(adminSource).toContain("đã lưu ${result.copiedImages} ảnh vào storage");
+  });
+
   it("celebrates reaching the reference free-shipping threshold", () => {
     const source = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
     expect(source).toContain("freeShippingThreshold = 500000");
