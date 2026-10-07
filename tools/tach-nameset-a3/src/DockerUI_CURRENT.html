@@ -491,5 +491,298 @@ function finish(){if(!build()){setTimeout(finish,180);return;}var old=window.set
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,1350);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,1350);});else setTimeout(finish,1500);
 })();
 </script>
+<style id="dhl-v85-copy-size-style">
+.v85-prep{border:1px solid #cfcfcf!important;border-radius:6px!important;padding:8px!important;margin:8px 0!important;background:#fff!important}.v85-prep-title{font-size:12px!important;font-weight:800!important;margin-bottom:6px!important}.v85-grid3{display:table!important;width:100%!important;table-layout:fixed!important}.v85-grid3>div{display:table-cell!important;padding-right:5px!important;vertical-align:top!important}.v85-grid3>div:last-child{padding-right:0!important}.v85-mini{display:block!important;font-size:10px!important;color:#555!important;margin-bottom:3px!important}.v85-lock{display:block!important;margin-top:7px!important;font-size:11px!important}.v85-lock input{width:auto!important;min-height:0!important;margin:0 5px 0 0!important;vertical-align:middle!important}.v85-actions{display:table!important;width:100%!important;table-layout:fixed!important;margin-top:7px!important}.v85-actions>div{display:table-cell!important;padding-right:5px!important}.v85-actions>div:last-child{padding-right:0!important}.v85-actions button{font-size:10px!important;padding:6px 4px!important}.v85-status{font-size:10px!important;color:#555!important;line-height:1.4!important;margin-top:6px!important}.v85-badge{display:inline-block!important;padding:3px 7px!important;border:1px solid #888!important;border-radius:4px!important;background:#f5f5f5!important;font-size:10px!important;font-weight:800!important;margin-bottom:4px!important}
+</style>
+<script id="dhl-v85-copy-size" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}function r2(v){return Math.round(v*100)/100;}
+var oldNest=null,oldUndo=null,lastPrepared=false,lastSource=null,lastQty=0;
+function corel(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(L()==='vi'?'Không kết nối được CorelDRAW.':'Cannot connect to CorelDRAW.');}
+function topSelection(a){var sr=a.ActiveSelectionRange,out=[],i;if(!sr)return out;for(i=1;i<=sr.Count;i++)out.push(sr.Item(i));return out;}
+function T(){return L()==='vi'?{title:'TẠO SỐ LƯỢNG / KÍCH THƯỚC',qty:'Số bản in mới',w:'Ngang (cm)',h:'Dọc (cm)',lock:'Khóa tỷ lệ ngang/dọc',get:'LẤY SIZE MẪU',reset:'GIỮ NGUYÊN SIZE',hint:'Nếu chọn đúng 1 mẫu: nhập số lượng và kích thước rồi bấm DÀN TỐI ƯU. Tool giữ nguyên mẫu gốc, tạo bản in mới để dàn. Để Ngang = 0 sẽ giữ nguyên kích thước.',needOne:'Chọn đúng 1 mẫu để dùng chế độ tạo số lượng.',size:'Mẫu hiện tại: {w} × {h} cm.',ready:'Sẽ tạo {q} bản in, ngang {w} cm, dọc {h} cm.',prepared:'Đã tạo {q} bản in từ 1 mẫu. Mẫu gốc vẫn được giữ nguyên.',badQty:'Số lượng phải từ 1 trở lên.',badSize:'Kích thước phải lớn hơn 0.',undo:'Đã hoàn tác dàn + các bản sao vừa tạo.'}:{title:'QUANTITY / TARGET SIZE',qty:'New print copies',w:'Width (cm)',h:'Height (cm)',lock:'Lock aspect ratio',get:'USE SELECTED SIZE',reset:'KEEP ORIGINAL SIZE',hint:'With exactly 1 source selected, enter quantity and size, then click OPTIMIZE LAYOUT. The source stays untouched; new print copies are created and nested. Width = 0 keeps the original size.',needOne:'Select exactly 1 source object to use copy mode.',size:'Current source: {w} × {h} cm.',ready:'Will create {q} copies at {w} × {h} cm.',prepared:'Created {q} print copies from 1 source. Original source was kept.',badQty:'Quantity must be at least 1.',badSize:'Size must be greater than 0.',undo:'Undid nesting and the generated copies.'};}
+function fmt(s,m){var k;for(k in m)if(m.hasOwnProperty(k))s=s.replace('{'+k+'}',m[k]);return s;}
+function save(){try{localStorage.setItem('dhl_v85_copy',[E('v85Qty').value,E('v85Width').value,E('v85Height').value,E('v85Lock').checked?'1':'0'].join('|'));}catch(e){}}
+function load(){try{var s=localStorage.getItem('dhl_v85_copy'),p;if(s){p=s.split('|');if(p.length>=4){E('v85Qty').value=p[0]||'1';E('v85Width').value=p[1]||'0';E('v85Height').value=p[2]||'0';E('v85Lock').checked=p[3]!=='0';}}}catch(e){}}
+function readSourceSize(setInputs){var a=corel(),ss=topSelection(a),doc,old,w,h;if(ss.length!==1)throw new Error(T().needOne);doc=a.ActiveDocument;old=doc.Unit;try{doc.Unit=3;w=Math.abs(Number(ss[0].SizeWidth))/10;h=Math.abs(Number(ss[0].SizeHeight))/10;}finally{doc.Unit=old;}if(setInputs){E('v85Width').value=r2(w);E('v85Height').value=r2(h);save();}return{shape:ss[0],w:w,h:h};}
+function syncLock(){var lock=!!E('v85Lock').checked,h=E('v85Height'),w=Number(E('v85Width').value),s;h.disabled=lock;if(lock){try{s=readSourceSize(false);if(w>0&&s.w>0)h.value=r2(w*s.h/s.w);else h.value=r2(s.h);}catch(e){if(!(Number(h.value)>0))h.value='0';}}save();updateStatus();}
+function keepOriginal(){E('v85Width').value='0';E('v85Height').value='0';save();updateStatus();}
+function getSize(){var st=E('v85PrepStatus');try{var s=readSourceSize(true);st.innerHTML=fmt(T().size,{w:r2(s.w),h:r2(s.h)});syncLock();}catch(e){st.innerHTML=esc(e.message);}}
+function updateStatus(){var st=E('v85PrepStatus'),q=Math.max(1,parseInt(E('v85Qty').value,10)||1),w=Number(E('v85Width').value),h=Number(E('v85Height').value),lock=!!E('v85Lock').checked,s;if(!st)return;try{s=readSourceSize(false);if(w<=0){w=s.w;h=s.h;}else if(lock&&s.w>0){h=w*s.h/s.w;}else if(h<=0){h=s.h;}st.innerHTML=fmt(T().ready,{q:q,w:r2(w),h:r2(h)})+'<br><span class="v85-status">'+T().hint+'</span>';}catch(e){st.innerHTML=T().hint;}}
+function buildUI(){var card=E('v77NestCard'),anchor=E('v80ModeWrap')||E('v77RotateLabel'),w;if(!card||!anchor)return false;if(E('v85Prep'))return true;w=document.createElement('div');w.id='v85Prep';w.className='v85-prep';w.innerHTML='<div class="v85-prep-title" id="v85Title"></div><div class="v85-grid3"><div><span class="v85-mini" id="v85QtyLabel"></span><input id="v85Qty" type="number" min="1" step="1" value="1"/></div><div><span class="v85-mini" id="v85WidthLabel"></span><input id="v85Width" type="number" min="0" step="0.1" value="0"/></div><div><span class="v85-mini" id="v85HeightLabel"></span><input id="v85Height" type="number" min="0" step="0.1" value="0"/></div></div><label class="v85-lock"><input id="v85Lock" type="checkbox" checked="checked"/><span id="v85LockText"></span></label><div class="v85-actions"><div><button id="v85GetSize" type="button"></button></div><div><button id="v85KeepSize" type="button"></button></div></div><div id="v85PrepStatus" class="v85-status"></div>';anchor.parentNode.insertBefore(w,anchor);load();E('v85Qty').onchange=function(){save();updateStatus();};E('v85Width').onchange=function(){syncLock();};E('v85Width').onkeyup=function(){syncLock();};E('v85Height').onchange=function(){save();updateStatus();};E('v85Lock').onclick=syncLock;E('v85GetSize').onclick=getSize;E('v85KeepSize').onclick=keepOriginal;syncLock();return true;}
+function relabel(){var t=T(),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(E('v85Title'))E('v85Title').innerHTML=t.title;if(E('v85QtyLabel'))E('v85QtyLabel').innerHTML=t.qty;if(E('v85WidthLabel'))E('v85WidthLabel').innerHTML=t.w;if(E('v85HeightLabel'))E('v85HeightLabel').innerHTML=t.h;if(E('v85LockText'))E('v85LockText').innerHTML=t.lock;if(E('v85GetSize'))E('v85GetSize').innerHTML=t.get;if(E('v85KeepSize'))E('v85KeepSize').innerHTML=t.reset;if(v&&v.length)v[0].innerHTML='v8.5';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.5 · copy + size + nesting · VI / EN';updateStatus();}
+function shouldPrepare(){var q=parseInt(E('v85Qty').value,10)||1,w=Number(E('v85Width').value),h=Number(E('v85Height').value);return q>1||w>0||(!E('v85Lock').checked&&h>0);}
+function prepareCopies(){var a=corel(),doc=a.ActiveDocument,ss=topSelection(a),source,qty,wcm,hcm,lock,old,sw,sh,tw,th,range,i,d,cmd=false;if(ss.length!==1)throw new Error(T().needOne);source=ss[0];qty=parseInt(E('v85Qty').value,10);if(!(qty>=1))throw new Error(T().badQty);wcm=Number(E('v85Width').value);hcm=Number(E('v85Height').value);lock=!!E('v85Lock').checked;old=doc.Unit;try{doc.Unit=3;sw=Math.abs(Number(source.SizeWidth));sh=Math.abs(Number(source.SizeHeight));if(!(sw>0&&sh>0))throw new Error(T().badSize);tw=wcm>0?wcm*10:sw;if(lock){th=tw*sh/sw;}else{th=hcm>0?hcm*10:sh;}if(!(tw>0&&th>0))throw new Error(T().badSize);doc.BeginCommandGroup('DHL Nameset Layout - Prepare Copies V8.5');cmd=true;range=a.CreateShapeRange();for(i=0;i<qty;i++){d=source.Duplicate(0,0);d.SetSize(tw,th);range.Add(d);}range.CreateSelection();doc.EndCommandGroup();cmd=false;lastPrepared=true;lastSource=source;lastQty=qty;return{qty:qty,w:tw/10,h:th/10};}catch(e){try{if(cmd)doc.EndCommandGroup();}catch(x){}throw e;}finally{try{doc.Unit=old;}catch(x2){}}}
+function nest(){var res=E('v77NestResult'),prep=null,html,failed=false;if(!oldNest)return;lastPrepared=false;lastSource=null;lastQty=0;try{save();if(shouldPrepare())prep=prepareCopies();oldNest();html=res?String(res.innerHTML).toLowerCase():'';failed=html.indexOf('không dàn được')>=0||html.indexOf('could not nest')>=0;if(failed&&prep){try{corel().ActiveDocument.Undo();}catch(ux){}try{if(lastSource)lastSource.CreateSelection();}catch(sx){}lastPrepared=false;return;}if(prep&&res){res.innerHTML='<span class="v85-badge">'+fmt(T().prepared,{q:prep.qty})+'</span><br>'+res.innerHTML;}}catch(e){if(prep){try{corel().ActiveDocument.Undo();}catch(ux2){}try{if(lastSource)lastSource.CreateSelection();}catch(sx2){}lastPrepared=false;}if(res)res.innerHTML=(L()==='vi'?'Không dàn được: ':'Could not nest: ')+esc(e.message);}}
+function undo(){var a;if(oldUndo)oldUndo();if(lastPrepared){try{a=corel();a.ActiveDocument.Undo();if(lastSource)lastSource.CreateSelection();if(a.ActiveWindow)a.ActiveWindow.Refresh();var r=E('v77NestResult');if(r)r.innerHTML=T().undo;}catch(e){}lastPrepared=false;lastSource=null;lastQty=0;}}
+function finish(){if(!buildUI()){setTimeout(finish,180);return;}oldNest=window.V77NestSelected;oldUndo=window.V77Undo;window.V77NestSelected=nest;window.V77Undo=undo;if(E('v77NestBtn'))E('v77NestBtn').onclick=nest;if(E('v77UndoNest'))E('v77UndoNest').onclick=undo;var oldLang=window.setLanguage;if(oldLang&&!oldLang._v85){var wrap=function(x){oldLang(x);setTimeout(relabel,40);};wrap._v85=true;window.setLanguage=wrap;}relabel();}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,1650);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,1650);});else setTimeout(finish,1800);
+})();
+</script>
+<style id="dhl-v86-excel-rowgroups-style">
+#v84TemplateStatus{display:none!important}
+.v86-box{border:1px solid #cfcfcf!important;border-radius:6px!important;padding:8px!important;margin:8px 0!important;background:#fff!important}.v86-title{font-size:12px!important;font-weight:800!important;margin-bottom:6px!important}.v86-grid2,.v86-grid3{display:table!important;width:100%!important;table-layout:fixed!important}.v86-grid2>div,.v86-grid3>div{display:table-cell!important;padding-right:5px!important;vertical-align:top!important}.v86-grid2>div:last-child,.v86-grid3>div:last-child{padding-right:0!important}.v86-mini{display:block!important;font-size:10px!important;color:#555!important;margin-bottom:3px!important}.v86-note{border:1px solid #cfcfcf!important;border-left:4px solid #999!important;border-radius:5px!important;padding:7px 8px!important;margin-top:7px!important;font-size:11px!important;line-height:1.4!important}.v86-note.ok{border-left-color:#2e8b57!important}.v86-note.bad{border-left-color:#c53b45!important}.v86-btn{margin-top:7px!important}.v86-hint{font-size:10px!important;color:#555!important;line-height:1.4!important;margin-top:5px!important}
+</style>
+<script id="dhl-v86-excel-rowgroups" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}function txt(v){return String(v===undefined||v===null?'':v).replace(/^\s+|\s+$/g,'');}function r2(v){return Math.round(v*100)/100;}
+var lastGroups=[],lastRows=[],lastPath='';
+function corel(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(L()==='vi'?'Không kết nối được CorelDRAW.':'Cannot connect to CorelDRAW.');}
+function T(){return L()==='vi'?{title:'TẠO BỘ TỪ TỪNG DÒNG EXCEL',fontName:'Font tên',fontNo:'Font số',load:'NẠP DANH SÁCH FONT',nameH:'Cao tên (cm)',noH:'Cao số (cm)',pairGap:'Cách tên → số (cm)',make:'TẠO CÁC BỘ TỪ EXCEL',hint:'Mỗi dòng Excel = đúng 1 bộ. Tên và số cùng dòng sẽ được căn giữa ngang rồi Group với nhau. Không ghép theo khoảng cách gần nhất.',needFile:'Hãy chọn file Excel trước.',needFont:'Hãy chọn Font tên và Font số trước.',made:'✓ Đã tạo {n} Group từ {n} dòng Excel. Mỗi Group đúng 1 tên + 1 số cùng dòng.',makeErr:'Không tạo được bộ: ',layout:'DÀN CÁC BỘ VÀO TRANG IN',layoutHint:'Sau khi tạo bộ: chọn khổ in / nhập Rộng × Cao → bấm SET TRANG IN → bấm DÀN CÁC BỘ VÀO TRANG IN.',needGroups:'Chưa có bộ Excel nào để dàn. Hãy bấm TẠO CÁC BỘ TỪ EXCEL trước.',setPageFirst:'Khổ page hiện tại chưa khớp thông số Rộng × Cao. Hãy bấm SET TRANG IN trước.',laid:'✓ Đã dàn {a}/{b} Group vào trang in hiện tại.',notFit:'⚠ Trang hiện tại chỉ chứa được {a}/{b} Group. Hãy tăng chiều cao trang hoặc giảm kích thước/khoảng cách.',fontLoaded:'✓ Đã nạp {n} font.',fontFail:'Không nạp được font: '}:{title:'BUILD GROUPS FROM EXCEL ROWS',fontName:'Name font',fontNo:'Number font',load:'LOAD FONT LIST',nameH:'Name height (cm)',noH:'Number height (cm)',pairGap:'Name → number gap (cm)',make:'CREATE GROUPS FROM EXCEL',hint:'Each Excel row becomes exactly one group. Name and number from the same row are centered horizontally and grouped together. No nearest-pair matching.',needFile:'Choose an Excel file first.',needFont:'Choose both name and number fonts first.',made:'✓ Created {n} groups from {n} Excel rows. Each group contains the name + number from the same row.',makeErr:'Could not create groups: ',layout:'LAYOUT GROUPS ON PRINT PAGE',layoutHint:'After creating groups: choose/enter Width × Height → click SET PRINT PAGE → click LAYOUT GROUPS ON PRINT PAGE.',needGroups:'No Excel groups yet. Click CREATE GROUPS FROM EXCEL first.',setPageFirst:'Current page size does not match Width × Height. Click SET PRINT PAGE first.',laid:'✓ Laid out {a}/{b} groups on the current print page.',notFit:'⚠ Current page fits only {a}/{b} groups. Increase page height or reduce sizes/gap.',fontLoaded:'✓ Loaded {n} fonts.',fontFail:'Could not load fonts: '};}
+function fmt(s,m){var k;for(k in m)if(m.hasOwnProperty(k))s=s.replace('{'+k+'}',m[k]);return s;}
+function head(v){return txt(v).toLowerCase().replace(/[\s_\-\.\/\\]+/g,'');}
+function isNameHeader(h){return h==='tênináo'||h==='teninao'||h==='tênáo'||h==='tenao'||h==='họtên'||h==='hoten'||h==='tên'||h==='ten'||h==='name'||h==='player'||h==='playername';}
+function isNumberHeader(h){return h==='sốáo'||h==='soao'||h==='số'||h==='so'||h==='number'||h==='no'||h==='shirtno'||h==='shirtnumber';}
+function cellText(cell){var t='',v='';try{t=String(cell.Text);}catch(e){}try{v=cell.Value2;}catch(e2){}if((!t||/^#+$/.test(t))&&v!==undefined&&v!==null)t=String(v);return txt(t);}
+function rowsFromMatrix(m){var nc=-1,sc=-1,c,r,h,out=[];if(!m||!m.length)throw new Error(L()==='vi'?'File Excel không có dữ liệu.':'Excel file has no data.');for(c=0;c<m[0].length;c++){h=head(m[0][c]);if(nc<0&&isNameHeader(h))nc=c;if(sc<0&&isNumberHeader(h))sc=c;}if(nc<0||sc<0)throw new Error(L()==='vi'?'Không tìm thấy cột Tên in áo và Số áo.':'Could not find name and shirt-number columns.');for(r=1;r<m.length;r++){var n=txt(m[r][nc]),s=txt(m[r][sc]);if(n&&s)out.push({name:n,number:s,row:r+1});}if(!out.length)throw new Error(L()==='vi'?'Không có dòng nào đủ cả tên và số.':'No complete name/number rows found.');return out;}
+function readWorkbook(path){var xl=null,book=null,sheet=null,used=null,m=[],r,c;try{xl=new ActiveXObject('Excel.Application');xl.Visible=false;xl.DisplayAlerts=false;book=xl.Workbooks.Open(path);sheet=book.Worksheets(1);used=sheet.UsedRange;for(r=1;r<=used.Rows.Count;r++){var row=[];for(c=1;c<=used.Columns.Count;c++)row.push(cellText(used.Cells(r,c)));m.push(row);}return rowsFromMatrix(m);}finally{try{if(book)book.Close(false);}catch(e){}try{if(xl)xl.Quit();}catch(e2){}}}
+function save(){try{localStorage.setItem('dhl_v86_excel',[E('v86NameFont').value,E('v86NoFont').value,E('v86NameH').value,E('v86NoH').value,E('v86PairGap').value].join('|'));}catch(e){}}
+function load(){try{var s=localStorage.getItem('dhl_v86_excel'),p;if(s){p=s.split('|');if(p.length>=5){E('v86NameFont').setAttribute('data-want',p[0]||'');E('v86NoFont').setAttribute('data-want',p[1]||'');E('v86NameH').value=p[2]||'5';E('v86NoH').value=p[3]||'25';E('v86PairGap').value=p[4]||'3';}}}catch(e){}}
+function cloneFonts(){var src=E('nameFont'),nf=E('v86NameFont'),df=E('v86NoFont'),i,wantN=nf.getAttribute('data-want')||nf.value,wantD=df.getAttribute('data-want')||df.value;if(!src||!nf||!df)return 0;while(nf.options.length>1)nf.remove(1);while(df.options.length>1)df.remove(1);for(i=1;i<src.options.length;i++){nf.options.add(new Option(src.options[i].text,src.options[i].value));df.options.add(new Option(src.options[i].text,src.options[i].value));}if(wantN)nf.value=wantN;if(wantD)df.value=wantD;return Math.max(0,src.options.length-1);}
+function loadFonts(){var st=E('v86Status');try{if(typeof loadInstalledFonts==='function')loadInstalledFonts();var n=cloneFonts();st.className='v86-note ok';st.innerHTML=fmt(T().fontLoaded,{n:n});save();}catch(e){st.className='v86-note bad';st.innerHTML=T().fontFail+esc(e.message);}}
+function applyFont(sh,font){if(typeof applyFontRecursive==='function'){applyFontRecursive(sh,font);return;}try{sh.Text.Story.Font=font;}catch(e){throw new Error((L()==='vi'?'Không áp được font ':'Could not apply font ')+font);}}
+function setHeight(sh,hmm){var h=Math.abs(Number(sh.SizeHeight)),w=Math.abs(Number(sh.SizeWidth));if(!(h>0&&w>0&&hmm>0))throw new Error(L()==='vi'?'Kích thước chữ không hợp lệ.':'Invalid text size.');sh.SetSize(w*hmm/h,hmm);}
+function makeText(layer,text,font,hmm){var s=layer.CreateArtisticText(0,0,String(text));applyFont(s,font);setHeight(s,hmm);return s;}
+function groupPair(a,nameShape,noShape,gap){var nh=Math.abs(Number(nameShape.SizeHeight)),dh=Math.abs(Number(noShape.SizeHeight)),r,g;nameShape.CenterX=noShape.CenterX;nameShape.CenterY=noShape.CenterY+dh/2+gap+nh/2;r=a.CreateShapeRange();r.Add(nameShape);r.Add(noShape);g=r.Group();return g;}
+function makeGroups(){var input=E('excelFile'),path=input?input.value:'',nf=E('v86NameFont').value,df=E('v86NoFont').value,nh=Number(E('v86NameH').value)*10,dh=Number(E('v86NoH').value)*10,pairGap=Number(E('v86PairGap').value)*10,st=E('v86Status'),a,doc,old,opt=false,cmd=false,page,rows,range,i,n,d,g,startX,startY,colH=0,maxColW=0;if(!path){st.className='v86-note bad';st.innerHTML=T().needFile;return;}if(!nf||!df){st.className='v86-note bad';st.innerHTML=T().needFont;return;}if(!(nh>0&&dh>0&&pairGap>=0)){st.className='v86-note bad';st.innerHTML=L()==='vi'?'Chiều cao/cách tên-số không hợp lệ.':'Invalid name/number size or gap.';return;}try{save();rows=(lastPath===path&&lastRows.length)?lastRows:readWorkbook(path);lastRows=rows;lastPath=path;a=corel();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;page=a.ActivePage;doc.BeginCommandGroup('DHL Excel - Create row groups V8.6');cmd=true;a.Optimization=true;opt=true;range=a.CreateShapeRange();lastGroups=[];startX=Number(page.CenterX)+Math.abs(Number(page.SizeWidth))/2+30;startY=Number(page.CenterY)+Math.abs(Number(page.SizeHeight))/2-20;for(i=0;i<rows.length;i++){n=makeText(page.ActiveLayer,rows[i].name,nf,nh);d=makeText(page.ActiveLayer,rows[i].number,df,dh);d.CenterX=startX;d.CenterY=startY-colH-dh/2;g=groupPair(a,n,d,pairGap);try{g.Name='DHL_EXCEL_ROW_'+rows[i].row;}catch(ne){}lastGroups.push(g);range.Add(g);colH+=Math.abs(Number(g.SizeHeight))+10;maxColW=Math.max(maxColW,Math.abs(Number(g.SizeWidth)));if(colH>Math.abs(Number(page.SizeHeight))*1.4){startX+=maxColW+20;startY=Number(page.CenterY)+Math.abs(Number(page.SizeHeight))/2-20;colH=0;maxColW=0;}}range.CreateSelection();a.Optimization=false;opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}st.className='v86-note ok';st.innerHTML=fmt(T().made,{n:rows.length});var er=E('excelResult');if(er){er.className='note';er.innerHTML=T().layoutHint;}}catch(e){try{if(opt&&a)a.Optimization=false;}catch(x){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}try{if(cmd&&doc)doc.EndCommandGroup();}catch(x3){}st.className='v86-note bad';st.innerHTML=T().makeErr+esc(e.message);}}
+function liveGroups(){var a=corel(),sr=a.ActiveSelectionRange,out=[],i;if(sr&&sr.Count){for(i=1;i<=sr.Count;i++)out.push(sr.Item(i));if(out.length)return out;}out=[];for(i=0;i<lastGroups.length;i++){try{var x=lastGroups[i].SizeWidth;if(Number(x)>=0)out.push(lastGroups[i]);}catch(e){}}return out;}
+function layout(){var st=E('excelResult'),a,doc,old,opt=false,cmd=false,page,groups,w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),pw,ph,margin,x,top,rowH=0,i,g,gw,gh,placed=0;if(!(w>0&&h>0&&gap>=0)){st.innerHTML=L()==='vi'?'Khổ in không hợp lệ.':'Invalid print size.';return;}try{groups=liveGroups();if(!groups.length)throw new Error(T().needGroups);a=corel();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;page=a.ActivePage;pw=Math.abs(Number(page.SizeWidth));ph=Math.abs(Number(page.SizeHeight));if(Math.abs(pw-w)>0.5||Math.abs(ph-h)>0.5)throw new Error(T().setPageFirst);margin=Math.max(gap,2);x=Number(page.CenterX)-w/2+margin;top=Number(page.CenterY)+h/2-margin;doc.BeginCommandGroup('DHL Excel - Layout row groups V8.6');cmd=true;a.Optimization=true;opt=true;for(i=0;i<groups.length;i++){g=groups[i];gw=Math.abs(Number(g.SizeWidth));gh=Math.abs(Number(g.SizeHeight));if(gw>w-2*margin||gh>h-2*margin)continue;if(x+gw>Number(page.CenterX)+w/2-margin&&x>Number(page.CenterX)-w/2+margin){x=Number(page.CenterX)-w/2+margin;top-=rowH+gap;rowH=0;}if(top-gh<Number(page.CenterY)-h/2+margin)break;g.CenterX=x+gw/2;g.CenterY=top-gh/2;x+=gw+gap;rowH=Math.max(rowH,gh);placed++;}if(E('excelMirror')&&E('excelMirror').checked){for(i=0;i<placed;i++)try{groups[i].Flip(1);}catch(fx){}}a.Optimization=false;opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}st.className='note';st.innerHTML=placed===groups.length?fmt(T().laid,{a:placed,b:groups.length}):fmt(T().notFit,{a:placed,b:groups.length});}catch(e){try{if(opt&&a)a.Optimization=false;}catch(x){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}try{if(cmd&&doc)doc.EndCommandGroup();}catch(x3){}st.className='note';st.innerHTML=esc(e.message);}}
+function build(){var body=E('excelBody'),preview=E('v84ExcelPreview'),box,run=E('excelRun'),hint=E('columnHint');if(!body||!preview||!run)return false;if(E('v86ExcelBox'))return true;box=document.createElement('div');box.id='v86ExcelBox';box.className='v86-box';box.innerHTML='<div class="v86-title" id="v86Title"></div><div class="v86-grid2"><div><span class="v86-mini" id="v86NameFontLabel"></span><select id="v86NameFont"><option value="">-- chọn font --</option></select></div><div><span class="v86-mini" id="v86NoFontLabel"></span><select id="v86NoFont"><option value="">-- chọn font --</option></select></div></div><button type="button" class="v86-btn" id="v86LoadFonts"></button><div class="v86-grid3" style="margin-top:7px!important"><div><span class="v86-mini" id="v86NameHLabel"></span><input id="v86NameH" type="number" value="5" min="0.1" step="0.1"/></div><div><span class="v86-mini" id="v86NoHLabel"></span><input id="v86NoH" type="number" value="25" min="0.1" step="0.1"/></div><div><span class="v86-mini" id="v86GapLabel"></span><input id="v86PairGap" type="number" value="3" min="0" step="0.1"/></div></div><div class="v86-hint" id="v86Hint"></div><button type="button" class="v86-btn" id="v86MakeGroups"></button><div id="v86Status" class="v86-note"></div>';preview.parentNode.insertBefore(box,preview.nextSibling);load();E('v86LoadFonts').onclick=loadFonts;E('v86MakeGroups').onclick=makeGroups;E('v86NameFont').onchange=save;E('v86NoFont').onchange=save;E('v86NameH').onchange=save;E('v86NoH').onchange=save;E('v86PairGap').onchange=save;run.onclick=layout;if(hint)hint.innerHTML=L()==='vi'?'Quy tắc: <b>mỗi dòng Excel = 1 Group tên + số cùng dòng</b>. Không ghép gần nhất.':'Rule: <b>each Excel row = one same-row name + number group</b>. No nearest matching.';return true;}
+function relabel(){var t=T(),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[],run=E('excelRun');if(E('v86Title'))E('v86Title').innerHTML=t.title;if(E('v86NameFontLabel'))E('v86NameFontLabel').innerHTML=t.fontName;if(E('v86NoFontLabel'))E('v86NoFontLabel').innerHTML=t.fontNo;if(E('v86LoadFonts'))E('v86LoadFonts').innerHTML=t.load;if(E('v86NameHLabel'))E('v86NameHLabel').innerHTML=t.nameH;if(E('v86NoHLabel'))E('v86NoHLabel').innerHTML=t.noH;if(E('v86GapLabel'))E('v86GapLabel').innerHTML=t.pairGap;if(E('v86Hint'))E('v86Hint').innerHTML=t.hint;if(E('v86MakeGroups'))E('v86MakeGroups').innerHTML=t.make;if(run)run.innerHTML=t.layout;if(v&&v.length)v[0].innerHTML='v8.6';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.6 · Excel row-group workflow · VI / EN';}
+function finish(){if(!build()){setTimeout(finish,180);return;}relabel();try{if(E('nameFont')&&E('nameFont').options.length>1)cloneFonts();}catch(e){}var old=window.setLanguage;if(old&&!old._v86){var wrap=function(x){old(x);setTimeout(function(){relabel();var hint=E('columnHint');if(hint)hint.innerHTML=L()==='vi'?'Quy tắc: <b>mỗi dòng Excel = 1 Group tên + số cùng dòng</b>. Không ghép gần nhất.':'Rule: <b>each Excel row = one same-row name + number group</b>. No nearest matching.';},50);};wrap._v86=true;window.setLanguage=wrap;}}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,2150);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,2150);});else setTimeout(finish,2300);
+})();
+</script>
+<style id="dhl-v88-font-fix-style">
+#v86Status.v88-font-ok{border-left:4px solid #2e8b57!important}
+#v86Status.v88-font-bad{border-left:4px solid #c53b45!important}
+</style>
+<script id="dhl-v88-font-fix" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function norm(s){return String(s||'').replace(/^\s+|\s+$/g,'').toLowerCase();}function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function corel(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(L()==='vi'?'Không kết nối được CorelDRAW.':'Cannot connect to CorelDRAW.');}
+function sameFont(a,b){a=norm(a);b=norm(b);if(!a||!b)return false;return a===b||a.indexOf(b)>=0||b.indexOf(a)>=0;}
+function applyOne(sh,font){var got='',ok=false,e1='',e2='';
+ try{sh.Text.Story.Font=font;got=String(sh.Text.Story.Font||'');if(sameFont(got,font))ok=true;}catch(e){e1=e.message||String(e);}
+ if(!ok){try{sh.Text.FontProperties.Name=font;got=String(sh.Text.Story.Font||'');if(sameFont(got,font))ok=true;}catch(e){e2=e.message||String(e);}}
+ if(!ok){try{var tr=sh.Text.Story;tr.Font=font;got=String(tr.Font||'');if(sameFont(got,font))ok=true;}catch(e3){}}
+ if(!ok){throw new Error((L()==='vi'?'Corel không áp được font “':'Corel could not apply font “')+font+'”. '+(got?(L()==='vi'?'Font thực tế đang là “':'Actual font is “')+got+'”. ':'')+(e1||e2));}
+ return true;
+}
+function robustApplyFontRecursive(s,font){var i,hasText=false;if(!font)return true;
+ try{if(s&&s.Text&&s.Text.Story){hasText=true;return applyOne(s,font);}}catch(e){if(hasText)throw e;}
+ try{if(s&&s.Shapes&&s.Shapes.Count){for(i=1;i<=s.Shapes.Count;i++)robustApplyFontRecursive(s.Shapes.Item(i),font);return true;}}catch(e2){throw e2;}
+ throw new Error(L()==='vi'?'Đối tượng không phải Text nên không thể áp font.':'Object is not text; font cannot be applied.');
+}
+window.applyFontRecursive=robustApplyFontRecursive;
+function fillSelect(sel,fonts,keep){var i;while(sel.options.length>1)sel.remove(1);for(i=0;i<fonts.length;i++)sel.options.add(new Option(fonts[i],fonts[i]));if(keep)sel.value=keep;}
+window.loadInstalledFonts=function(){var a,fl,fonts=[],seen={},i,n,nf=E('nameFont'),df=E('numberFont'),keepN=nf?nf.value:'',keepD=df?df.value:'',status=E('fontStatus');try{
+ if(status)status.innerHTML=L()==='vi'?'Đang đọc danh sách font trực tiếp từ CorelDRAW...':'Reading font list directly from CorelDRAW...';
+ a=corel();fl=a.FontList;for(i=1;i<=fl.Count;i++){n=String(fl.Item(i)||'').replace(/^\s+|\s+$/g,'');if(n&&!seen[n.toLowerCase()]){seen[n.toLowerCase()]=1;fonts.push(n);}}
+ fonts.sort(function(x,y){x=x.toLowerCase();y=y.toLowerCase();return x<y?-1:(x>y?1:0);});if(nf)fillSelect(nf,fonts,keepN);if(df)fillSelect(df,fonts,keepD);
+ try{if(nf&&!nf.value)nf.value=localStorage.getItem('dhl_nameset_name_font')||'';if(df&&!df.value)df.value=localStorage.getItem('dhl_nameset_number_font')||'';}catch(se){}
+ try{if(typeof setKeepFontLabels==='function')setKeepFontLabels();}catch(sl){}
+ if(status)status.innerHTML=(L()==='vi'?'✓ Đã nạp ':'✓ Loaded ')+fonts.length+(L()==='vi'?' font trực tiếp từ CorelDRAW.':' fonts directly from CorelDRAW.');
+ try{var b=E('v86LoadFonts');if(b&&typeof b.onclick==='function')setTimeout(function(){try{b.onclick();}catch(x){}},20);}catch(xx){}
+ return fonts.length;
+ }catch(e){if(status)status.innerHTML=(L()==='vi'?'Không nạp được font từ CorelDRAW: ':'Could not load fonts from CorelDRAW: ')+esc(e.message);throw e;}}
+function testSelectedFont(){var st=E('v86Status'),nf=E('v86NameFont'),df=E('v86NoFont'),a,doc,old,s1=null,s2=null;try{if(!st||!nf||!df||!nf.value||!df.value)return;a=corel();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;s1=a.ActivePage.ActiveLayer.CreateArtisticText(0,0,'FONT TEST');s2=a.ActivePage.ActiveLayer.CreateArtisticText(0,0,'88');robustApplyFontRecursive(s1,nf.value);robustApplyFontRecursive(s2,df.value);var g1=String(s1.Text.Story.Font||''),g2=String(s2.Text.Story.Font||'');s1.Delete();s2.Delete();doc.Unit=old;st.className='v86-note v88-font-ok';st.innerHTML=(L()==='vi'?'✓ Font hợp lệ trong Corel: ':'✓ Corel font OK: ')+esc(g1)+' / '+esc(g2);}catch(e){try{if(s1)s1.Delete();}catch(x1){}try{if(s2)s2.Delete();}catch(x2){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x3){}if(st){st.className='v86-note v88-font-bad';st.innerHTML=(L()==='vi'?'Lỗi font: ':'Font error: ')+esc(e.message);}}}
+function hook(){var b=E('v86LoadFonts'),nf=E('v86NameFont'),df=E('v86NoFont'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(!b||!nf||!df){setTimeout(hook,180);return;}b.onclick=function(){try{loadInstalledFonts();var src=E('nameFont'),i,wantN=nf.value,wantD=df.value;while(nf.options.length>1)nf.remove(1);while(df.options.length>1)df.remove(1);if(src){for(i=1;i<src.options.length;i++){nf.options.add(new Option(src.options[i].text,src.options[i].value));df.options.add(new Option(src.options[i].text,src.options[i].value));}}if(wantN)nf.value=wantN;if(wantD)df.value=wantD;testSelectedFont();}catch(e){}};nf.onchange=function(){testSelectedFont();try{localStorage.setItem('dhl_v88_name_font',nf.value);}catch(e){}};df.onchange=function(){testSelectedFont();try{localStorage.setItem('dhl_v88_no_font',df.value);}catch(e){}};try{var sn=localStorage.getItem('dhl_v88_name_font'),sd=localStorage.getItem('dhl_v88_no_font');if(sn)nf.value=sn;if(sd)df.value=sd;}catch(e){}if(v&&v.length)v[0].innerHTML='v8.8';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.8 · Corel font fix · VI / EN';}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(hook,2750);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(hook,2750);});else setTimeout(hook,2900);
+})();
+</script>
+
+<style id="dhl-v89-font-freeze-style">
+#v86LoadFonts[disabled]{opacity:.55!important;cursor:wait!important}
+</style>
+<script id="dhl-v89-font-freeze-fix" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var loading=false,cache=null;
+function fill(sel,fonts,keep){var i;if(!sel)return;while(sel.options.length>1)sel.remove(1);for(i=0;i<fonts.length;i++)sel.options.add(new Option(fonts[i],fonts[i]));if(keep)sel.value=keep;}
+function readFontsSafe(){
+ var sh=new ActiveXObject('WScript.Shell');
+ var cmd='powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Drawing; $c=New-Object System.Drawing.Text.InstalledFontCollection; $c.Families ^| ForEach-Object { $_.Name } ^| Sort-Object -Unique"';
+ var ex=sh.Exec(cmd),out='',err='';
+ out=ex.StdOut.ReadAll();try{err=ex.StdErr.ReadAll();}catch(e){}
+ if(ex.ExitCode!==0)throw new Error(err||('PowerShell exit '+ex.ExitCode));
+ var lines=String(out||'').split(/\r?\n/),fonts=[],seen={},i,n;
+ for(i=0;i<lines.length;i++){n=String(lines[i]||'').replace(/^\s+|\s+$/g,'');if(n&&!seen[n.toLowerCase()]){seen[n.toLowerCase()]=1;fonts.push(n);}}
+ return fonts;
+}
+function cloneToExcel(fonts){var nf=E('v86NameFont'),df=E('v86NoFont'),keepN=nf?nf.value:'',keepD=df?df.value:'';fill(nf,fonts,keepN);fill(df,fonts,keepD);}
+window.loadInstalledFonts=function(force){
+ var status=E('fontStatus'),nf=E('nameFont'),df=E('numberFont'),keepN=nf?nf.value:'',keepD=df?df.value:'',fonts,b=E('v86LoadFonts');
+ if(loading)return cache?cache.length:0;loading=true;if(b)b.disabled=true;
+ try{
+  if(status)status.innerHTML=L()==='vi'?'Đang nạp font...':'Loading fonts...';
+  if(cache&&!force)fonts=cache;else{fonts=readFontsSafe();cache=fonts;}
+  fill(nf,fonts,keepN);fill(df,fonts,keepD);cloneToExcel(fonts);
+  try{if(nf&&!nf.value)nf.value=localStorage.getItem('dhl_nameset_name_font')||'';if(df&&!df.value)df.value=localStorage.getItem('dhl_nameset_number_font')||'';}catch(se){}
+  try{if(typeof setKeepFontLabels==='function')setKeepFontLabels();}catch(sl){}
+  if(status)status.innerHTML=(L()==='vi'?'✓ Đã nạp ':'✓ Loaded ')+fonts.length+(L()==='vi'?' font.':' fonts.');
+  return fonts.length;
+ }catch(e){if(status)status.innerHTML=(L()==='vi'?'Không nạp được font: ':'Could not load fonts: ')+esc(e.message);return 0;}
+ finally{loading=false;if(b)b.disabled=false;}
+};
+function validateSelected(){var st=E('v86Status'),nf=E('v86NameFont'),df=E('v86NoFont'),a,doc,old,s1=null,s2=null;try{
+ if(!st||!nf||!df||!nf.value||!df.value)return;
+ a=(window.external&&window.external.Application)?window.external.Application:(typeof corelApp==='function'?corelApp():null);if(!a)return;
+ doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;s1=a.ActivePage.ActiveLayer.CreateArtisticText(0,0,'FONT TEST');s2=a.ActivePage.ActiveLayer.CreateArtisticText(0,0,'88');
+ if(typeof applyFontRecursive==='function'){applyFontRecursive(s1,nf.value);applyFontRecursive(s2,df.value);}else{s1.Text.Story.Font=nf.value;s2.Text.Story.Font=df.value;}
+ var g1=String(s1.Text.Story.Font||''),g2=String(s2.Text.Story.Font||'');s1.Delete();s2.Delete();doc.Unit=old;st.className='v86-note v88-font-ok';st.innerHTML=(L()==='vi'?'✓ Font Corel nhận: ':'✓ Corel accepted: ')+esc(g1)+' / '+esc(g2);
+ }catch(e){try{if(s1)s1.Delete();}catch(x1){}try{if(s2)s2.Delete();}catch(x2){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x3){}if(st){st.className='v86-note v88-font-bad';st.innerHTML=(L()==='vi'?'Lỗi font: ':'Font error: ')+esc(e.message);}}
+}
+function hook(){var b=E('v86LoadFonts'),nf=E('v86NameFont'),df=E('v86NoFont'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
+ if(!b||!nf||!df){setTimeout(hook,180);return;}
+ b.onclick=function(){window.loadInstalledFonts(true);validateSelected();return false;};
+ nf.onchange=function(){validateSelected();try{localStorage.setItem('dhl_v89_name_font',nf.value);}catch(e){}};
+ df.onchange=function(){validateSelected();try{localStorage.setItem('dhl_v89_no_font',df.value);}catch(e){}};
+ try{var sn=localStorage.getItem('dhl_v89_name_font'),sd=localStorage.getItem('dhl_v89_no_font');if(sn)nf.value=sn;if(sd)df.value=sd;}catch(e){}
+ if(v&&v.length)v[0].innerHTML='v8.9';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.9 · font freeze fix · VI / EN';
+}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(hook,3000);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(hook,3000);});else setTimeout(hook,3200);
+})();
+</script>
+
+<style id="dhl-v810-workflow-order-style">
+.v810-guide{border:1px solid #bfc6ce!important;border-left:4px solid #4d6478!important;border-radius:6px!important;padding:7px 8px!important;margin:5px 0 8px!important;font-size:10px!important;line-height:1.45!important;background:#fff!important}.v810-step{display:table!important;width:100%!important;border-top:1px solid #d7d7d7!important;margin-top:8px!important;padding-top:7px!important}.v810-step.first{border-top:0!important;margin-top:0!important;padding-top:0!important}.v810-step-title{display:table-cell!important;font-size:11px!important;font-weight:800!important;vertical-align:middle!important}.v810-step-state{display:table-cell!important;width:1%!important;white-space:nowrap!important;text-align:right!important;vertical-align:middle!important;font-size:9px!important;font-weight:800!important;border:1px solid #999!important;border-radius:4px!important;padding:3px 5px!important;background:#f7f7f7!important}.v810-step-state.ok{border-color:#2e8b57!important}.v810-step-state.wait{border-color:#b58a00!important}.v810-step-state.lock{border-color:#aaa!important;color:#666!important}.v810-locked{opacity:.58!important}.v810-locked button,.v810-locked input,.v810-locked select{cursor:not-allowed!important}.v810-step4{margin-top:9px!important}.v810-step5{margin-top:10px!important}.v810-subnote{font-size:10px!important;color:#555!important;margin:4px 0 6px!important;line-height:1.35!important}
+</style>
+<script id="dhl-v810-workflow-order" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function txt(x){return String(x===undefined||x===null?'':x).replace(/^\s+|\s+$/g,'');}
+var madeSig='',pageSig='',hooked=false;
+function clsHas(el,c){return !!(el&&(' '+String(el.className||'')+' ').indexOf(' '+c+' ')>=0);}
+function setupSig(){var f=E('excelFile'),nf=E('v86NameFont'),df=E('v86NoFont'),nh=E('v86NameH'),dh=E('v86NoH'),gp=E('v86PairGap');return [f?f.value:'',nf?nf.value:'',df?df.value:'',nh?nh.value:'',dh?dh.value:'',gp?gp.value:''].join('|');}
+function sizeSig(){return [(E('sheetWidth')||{}).value||'',(E('sheetHeight')||{}).value||''].join('|');}
+function fileReady(){var f=E('excelFile'),p=E('v84ExcelPreview');return !!(f&&txt(f.value)&&p&&clsHas(p,'ok'));}
+function fontReady(){var n=E('v86NameFont'),d=E('v86NoFont'),nh=Number((E('v86NameH')||{}).value),dh=Number((E('v86NoH')||{}).value),g=Number((E('v86PairGap')||{}).value);return !!(fileReady()&&n&&d&&txt(n.value)&&txt(d.value)&&nh>0&&dh>0&&g>=0);}
+function groupsReady(){var s=E('v86Status');return !!(fontReady()&&madeSig&&madeSig===setupSig()&&s&&clsHas(s,'ok'));}
+function pageReady(){var r=E('pageResult');return !!(groupsReady()&&pageSig&&pageSig===sizeSig()&&r&&String(r.innerHTML||'').indexOf('✓')>=0);}
+function state(id,ok,available){var s=E(id);if(!s)return;if(ok){s.className='v810-step-state ok';s.innerHTML=L()==='vi'?'XONG':'DONE';}else if(available){s.className='v810-step-state wait';s.innerHTML=L()==='vi'?'CẦN LÀM':'DO NOW';}else{s.className='v810-step-state lock';s.innerHTML=L()==='vi'?'CHƯA MỞ':'LOCKED';}}
+function disable(el,v){if(el)el.disabled=!!v;}
+function setStep4Disabled(v){var q=document.getElementsByClassName?document.getElementsByClassName('quickbar')[0]:null,bs,i,pb=document.getElementsByClassName?document.getElementsByClassName('pagebox')[0]:null,tr=document.getElementsByClassName?document.getElementsByClassName('toolsrow')[0]:null;if(q){q.className='quickbar'+(v?' v810-locked':'');bs=q.getElementsByTagName('button');for(i=0;i<bs.length;i++)disable(bs[i],v);}disable(E('sheetWidth'),v);disable(E('sheetHeight'),v);disable(E('sheetGap'),v);disable(E('excelMirror'),v);if(pb){pb.className='pagebox'+(v?' v810-locked':'');bs=pb.getElementsByTagName('button');for(i=0;i<bs.length;i++)disable(bs[i],v);}if(tr){tr.className='toolsrow'+(v?' v810-locked':'');bs=tr.getElementsByTagName('button');for(i=0;i<bs.length;i++)disable(bs[i],v);}}
+function refresh(){var f=fileReady(),fr=fontReady(),gr=groupsReady(),pr=pageReady();disable(E('v86LoadFonts'),!f);disable(E('v86NameFont'),!f);disable(E('v86NoFont'),!f);disable(E('v86NameH'),!f);disable(E('v86NoH'),!f);disable(E('v86PairGap'),!f);disable(E('v86MakeGroups'),!fr);setStep4Disabled(!gr);disable(E('excelRun'),!pr);state('v810S1',f,true);state('v810S2',fr,f);state('v810S3',gr,fr);state('v810S4',pr,gr);state('v810S5',false,pr);var run=E('excelRun');if(run){run.className=(run.className||'').replace(/\s*v810-locked\b/g,'')+(!pr?' v810-locked':'');}}
+function mkStep(id,title,extraClass){var d=document.createElement('div');d.className='v810-step '+(extraClass||'');d.innerHTML='<div class="v810-step-title" id="'+id+'Title">'+title+'</div><div id="'+id+'" class="v810-step-state lock"></div>';return d;}
+function findLabelFor(id){var ls=document.getElementsByTagName('label'),i;for(i=0;i<ls.length;i++){if(String(ls[i].htmlFor||ls[i].getAttribute('for')||'')===id)return ls[i];}return null;}
+function findPrevElement(el){var x=el?el.previousSibling:null;while(x&&x.nodeType!==1)x=x.previousSibling;return x;}
+function build(){var body=E('excelBody'),file=E('excelFile'),preview=E('v84ExcelPreview'),box=E('v86ExcelBox'),make=E('v86MakeGroups'),run=E('excelRun'),hint=E('columnHint'),fileLabel=findLabelFor('excelFile'),q=document.getElementsByClassName?document.getElementsByClassName('quickbar')[0]:null,anchor,guide,s1,s3,s4,s5;if(!body||!file||!preview||!box||!make||!run||!q)return false;if(E('v810Guide'))return true;
+ guide=document.createElement('div');guide.id='v810Guide';guide.className='v810-guide';if(fileLabel)body.insertBefore(guide,fileLabel);else body.insertBefore(guide,body.firstChild);
+ s1=mkStep('v810S1','', 'first');if(fileLabel)body.insertBefore(s1,fileLabel);else body.insertBefore(s1,file);
+ if(hint&&preview.parentNode===hint.parentNode){if(preview.nextSibling)preview.parentNode.insertBefore(hint,preview.nextSibling);else preview.parentNode.appendChild(hint);}
+ if(E('v86Title')){E('v86Title').innerHTML='';E('v86Title').className='v86-title';var row=mkStep('v810S2','', 'first');box.insertBefore(row,box.firstChild);try{E('v86Title').style.display='none';}catch(e){}}
+ s3=mkStep('v810S3','');box.insertBefore(s3,make);
+ anchor=findPrevElement(q);if(anchor&&String(anchor.className||'').indexOf('label')>=0){s4=mkStep('v810S4','');s4.className+=' v810-step4';body.insertBefore(s4,anchor);}else{body.insertBefore(mkStep('v810S4',''),q);}
+ s5=mkStep('v810S5','');s5.className+=' v810-step5';body.insertBefore(s5,run);
+ return true;}
+function relabel(){var vi=L()==='vi',v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(E('v810Guide'))E('v810Guide').innerHTML=vi?'<b>LÀM THEO THỨ TỰ TỪ TRÊN XUỐNG.</b> Bước sau chỉ mở khi bước trước đã hoàn tất.':'<b>FOLLOW THE STEPS TOP TO BOTTOM.</b> A later step unlocks only after the previous one is complete.';if(E('v810S1Title'))E('v810S1Title').innerHTML=vi?'BƯỚC 1 — CHỌN & KIỂM TRA FILE EXCEL':'STEP 1 — CHOOSE & VALIDATE EXCEL';if(E('v810S2Title'))E('v810S2Title').innerHTML=vi?'BƯỚC 2 — CHỌN FONT & KÍCH THƯỚC':'STEP 2 — CHOOSE FONTS & SIZES';if(E('v810S3Title'))E('v810S3Title').innerHTML=vi?'BƯỚC 3 — TẠO GROUP TÊN + SỐ':'STEP 3 — CREATE NAME + NUMBER GROUPS';if(E('v810S4Title'))E('v810S4Title').innerHTML=vi?'BƯỚC 4 — CHỌN KHỔ & SET TRANG IN':'STEP 4 — CHOOSE SIZE & SET PRINT PAGE';if(E('v810S5Title'))E('v810S5Title').innerHTML=vi?'BƯỚC 5 — DÀN CÁC GROUP VÀO TRANG':'STEP 5 — LAYOUT GROUPS ON PAGE';if(v&&v.length)v[0].innerHTML='v8.10';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.10 · ordered workflow · VI / EN';refresh();}
+function chainChange(el,fn){if(!el)return;var old=el.onchange;el.onchange=function(e){var r;if(old)r=old.call(el,e);fn();return r;};}
+function hookActions(){if(hooked)return;hooked=true;var file=E('excelFile'),mk=E('v86MakeGroups'),oldMk=mk?mk.onclick:null,run=E('excelRun'),oldRun=run?run.onclick:null,oldSet=window.setCurrentPrintPage;chainChange(file,function(){madeSig='';pageSig='';setTimeout(refresh,130);});chainChange(E('v86NameFont'),function(){pageSig='';refresh();});chainChange(E('v86NoFont'),function(){pageSig='';refresh();});chainChange(E('v86NameH'),function(){pageSig='';refresh();});chainChange(E('v86NoH'),function(){pageSig='';refresh();});chainChange(E('v86PairGap'),function(){pageSig='';refresh();});chainChange(E('sheetWidth'),function(){refresh();});chainChange(E('sheetHeight'),function(){refresh();});
+ if(mk){mk.onclick=function(e){var r;if(!fontReady()){refresh();return false;}if(oldMk)r=oldMk.call(mk,e);setTimeout(function(){var s=E('v86Status');if(s&&clsHas(s,'ok')){madeSig=setupSig();pageSig='';}refresh();},60);return r;};}
+ if(typeof oldSet==='function'&&!oldSet._v810){var sw=function(){var r=oldSet.apply(window,arguments);setTimeout(function(){var p=E('pageResult');if(p&&String(p.innerHTML||'').indexOf('✓')>=0)pageSig=sizeSig();else pageSig='';refresh();},40);return r;};sw._v810=true;window.setCurrentPrintPage=sw;}
+ if(run){run.onclick=function(e){if(!pageReady()){var er=E('excelResult');if(er)er.innerHTML=L()==='vi'?'Hãy hoàn tất BƯỚC 4: SET TRANG IN trước.':'Finish STEP 4: SET PRINT PAGE first.';refresh();return false;}if(oldRun)return oldRun.call(run,e);return true;};}
+}
+function finish(){if(!build()){setTimeout(finish,200);return;}hookActions();relabel();var old=window.setLanguage;if(old&&!old._v810){var w=function(x){var r=old(x);setTimeout(function(){relabel();},70);return r;};w._v810=true;window.setLanguage=w;}setInterval(refresh,900);}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,3500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,3500);});else setTimeout(finish,3700);
+})();
+</script>
+
+<style id="dhl-v811-font-order-style">
+.v811-fontload-wrap{margin:6px 0 8px!important}.v811-fontload-note{font-size:10px!important;color:#555!important;line-height:1.35!important;margin:3px 0 6px!important}.v811-locked{opacity:.58!important}
+</style>
+<script id="dhl-v811-font-order" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}
+var loaded=false,hooked=false;
+function previewOK(){var p=E('v84ExcelPreview');return !!(p&&(' '+String(p.className||'')+' ').indexOf(' ok ')>=0);}
+function hasFonts(){var n=E('v86NameFont'),d=E('v86NoFont');return !!(n&&d&&n.options.length>1&&d.options.length>1);}
+function setDisabled(el,v){if(el)el.disabled=!!v;}
+function enforce(){var ready=previewOK(),canChoose=ready&&(loaded||hasFonts());if(hasFonts())loaded=true;setDisabled(E('v86LoadFonts'),!ready);setDisabled(E('v86NameFont'),!canChoose);setDisabled(E('v86NoFont'),!canChoose);setDisabled(E('v86NameH'),!canChoose);setDisabled(E('v86NoH'),!canChoose);setDisabled(E('v86PairGap'),!canChoose);var grid=E('v811FontGrid');if(grid)grid.className='v86-grid2'+(!canChoose?' v811-locked':'');var size=E('v811SizeGrid');if(size)size.className='v86-grid3'+(!canChoose?' v811-locked':'');}
+function move(){var box=E('v86ExcelBox'),btn=E('v86LoadFonts'),nf=E('v86NameFont'),size=E('v86NameH');if(!box||!btn||!nf||!size)return false;var grid=nf.parentNode&&nf.parentNode.parentNode,sizeGrid=size.parentNode&&size.parentNode.parentNode,wrap=E('v811FontLoadWrap');if(grid)grid.id='v811FontGrid';if(sizeGrid)sizeGrid.id='v811SizeGrid';if(!wrap){wrap=document.createElement('div');wrap.id='v811FontLoadWrap';wrap.className='v811-fontload-wrap';wrap.innerHTML='<div id="v811FontLoadNote" class="v811-fontload-note"></div>';if(grid)box.insertBefore(wrap,grid);else box.insertBefore(wrap,btn);wrap.appendChild(btn);}else if(btn.parentNode!==wrap){wrap.appendChild(btn);}return true;}
+function relabel(){var vi=L()==='vi',v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(E('v811FontLoadNote'))E('v811FontLoadNote').innerHTML=vi?'<b>2A — NẠP DANH SÁCH FONT</b> trước, sau đó mới chọn Font tên / Font số và kích thước.':'<b>2A — LOAD FONT LIST</b> first, then choose Name/Number fonts and sizes.';if(E('v810S2Title'))E('v810S2Title').innerHTML=vi?'BƯỚC 2 — NẠP FONT → CHỌN FONT & KÍCH THƯỚC':'STEP 2 — LOAD FONTS → CHOOSE FONTS & SIZES';if(v&&v.length)v[0].innerHTML='v8.11';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.11 · ordered font workflow · VI / EN';}
+function hook(){if(hooked)return;var btn=E('v86LoadFonts'),nf=E('v86NameFont'),df=E('v86NoFont');if(!btn||!nf||!df)return;hooked=true;var old=btn.onclick;btn.onclick=function(e){var r;if(old)r=old.call(btn,e);loaded=hasFonts();enforce();return r;};var f=E('excelFile'),oldF=f?f.onchange:null;if(f){f.onchange=function(e){loaded=false;var r;if(oldF)r=oldF.call(f,e);setTimeout(enforce,140);return r;};}}
+function finish(){if(!move()){setTimeout(finish,180);return;}hook();relabel();enforce();var old=window.setLanguage;if(old&&!old._v811){var w=function(x){var r=old(x);setTimeout(function(){relabel();enforce();},80);return r;};w._v811=true;window.setLanguage=w;}setInterval(enforce,500);}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,3900);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,3900);});else setTimeout(finish,4100);
+})();
+</script>
+
+<style id="dhl-v812-font-load-fix-style">
+#v86LoadFonts.v812-loading{opacity:.6!important;cursor:wait!important}
+</style>
+<script id="dhl-v812-font-load-fix" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var busy=false,cache=null;
+function fso(){return new ActiveXObject('Scripting.FileSystemObject');}
+function sh(){return new ActiveXObject('WScript.Shell');}
+function temp(name){return fso().BuildPath(sh().ExpandEnvironmentStrings('%TEMP%'),name);}
+function writeUnicode(path,text){var f=fso().CreateTextFile(path,true,true);f.Write(text);f.Close();}
+function readUnicode(path){var f=fso().OpenTextFile(path,1,false,-1),s=f.ReadAll();f.Close();return s;}
+function readFonts(){
+ var ps=temp('DHL_LIST_FONTS_V812.ps1'),out=temp('DHL_FONTS_V812.txt'),err=temp('DHL_FONTS_V812_ERR.txt'),rc,script,lines,fonts=[],seen={},i,n;
+ try{if(fso().FileExists(out))fso().DeleteFile(out,true);}catch(x){}try{if(fso().FileExists(err))fso().DeleteFile(err,true);}catch(x2){}
+ script="$ErrorActionPreference='Stop'\r\n"+
+ "try {\r\n"+
+ "  Add-Type -AssemblyName System.Drawing\r\n"+
+ "  $c = New-Object System.Drawing.Text.InstalledFontCollection\r\n"+
+ "  $c.Families | ForEach-Object { $_.Name } | Sort-Object -Unique | Set-Content -LiteralPath '"+out.replace(/'/g,"''")+"' -Encoding Unicode\r\n"+
+ "  exit 0\r\n"+
+ "} catch {\r\n"+
+ "  $_.Exception.ToString() | Set-Content -LiteralPath '"+err.replace(/'/g,"''")+"' -Encoding Unicode\r\n"+
+ "  exit 7\r\n"+
+ "}\r\n";
+ writeUnicode(ps,script);
+ rc=sh().Run('powershell.exe -NoProfile -ExecutionPolicy Bypass -File "'+ps+'"',0,true);
+ if(rc!==0){var em='PowerShell exit '+rc;try{if(fso().FileExists(err))em=readUnicode(err);}catch(er){}throw new Error(em);}
+ if(!fso().FileExists(out))throw new Error(L()==='vi'?'Không tạo được danh sách font.':'Font list file was not created.');
+ lines=String(readUnicode(out)||'').split(/\r?\n/);
+ for(i=0;i<lines.length;i++){n=String(lines[i]||'').replace(/^\s+|\s+$/g,'');if(n&&!seen[n.toLowerCase()]){seen[n.toLowerCase()]=1;fonts.push(n);}}
+ if(!fonts.length)throw new Error(L()==='vi'?'Windows trả về 0 font.':'Windows returned 0 fonts.');
+ return fonts;
+}
+function fill(sel,fonts,keep){var i;if(!sel)return;while(sel.options.length>1)sel.remove(1);for(i=0;i<fonts.length;i++)sel.options.add(new Option(fonts[i],fonts[i]));if(keep)sel.value=keep;}
+function populate(fonts){var a=E('nameFont'),b=E('numberFont'),n=E('v86NameFont'),d=E('v86NoFont'),ka=a?a.value:'',kb=b?b.value:'',kn=n?n.value:'',kd=d?d.value:'';fill(a,fonts,ka);fill(b,fonts,kb);fill(n,fonts,kn);fill(d,fonts,kd);}
+function status(msg,ok){var s=E('v86Status');if(s){s.className='v86-note '+(ok?'ok':'bad');s.innerHTML=msg;}var s2=E('fontStatus');if(s2)s2.innerHTML=msg;}
+window.loadInstalledFonts=function(force){var b=E('v86LoadFonts'),fonts;if(busy)return cache?cache.length:0;busy=true;if(b){b.disabled=true;b.className=(b.className||'')+' v812-loading';}try{status(L()==='vi'?'Đang đọc font đã cài trên Windows...':'Reading installed Windows fonts...',true);fonts=(cache&&!force)?cache:readFonts();cache=fonts;populate(fonts);status((L()==='vi'?'✓ Đã nạp ':'✓ Loaded ')+fonts.length+(L()==='vi'?' font. Bây giờ hãy chọn Font tên và Font số.':' fonts. Now choose Name and Number fonts.'),true);return fonts.length;}catch(e){status((L()==='vi'?'Không nạp được font: ':'Could not load fonts: ')+esc(e.message),false);return 0;}finally{busy=false;if(b){b.disabled=false;b.className=(b.className||'').replace(/\s*v812-loading\b/g,'');}}};
+function hook(){var b=E('v86LoadFonts'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(!b){setTimeout(hook,180);return;}b.onclick=function(){window.loadInstalledFonts(true);return false;};if(v&&v.length)v[0].innerHTML='v8.12';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.12 · reliable font loader · VI / EN';}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(hook,4300);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(hook,4300);});else setTimeout(hook,4500);
+})();
+</script>
+
+<style id="dhl-v813-page-ready-fix-style"></style>
+<script id="dhl-v813-page-ready-fix" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}
+function hook(){
+ if(window.readCurrentPageSize&& !window.readCurrentPageSize._v813){
+   var oldRead=window.readCurrentPageSize;
+   var wrap=function(){
+     var r=oldRead.apply(window,arguments);
+     setTimeout(function(){
+       var pr=E('pageResult');
+       if(pr && String(pr.innerHTML||'').indexOf('✓')>=0 && typeof window.setCurrentPrintPage==='function'){
+         try{window.setCurrentPrintPage();}catch(e){}
+         setTimeout(function(){
+           var p=E('pageResult');
+           if(p && String(p.innerHTML||'').indexOf('✓')>=0){
+             p.innerHTML=L()==='vi'?'✓ Khổ trang hiện tại đã được xác nhận. Có thể sang BƯỚC 5.':'✓ Current page size confirmed. You can continue to STEP 5.';
+           }
+         },80);
+       }
+     },80);
+     return r;
+   };
+   wrap._v813=true;
+   window.readCurrentPageSize=wrap;
+ }
+ var v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
+ if(v&&v.length)v[0].innerHTML='v8.13';
+ if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.13 · page-step unlock fix · VI / EN';
+}
+function finish(){hook();setTimeout(hook,900);}
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,4700);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,4700);});else setTimeout(finish,4900);
+})();
+</script>
+
 </body>
 </html>
