@@ -178,9 +178,12 @@ describe("public SKU inventory presentation", () => {
   it("keeps real product images clean without overlay badges", () => {
     const assetSource = readFileSync(new URL("../client/src/components/AssetVisual.tsx", import.meta.url), "utf8");
     const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+    const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 
     expect(assetSource).toContain("data-clean-product-image");
     expect(assetSource).toContain('className="h-full w-full object-contain"');
+    expect(catalogSource).toContain("isRenderableImageUrl(p.image)");
+    expect(homeSource).toContain("isRenderableImageUrl(product.image)");
     expect(catalogSource).not.toContain("absolute left-2 top-2 z-20");
     expect(catalogSource).not.toContain("absolute bottom-2 left-2 z-20");
   });

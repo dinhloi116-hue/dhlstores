@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { BadgeCheck, Boxes, FileCode2, Grid2X2, Image, Layers3, Printer, Shirt, Type } from "lucide-react";
 import { getAssetCoverConfig } from "@/lib/asset-cover";
+import { isRenderableImageUrl } from "@/lib/image";
 
 type AssetVisualProps = {
   categoryId: number;
@@ -26,7 +27,7 @@ const categoryIcons: Record<number, LucideIcon> = {
 export default function AssetVisual({ categoryId, title, fileSize, imageUrl, className = "" }: AssetVisualProps) {
   const cover = getAssetCoverConfig(categoryId);
   const Icon = categoryIcons[categoryId] ?? FileCode2;
-  const hasImage = imageUrl?.startsWith("/manus-storage/") || /^https?:\/\//.test(imageUrl || "");
+  const hasImage = isRenderableImageUrl(imageUrl);
 
   if (hasImage) {
     return (

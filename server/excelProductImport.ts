@@ -32,7 +32,7 @@ const headers = { alias: "Đường dẫn/Alias", name: "Tên sản phẩm*", sk
 function text(value: unknown) { return String(value ?? "").trim(); }
 export function normalizeImageUrl(value: unknown) {
   const raw = text(value);
-  if (!raw) return "";
+  if (!raw || /^generated:/i.test(raw) || /drive\.google\.com\/drive\/folders\//i.test(raw)) return "";
   const fileMatch = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
   const queryMatch = raw.match(/[?&]id=([^&]+)/i);
   const fileId = fileMatch?.[1] || queryMatch?.[1];
@@ -46,6 +46,15 @@ function amount(value: unknown) {
 }
 function slugify(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 220) || `san-pham-${Date.now()}`; }
 function cleanDescription(value: unknown) { return text(value).replace(/<\/?pre>/gi, "").replace(/<br\s*\/?\s*>/gi, "\n").replace(/<[^>]+>/g, "").trim(); }
+function rowImageValues(row: Record<string, unknown>) {
+  const imageColumns = Object.keys(row)
+    .filter(key => /^(?:Ảnh|Hình ảnh)\s*(?:đại diện|bìa|\d+)$/i.test(key.trim()))
+    .sort((a, b) => Number(a.match(/\d+/)?.[0] || 0) - Number(b.match(/\d+/)?.[0] || 0));
+  return [row[headers.image], ...imageColumns.map(key => row[key])]
+    .map(normalizeImageUrl)
+    .filter(Boolean);
+}
+
 function optionPairs(row: Record<string, unknown>, inheritedNames: Map<number, string>) {
   const options: Array<{ name: string; value: string }> = [];
   for (const index of [1, 2, 3]) {
@@ -92,7 +101,12 @@ function parseCommonWorkbook(workbook: XLSX.WorkBook) {
   const attributes = [["Loại", profile.get("Loại")], ["Hoàn thiện", profile.get("Hoàn thiện bề mặt")], ["Đặc tính", profile.get("Đặc tính")]].filter(([, value]) => value).map(([name, value]) => ({ name: name as string, value: value as string }));
   const profileRows = sheetRows(workbook, profileSheet);
   const wholesaleTiers = [31, 32, 33, 34, 35].map(rowNumber => { const row = profileRows[rowNumber - 1] || []; const match = text(row[0]).match(/(\d+)/); return { minQuantity: match ? Number(match[1]) : 0, unitPrice: amount(row[1]) }; }).filter(tier => tier.minQuantity > 0 && tier.unitPrice > 0);
-  const imageLinks = linksSheet ? sheetRows(workbook, linksSheet).slice(2).map(row => normalizeImageUrl(row[2])).filter(Boolean) : [];
+  const imageLinks = linksSheet
+    ? sheetRows(workbook, linksSheet)
+      .filter(row => /^(?:ảnh|hình ảnh)\s*(?:bìa|đại diện|\d+)?$/i.test(text(row[0])))
+      .map(row => normalizeImageUrl(row[2] || row.find(value => /https?:\/\//i.test(text(value)))))
+      .filter(Boolean)
+    : [];
   const gallery = Array.from(new Set([cover, ...imageLinks].filter(Boolean)));
   const image = gallery[0] || "generated:catalog-cover";
   const slug = slugify(name);
@@ -118,12 +132,11 @@ export function parseExcelProducts(buffer: Buffer) {
     activeKey = sourceKey; const price = amount(row[headers.price]); let product = bySourceKey.get(sourceKey);
     if (!product) {
       if (!name) { errors.push({ row: index + 2, message: "Dòng mở đầu một sản phẩm cần có Tên sản phẩm*" }); continue; }
-      const imageColumns = Object.keys(row).filter(key => /^Hình ảnh\s*\d+$/i.test(key)).sort((a, b) => Number(a.match(/\d+/)?.[0] || 0) - Number(b.match(/\d+/)?.[0] || 0));
-      const gallery = Array.from(new Set([row[headers.image], ...imageColumns.map(key => row[key])].map(normalizeImageUrl).filter(Boolean)));
+      const gallery = Array.from(new Set(rowImageValues(row)));
       product = { sourceKey, slug: slugify(alias || name), name, description: cleanDescription(row[headers.description]), image: gallery[0] || normalizeImageUrl(row[headers.variantImage]) || "generated:catalog-cover", gallery, tags: text(row[headers.tags]), specs: "", price, stock: 0, costPrice: 0, variants: [], wholesaleTiers: [] };
       bySourceKey.set(sourceKey, product); optionNamesByProduct.set(sourceKey, new Map());
     }
-    const extraImages = Object.keys(row).filter(key => /^Hình ảnh\s*\d+$/i.test(key)).map(key => normalizeImageUrl(row[key])).filter(Boolean);
+    const extraImages = rowImageValues(row);
     product.gallery = Array.from(new Set([...product.gallery, ...extraImages]));
     const attributes = optionPairs(row, optionNamesByProduct.get(sourceKey) || new Map()); const sku = text(row[headers.sku]);
     if (attributes.length || sku) product.variants.push({ sku, price, image: normalizeImageUrl(row[headers.variantImage]) || product.image, stock: 0, costPrice: 0, attributes });

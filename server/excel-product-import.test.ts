@@ -6,7 +6,7 @@ import type { TrpcContext } from "./_core/context";
 
 function makeWorkbook() {
   const rows = [
-    { "Đường dẫn/Alias": "ao-do-xanh", "Tên sản phẩm*": "Áo câu lạc bộ", "Thuộc tính 1": "Màu sắc", "Giá trị thuộc tính 1": "Đỏ", "Thuộc tính 2": "Kích thước", "Giá trị thuộc tính 2": "M", "Mã SKU": "AO-DO-M", "Ảnh đại diện": "https://example.com/ao.jpg", "Giá": "69,000", "Mô tả sản phẩm": "<pre>Áo mẫu</pre>" },
+    { "Đường dẫn/Alias": "ao-do-xanh", "Tên sản phẩm*": "Áo câu lạc bộ", "Thuộc tính 1": "Màu sắc", "Giá trị thuộc tính 1": "Đỏ", "Thuộc tính 2": "Kích thước", "Giá trị thuộc tính 2": "M", "Mã SKU": "AO-DO-M", "Ảnh đại diện": "https://example.com/ao.jpg", "Ảnh 1": "https://example.com/ao-detail.jpg", "Hình ảnh 2": "https://example.com/ao-back.jpg", "Giá": "69,000", "Mô tả sản phẩm": "<pre>Áo mẫu</pre>" },
     { "Đường dẫn/Alias": "ao-do-xanh", "Tên sản phẩm*": "", "Thuộc tính 1": "Màu sắc", "Giá trị thuộc tính 1": "Xanh", "Thuộc tính 2": "Kích thước", "Giá trị thuộc tính 2": "L", "Mã SKU": "AO-XANH-L", "Ảnh phiên bản": "https://example.com/ao-xanh.jpg", "Giá": "79,000" },
   ];
   const workbook = XLSX.utils.book_new();
@@ -20,7 +20,7 @@ function makeCommonWorkbook() {
     ["HỒ SƠ SẢN PHẨM"], ["Trường", "Giá trị / lựa chọn"],
     ["Tên sản phẩm", "Nameset Messi 10"], ["Loại", "B"], ["Đặc tính", "Chống nhiễm màu"], ["Hoàn thiện bề mặt", "Mạ đồng bóng"],
     ["SKU sản phẩm dự kiến", "DHL-MESSI"], ["Giá vốn / sản phẩm (đ)", 14350], ["Giá bán Shopee (đ)", 79000], ["Tồn kho", 10], ["Cân nặng đóng gói (g)", 100],
-    ["Link sản phẩm gốc (1688)", "https://1688.example/item"], ["Ảnh bìa / AVT", "https://drive.example/cover"],
+    ["Link sản phẩm gốc (1688)", "https://1688.example/item"], ["Ảnh bìa / AVT", ""],
     ...Array.from({ length: 16 }, () => [] as string[]),
     ["Mốc số lượng", "Giá / cái"], ["1–9 cái", 49000], ["10–19 cái", 42000], ["20–29 cái", 36000], ["30–49 cái", 32000], ["Từ 50 cái", 27000],
   ]), "01_Ho so san pham");
@@ -43,6 +43,8 @@ describe("excel product import", () => {
   it("normalizes Google Drive file links into browser-loadable image URLs", () => {
     expect(normalizeImageUrl("https://drive.google.com/file/d/1cqOtdBq8uAUttY0navqjB_dPcC2UX4bC/view?usp=drivesdk")).toBe("https://lh3.googleusercontent.com/d/1cqOtdBq8uAUttY0navqjB_dPcC2UX4bC=w1200");
     expect(normalizeImageUrl("https://drive.google.com/open?id=abc123")).toBe("https://lh3.googleusercontent.com/d/abc123=w1200");
+    expect(normalizeImageUrl("https://drive.google.com/drive/folders/folder123")).toBe("");
+    expect(normalizeImageUrl("generated:catalog-cover")).toBe("");
     expect(normalizeImageUrl("https://cdn.example.com/product.png")).toBe("https://cdn.example.com/product.png");
   });
 
@@ -51,6 +53,7 @@ describe("excel product import", () => {
     expect(parsed).toMatchObject({ sheetName: "Sản phẩm", rowCount: 2 });
     expect(parsed.products).toHaveLength(1);
     expect(parsed.products[0]).toMatchObject({ name: "Áo câu lạc bộ", slug: "ao-do-xanh", price: 69000 });
+    expect(parsed.products[0].gallery).toEqual(["https://example.com/ao.jpg", "https://example.com/ao-detail.jpg", "https://example.com/ao-back.jpg"]);
     expect(parsed.products[0].variants).toEqual(expect.arrayContaining([expect.objectContaining({ sku: "AO-DO-M", attributes: expect.arrayContaining([expect.objectContaining({ name: "Màu sắc", value: "Đỏ" })]) })]));
     expect(parsed.products[0].variants.find(variant => variant.sku === "AO-XANH-L")?.image).toBe("https://example.com/ao-xanh.jpg");
   });

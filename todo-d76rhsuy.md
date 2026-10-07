@@ -1240,3 +1240,8 @@
 - [x] Phân tích cả URL ảnh và ảnh nhúng trong workbook; mẫu này dùng 8 URL ảnh trong sheet `09_Link anh`, không có ảnh nhúng binary.
 - [x] Parser/import giữ đủ gallery theo sản phẩm; parser thật trả về 8 ảnh và import truyền đủ `gallery` vào catalog.
 - [x] Bổ sung hồi quy gallery, tải 8 ảnh vào storage cho Nameset Messi và xác nhận tRPC public trả đủ 8 URL; screenshot route vẫn bị preview browser giữ trạng thái loading/404 nên đã ghi nhận giới hạn kiểm tra UI.
+
+## Sửa ảnh không hiển thị sau khi nhập Excel — 2026-10-06
+- [x] Không lưu/không render URL sentinel `generated:catalog-cover` như một ảnh thật; hiển thị placeholder an toàn.
+- [x] Chuẩn hóa parser mẫu chung và mẫu cột thường để nhận đúng toàn bộ cột ảnh, kể cả `Ảnh 1`, `Hình ảnh 1`, `Ảnh bìa` và link Drive hợp lệ.
+- [x] Bổ sung hồi quy cho sản phẩm không có ảnh và kiểm tra luồng import sau sửa.
