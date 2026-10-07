@@ -110,6 +110,14 @@ function run(){
   return false;
  }
 }
+function unlockEntryFields(){
+ var nodes=document.querySelectorAll?document.querySelectorAll('input,select,textarea'):[],i,n,lock=E('v85Lock');
+ for(i=0;i<nodes.length;i++){
+  n=nodes[i];
+  if(n.id==='v85Height'&&lock&&lock.checked){n.disabled=true;continue;}
+  try{n.disabled=false;}catch(e){}
+ }
+}
 function tuneUI(){
  var btn=E('v77OutlineBtn'),hint=E('v77OutlineHint'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
  if(btn){btn.onclick=run;btn.innerHTML=L()==='vi'?'TẠO ĐƯỜNG BAO + GROUP':'CREATE OUTLINE + GROUP';}
@@ -118,6 +126,6 @@ function tuneUI(){
  if(v&&v.length)v[0].innerHTML='v8.29';
  if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.29 · outline + clearer UI · VI / EN';
 }
-if(window.addEventListener)window.addEventListener('load',function(){setTimeout(tuneUI,14500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(tuneUI,14500);});else setTimeout(tuneUI,14700);
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);});else setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14700);
 })();
 </script>
