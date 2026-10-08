@@ -163,7 +163,7 @@ Invoke-WebRequest -UseBasicParsing -Uri ('https://raw.githubusercontent.com/dinh
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $update
 $code=$LASTEXITCODE
 Remove-Item -LiteralPath $update -Force -ErrorAction SilentlyContinue
-if($code -ne 0){throw ('Cap nhat giao dien V8.30 that bai. Ma loi: '+$code)}
+if($code -ne 0){throw ('Cap nhat giao dien V8.31 that bai. Ma loi: '+$code)}
 
 Write-Host ''
 Write-Host 'KIEM TRA FILE SAU CAI:' -ForegroundColor Cyan
@@ -175,7 +175,7 @@ foreach($dest in $installed){
     Write-Host ('  OK  '+$name+'  '+$size+' bytes') -ForegroundColor Green
   }
   $ui=[IO.File]::ReadAllText((Join-Path $dest 'DockerUI.html'))
-  if($ui.IndexOf('DHL_UI_VERSION=8.30') -lt 0){throw ('DockerUI chua len V8.30 tai '+$dest)}
+  if($ui.IndexOf('DHL_UI_VERSION=8.31') -lt 0){throw ('DockerUI chua len V8.31 tai '+$dest)}
   if($ui.IndexOf('dhl-v87-commercial-license') -ge 0){throw ('Van con module ban quyen tai '+$dest)}
 }
 
@@ -196,6 +196,6 @@ if($reset -eq 'RESET'){
 }
 
 Write-Host ''
-Write-Host 'HOAN TAT DONG BO DHL NAMESET LAYOUT V8.30.' -ForegroundColor Cyan
+Write-Host 'HOAN TAT DONG BO DHL NAMESET LAYOUT V8.31.' -ForegroundColor Cyan
 Write-Host 'Mo CorelDRAW 2021 hoac 2025 -> Window -> Dockers -> DHL Nameset Layout.'
 exit 0
