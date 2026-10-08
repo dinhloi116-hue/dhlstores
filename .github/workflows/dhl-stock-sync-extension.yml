@@ -1,0 +1,104 @@
+name: DHL Stock Sync Extension
+
+on:
+  push:
+    branches:
+      - feature/dhl-stock-sync-extension
+      - feature/dhl-stock-sync-ui-v2
+    paths:
+      - 'tools/dhl-stock-sync-extension/**'
+      - '.github/workflows/dhl-stock-sync-extension.yml'
+  pull_request:
+    paths:
+      - 'tools/dhl-stock-sync-extension/**'
+      - '.github/workflows/dhl-stock-sync-extension.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/dhl-stock-sync-extension
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test extension
+        run: npm test
+
+      - name: Persist generated runtime sources
+        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content.js popup.js xlsx-lite.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Materialize current-category runtime [skip ci]"
+            git push
+          fi
+
+      - name: Package Chrome extension
+        run: |
+          rm -rf dist
+          mkdir -p dist/dhl-stock-sync-extension
+          files=(
+            manifest.json background.js popup.html popup.css
+            safe-category-guard.js stock-core.js dom-stock-parser.js content.js
+            match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js
+            warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js
+            stock-history-core.js batch-stock-core.js stock-import-core.js auto-sync-core.js
+            sapo-inventory-resolver-core.js sapo-inventory-set-compat.js
+            auto-sync-safety-background.js
+            manual-job-runner-background.js manual-job-runner-mode.js
+            manual-sapo-background.js manual-sapo-output-mode.js
+            saved-profiles-mode.js tool-reset-mode.js batch-stock-cache-mode.js
+            sapo-product-create-background.js sapo-product-create-continuous-background.js
+            lazy-product-mode.js workflow-order-mode.js
+            product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
+            sapo-product-create-mode.js sapo-product-create-report-mode.js single-product-add-mode.js marketplace-sku-mode.js
+          )
+          cp "${files[@]}" dist/dhl-stock-sync-extension/
+          cd dist
+          zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
+
+      - name: Verify packaged files
+        run: |
+          files=(
+            manifest.json background.js popup.html popup.css
+            safe-category-guard.js stock-core.js dom-stock-parser.js content.js
+            match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js
+            warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js
+            stock-history-core.js batch-stock-core.js stock-import-core.js auto-sync-core.js
+            sapo-inventory-resolver-core.js sapo-inventory-set-compat.js
+            auto-sync-safety-background.js
+            manual-job-runner-background.js manual-job-runner-mode.js
+            manual-sapo-background.js manual-sapo-output-mode.js
+            saved-profiles-mode.js tool-reset-mode.js batch-stock-cache-mode.js
+            sapo-product-create-background.js sapo-product-create-continuous-background.js
+            lazy-product-mode.js workflow-order-mode.js
+            product-create-core.js catalog-ui-shell.js catalog-popup-v3-mode.js
+            sapo-product-create-mode.js sapo-product-create-report-mode.js single-product-add-mode.js marketplace-sku-mode.js
+          )
+          for file in "${files[@]}"; do
+            test -f "dist/dhl-stock-sync-extension/$file" || {
+              echo "Missing packaged runtime: $file"
+              exit 1
+            }
+          done
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dhl-stock-sync-extension
+          path: tools/dhl-stock-sync-extension/dist/dhl-stock-sync-extension.zip
+          retention-days: 14
