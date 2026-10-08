@@ -14,17 +14,17 @@ function Log([string]$s){
 }
 
 try {
-  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.29 snapshot - '+(Get-Date)) -Encoding UTF8
+  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.30 snapshot - '+(Get-Date)) -Encoding UTF8
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-  Log 'Downloading current DHL Nameset Layout V8.29 snapshot...'
+  Log 'Downloading current DHL Nameset Layout V8.30 snapshot...'
   $url=$repoBase+'/src/DockerUI_CURRENT.html?v='+$stamp
   Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tmpOut -TimeoutSec 45
 
   if(!(Test-Path -LiteralPath $tmpOut)){throw 'Current snapshot was not downloaded.'}
   $verify=[IO.File]::ReadAllText($tmpOut)
-  if($verify.IndexOf('DHL_UI_VERSION=8.29') -lt 0){throw 'Downloaded snapshot is not V8.29.'}
-  if($verify.IndexOf('dhl-v829-ui-outline') -lt 0){throw 'Current snapshot finalizer is missing.'}
+  if($verify.IndexOf('DHL_UI_VERSION=8.30') -lt 0){throw 'Downloaded snapshot is not V8.30.'}
+  if($verify.IndexOf('dhl-v829-ui-outline') -lt 0 -or $verify.IndexOf('dhl-v830-true-contour-nest') -lt 0){throw 'Current snapshot finalizer is missing.'}
   if($verify.IndexOf('dhl-v87-commercial-license') -ge 0){throw 'License module unexpectedly exists in current snapshot.'}
   Log ('Snapshot ready: '+(Get-Item -LiteralPath $tmpOut).Length+' bytes')
 
@@ -65,12 +65,12 @@ try {
       }
 
       $check=[IO.File]::ReadAllText($dst)
-      if($check.IndexOf('DHL_UI_VERSION=8.29') -lt 0){throw 'V8.29 verification failed.'}
+      if($check.IndexOf('DHL_UI_VERSION=8.30') -lt 0){throw 'V8.30 verification failed.'}
       if($check.IndexOf('dhl-v824-current-snapshot') -lt 0){throw 'Snapshot finalizer missing after write.'}
       if($check.IndexOf('dhl-v87-commercial-license') -ge 0){throw 'License module found after write.'}
 
       $success++
-      Log ('UPDATED V8.29 SNAPSHOT: '+$dst)
+      Log ('UPDATED V8.30 SNAPSHOT: '+$dst)
     }catch{
       $failed++
       Log ('SKIP FAILED TARGET: '+$target+' | '+$_.Exception.Message)
@@ -80,9 +80,9 @@ try {
   Remove-Item -LiteralPath $tmpOut -Force -ErrorAction SilentlyContinue
 
   if($success -lt 1){throw ('Khong cap nhat duoc ban Corel nao. Xem log: '+$log)}
-  Log ('DONE - V8.29 snapshot installed to '+$success+' location(s); failed/skipped: '+$failed)
+  Log ('DONE - V8.30 snapshot installed to '+$success+' location(s); failed/skipped: '+$failed)
   Write-Host ''
-  Write-Host 'DONE - DHL Nameset Layout V8.29 snapshot installed.' -ForegroundColor Cyan
+  Write-Host 'DONE - DHL Nameset Layout V8.30 snapshot installed.' -ForegroundColor Cyan
   Write-Host ('Log: '+$log) -ForegroundColor DarkGray
   exit 0
 }
