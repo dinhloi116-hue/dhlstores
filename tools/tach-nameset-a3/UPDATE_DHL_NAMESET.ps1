@@ -14,17 +14,17 @@ function Log([string]$s){
 }
 
 try {
-  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.32 snapshot - '+(Get-Date)) -Encoding UTF8
+  Set-Content -LiteralPath $log -Value ('DHL Nameset Layout updater V8.33 snapshot - '+(Get-Date)) -Encoding UTF8
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-  Log 'Downloading current DHL Nameset Layout V8.32 snapshot...'
+  Log 'Downloading current DHL Nameset Layout V8.33 snapshot...'
   $url=$repoBase+'/src/DockerUI_CURRENT.html?v='+$stamp
   Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tmpOut -TimeoutSec 45
 
   if(!(Test-Path -LiteralPath $tmpOut)){throw 'Current snapshot was not downloaded.'}
   $verify=[IO.File]::ReadAllText($tmpOut)
-  if($verify.IndexOf('DHL_UI_VERSION=8.32') -lt 0){throw 'Downloaded snapshot is not V8.32.'}
-  if($verify.IndexOf('dhl-v829-ui-outline') -lt 0 -or $verify.IndexOf('dhl-v831-true-contour-nest') -lt 0 -or $verify.IndexOf('dhl-v832-safe-selection') -lt 0){throw 'Current snapshot finalizer is missing.'}
+  if($verify.IndexOf('DHL_UI_VERSION=8.33') -lt 0){throw 'Downloaded snapshot is not V8.33.'}
+  if($verify.IndexOf('dhl-v829-ui-outline') -lt 0 -or $verify.IndexOf('dhl-v833-true-contour-nest') -lt 0 -or $verify.IndexOf('dhl-v832-safe-selection') -lt 0){throw 'Current snapshot finalizer is missing.'}
   if($verify.IndexOf('dhl-v87-commercial-license') -ge 0){throw 'License module unexpectedly exists in current snapshot.'}
   Log ('Snapshot ready: '+(Get-Item -LiteralPath $tmpOut).Length+' bytes')
 
@@ -68,12 +68,12 @@ try {
       }
 
       $check=[IO.File]::ReadAllText($dst)
-      if($check.IndexOf('DHL_UI_VERSION=8.32') -lt 0){throw 'V8.32 verification failed.'}
-      if($check.IndexOf('dhl-v832-safe-selection') -lt 0){throw 'Snapshot finalizer missing after write.'}
+      if($check.IndexOf('DHL_UI_VERSION=8.33') -lt 0){throw 'V8.33 verification failed.'}
+      if($check.IndexOf('dhl-v832-safe-selection') -lt 0 -or $check.IndexOf('dhl-v833-true-contour-nest') -lt 0){throw 'Snapshot finalizer missing after write.'}
       if($check.IndexOf('dhl-v87-commercial-license') -ge 0){throw 'License module found after write.'}
 
       $success++
-      Log ('UPDATED V8.32 SNAPSHOT: '+$dst)
+      Log ('UPDATED V8.33 SNAPSHOT: '+$dst)
     }catch{
       try{if($prev -and (Test-Path -LiteralPath $prev)){Copy-Item -LiteralPath $prev -Destination $dst -Force}}catch{}
       $failed++
@@ -85,9 +85,9 @@ try {
 
   if($failed -gt 0){Log ('WARNING: Some Corel addon locations could not be updated: '+$failed)}
   if($success -lt 1){throw ('Khong cap nhat duoc ban Corel nao. Xem log: '+$log)}
-  Log ('DONE - V8.32 snapshot installed to '+$success+' location(s); failed/skipped: '+$failed)
+  Log ('DONE - V8.33 snapshot installed to '+$success+' location(s); failed/skipped: '+$failed)
   Write-Host ''
-  Write-Host 'DONE - DHL Nameset Layout V8.32 snapshot installed.' -ForegroundColor Cyan
+  Write-Host 'DONE - DHL Nameset Layout V8.33 snapshot installed.' -ForegroundColor Cyan
   Write-Host ('Log: '+$log) -ForegroundColor DarkGray
   exit 0
 }
