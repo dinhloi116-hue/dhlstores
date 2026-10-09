@@ -77,7 +77,7 @@ function relabel(){
 }
 function install(){
  var card=E('v77NestCard'),prep=E('v85Prep'),box,label,input,title,btn,hint,err;
- if(!card){setTimeout(install,300);return;}
+ if(!card||!prep){setTimeout(install,300);return;}
  if(E('v832Safety')){relabel();return;}
  box=document.createElement('div');box.id='v832Safety';
  title=document.createElement('div');title.id='v832SafetyTitle';box.appendChild(title);
