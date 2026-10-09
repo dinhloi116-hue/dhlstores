@@ -414,7 +414,7 @@ const memoryProducts: ProductType[] = [
     categoryId: 10,
     image: "/products/halloween-cute-cover.svg",
     gallery: ["/products/halloween-cute-cover.svg"],
-    fileUrl: "https://drive.google.com/drive/folders/1YHTLPAhkoDbx37sMLQSdpBqjpjEfn6KB",
+    fileUrl: "https://drive.google.com/drive/folders/1b6-T1uPrvB3JQNCmarOFrqnY9FG8ti4X",
     fileSize: "20 PNG · transparent background · high resolution",
     stock: 9999,
     specs: "20 file PNG nền trong suốt, mã M01–M20. Phù hợp in DTF/DTG và các sản phẩm thủ công. Giấy phép: dùng cá nhân và thành phẩm vật lý quy mô nhỏ; không bán lại hoặc phân phối file digital.",
