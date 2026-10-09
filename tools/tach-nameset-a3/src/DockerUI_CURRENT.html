@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>DHL Nameset Layout</title>
-<!-- DHL_UI_VERSION=8.31 -->
+<!-- DHL_UI_VERSION=8.32 -->
 <style>
 *{box-sizing:border-box!important}
 html,body{margin:0!important;min-height:100%!important;background:#fff!important;color:#111!important;font:12px "Segoe UI",Arial,sans-serif!important;line-height:1.4!important}
@@ -989,13 +989,14 @@ function rollbackPrep(a){if(lastPrepared){try{a.ActiveDocument.Undo();}catch(e){
 function searchNest(a){var doc=a.ActiveDocument,oldUnit=doc.Unit,opt=false,cmd=false,ss=selection(a),W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,gap=N('v77NestGap',1.5)*10,fg=N('v77FrameGapInput',0)*10,mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,uw=W-ml-mr,uh=H-mt-mb,am=angleMode(),items=[],i,choice,chosen,plan,page,baseLeft,baseBottom,bi,p,sh,left,top,usedArea=0,placed=0,res=E('v77NestResult');if(!ss.length)throw new Error(LANG()==='vi'?'Chưa chọn đối tượng.':'No objects selected.');try{window.DHL_LAST_NEST_SHAPES=ss.slice(0);}catch(trackErr){}if(W<=0||H<=0||gap<0||uw<=0||uh<=0)throw new Error(LANG()==='vi'?'Khổ/lề không hợp lệ.':'Invalid frame/margins.');try{doc.Unit=3;for(i=0;i<ss.length;i++)items.push(itemOf(ss[i],i,!!am.auto));choice=chooseSearch(items,uw,uh,gap,am);chosen=choice.chosen;if(!chosen||!chosen.plan||!chosen.plan.bins.length)throw new Error(LANG()==='vi'?'Không tìm được phương án dàn hợp lệ.':'No valid nesting plan found.');plan=chosen.plan;page=a.ActivePage;baseLeft=Number(page.CenterX)-W/2;baseBottom=Number(page.CenterY)-H/2;doc.BeginCommandGroup('DHL Nameset Layout - Beam Nest V8.17');cmd=true;a.Optimization=true;opt=true;for(bi=0;bi<plan.bins.length;bi++){left=baseLeft+bi*(W+fg);frame(page,left,baseBottom,W,H,bi+1);top=baseBottom+H-mt;for(i=0;i<plan.bins[bi].place.length;i++){p=plan.bins[bi].place[i];sh=p.item.shape;if(p.ang)sh.Rotate(p.ang);sh.CenterX=left+ml+p.x+p.ow/2;sh.CenterY=top-p.y-p.oh/2;placed++;usedArea+=p.ow*p.oh;}}a.Optimization=false;opt=false;doc.Unit=oldUnit;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}
 var vi=LANG()==='vi',cm=r2(plan.totalDepth/10),lb=r2(lowerBound(items,uw)/10),gapPct=lb>0?r2((cm/lb-1)*100):0,pct=plan.totalDepth>0?Math.round(usedArea/(uw*plan.totalDepth)*1000)/10:0,remain=plan.remaining.length,html='<span class="v80-modebadge">'+(vi?'Chế độ: TÌM SÂU + BEAM SEARCH':'Mode: DEEP + BEAM SEARCH')+'</span><br>'+(remain?(vi?'⚠ Đã xếp '+placed+'/'+items.length+' đối tượng; '+remain+' đối tượng không vừa.':'⚠ Packed '+placed+'/'+items.length+' objects; '+remain+' do not fit.'):(vi?'✓ Đã xếp '+placed+' đối tượng.':'✓ Packed '+placed+' objects.'))+'<span class="v817-plan">'+(vi?'Chiều dài vật liệu tốt nhất tìm được: ':'Best material length found: ')+cm+' cm = '+r2(cm/100)+' m<br>'+(vi?'Cận dưới theo diện tích: ~':'Area lower bound: ~')+lb+' cm · '+(vi?'chênh ':'gap ')+gapPct+'%<br>'+(vi?'Hiệu suất vùng bao: ':'Bounding-box usage: ')+pct+'% · '+plan.bins.length+(vi?' khung':' frame(s)')+'<br><span class="v817-sub">'+(vi?'Greedy/MaxRects/Skyline: ':'Greedy/MaxRects/Skyline: ')+choice.trials+(vi?' phương án · Beam Search: ':' plans · Beam Search: ')+choice.beamTests+(vi?' lượt · thời gian ~':' passes · time ~')+r2(choice.ms/1000)+' s.';if(am.auto&&choice.base.best&&choice.multi.best){var bc=r2(choice.base.best.plan.totalDepth/10),mc=r2(choice.multi.best.plan.totalDepth/10),picked=(chosen===choice.multi.best&&mc+0.001<bc)?(vi?'đa góc 0°/45°/90°/135°':'multi-angle 0°/45°/90°/135°'):(vi?'0°/90°':'0°/90°');html+='<br>'+(vi?'So sánh bắt buộc: 0°/90° = ':'Mandatory comparison: 0°/90° = ')+bc+' cm · '+(vi?'đa góc = ':'multi-angle = ')+mc+' cm<br>'+(vi?'Chọn: ':'Chosen: ')+picked;}html+='</span></span>';if(res){res.setAttribute('data-used','1');res.innerHTML=html;}return true;
 }catch(e){try{if(opt)a.Optimization=false;}catch(x){}try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(x2){}try{doc.Unit=oldUnit;}catch(x3){}throw e;}}
-function run(){var res=E('v77NestResult'),a,ss,prep=false,q=0,primary=false;if(typeof window.DHLLicenseGate==='function'){try{if(!window.DHLLicenseGate())return false;}catch(g){}}if(mode()!=='compact'){if(previousNest)return previousNest();return false;}lastPrepared=false;lastSource=null;lastPrepQty=0;try{a=app();ss=selection(a);if(shouldPrepare(ss)){q=prepareCopies(a,ss);prep=true;}if(res){res.setAttribute('data-used','1');res.innerHTML=prep?(LANG()==='vi'?'Đang dàn trực tiếp theo đường bao thực và so các hướng xoay...':'Packing directly by true contour and comparing rotations...'):(LANG()==='vi'?'Đang tính MaxRects + Skyline + Beam Search để giảm chiều dài vật liệu...':'Running MaxRects + Skyline + Beam Search to reduce material length...');}if(prep&&typeof window.DHLContourPrimaryCopies==='function'){primary=!!window.DHLContourPrimaryCopies();}if(!primary)searchNest(a);if(prep&&res)res.innerHTML='<span class="v85-badge">'+(LANG()==='vi'?'Đã tạo '+q+' bản in từ 1 mẫu. Mẫu gốc vẫn được giữ nguyên.':'Created '+q+' copies from one source. Original source was kept.')+'</span><br>'+res.innerHTML;return true;}catch(e){if(prep)rollbackPrep(a);if(res){res.setAttribute('data-used','1');res.innerHTML=(LANG()==='vi'?'Không dàn được: ':'Could not nest: ')+esc(e.message);}return false;}}
+function run(){var res=E('v77NestResult'),a,ss,prep=false,q=0,primary=false;if(typeof window.DHLLicenseGate==='function'){try{if(!window.DHLLicenseGate())return false;}catch(g){}}if(mode()!=='compact'){try{a=app();ss=selection(a);if(typeof window.DHLNestPreflight==='function')window.DHLNestPreflight(a,ss);else if(ss.length>1)throw new Error('Hãy GROUP các object nameset trước khi dàn (Ctrl+G).');}catch(checkErr){if(res){res.setAttribute('data-used','1');res.innerHTML=(LANG()==='vi'?'Không dàn được: ':'Cannot nest: ')+esc(checkErr.message);}return false;}if(previousNest)return previousNest();return false;}lastPrepared=false;lastSource=null;lastPrepQty=0;try{a=app();ss=selection(a);if(typeof window.DHLNestPreflight==='function')window.DHLNestPreflight(a,ss);else if(ss.length>1)throw new Error('Chọn nhiều object rời. Hãy GROUP các chi tiết nameset trước khi dàn (Ctrl+G).');if(shouldPrepare(ss)){q=prepareCopies(a,ss);prep=true;}if(res){res.setAttribute('data-used','1');res.innerHTML=prep?(LANG()==='vi'?'Đang dàn trực tiếp theo đường bao thực và so các hướng xoay...':'Packing directly by true contour and comparing rotations...'):(LANG()==='vi'?'Đang tính MaxRects + Skyline + Beam Search để giảm chiều dài vật liệu...':'Running MaxRects + Skyline + Beam Search to reduce material length...');}if(prep&&typeof window.DHLContourPrimaryCopies==='function'){primary=!!window.DHLContourPrimaryCopies();}if(!primary)searchNest(a);if(prep&&res)res.innerHTML='<span class="v85-badge">'+(LANG()==='vi'?'Đã tạo '+q+' bản in từ 1 mẫu. Mẫu gốc vẫn được giữ nguyên.':'Created '+q+' copies from one source. Original source was kept.')+'</span><br>'+res.innerHTML;return true;}catch(e){if(prep)rollbackPrep(a);if(res){res.setAttribute('data-used','1');res.innerHTML=(LANG()==='vi'?'Không dàn được: ':'Could not nest: ')+esc(e.message);}return false;}}
 function undo(){var a;if(previousUndo)previousUndo();if(lastPrepared){try{a=app();a.ActiveDocument.Undo();if(lastSource)lastSource.CreateSelection();if(a.ActiveWindow)a.ActiveWindow.Refresh();if(E('v77NestResult'))E('v77NestResult').innerHTML=LANG()==='vi'?'Đã hoàn tác dàn + các bản sao vừa tạo.':'Undid nesting and generated copies.';}catch(e){}lastPrepared=false;lastSource=null;lastPrepQty=0;}}
 function relabel(){var o=E('v83Rot45'),h=E('v83RotHint'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(o)o.innerHTML=LANG()==='vi'?'AUTO BEST / TÌM SÂU + BEAM':'AUTO BEST / DEEP + BEAM';if(h)h.innerHTML=LANG()==='vi'?'V8.17 giữ MaxRects + Skyline, sau đó chạy thêm Beam Search để không chỉ tham lam chọn vị trí trước mắt. Mục tiêu số 1 vẫn là chiều dài vật liệu; AUTO luôn so 0°/90° với đa góc và chỉ giữ phương án ngắn hơn.':'V8.17 keeps MaxRects + Skyline, then adds Beam Search so it does not rely only on greedy placements. Material length remains the primary objective; AUTO compares 0°/90° against multi-angle and keeps only the shorter result.';if(v&&v.length)v[0].innerHTML='v8.17';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.17 · beam material-saving search · VI / EN';}
 function finish(){if(!E('v77NestBtn')){setTimeout(finish,180);return;}previousNest=window.V77NestSelected;previousUndo=window.V77Undo;window.V77NestSelected=run;window.V77Undo=undo;E('v77NestBtn').onclick=run;if(E('v77UndoNest'))E('v77UndoNest').onclick=undo;relabel();var old=window.setLanguage;if(old&&!old._v817){var w=function(x){var r=old(x);setTimeout(relabel,60);return r;};w._v817=true;window.setLanguage=w;}}
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,7600);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,7600);});else setTimeout(finish,7800);
 })();
 </script>
+
 
 
 
@@ -1502,7 +1503,7 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 
 
 <style id="dhl-v829-ui-outline-style">
-/* V8.31: clearer controls across the whole docker */
+/* V8.32: clearer controls across the whole docker */
 input[type=text],input[type=number],input[type=file],select,textarea{
   background:#fff!important;color:#111!important;opacity:1!important;
   border:1px solid #666!important;font-weight:600!important;
@@ -1595,7 +1596,7 @@ function run(){
   makeWhite=!!(E('v77MakeWhite')&&E('v77MakeWhite').checked);makeCut=!!(E('v77MakeCut')&&E('v77MakeCut').checked);
   if(off<0||stroke<=0)throw new Error(L()==='vi'?'Khoảng cách/độ dày không hợp lệ.':'Invalid outline distance/width.');
   if(!makeWhite&&!makeCut)throw new Error(L()==='vi'?'Chọn ít nhất NỀN TRẮNG hoặc CUTLINE.':'Choose at least WHITE BORDER or CUTLINE.');
-  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.31');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.32');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
   for(i=0;i<ss.length;i++){
    base=null;outer=null;
    base=baseBoundary(a,ss[i]);
@@ -1605,7 +1606,7 @@ function run(){
   try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;
   if(created.length){try{range=a.CreateShapeRange();for(i=0;i<created.length;i++)range.Add(created[i]);range.CreateSelection();}catch(re){}}
   try{a.ActiveWindow.Refresh();}catch(rx){}
-  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.31: đã tạo đường bao cho ':'✓ V8.31: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
+  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.32: đã tạo đường bao cho ':'✓ V8.32: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
   return true;
  }catch(e){
   try{if(outer)outer.Delete();}catch(c1){}try{if(base)base.Delete();}catch(c2){}try{if(opt&&a)a.Optimization=false;}catch(c3){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(c4){}try{if(cmd&&doc){doc.EndCommandGroup();doc.Undo();}}catch(c5){}
@@ -1626,10 +1627,108 @@ function tuneUI(){
  if(btn){btn.onclick=run;btn.innerHTML=L()==='vi'?'TẠO ĐƯỜNG BAO + GROUP':'CREATE OUTLINE + GROUP';}
  window.V77CreateOutline=run;window.V76CreateOutline=run;
  if(hint)hint.innerHTML=L()==='vi'?'Chọn ảnh PNG/vector → nhập khoảng cách viền → chọn Nền trắng và/hoặc Cutline → TẠO ĐƯỜNG BAO. Tool giữ nguyên đối tượng gốc và Group kết quả.':'Select PNG/vector → set outline distance → choose White border and/or Cutline → CREATE OUTLINE. The original object is preserved and the result is grouped.';
- if(v&&v.length)v[0].innerHTML='v8.31';
- if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.31 · outline + UI + contour-primary copies · VI / EN';
+ if(v&&v.length)v[0].innerHTML='v8.32';
+ if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.32 · outline + UI + contour-primary copies · VI / EN';
 }
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);});else setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14700);
+})();
+</script>
+<style id="dhl-v832-safe-selection-style">
+#v832Safety{border:1px solid #aaa;border-left:3px solid #333;border-radius:5px;padding:8px;margin:8px 0;background:#fff;color:#151515;font-size:11px;line-height:1.45}
+#v832SafetyTitle{font-weight:800;margin-bottom:5px}
+#v832Safety label{display:block;margin:5px 0;color:#151515!important;font-size:11px}
+#v832Safety input[type=checkbox]{width:auto!important;height:auto!important;min-height:0!important;margin-right:5px!important}
+#v832GroupBtn{min-height:31px!important;margin-top:5px;font-weight:800;width:100%}
+#v832SafetyHint{font-size:10px!important;color:#333!important;margin-top:5px}
+#v832SafetyError{font-size:11px!important;color:#860000!important;font-weight:700!important;margin-top:5px;white-space:normal}
+</style>
+<script id="dhl-v832-safe-selection" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}
+function en(){try{return currentLang==='en';}catch(e){return false;}}
+function msg(vi,english){return en()?english:vi;}
+function number(id,d){var e=E(id),n=e?Number(e.value):d;return isFinite(n)?n:d;}
+function selection(a){var s=a.ActiveSelectionRange,o=[],i;if(s)for(i=1;i<=s.Count;i++)o.push(s.Item(i));return o;}
+function groupLike(s){try{return s.Shapes&&Number(s.Shapes.Count)>0;}catch(e){return false;}}
+function allGroups(shapes){var i;for(i=0;i<shapes.length;i++)if(!groupLike(shapes[i]))return false;return true;}
+function dims(s){return {w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
+function sourceTarget(s){
+ var q=dims(s),w=number('v85Width',0)*10,h=number('v85Height',0)*10,locked=E('v85Lock')&&E('v85Lock').checked;
+ if(w>0){h=locked?w*q.h/q.w:(h>0?h:q.h);q={w:w,h:h};}
+ else if(!locked&&h>0)q={w:q.w,h:h};
+ return q;
+}
+function fits(q,W,H){return(q.w<=W+.001&&q.h<=H+.001)||(q.h<=W+.001&&q.w<=H+.001);}
+function preflight(a,shapes){
+ var checkbox=E('v832AllowLoose'),allow=!!(checkbox&&checkbox.checked),w=number('v77NestW',58)*10,h=number('v77NestH',2000)*10,uw=w-(number('v77MarginL',0)+number('v77MarginR',0))*10,uh=h-(number('v77MarginT',0)+number('v77MarginB',0))*10,d=a.ActiveDocument,old=d.Unit,i,q,amount;
+ if(!shapes.length)throw new Error(msg('Chưa chọn đối tượng.','No objects selected.'));
+ if(uw<=0||uh<=0)throw new Error(msg('Khổ dàn hoặc lề không hợp lệ.','Invalid material dimensions or margins.'));
+ if(shapes.length>1&&!allGroups(shapes)&&!allow){
+  show(msg('Đang chọn '+shapes.length+' object RỜI. Tool sẽ tách chữ/số/logo nếu dàn ngay. Hãy bấm GOM VÙNG CHỌN → 1 GROUP; hoặc tích cho phép dàn object rời nếu đó thật sự là các sản phẩm độc lập.','You selected '+shapes.length+' LOOSE objects. Packing now would separate text/numbers/logos. GROUP the selection first, or explicitly permit individual-object packing.'));
+  throw new Error(msg('ĐÃ CHẶN DÀN để không làm vỡ bộ nameset.','NESTING BLOCKED to protect the nameset.'));
+ }
+ try{
+  d.Unit=3;
+  for(i=0;i<shapes.length;i++){
+   q=shapes.length===1?sourceTarget(shapes[i]):dims(shapes[i]);
+   if(!(q.w>0&&q.h>0))throw new Error(msg('Object có kích thước không hợp lệ.','An object has invalid dimensions.'));
+   if(!fits(q,uw,uh)){
+    amount=Math.round(Math.min(q.w,q.h)/10*100)/100;
+    throw new Error(msg('Object '+(i+1)+' không vừa khổ: cạnh ngắn nhất '+amount+' cm, bề ngang in '+Math.round(uw/10*100)/100+' cm. Cần đổi khổ hoặc giảm kích thước mẫu; tool KHÔNG tự cắt/xé hay thu nhỏ bản in.','Object '+(i+1)+' does not fit the material: shortest side '+amount+' cm, available width '+Math.round(uw/10*100)/100+' cm. Change material size or explicitly resize; the tool will not split/scale it silently.'));
+   }
+  }
+ }finally{try{d.Unit=old;}catch(restore){}}
+ show('');
+ return true;
+}
+function show(s){var b=E('v832SafetyError');if(b)b.innerHTML=s;}
+function groupSelected(){
+ var a=null,d=null,old=null,cmd=false,sr=null,g=null;
+ try{
+  if(window.external&&window.external.Application)a=window.external.Application;
+  else if(typeof corelApp==='function')a=corelApp();
+  if(!a)throw new Error(msg('Không kết nối CorelDRAW.','Cannot connect to CorelDRAW.'));
+  var ss=selection(a);
+  if(ss.length<2)throw new Error(msg('Chọn từ 2 object trở lên rồi bấm gom.','Select at least two objects to group.'));
+  d=a.ActiveDocument;old=d.Unit;
+  d.BeginCommandGroup('DHL - Group selected nameset elements');cmd=true;
+  sr=a.CreateShapeRange();for(var i=0;i<ss.length;i++)sr.Add(ss[i]);
+  g=sr.Group();try{g.Name='DHL_NAMESET_GROUP';}catch(n){}
+  d.EndCommandGroup();cmd=false;g.CreateSelection();
+  show(msg('✓ Đã gom '+ss.length+' chi tiết thành một Group. Nếu Group không vừa khổ, nhập Ngang mục kích thước để chủ động thu nhỏ hoặc chọn khổ lớn hơn.','✓ Grouped '+ss.length+' elements. If the group is too wide, explicitly resize it or select wider material.'));
+  if(E('v832AllowLoose'))E('v832AllowLoose').checked=false;
+  try{a.ActiveWindow.Refresh();}catch(r){}
+ }catch(e){
+  try{if(cmd&&d){d.EndCommandGroup();d.Undo();}}catch(u){}
+  show(msg('Không gom được: ','Could not group: ')+String(e.message||e));
+ }finally{try{if(d&&old!==null)d.Unit=old;}catch(r2){}}
+}
+function relabel(){
+ var t=E('v832SafetyTitle'),l=E('v832LooseLabel'),b=E('v832GroupBtn'),h=E('v832SafetyHint');
+ if(t)t.innerHTML=msg('BẢO VỆ BỘ NAMESET','PROTECT NAMESET GROUPS');
+ if(l)l.innerHTML=msg('Tôi muốn dàn từng object rời (chữ/logo/số có thể tách nhau)','I want to pack individual loose objects (names/logos/numbers may separate)');
+ if(b)b.innerHTML=msg('GOM VÙNG CHỌN → 1 GROUP','GROUP SELECTION → 1 OBJECT');
+ if(h)h.innerHTML=msg('Mặc định tool chỉ dàn nhiều Group độc lập. Các chi tiết rời phải được gom thành 1 Group trước khi nhân bản/xếp.','By default, multiple independent groups are safe. Loose components must be grouped before copying/nesting.');
+}
+function install(){
+ var card=E('v77NestCard'),prep=E('v85Prep'),box,label,input,title,btn,hint,err;
+ if(!card||!prep){setTimeout(install,300);return;}
+ if(E('v832Safety')){relabel();return;}
+ box=document.createElement('div');box.id='v832Safety';
+ title=document.createElement('div');title.id='v832SafetyTitle';box.appendChild(title);
+ label=document.createElement('label');input=document.createElement('input');input.id='v832AllowLoose';input.type='checkbox';input.checked=false;label.appendChild(input);
+ var l=document.createElement('span');l.id='v832LooseLabel';label.appendChild(l);box.appendChild(label);
+ btn=document.createElement('button');btn.type='button';btn.id='v832GroupBtn';btn.onclick=groupSelected;box.appendChild(btn);
+ hint=document.createElement('div');hint.id='v832SafetyHint';box.appendChild(hint);
+ err=document.createElement('div');err.id='v832SafetyError';box.appendChild(err);
+ if(prep&&prep.parentNode)prep.parentNode.insertBefore(box,prep);
+ else {var btnNest=E('v77NestBtn');if(btnNest&&btnNest.parentNode)card.insertBefore(box,btnNest.parentNode);else card.appendChild(box);}
+ relabel();
+}
+window.DHLNestPreflight=preflight;
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(install,500);},false);
+else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(install,500);});
+else setTimeout(install,700);
 })();
 </script>
 </body>
