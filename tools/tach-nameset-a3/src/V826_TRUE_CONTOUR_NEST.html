@@ -102,7 +102,7 @@ function collide(ax,ay,A,bx,by,B,g){
  for(i=0;i<A.leaves.length;i++){la=A.leaves[i];for(j=0;j<B.leaves.length;j++){lb=B.leaves[j];if(!bbNear(la.bb,ax,ay,lb.bb,bx,by,g))continue;if(boundariesNear(la,ax,ay,lb,bx,by,g))return true;if(filledOverlap(la,ax,ay,lb,bx,by))return true;}}
  return false;
 }
-function valid(x,y,it,placed,W,H,g){var i,p;if(x<-.001||y<-.001||x+it.w>W+.001||y+it.h>H+.001)return false;for(i=0;i<placed.length;i++){p=placed[i];if(collide(x,y,it,p.x,p.y,p.item,g))return false;}return true;}
+function valid(x,y,it,placed,W,H,g){var i,p;if(!isFinite(Number(x))||!isFinite(Number(y)))return false;if(x<-.001||y<-.001||x+it.w>W+.001||y+it.h>H+.001)return false;for(i=0;i<placed.length;i++){p=placed[i];if(collide(x,y,it,p.x,p.y,p.item,g))return false;}return true;}
 function addX(list,seen,v,max){var k;if(!isFinite(v)||v<-.001||v>max+.001)return;v=Math.max(0,Math.min(max,v));k=Math.round(v*4)/4;if(!seen[k]){seen[k]=1;list.push(k);}}
 function xCandidates(it,placed,W,g,currentX){
  var xs=[],seen={},i,j,k,p,a,b,max=W-it.w,gridStep,q,cut,step;
@@ -126,7 +126,7 @@ function pack(items,W,H,g){
  var ord=items.slice(0),placed=[],i,it,xs,j,x,y,best,origY,limit,depth;
  ord.sort(function(a,b){var m=window.DHL_ORDER||'area';if(m==='height')return b.h-a.h||b.area-a.area;if(m==='width')return b.w-a.w||b.area-a.area;return b.area-a.area||a._y-b._y||a._x-b._x;});
  for(i=0;i<ord.length;i++){
-  it=ord[i];origY=Math.max(0,it._y);xs=xCandidates(it,placed,W,g,it._x);best=null;depth=placedDepth(placed);
+  it=ord[i];origY=isFinite(Number(it._y))?Math.max(0,Number(it._y)):0;xs=xCandidates(it,placed,W,g,it._x);best=null;depth=placedDepth(placed);
   limit=Math.min(H-it.h,Math.max(origY+it.h+g*2,depth+it.h+g*2,40));
   for(j=0;j<xs.length;j++){if(window.DHL_SEARCH_DEADLINE&&new Date().getTime()>window.DHL_SEARCH_DEADLINE)return null;x=xs[j];y=firstYAtX(x,it,placed,H,g,limit);if(y===null)continue;if(!best||(y+it.h)<(best.y+it.h)-.001||(Math.abs(y-best.y)<.001&&x<best.x))best={x:x,y:y,item:it};}
   if(!best){if(valid(it._x,it._y,it,placed,W,H,g))best={x:it._x,y:it._y,item:it};else return null;}
