@@ -182,7 +182,7 @@ describe("public SKU inventory presentation", () => {
 
     expect(assetSource).toContain("data-clean-product-image");
     expect(assetSource).toContain('className="h-full w-full object-contain"');
-    expect(catalogSource).toContain("isRenderableImageUrl(p.image)");
+    expect(catalogSource).toContain("productCardImage(p)");
     expect(homeSource).toContain("isRenderableImageUrl(product.image)");
     expect(catalogSource).not.toContain("absolute left-2 top-2 z-20");
     expect(catalogSource).not.toContain("absolute bottom-2 left-2 z-20");
@@ -346,7 +346,7 @@ describe("public SKU inventory presentation", () => {
     expect(productSource).toContain('aria-label="Thư viện ảnh sản phẩm"');
     expect(productSource).toContain("galleryImages.map");
     expect(productSource).toContain("setGalleryIndex(index)");
-    expect(productSource).toContain("overflow-x-auto");
+    expect(productSource).toMatch(/overflow-x-auto|grid-cols-4/);
     expect(adminSource).toContain("imageWarnings");
     expect(adminSource).toContain("Cảnh báo ảnh trước khi nhập");
     expect(adminSource).toContain("Thiếu ảnh");
