@@ -8,3 +8,8 @@
 - [x] Chuyển màu thương hiệu chính từ cam/vàng sang xanh dương/xanh cyan lấy cảm hứng từ logo DHL SPORTS.
 - [x] Đồng bộ CTA, header, giỏ hàng nổi, trạng thái tương tác và các điểm nhấn storefront/admin.
 - [x] Bổ sung hồi quy màu theme; chạy test, TypeScript, build và kiểm tra responsive desktop/mobile.
+
+## Đăng bán Copa América 2024 digital song ngữ — 2026-10-10
+- [x] Tạo sản phẩm digital với tên, mô tả, thông số và lưu ý quyền sử dụng đầy đủ VI/EN.
+- [x] Gắn giá cố định 50.000đ / 4 USD, ảnh gallery công khai và bundle tải sau thanh toán.
+- [x] Kiểm tra trang storefront desktop, full regression 191 passed / 2 skipped, TypeScript và build production; sẵn sàng đồng bộ GitHub main.

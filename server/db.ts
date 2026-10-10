@@ -566,6 +566,11 @@ function toCategoryType(category: typeof categories.$inferSelect): CategoryType 
   };
 }
 
+const fixedDigitalPricesUsd: Record<string, string> = {
+  "halloween-cute-png-bundle-20-mau": "3",
+  "file-huy-hieu-copa-america-2024-campeon-svg-png-cdr": "4",
+};
+
 function toProductType(product: typeof products.$inferSelect): ProductType {
   const gallery = (() => { try { const parsed = product.gallery ? JSON.parse(product.gallery) : []; return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string" && value.length > 0) : []; } catch { return []; } })();
   return {
@@ -576,7 +581,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     description: product.description ?? "",
     descriptionEn: product.descriptionEn ?? undefined,
     price: String(product.price),
-    priceUsd: product.slug === "halloween-cute-png-bundle-20-mau" ? "3" : undefined,
+    priceUsd: fixedDigitalPricesUsd[product.slug],
     type: product.type,
     categoryId: product.categoryId,
     image: product.image,
