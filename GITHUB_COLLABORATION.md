@@ -1,6 +1,8 @@
 # Cộng tác GitHub cho DHL Stores
 
-Repository hiện tại là [github.com/dinhloi116-hue/dhlstores](https://github.com/dinhloi116-hue/dhlstores), sử dụng nhánh `main` làm nhánh đồng bộ chính.
+**Repository GitHub được kết nối trực tiếp với dự án Website trên Manus:** [github.com/dinhloi116-hue/cuahang-cua-toi](https://github.com/dinhloi116-hue/cuahang-cua-toi), nhánh `main`. Đây là repository chính để cộng tác mã nguồn website với ChatGPT/Codex.
+
+**Lưu ý phân biệt:** [github.com/dinhloi116-hue/dhlstores](https://github.com/dinhloi116-hue/dhlstores) là repository khác, hiện cũng có mã website và công cụ Nameset. Không tự push thay đổi website sang `dhlstores` hoặc tự merge/force-push giữa hai repository. Trước mỗi lượt đồng bộ, kiểm tra URL remote thực tế trong workspace Manus (`git remote -v` hoặc `git remote get-url github`) và xác nhận remote dùng để push trỏ đến `dinhloi116-hue/cuahang-cua-toi`. Nếu chưa đúng, dừng và sửa cấu hình remote một cách có kiểm soát; không coi việc chỉnh tài liệu này là đã sửa remote.
 
 ## Quy tắc đồng bộ mặc định
 
@@ -21,7 +23,7 @@ git commit -m "<mo-ta-ngan-gon>"
 git push github main
 ```
 
-Tên remote GitHub chuẩn trong workspace là `github`. Nếu workspace mới chưa có remote này, thiết lập trỏ tới repository đã nêu ở trên rồi xác minh bằng `git ls-remote github refs/heads/main`. Chỉ push sau khi kiểm tra branch local dựa trên trạng thái mới nhất của GitHub và không có thay đổi ngoài ý muốn.
+Tên remote GitHub dùng trong quy trình này là `github`. Trước khi chạy quy trình, xác minh `git remote get-url github` trả về `https://github.com/dinhloi116-hue/cuahang-cua-toi.git` (hoặc địa chỉ SSH tương ứng), rồi kiểm tra `git ls-remote github refs/heads/main`. Nếu `github` chưa tồn tại hoặc trỏ sang repository khác, cần sửa remote đúng đích sau khi đối chiếu trạng thái local và không ghi đè công việc chưa đồng bộ. Chỉ push sau khi fetch và xác nhận branch local tương thích với `github/main`.
 
 ## Checkpoint và phát hành Manus
 
