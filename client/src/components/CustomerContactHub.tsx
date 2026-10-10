@@ -116,31 +116,31 @@ export default function CustomerContactHub() {
       <div className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 sm:block sm:right-4">
         <Sheet open={feedbackOpen} onOpenChange={setFeedbackOpen}>
           <SheetTrigger asChild>
-            <button className="group flex w-11 flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-white px-2 py-3 text-amber-700 shadow-lg transition hover:-translate-y-1 hover:border-amber-400 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-400 sm:w-12" aria-label="Gửi góp ý cho DHL Stores">
+            <button className="group flex w-11 flex-col items-center gap-2 rounded-2xl border border-sky-200 bg-white px-2 py-3 text-sky-700 shadow-lg transition hover:-translate-y-1 hover:border-sky-400 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-400 sm:w-12" aria-label="Gửi góp ý cho DHL Stores">
               <ThumbsUp className="h-5 w-5 transition-transform group-hover:scale-110" />
               <span className="[writing-mode:vertical-rl] text-[10px] font-black uppercase tracking-[0.13em]">Góp ý</span>
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-full gap-0 border-amber-100 bg-white p-0 sm:max-w-2xl">
-            <div className="bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-200 px-6 py-5 text-slate-900">
+          <SheetContent side="left" className="w-full gap-0 border-sky-100 bg-white p-0 sm:max-w-2xl">
+            <div className="bg-gradient-to-br from-sky-400 via-sky-300 to-yellow-200 px-6 py-5 text-slate-900">
               <SheetHeader className="p-0">
                 <SheetTitle className="flex items-center gap-2 text-xl font-black"><ThumbsUp className="h-5 w-5" />Góp ý cho DHL Stores</SheetTitle>
                 <SheetDescription className="text-sm text-slate-700">Ý kiến của bạn được gửi thẳng tới chủ cửa hàng để cải thiện sản phẩm và trải nghiệm mua sắm.</SheetDescription>
               </SheetHeader>
             </div>
             <form onSubmit={onFeedbackSubmit} className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6 sm:p-8">
-              {!user && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900"><p className="font-black">Đăng nhập để gửi góp ý</p><p className="mt-1">Tài khoản giúp DHL Stores phản hồi đúng hội thoại và bảo vệ ảnh bạn đính kèm.</p><button type="button" onClick={() => startLogin()} className="mt-2 font-black underline underline-offset-4">Đăng nhập ngay</button></div>}
+              {!user && <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs leading-relaxed text-sky-900"><p className="font-black">Đăng nhập để gửi góp ý</p><p className="mt-1">Tài khoản giúp DHL Stores phản hồi đúng hội thoại và bảo vệ ảnh bạn đính kèm.</p><button type="button" onClick={() => startLogin()} className="mt-2 font-black underline underline-offset-4">Đăng nhập ngay</button></div>}
               <div className="grid grid-cols-2 gap-3">
-                <input value={feedback.displayName} onChange={event => setFeedback(current => ({ ...current, displayName: event.target.value }))} maxLength={128} placeholder="Tên của bạn (không bắt buộc)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
-                <input value={feedback.contact} onChange={event => setFeedback(current => ({ ...current, contact: event.target.value }))} maxLength={255} placeholder="Zalo hoặc email (tùy chọn)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
+                <input value={feedback.displayName} onChange={event => setFeedback(current => ({ ...current, displayName: event.target.value }))} maxLength={128} placeholder="Tên của bạn (không bắt buộc)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100" />
+                <input value={feedback.contact} onChange={event => setFeedback(current => ({ ...current, contact: event.target.value }))} maxLength={255} placeholder="Zalo hoặc email (tùy chọn)" className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100" />
               </div>
-              <select value={feedback.topic} onChange={event => setFeedback(current => ({ ...current, topic: event.target.value as typeof current.topic }))} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none focus:border-amber-500">
+              <select value={feedback.topic} onChange={event => setFeedback(current => ({ ...current, topic: event.target.value as typeof current.topic }))} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none focus:border-sky-500">
                 <option value="suggestion">Đề xuất cải thiện</option>
                 <option value="issue">Báo lỗi / vấn đề</option>
                 <option value="other">Nội dung khác</option>
               </select>
-              <textarea value={feedback.message} onChange={event => setFeedback(current => ({ ...current, message: event.target.value }))} maxLength={2000} placeholder="Viết góp ý của bạn tại đây…" className="min-h-52 w-full flex-1 resize-none rounded-xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 p-3"><label className="inline-flex cursor-pointer items-center gap-2 text-xs font-black text-amber-900"><ImagePlus className="h-4 w-4" />Đính kèm ảnh<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={event => selectImage(event.target.files?.[0], setFeedbackImage)} /></label>{feedbackImage && <div className="flex items-center gap-2"><img src={feedbackImage.base64} alt="Ảnh góp ý chuẩn bị gửi" className="h-10 w-10 rounded-lg border border-amber-200 object-cover" /><button type="button" aria-label="Bỏ ảnh đính kèm" onClick={() => setFeedbackImage(null)} className="text-amber-800 hover:text-rose-600"><X className="h-4 w-4" /></button></div>}</div>
+              <textarea value={feedback.message} onChange={event => setFeedback(current => ({ ...current, message: event.target.value }))} maxLength={2000} placeholder="Viết góp ý của bạn tại đây…" className="min-h-52 w-full flex-1 resize-none rounded-xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100" />
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-sky-300 bg-sky-50/60 p-3"><label className="inline-flex cursor-pointer items-center gap-2 text-xs font-black text-sky-900"><ImagePlus className="h-4 w-4" />Đính kèm ảnh<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={event => selectImage(event.target.files?.[0], setFeedbackImage)} /></label>{feedbackImage && <div className="flex items-center gap-2"><img src={feedbackImage.base64} alt="Ảnh góp ý chuẩn bị gửi" className="h-10 w-10 rounded-lg border border-sky-200 object-cover" /><button type="button" aria-label="Bỏ ảnh đính kèm" onClick={() => setFeedbackImage(null)} className="text-sky-800 hover:text-rose-600"><X className="h-4 w-4" /></button></div>}</div>
               <Button type="submit" disabled={!user || !visitorKey || submitFeedback.isPending || (!feedback.message.trim() && !feedbackImage)} className="w-full bg-slate-900 font-black text-white hover:bg-slate-800">
                 {submitFeedback.isPending ? "ĐANG GỬI…" : "GỬI GÓP Ý"}
               </Button>
@@ -163,7 +163,7 @@ export default function CustomerContactHub() {
                 <SheetTitle className="flex items-center gap-2 text-base font-black text-white"><MessageCircleMore className="h-5 w-5 text-cyan-300" />Trao đổi trực tiếp</SheetTitle>
                 <SheetDescription className="mt-1 text-xs text-slate-300">Chủ DHL Stores sẽ nhận và trả lời trong cổng quản trị.</SheetDescription>
               </div>
-              <Sparkles className="h-5 w-5 text-amber-300" />
+              <Sparkles className="h-5 w-5 text-sky-300" />
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
               {!user && <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm leading-relaxed text-cyan-950"><p className="font-black">Đăng nhập để trao đổi với cửa hàng</p><p className="mt-1 text-xs">Lịch sử trò chuyện và ảnh đính kèm sẽ được liên kết an toàn với tài khoản của bạn.</p><button type="button" onClick={() => startLogin()} className="mt-3 rounded-lg bg-cyan-700 px-3 py-2 text-xs font-black text-white">Đăng nhập</button></div>}
@@ -189,7 +189,7 @@ export default function CustomerContactHub() {
       <div className="fixed bottom-5 right-3 z-40 flex flex-col items-end gap-2 sm:hidden">
         {supportMenuOpen && <div className="flex flex-col items-end gap-2 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur">
           <button type="button" onClick={() => { setChatOpen(true); setSupportMenuOpen(false); }} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white"><MessageCircleMore className="h-4 w-4 text-cyan-300" />Nhắn cửa hàng</button>
-          <button type="button" onClick={() => { setFeedbackOpen(true); setSupportMenuOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-black text-amber-800"><ThumbsUp className="h-4 w-4" />Gửi góp ý</button>
+          <button type="button" onClick={() => { setFeedbackOpen(true); setSupportMenuOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-xs font-black text-sky-800"><ThumbsUp className="h-4 w-4" />Gửi góp ý</button>
         </div>}
         <button type="button" onClick={() => setSupportMenuOpen(current => !current)} aria-label={supportMenuOpen ? "Đóng hỗ trợ" : "Mở hỗ trợ"} aria-expanded={supportMenuOpen} className="inline-flex h-12 items-center gap-2 rounded-full bg-slate-950 px-4 text-xs font-black text-white shadow-xl transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-400"><span>{supportMenuOpen ? "Đóng" : "Hỗ trợ"}</span>{supportMenuOpen ? <X className="h-4 w-4" /> : <MessageCircleMore className="h-5 w-5 text-cyan-300" />}</button>
       </div>

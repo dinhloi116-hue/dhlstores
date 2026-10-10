@@ -359,15 +359,15 @@ export default function VideoCutterJoiner() {
   const selectionDuration = active ? Math.max(0, (end || active.duration) - start) : 0;
 
   return <StoreLayout><main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-    <section className="rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-violet-50 p-6 shadow-sm sm:p-9">
+    <section className="rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-blue-50 p-6 shadow-sm sm:p-9">
       <Badge className="bg-cyan-100 text-cyan-800"><Film className="mr-1 h-3.5 w-3.5" />DHL Stores · Công cụ</Badge>
       <h1 className="mt-4 font-display text-4xl font-black uppercase leading-none text-slate-950 sm:text-6xl">Cắt & nối video</h1>
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">Cắt, nối, nén và chuyển đổi video hoàn toàn trên thiết bị của bạn. Video không được tải lên máy chủ; không áp dụng giới hạn dung lượng cố định.</p>
       <div className="mt-6 flex flex-wrap gap-2">
         <Button onClick={() => inputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Thêm video</Button>
-        <Button onClick={runNativeTrim} disabled={busy || !active} className="bg-violet-600 text-white hover:bg-violet-700"><Scissors className="mr-2 h-4 w-4" />Cắt native theo timeline</Button>
+        <Button onClick={runNativeTrim} disabled={busy || !active} className="bg-blue-600 text-white hover:bg-blue-700"><Scissors className="mr-2 h-4 w-4" />Cắt native theo timeline</Button>
         <Button variant="outline" onClick={() => browserProcess("join")} disabled={busy || videos.length < 2}><WandSparkles className="mr-2 h-4 w-4" />Nối {videos.length} video</Button>
-        <Button onClick={runNativeMerge} disabled={busy || videos.length < 2} className="bg-violet-600 text-white hover:bg-violet-700"><WandSparkles className="mr-2 h-4 w-4" />Ghép native (khuyên dùng)</Button>
+        <Button onClick={runNativeMerge} disabled={busy || videos.length < 2} className="bg-blue-600 text-white hover:bg-blue-700"><WandSparkles className="mr-2 h-4 w-4" />Ghép native (khuyên dùng)</Button>
         {busy && <Button variant="outline" onClick={() => { nativeStopRef.current = true; setStatus("Đang dừng sau video hiện tại…"); }}>Dừng</Button>}
         <Button variant="outline" onClick={() => browserProcess("compress")} disabled={busy || !active}><SlidersHorizontal className="mr-2 h-4 w-4" />Nén video</Button>
         <Button variant="outline" onClick={() => browserProcess("normalize")} disabled={busy || !active}><Film className="mr-2 h-4 w-4" />Chuyển đổi tương thích</Button>

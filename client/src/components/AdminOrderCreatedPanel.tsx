@@ -118,7 +118,7 @@ export default function AdminOrderCreatedPanel({ orderCode, order, products, onP
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-lg font-black text-slate-950">#{order.orderCode}</p>
-                <Badge className={order.paymentStatus === "paid" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}>
+                <Badge className={order.paymentStatus === "paid" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800"}>
                   {order.paymentStatus === "paid" ? "Đã thanh toán" : "Chờ thanh toán"}
                 </Badge>
                 <Badge variant="outline">{order.status === "completed" ? "Hoàn tất" : order.status === "shipping" ? "Đang giao" : order.status === "processing" ? "Đang xử lý" : "Chờ xử lý"}</Badge>

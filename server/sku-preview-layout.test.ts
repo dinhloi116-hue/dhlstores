@@ -302,7 +302,7 @@ describe("public SKU inventory presentation", () => {
     expect(layoutSource).toContain("Xem chi tiết giỏ hàng");
     expect(productSource).toContain('position: "bottom-right"');
     expect(productSource).toContain("Sản phẩm vừa được thêm vào giỏ hàng");
-    expect(productSource).toContain("from-[#ff3b1f]");
+    expect(productSource).toContain("from-[#0875e1]");
     expect(productSource).toContain("Đánh giá sản phẩm");
     expect(productSource).toContain("reviewAverage");
     expect(productSource).toContain("buyNowLoading");
@@ -359,4 +359,19 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("Chúc mừng! Đơn đã đạt mốc freeship dự kiến");
     expect(source).toContain("animate-[pulse_1.8s_ease-in-out_1]");
     expect(source).toContain("transition-[width] duration-500");
+  });
+
+  it("uses the DHL SPORTS blue/cyan brand palette for primary storefront accents", () => {
+    const cssSource = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+    const storeSource = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
+    const productSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(cssSource).toContain("--primary: 214 90% 52%;");
+    expect(cssSource).toContain("--ring: 199 89% 48%;");
+    expect(cssSource).toContain("background-color: #f4f8ff;");
+    expect(storeSource).toContain("#0875e1");
+    expect(productSource).toContain("from-[#0875e1]");
+    expect(productSource).toContain("to-[#0759b8]");
+    expect(storeSource).not.toContain("#ee4d2d");
+    expect(productSource).not.toContain("#ff3b1f");
   });

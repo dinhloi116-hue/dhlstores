@@ -8,8 +8,8 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 38 100% 50%;
-    --primary-foreground: 221 39% 11%;
+    --primary: 214 90% 52%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -20,13 +20,13 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 38 100% 50%;
+    --ring: 199 89% 48%;
     --radius: 0.75rem;
   }
 }
 
 body {
-  background-color: #f5f7fb;
+  background-color: #f4f8ff;
   color: #0f172a;
   font-family: 'Manrope', system-ui, sans-serif;
   text-rendering: optimizeLegibility;
@@ -65,7 +65,7 @@ button, a {
 
 .dhl-hover-card:hover {
     transform: translateY(-3px);
-    border-color: #fbbf24;
+    border-color: #38bdf8;
     box-shadow: 0 14px 30px -22px rgb(15 23 42 / 0.45);
   }
 
