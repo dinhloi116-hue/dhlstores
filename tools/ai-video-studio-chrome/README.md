@@ -27,7 +27,7 @@ Chrome Extension (Manifest V3) độc lập tại tools/ai-video-studio-chrome. 
 ## Cấu trúc Google Drive
 
 DHL AI Video Studio/
-  Tên dự án - 8 ký tự ID/
+  Tên dự án/
     project.json
     video-goc.mp4 (tùy chọn)
 
