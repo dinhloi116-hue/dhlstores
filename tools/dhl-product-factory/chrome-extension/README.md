@@ -1,6 +1,6 @@
 # DHL Product Factory — Chrome Extension (Manifest V3)
 
-**Bản 0.2.0: tự lưu bộ hồ sơ sản phẩm lên Google Drive sau khi duyệt.**
+**Bản 0.4.0: Gemini + Drive nguồn/đích + kiểm tra cập nhật GitHub + bộ cập nhật Windows.**
 
 Extension dành cho **6 shop**; dùng **Gemini** để phân tích ảnh, SEO Việt/Anh; tạo **9 prompt** gửi thủ công sang ChatGPT; tính giá và tải Excel. Mở qua Chrome **Side Panel**.
 
@@ -114,3 +114,20 @@ Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổ
 
 - Token Google không đi vào Gemini hay GitHub; Chrome Identity tự quản lý token. Module nguồn kiểm tra chuỗi thư mục cha trước khi đọc file và giới hạn dung lượng; module ghi chỉ cho phép 6 ID shop đã đối chiếu.
 - Không cài từ nguồn không tin cậy. Scope Drive cho phép quyền rộng trên tài khoản; các giới hạn thư mục thuộc **mã ứng dụng** chứ không phải ràng buộc quyền Google OAuth ở cấp máy chủ.
+
+
+## Bản 0.4.0 — CẬP NHẬT NHANH TỪ GITHUB (CHROME EXTENSION CÀI THỦ CÔNG)
+
+**Cài lần đầu:** giải nén ZIP vào một thư mục cố định, ví dụ `C:\DHL-Product-Factory`, sau đó bật `chrome://extensions` → Developer mode → Load unpacked, chọn đúng thư mục chứa `manifest.json`. Cố định đường dẫn từ đây.
+
+**Kết nối AI:** vào tab Cài đặt nhập Gemini API key từ Google AI Studio, lưu trên Chrome (không đưa key vào GitHub).
+
+**Kết nối Drive:** tạo Google OAuth Client loại Chrome Extension với ID `ojbejkjaalblfimeojmobicanhbipkel`, bật Google Drive API và cấu hình consent/test user, điền Client ID vào `manifest.json` (hoặc **nhấp đúp `CAU-HINH-DRIVE.cmd`** rồi dán OAuth Client ID, hay chạy `configure-drive.ps1 -ClientId "..."`). Chrome Reload, chọn Cài đặt → Kết nối Google Drive, cho phép Google, kiểm tra thư mục shop.
+
+**Cập nhật lần sau:** trong extension chọn Cài đặt → **Kiểm tra cập nhật Git**. Nếu có bản mới, **nhấp đúp `CAP-NHAT-TOOL.cmd` ngay trong thư mục cài**, chờ PowerShell tải các file từ GitHub. Sau khi thành công, mở `chrome://extensions` và nhấn **Reload**. Không phải giải nén ZIP và chọn Load unpacked lại. Không yêu cầu cài Git, không tải cả website. Giữ `oauth2.client_id` đã cấu hình, public key cố định và dữ liệu bản nháp lưu ở `chrome.storage.local`.
+
+**Giới hạn của Chrome:** Nút kiểm tra GitHub không thể tự sửa các file tiện ích đang chạy; nút **Cập nhật từ Git — mở hướng dẫn** hiển thị và sao chép các bước, và mở trang extension. Việc ghi mã từ GitHub được thực hiện bởi file cập nhật cục bộ do người dùng chủ động chạy. Công cụ không sử dụng remote JS bên trong extension.
+
+**An toàn:** Cập nhật chỉ tải các file thuộc `tools/dhl-product-factory/chrome-extension` trong repo công khai `dinhloi116-hue/dhlstores`, nhánh `feature/dhl-product-factory-mvp-20261012`, chốt SHA commit GitHub trước khi tải, kiểm tra khóa công khai và tên tiện ích, không đổi cấu hình OAuth. Chỉ chạy file cập nhật khi tin tưởng repo/commit. Cập nhật thất bại được thiết kế phục hồi các file đã sao lưu; nếu gián đoạn giữa chừng hãy chạy lại. Không đăng nhập Google/Gemini qua script và không gửi token, mật khẩu hoặc API key lên GitHub.
+
+**Lưu ý phát hành:** PR #4 đang ở Draft; tool cập nhật từ nhánh phát triển chứ chưa phải kênh Chrome Web Store. Sau khi quy trình ổn định, có thể chuyển sang nhánh phát hành cố định hoặc Chrome Web Store để tận dụng cơ chế tự động cập nhật của Chrome.

@@ -191,3 +191,25 @@ $('saveToDrive').onclick=async()=>{
     else{$('saveDriveProgress').textContent=`Đã lưu ${done.length} file tại ${p.shop} / ${folder.name}. Trạng thái: ${metadata.status}. Bảng giá Shopee tổng không bị sửa.`;notify('Đã lưu toàn bộ file sản phẩm lên Google Drive.');}
   }catch(e){$('saveDriveProgress').textContent='Không thể lưu: '+e.message;notify(e.message,false)}finally{btn.disabled=false;}
 };
+
+
+// GitHub version checker. Chrome MV3 cannot overwrite its own unpacked files.
+$('checkGitUpdate').onclick=async()=>{
+  const btn=$('checkGitUpdate');btn.disabled=true;$('gitUpdateStatus').textContent='Đang đối chiếu phiên bản trên GitHub...';
+  try{
+    const result=await message({type:'github-update-check'});
+    $('gitUpdateStatus').textContent=result.updateAvailable
+      ?`Có phiên bản mới: ${result.latestVersion} (đang dùng ${result.currentVersion}). Mở thư mục cài, nhấp đúp CAP-NHAT-TOOL.cmd, sau đó nhấn Reload tại chrome://extensions.`
+      :result.upToDate?`Đã là phiên bản mới nhất: ${result.currentVersion}.`:
+        `Phiên bản trên GitHub: ${result.latestVersion}, hiện tại: ${result.currentVersion}. Không cần hạ cấp.`;
+    notify(result.updateAvailable?'Phát hiện bản cập nhật từ GitHub.':'Đã kiểm tra phiên bản trên GitHub.');
+  }catch(e){$('gitUpdateStatus').textContent='Kiểm tra thất bại: '+e.message;notify(e.message,false)}
+  finally{btn.disabled=false;}
+};
+$('updateFromGit').onclick=async()=>{
+  const steps='1) Mở thư mục đã giải nén/cài DHL Product Factory trên máy.\n2) Nhấp đúp CAP-NHAT-TOOL.cmd, chờ tải mã từ GitHub.\n3) Mở chrome://extensions và nhấn Reload trên DHL Product Factory.\nGiữ nguyên thư mục cài đặt và manifest OAuth; không cần Load unpacked lại.';
+  $('gitUpdateStatus').textContent=steps;
+  try{await navigator.clipboard.writeText(steps);notify('Đã sao chép hướng dẫn. Nhấp đúp CAP-NHAT-TOOL.cmd trong thư mục cài để cập nhật.');}
+  catch{notify('Mở thư mục cài và chạy CAP-NHAT-TOOL.cmd; sau đó nhấn Reload.');}
+  chrome.tabs.create({url:'chrome://extensions'});
+};

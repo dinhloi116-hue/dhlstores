@@ -48,6 +48,11 @@
  <div class="btns"><button id="connectGoogle" type="button" class="primary">Kết nối Google Drive</button><button id="disconnectGoogle" type="button">Ngắt kết nối</button><button id="copyRedirect" type="button">Sao chép Extension ID</button></div>
  <div id="googleConnection" class="notice">Chưa kết nối. Cần bật Google Drive API, tạo OAuth Client loại Chrome Extension và điền Client ID vào manifest.json (chỉ một lần).</div>
  <div class="notice">Quyền Google Drive rộng được yêu cầu để tìm và tạo thư mục bên trong các folder hiện có. Chrome giữ token OAuth cục bộ; không chia sẻ token cho Gemini hoặc GitHub. Sử dụng trên máy tin cậy.</div>
+ <h3>Cập nhật từ GitHub</h3>
+ <p>Kiểm tra phiên bản mới trên GitHub. Do Chrome bảo vệ mã nguồn tiện ích, hãy nhấp đúp <code>CAP-NHAT-TOOL.cmd</code> trong thư mục cài để đồng bộ tệp, sau đó bấm Reload tại <code>chrome://extensions</code>. Không cần giải nén hay cài lại.</p>
+ <div class="btns"><button id="checkGitUpdate" type="button" class="primary">Kiểm tra cập nhật Git</button><button id="updateFromGit" type="button">Cập nhật từ Git — mở hướng dẫn</button></div>
+ <div id="gitUpdateStatus" class="notice">Phiên bản đang cài: v0.4.0. Chưa kiểm tra GitHub.</div>
+ <div class="notice">Google OAuth Client ID và bản nháp lưu trên Chrome được giữ nguyên khi dùng bộ cập nhật. Extension không tự chạy chương trình trên máy tính.</div>
  <div class="notice">API key chỉ lưu trong chrome.storage.local của extension trên máy này (không đồng bộ). Đây không phải kho bí mật an toàn tuyệt đối nếu máy tính bị xâm nhập. Không dùng để phát hành extension công khai có key nhúng sẵn.</div><button type="button" id="openAIStudio">Mở Google AI Studio ↗</button><div class="btns"><button type="button" id="restoreDraft">Khôi phục bản nháp đã lưu</button><button type="button" id="deleteDraft">Xóa bản nháp đã lưu</button></div></section>
 </main>
 <footer><span id="toast" role="status" aria-live="polite">Sẵn sàng</span><a href="https://github.com/dinhloi116-hue/dhlstores/pull/4" target="_blank" rel="noopener noreferrer">GitHub PR #4</a></footer>

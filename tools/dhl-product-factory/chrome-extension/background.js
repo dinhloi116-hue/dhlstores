@@ -1,4 +1,5 @@
 import {makeGeminiRequest,validateDraft} from './lib/core.mjs';
+import {checkGithubVersion} from './lib/update-check.mjs';
 import {connectDrive,getDriveToken,disconnectDrive,driveConnectionStatus} from './lib/google-auth.mjs';
 import {resolveShop,resolveProductFolder,verifyProductFolder,uploadProductFile,listSourceFolder,loadSourceFile,driveAccount} from './lib/drive-sync.mjs';
 
@@ -49,6 +50,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
   if(sender.id!==chrome.runtime.id)return false;
   (async()=>{
     if(message.type==='analyze')return {draft:await geminiAnalyze(message.product)};
+    if(message.type==='github-update-check')return await checkGithubVersion(chrome.runtime.getManifest());
     if(message.type==='backend')return await backendRequest(message);
     if(message.type==='drive-connect'){
       await connectDrive();
