@@ -60,3 +60,47 @@ Mẫu nhập BigSeller mà người dùng cung cấp có dòng sản phẩm **v�
 **Nguồn chính:** https://drive.google.com/drive/folders/1tAceM6I0SoTn2UukYsXl6kq1gFeojQzu
 
 **Hạn mức mặc định:** tối đa 20 lần gọi phân tích/ảnh mỗi giờ cho mỗi IP và chức năng, đổi qua `MAX_AI_CALLS_PER_HOUR`. Dùng một giới hạn chi tiêu phía tài khoản API để phòng phát sinh chi phí ngoài ý muốn.
+
+## Phase 2 — đọc Drive, tra cứu ngành hàng, xuất file theo mẫu gốc
+
+**Trạng thái:** Đã viết mã và kiểm thử cục bộ bằng các file Excel thật do chủ shop cung cấp, chưa kết nối đến Google OAuth của người dùng trong môi trường production.
+
+### Cấu hình Google Drive
+
+1. Trong Google Cloud Console, tạo dự án, bật **Google Drive API** và tạo OAuth client do chính chủ tài khoản quản lý.
+2. Cấp scope **`https://www.googleapis.com/auth/drive.readonly`**, lấy refresh token cho tài khoản có quyền truy cập các file trên Drive. Không đưa token, client secret hoặc key lên GitHub.
+3. Cài `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` trong biến môi trường của máy chủ.
+4. Thiết lập `DRIVE_SHOP_FOLDERS_JSON`: đối tượng JSON gán đúng tên 6 shop với ID thư mục Google Drive của mỗi shop. Chỉ hiển thị file trong thư mục shop và thư mục sản phẩm con trực tiếp, không lục Drive ngoài phạm vi.
+5. Thiết lập `DRIVE_BIGSELLER_TEMPLATE_ID` trỏ đến bản mới `BIGSELLER - MẪU ĐĂNG SẢN PHẨM (CÓ DỮ LIỆU VÍ DỤ).xlsx`, `DRIVE_LAZADA_TEMPLATE_ID` trỏ đến `LAZADA - MẪU ĐĂNG SẢN PHẨM.xlsx`, và `DRIVE_SHOPEE_PRICE_FILE_ID` trỏ đến đúng file tham chiếu bảng giá gốc. Đây phải là **XLSX**, không phải Google Sheets.
+
+Ứng dụng chỉ đọc tài liệu; người dùng có thể chọn ảnh, TXT/MD/DOCX trong thư mục shop hoặc trong thư mục sản phẩm con để đưa vào bản phân tích. Không gửi tài liệu của shop khác. Không nhận tệp thực thi, SVG có script hoặc URL bất kỳ để tải trực tiếp.
+
+### Tạo file xuất BigSeller / Lazada
+
+- Chạy OpenAI để tạo **bản nháp**, rà soát văn bản và giá.
+- Chọn đúng **mã ngành hàng của sàn tương ứng**, nhập thương hiệu Lazada, cân nặng/kích thước đóng gói, URL ảnh HTTPS công khai, SKU, biến thể, tồn kho và giá thực tế.
+- Nhấn các ô xác nhận duyệt. Phải hoàn thành trường bắt buộc trước khi được xuất file.
+- Tool đọc template từ Google Drive, **không sửa file gốc**. Với BigSeller, tool xóa 2 dòng ví dụ từ bản xuất, giữ nguyên 31 cột, `Sheet2`/`Sheet3`. Với Lazada, giữ nguyên 4 dòng tiêu đề/hướng dẫn cùng `template_hide`, `Kết quả`, `global_hide`.
+- **Chưa xác nhận import chính thức:** hãy test 1 SKU trong BigSeller và Lazada Seller Center và đối chiếu lỗi nhận được. Không nhập hàng loạt khi chưa test.
+
+### Tra cứu phí theo bảng giá Shopee chính
+
+- Tool lấy sheet `Ngành hàng` theo tên ngành hàng **khớp chính xác** và hiển thị tỷ lệ phí cố định tại cột F; lấy cấu hình tham khảo trong sheet `Cấu hình`.
+- **Không tự cộng/gán toàn bộ phí** vì còn phụ thuộc loại shop, chương trình Voucher Xtra, phí thực tế, Ads, thuế và thời điểm.
+- Bảng `tham chiếu làm bảng giá sản phẩm bán shopee đừng động vào.xlsx` chỉ được **đọc**, không sửa công thức, không thêm sản phẩm và không ghi dữ liệu lên file khi thiếu bước đối soát.
+- Tool tiếp tục cho phép xuất bảng giá đề xuất, để so sánh và duyệt trước khi lập chức năng ghi cập nhật an toàn ở giai đoạn sau.
+
+### API bổ sung
+
+- `GET /api/drive/list?shop=...&parentId=...` — liệt kê file trong shop/thư mục sản phẩm con được phép.
+- `POST /api/drive/source` với `{shop,ids:[...]}` — tải tối đa 4 tệp ảnh/tài liệu có phạm vi.
+- `POST /api/drive/fees` với `{category:"Tên ngành hàng đầy đủ"}` — phí và nguồn ô tham chiếu.
+- `POST /api/export-platform` với `{platform:"bigseller"|"lazada",draft,product,listing}` — file XLSX dựa trên mẫu thực. `listing` phải có `reviewed`, `categoryConfirmed`, và nếu là Lazada thì cả `brandConfirmed`.
+
+**Chưa có:** tự ghi bảng giá, sao lưu/cập nhật file gốc, lưu hồ sơ đã duyệt lên Drive, tự đăng sàn, triển khai hosting. Các chức năng này cần thử nghiệm riêng bằng SKU thật và bảo đảm quyền ghi đúng file/đúng thư mục.
+
+### Kiểm thử
+
+`node --test test/*.test.mjs`
+
+Các test có dữ liệu mẫu thực tế tại `/mnt/data` nếu môi trường kiểm thử có gắn chúng; trên CI/thiết bị khác những bài cần workbook ngoài sẽ được skip. Không đưa tệp tham chiếu giá, mẫu seller hoặc token riêng lên repo public.

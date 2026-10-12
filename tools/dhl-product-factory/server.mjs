@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { timingSafeEqual } from 'node:crypto';
 import { writeXlsx } from './xlsx.mjs';
+import {driveSettings,listShopFiles,readShopFile,readConfiguredWorkbook,lookupFees} from './drive.mjs';
+import {exportPlatformTemplate} from './import-templates.mjs';
 
 const here=dirname(fileURLToPath(import.meta.url));
 export const SHOPS={
@@ -24,6 +26,8 @@ const str=(v,max=500)=>typeof v==='string'?v.slice(0,max):'';
 const number=(v)=>{const n=Number(v);return Number.isFinite(n)?n:NaN;};
 export function ceil9(x){if(!Number.isFinite(x)||x<0)throw Error('Giá không hợp lệ');return Math.max(9000,Math.ceil((x-9000)/10000)*10000+9000);}
 export function computePrice(input){
+ if(input?.cost==null||input.cost==='')throw Error('Thiếu giá vốn. Không tính giá bằng 0 khi chưa nhập.');
+ if(input?.feePercent==null||input.feePercent==='')throw Error('Thiếu tổng phí đã đối chiếu.');
  const cost=number(input.cost),packing=number(input.packing??0),printing=number(input.printing??0),labor=number(input.labor??0),other=number(input.other??0),profit=number(input.targetProfit??0),fee=number(input.feePercent),fixed=number(input.fixedFee??0);
  if([cost,packing,printing,labor,other,profit,fee,fixed].some(x=>!Number.isFinite(x)||x<0)||fee>=95)throw Error('Kiểm tra giá vốn, phí và lợi nhuận (phí % phải dưới 95%).');
  const totalCost=cost+packing+printing+labor+other;
@@ -68,9 +72,28 @@ export function makeServer(env=process.env,fetchImpl=fetch){const login=env.PROD
   if(req.url?.startsWith('/api/')){
    if(!login){return respond(503,{error:'Cần thiết lập PRODUCT_STUDIO_PASSWORD trước khi dùng API.'});}
    if(!safeEq(req.headers['x-tool-password'],login))return respond(401,{error:'Mật khẩu tool không đúng'});
-   if(req.method==='GET'&&req.url==='/api/config')return respond(200,{shops:SHOPS,hasKey:!!env.OPENAI_API_KEY});
+   const url=new URL(req.url,'http://localhost');const path=url.pathname;
+   if(req.method==='GET'&&path==='/api/config'){const ds=driveSettings(env);return respond(200,{shops:SHOPS,hasKey:!!env.OPENAI_API_KEY,driveReady:ds.configured,driveShops:Object.keys(ds.folders).filter(x=>SHOPS[x]),templates:{bigseller:!!ds.bigsellerId,lazada:!!ds.lazadaId,pricing:!!ds.pricingId}});}
+   if(req.method==='GET'&&path==='/api/drive/list')return respond(200,{files:await listShopFiles(url.searchParams.get('shop')||'',url.searchParams.get('parentId')||'',env,fetchImpl)});
    if(req.method!=='POST')return respond(405,{error:'Method not allowed'});
    let raw='';try{if(['/api/analyze','/api/image'].includes(req.url)){const key=req.socket.remoteAddress+':'+req.url,now=Date.now();const previous=(hits.get(key)||[]).filter(t=>now-t<3600000);const limit=Number(env.MAX_AI_CALLS_PER_HOUR||20);if(previous.length>=Math.max(1,Math.min(limit,200)))return respond(429,{error:'Đã vượt giới hạn lượt gọi API trong giờ. Vui lòng thử sau.'});previous.push(now);hits.set(key,previous);}for await(const chunk of req){raw+=chunk.toString();if(raw.length>24_000_000)throw Error('Vượt quá giới hạn 24 MB');}const data=JSON.parse(raw||'{}');
+    if(req.url==='/api/drive/source'){
+     const ids=Array.isArray(data.ids)?data.ids:[];
+     if(ids.length>4||ids.length===0||new Set(ids).size!==ids.length)throw Error('Chọn 1–4 file trong shop');
+     const files=[];for(const id of ids)files.push(await readShopFile(data.shop,id,env,fetchImpl));
+     return respond(200,{files});
+    }
+    if(req.url==='/api/drive/fees'){
+     const wb=await readConfiguredWorkbook('pricing',env,fetchImpl);
+     return respond(200,{result:lookupFees(wb.buffer,data.category),source:wb.name});
+    }
+    if(req.url==='/api/export-platform'){
+     const platform=data.platform;if(!['bigseller','lazada'].includes(platform))throw Error('Sàn không hợp lệ');
+     const wb=await readConfiguredWorkbook(platform,env,fetchImpl);
+     const buffer=exportPlatformTemplate({...data,templateBytes:wb.buffer});
+     res.writeHead(200,{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="${platform.toUpperCase()}_CHO_DUYET.xlsx"`,'Cache-Control':'no-store'});
+     return res.end(buffer);
+    }
     if(req.url==='/api/analyze')return respond(200,{draft:await analyze(data,env,fetchImpl)});
     if(req.url==='/api/image'){const img=await editImage(data,env,fetchImpl);return respond(200,img);}
     if(req.url==='/api/price')return respond(200,{price:computePrice(data)});
