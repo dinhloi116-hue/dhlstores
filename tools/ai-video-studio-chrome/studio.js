@@ -121,6 +121,22 @@ function renderScenes() {
       fields.append(box);
     });
     article.append(fields);
+    const tools = document.createElement("div");
+    tools.className = "actions";
+    tools.style.marginTop = "12px";
+    [["image_prompt", "Sao chép prompt ảnh"], ["video_prompt", "Sao chép prompt Flow"]].forEach(([key, label]) => {
+      const copy = document.createElement("button");
+      copy.className = "secondary";
+      copy.textContent = label;
+      copy.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(scene[key] || "");
+          show("Đã sao chép: " + label + " — cảnh " + (index + 1));
+        } catch (error) { show("Không thể sao chép: " + error.message, true); }
+      });
+      tools.append(copy);
+    });
+    article.append(tools);
     wrap.append(article);
   });
 }
@@ -339,8 +355,8 @@ async function ensureRoot() {
 async function ensureProjectFolder() {
   if (project.driveFolderId) return project.driveFolderId;
   const root = await ensureRoot();
-  // Avoid duplicate ambiguous folders by using a short stable project ID suffix.
-  const folder = await createFolder((project.name || "Dự án mới") + " - " + project.id.slice(0, 8), root);
+  // Keep folder names short and natural; unique identity lives in project.json.
+  const folder = await createFolder(project.name || "Dự án mới", root);
   project.driveFolderId = folder.id;
   await saveLocal();
   return folder.id;
