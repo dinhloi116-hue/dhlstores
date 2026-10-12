@@ -1,6 +1,6 @@
 import {makeGeminiRequest,validateDraft} from './lib/core.mjs';
 import {connectDrive,getDriveToken,disconnectDrive,driveConnectionStatus} from './lib/google-auth.mjs';
-import {resolveShop,resolveProductFolder,verifyProductFolder,uploadProductFile} from './lib/drive-sync.mjs';
+import {resolveShop,resolveProductFolder,verifyProductFolder,uploadProductFile,listSourceFolder,loadSourceFile,driveAccount} from './lib/drive-sync.mjs';
 
 chrome.runtime.onInstalled.addListener(()=>{
   chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:true}).catch(console.error);
@@ -50,7 +50,17 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
   (async()=>{
     if(message.type==='analyze')return {draft:await geminiAnalyze(message.product)};
     if(message.type==='backend')return await backendRequest(message);
-    if(message.type==='drive-connect')return await connectDrive();
+    if(message.type==='drive-connect'){
+      await connectDrive();
+      const token=await getDriveToken();
+      try {
+        const shop=await resolveShop(token,message.shop||'DHL STUDIO');
+        return {connected:true,account:await driveAccount(token),verifiedShop:shop.name};
+      } catch(e) { throw Error('Đăng nhập Google thành công, nhưng kiểm tra thư mục shop thất bại: '+e.message); }
+    }
+    if(message.type==='drive-source-list')return await listSourceFolder(await getDriveToken(),{shop:message.shop,folderId:message.folderId||''});
+    if(message.type==='drive-source-read')return await loadSourceFile(await getDriveToken(),{shop:message.shop,folderId:message.folderId,fileId:message.fileId});
+    if(message.type==='drive-account')return await driveAccount(await getDriveToken());
     if(message.type==='drive-status')return await driveConnectionStatus();
     if(message.type==='drive-disconnect')return await disconnectDrive();
     if(message.type==='drive-verify')return await resolveShop(await getDriveToken(),message.shop);

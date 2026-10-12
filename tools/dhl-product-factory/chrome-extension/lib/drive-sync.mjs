@@ -30,7 +30,7 @@ export async function driveJson(accessToken,url,options={},fetchImpl=fetch){
   if(res.status===204)return {};
   return res.json();
 }
-const fields='id,name,mimeType,parents,appProperties,webViewLink';
+const fields='id,name,mimeType,size,parents,appProperties,webViewLink';
 async function metadata(token,id,fetchImpl){return driveJson(token,`https://www.googleapis.com/drive/v3/files/${verifiedId(id)}?fields=${encodeURIComponent(fields)}`,{},fetchImpl);}
 async function list(token,parent,condition='',fetchImpl=fetch){
   const all=[];let next='';
@@ -100,4 +100,58 @@ export async function verifyProductFolder(token,{shop,sku,folderId},fetchImpl=fe
   const f=await metadata(token,verifiedId(folderId),fetchImpl);
   if(f.mimeType!==FOLDER_MIME||!f.parents?.includes(shopId)||f.appProperties?.dhlFactory!=='product'||f.appProperties?.sku!==validateSku(sku)||f.appProperties?.shop!==shop)throw Error('Thư mục đích chưa được xác minh đúng Shop/SKU.');
   return f;
+}
+
+// Browse source materials directly with the extension's OAuth connection.
+// Every folder and file is checked to be inside the selected existing shop.
+const IMAGE_SOURCE_MIMES=new Set(['image/png','image/jpeg','image/webp']);
+const TEXT_SOURCE_MIMES=new Set(['text/plain','text/markdown','application/json','application/vnd.google-apps.document']);
+export async function assertSourceFolder(token,shop,folderId,fetchImpl=fetch){
+  const shopFolder=await resolveShop(token,shop,fetchImpl);
+  const currentId=folderId||shopFolder.id;
+  if(currentId===shopFolder.id)return {id:currentId,name:shop,parentId:''};
+  let cursor=currentId, immediate=null;
+  const traversed=new Set();
+  for(let i=0;i<12;i++){
+    if(traversed.has(cursor))break;
+    if(cursor===DRIVE_ROOT||(Object.values(DRIVE_SHOPS).includes(cursor)&&cursor!==shopFolder.id))throw Error('Thư mục nguồn không nằm trong shop đã chọn.');
+    traversed.add(cursor);
+    const f=await metadata(token,cursor,fetchImpl);
+    if(f.mimeType!==FOLDER_MIME)throw Error('Nguồn đã chọn không phải thư mục.');
+    if(!immediate)immediate=f;
+    const parents=f.parents||[];
+    if(parents.includes(shopFolder.id))return {id:currentId,name:immediate.name,parentId:immediate.parents?.[0]||''};
+    if(parents.length!==1)break;
+    cursor=parents[0];
+  }
+  throw Error('Thư mục nguồn không nằm trong shop đã chọn hoặc nằm quá sâu. Không truy cập.');
+}
+export async function listSourceFolder(token,{shop,folderId=''},fetchImpl=fetch){
+  const folder=await assertSourceFolder(token,shop,folderId,fetchImpl);
+  const entries=await list(token,folder.id,'',fetchImpl);
+  return {folder,shopRootId:DRIVE_SHOPS[shop],entries:entries.filter(f=>f.mimeType===FOLDER_MIME||IMAGE_SOURCE_MIMES.has(f.mimeType)||TEXT_SOURCE_MIMES.has(f.mimeType)||f.mimeType==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'||f.mimeType==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'||f.mimeType==='image/svg+xml').map(f=>({id:f.id,name:f.name,mimeType:f.mimeType,size:Number(f.size||0),supported: f.mimeType===FOLDER_MIME||IMAGE_SOURCE_MIMES.has(f.mimeType)||TEXT_SOURCE_MIMES.has(f.mimeType)})).sort((a,b)=>(b.mimeType===FOLDER_MIME)-(a.mimeType===FOLDER_MIME)||a.name.localeCompare(b.name,'vi'))};
+}
+export async function loadSourceFile(token,{shop,folderId,fileId},fetchImpl=fetch){
+  const folder=await assertSourceFolder(token,shop,folderId,fetchImpl);
+  const file=await metadata(token,fileId,fetchImpl);
+  if(!file.parents?.includes(folder.id))throw Error('File nguồn không nằm trực tiếp trong thư mục đã chọn.');
+  const mime=file.mimeType;
+  if(!IMAGE_SOURCE_MIMES.has(mime)&&!TEXT_SOURCE_MIMES.has(mime))throw Error('File này chưa được hỗ trợ phân tích trực tiếp; hãy tải về và cung cấp file tương ứng.');
+  const isImage=IMAGE_SOURCE_MIMES.has(mime);
+  const size=Number(file.size||0);
+  if(size>(isImage?3_000_000:200_000))throw Error('File nguồn quá lớn cho một lần phân tích.');
+  const uri=mime==='application/vnd.google-apps.document'
+    ?`https://www.googleapis.com/drive/v3/files/${verifiedId(fileId)}/export?mimeType=text%2Fplain`
+    :`https://www.googleapis.com/drive/v3/files/${verifiedId(fileId)}?alt=media`;
+  const response=await fetchImpl(uri,{headers:{Authorization:`Bearer ${token}`}});
+  if(!response.ok)throw Error('Không đọc được tài liệu nguồn: HTTP '+response.status);
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.byteLength>(isImage?3_000_000:200_000))throw Error('File vượt dung lượng cho phép.');
+  if(isImage){let s='';for(let i=0;i<bytes.length;i+=16384)s+=String.fromCharCode(...bytes.subarray(i,i+16384));return {name:file.name,kind:'image',data:`data:${mime};base64,${btoa(s)}`};}
+  const text=new TextDecoder('utf-8',{fatal:false}).decode(bytes).replace(/\u0000/g,'');
+  return {name:file.name,kind:'text',data:text.slice(0,5000)};
+}
+export async function driveAccount(token,fetchImpl=fetch){
+  const result=await driveJson(token,'https://www.googleapis.com/drive/v3/about?fields=user(emailAddress,displayName)',{},fetchImpl);
+  return {email:result.user?.emailAddress||'',name:result.user?.displayName||''};
 }

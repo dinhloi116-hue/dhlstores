@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {makeWorkbook} from '../lib/xlsx-lite.mjs';
 import {makeGeminiRequest,validateDraft,imagePrompts,calculatePrice,ceil9000,SHOPS} from '../lib/core.mjs';
 import {fileURLToPath} from 'node:url';
@@ -15,3 +16,11 @@ test('price rounding, missing fees blocked',()=>{assert.equal(ceil9000(125000),1
 test('Excel bytes generated without API or external libraries',()=>{const bytes=makeWorkbook([{name:'Tiếng Việt',rows:[['Trường','Nội dung'],['Tên sản phẩm','Tên thử'],['Giá',109000]]},{name:'English',rows:[['Field','Value'],['Name','Test product']]}]);assert.equal(new DataView(bytes.buffer).getUint32(0,true),0x04034b50);assert.ok(bytes.length>1500);});
 test('sidepanel hooks all declared UI element ids used',async()=>{const js=await readFile(join(base,'panel.js'),'utf8'),html=await readFile(join(base,'panel.html'),'utf8');const all=[...js.matchAll(/\$\('([^']+)'\)/g)].map(x=>x[1]);for(const id of new Set(all))assert.ok(html.includes('id="'+id+'"'),`Missing UI id ${id}`);});
 test('source code contains no hardcoded API key or external script',async()=>{for(const name of ['background.js','panel.html','panel.js']){const data=await readFile(join(base,name),'utf8');assert.ok(!/AIza[A-Za-z0-9_-]{25,}/.test(data));assert.ok(!/<script\s+src="https?:/i.test(data));}});
+
+test('stable public extension key keeps OAuth Client extension ID fixed',async()=>{
+  const m=JSON.parse(await readFile(join(base,'manifest.json'),'utf8'));
+  const digest=createHash('sha256').update(Buffer.from(m.key,'base64')).digest().subarray(0,16);
+  const id=[...digest].map(v=>String.fromCharCode(97+(v>>4))+String.fromCharCode(97+(v&15))).join('');
+  assert.equal(id,'ojbejkjaalblfimeojmobicanhbipkel');
+  assert.equal(m.oauth2.scopes[0],'https://www.googleapis.com/auth/drive');
+});

@@ -1,7 +1,7 @@
 import {SHOPS,calculatePrice,imagePrompts,validateDraft,safeFilename} from './lib/core.mjs';
 import {makeWorkbook} from './lib/xlsx-lite.mjs';
 const $=id=>document.getElementById(id);
-let draft=null,selectedLanguage='vi',images=[],prompts=[],pageUrl='',driveFolder='';
+let draft=null,selectedLanguage='vi',images=[],prompts=[],pageUrl='',driveFolder='',sourceFolder=null,sourceFolderView=null;
 let finishedPhotos=[],generatedPlatforms=new Map(),draftIdentity=null;
 const keys=['cost','feePercent','packing','printing','labor','other','fixedFee','targetProfit'];
 const fields={title:'Tên sản phẩm',short:'Mô tả ngắn',description:'Mô tả chi tiết',seoTitle:'Tiêu đề SEO',seoDescription:'Mô tả SEO',slug:'Đường dẫn URL',keywords:'Từ khóa',altText:'Mô tả ảnh (alt)'};
@@ -59,9 +59,65 @@ function exportPrice(){const p=calculatePrice(priceInput()),v=priceInput();retur
 for(const [id,fn,prefix] of [['excelInfo',exportInfo,'THONG_TIN_VI_EN'],['excelSEO',exportSEO,'SEO_WEB_VI_EN'],['excelPrice',exportPrice,'BANG_GIA_DE_XUAT']])$(id).onclick=()=>{try{const data=fn();saveBlob(prefix+'_'+safeFilename(text('sku'))+'.xlsx',data,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');notify('Đã tải Excel. File là bản nháp, chưa tự nhập sàn.');}catch(e){notify(e.message,false)}};
 const backend=(path,data,method='POST',extra={})=>message({type:'backend',path,method,password:text('backendPassword'),data,...extra});
 let driveItems=[];
-$('shop').onchange=()=>{driveFolder='';driveItems=[];$('driveFiles').replaceChildren();};
-$('listDrive').onclick=async()=>{try{const r=await backend('/api/drive/list',null,'GET',{shop:text('shop'),parentId:driveFolder});driveItems=r.files||[];const host=$('driveFiles');host.replaceChildren();if(driveFolder){const back=document.createElement('button');back.textContent='← Trở lại thư mục shop';back.onclick=()=>{driveFolder='';$('listDrive').click()};host.append(back);}for(const f of driveItems){if(f.mimeType==='application/vnd.google-apps.folder'){const btn=document.createElement('button');btn.textContent='📁 '+f.name;btn.onclick=()=>{driveFolder=f.id;$('listDrive').click()};host.append(btn);}else if(['image/png','image/jpeg','image/webp','text/plain','text/markdown','application/json','application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(f.mimeType)&&Number(f.size||0)<=3_000_000){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=f.id;box.name='driveFile';label.append(box,document.createTextNode(' '+f.name));host.append(label);}}notify('Đã tải danh sách file Drive (chỉ đọc).');}catch(e){notify(e.message,false)}};
-$('attachDrive').onclick=async()=>{try{const ids=[...document.querySelectorAll('input[name="driveFile"]:checked')].map(e=>e.value);if(!ids.length)throw Error('Chưa chọn file từ Drive.');const data=await backend('/api/drive/source',{shop:text('shop'),ids});for(const f of data.files||[]){if(f.kind==='image'){if(images.length>=3)throw Error('Chỉ tối đa 3 ảnh.');images.push(f.data);const img=new Image();img.src=f.data;img.alt=f.name;$('previews').append(img);}else $('notes').value=[text('notes'),`Nguồn ${f.name}:\n${f.data}`].filter(Boolean).join('\n').slice(0,5000);}notify('Đã nhập tài liệu Drive vào hồ sơ, không thay đổi file gốc.');}catch(e){notify(e.message,false)}};
+$('shop').onchange=()=>{driveFolder='';sourceFolder=null;sourceFolderView=null;driveItems=[];$('driveFiles').replaceChildren();$('sourceFolderStatus').textContent='Đã đổi shop, hãy chọn lại thư mục nguồn.';};
+$('listDrive').onclick=async()=>{
+  const b=$('listDrive');b.disabled=true;
+  try{
+    const result=await message({type:'drive-source-list',shop:text('shop'),folderId:driveFolder});
+    driveItems=result.entries||[];sourceFolderView=result.folder;
+    const host=$('driveFiles');host.replaceChildren();
+    $('sourceFolderStatus').textContent='Đang xem: '+text('shop')+' / '+result.folder.name;
+    if(result.folder.parentId){
+      const back=document.createElement('button');back.textContent='← Thư mục cha';
+      back.onclick=()=>{driveFolder=result.folder.parentId===result.shopRootId?'':result.folder.parentId;$('listDrive').click();};
+      host.append(back);
+    }
+    for(const f of driveItems){
+      if(f.mimeType==='application/vnd.google-apps.folder'){
+        const button=document.createElement('button');button.textContent='📁 '+f.name;
+        button.onclick=()=>{driveFolder=f.id;$('listDrive').click();};host.append(button);
+      }else{
+        const label=document.createElement('label');const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=f.id;checkbox.name='driveFile';checkbox.disabled=!f.supported||f.size>3_000_000;
+        const size=f.size?' · '+Math.ceil(f.size/1024)+' KB':'';
+        label.append(checkbox,document.createTextNode(' '+f.name+size+(checkbox.disabled?' (chưa hỗ trợ phân tích trực tiếp)':'')));
+        host.append(label);
+      }
+    }
+    if(!driveItems.length)host.append(document.createTextNode('Thư mục này chưa có file hoặc thư mục con.'));
+    notify('Đã đọc '+driveItems.length+' mục trực tiếp từ Google Drive.');
+  }catch(e){notify(e.message,false);$('sourceFolderStatus').textContent='Không thể duyệt Drive: '+e.message;}
+  finally{b.disabled=false;}
+};
+$('useSourceFolder').onclick=async()=>{
+  try{
+    const result=await message({type:'drive-source-list',shop:text('shop'),folderId:driveFolder});
+    sourceFolder={id:result.folder.id,shop:text('shop'),name:result.folder.name};
+    $('sourceFolderStatus').textContent='Đã chọn thư mục nguồn: '+sourceFolder.shop+' / '+sourceFolder.name+' (ID '+sourceFolder.id+')';
+    notify('Đã xác định thư mục nguồn. Bạn có thể chọn ảnh/tài liệu hoặc phân tích ảnh đã có.');
+  }catch(e){notify(e.message,false);}
+};
+$('attachDrive').onclick=async()=>{
+  const ids=[...document.querySelectorAll('input[name="driveFile"]:checked')].map(x=>x.value);
+  if(!ids.length)return notify('Chọn ít nhất một ảnh hoặc tài liệu.',false);
+  if(ids.length>4)return notify('Chọn tối đa 4 file mỗi lần.',false);
+  let done=0;
+  for(const fileId of ids){
+    try{
+      const f=await message({type:'drive-source-read',shop:text('shop'),folderId:driveFolder,fileId});
+      if(f.kind==='image'){
+        if(images.length>=3)throw Error('Đã đủ 3 ảnh. Bỏ ảnh cũ trước khi thêm ảnh mới.');
+        images.push(f.data);const img=new Image();img.src=f.data;img.alt=f.name;$('previews').append(img);
+      }else{
+        const t=[text('notes'),'Tài liệu nguồn '+f.name+':\n'+f.data].filter(Boolean).join('\n');
+        if(t.length>5000)throw Error('Ghi chú vượt giới hạn 5.000 ký tự. Bỏ bớt tài liệu hoặc tóm tắt nội dung.');
+        $('notes').value=t;
+      }
+      done++;
+    }catch(e){notify('Đã lấy '+done+'/'+ids.length+' file; '+e.message,false);return;}
+  }
+  sourceFolder={id:driveFolder||'',shop:text('shop'),name:$('sourceFolderStatus').textContent};
+  notify('Đã nhập '+done+' file vào sản phẩm từ Drive; tài liệu gốc vẫn giữ nguyên.');
+};
 function listing(){return {reviewed:$('reviewed').checked,categoryConfirmed:$('categoryConfirmed').checked,brandConfirmed:$('brandConfirmed').checked,categoryId:text('categoryId'),brand:text('brand'),coverUrl:text('coverUrl'),imageUrls:text('imageUrls').split('\n').map(x=>x.trim()).filter(Boolean),variantName1:text('variantName1'),variantName2:text('variantName2'),weightGrams:text('weightGrams'),lengthCm:text('lengthCm'),widthCm:text('widthCm'),heightCm:text('heightCm'),variants:text('skuLines').split('\n').filter(Boolean).map((r,i)=>{const arr=r.split('|').map(v=>v.trim());if(arr.length!==5)throw Error('Dòng SKU '+(i+1)+' cần đủ 5 phần.');return {sku:arr[0],opt1:arr[1],opt2:arr[2],price:arr[3],stock:arr[4]}})};}
 async function exportPlatform(platform){try{if(!draft)throw Error('Chưa có nội dung AI.');if(!confirm('Xuất file mẫu '+platform+' để thử 1 SKU? Chưa được xác nhận nhập sàn thành công.'))return;const r=await backend('/api/export-platform',{platform,draft,product:product(),listing:listing()});const binary=atob(r.base64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);generatedPlatforms.set(platform,bytes);saveBlob(platform.toUpperCase()+'_CHO_DUYET_'+safeFilename(text('sku'))+'.xlsx',bytes,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');notify('Đã xuất '+platform+' trên file mẫu gốc, chờ thử import 1 SKU.');}catch(e){notify(e.message,false)}}
 $('bigSeller').onclick=()=>exportPlatform('bigseller');$('lazada').onclick=()=>exportPlatform('lazada');
@@ -82,11 +138,12 @@ $('finishedPhotos').onchange=e=>{
   $('finishedPhotoList').textContent=finishedPhotos.map(f=>f.name+' ('+Math.round(f.size/1024)+' KB)').join(' · ');
 };
 $('copyRedirect').onclick=()=>copy(chrome.runtime.id);
+$('openGoogleCloud').onclick=()=>chrome.tabs.create({url:'https://console.cloud.google.com/auth/clients'});
 $('connectGoogle').onclick=async()=>{
   const btn=$('connectGoogle');btn.disabled=true;
   try{
-    const r=await message({type:'drive-connect'});
-    $('googleConnection').textContent='Đã kết nối Google Drive. Sẽ tự chọn một trong 6 thư mục shop và tạo thư mục sản phẩm khi Hoàn tất.';
+    const r=await message({type:'drive-connect',shop:text('shop')});
+    $('googleConnection').textContent='Đã kết nối Google Drive'+(r.account?.email?' ('+r.account.email+')':'')+'. Đã xác minh shop '+r.verifiedShop+'.';
     notify('Đã cấp quyền Google Drive.');
   }catch(e){notify(e.message,false);$('googleConnection').textContent='Chưa kết nối: '+e.message;}
   finally{btn.disabled=false;}
@@ -111,7 +168,7 @@ async function productFiles(){
   }
   for(let i=0;i<finishedPhotos.length;i++)result.push(await uploadedImage(finishedPhotos[i],`Ảnh thành phẩm ${i+1}.${mimex(finishedPhotos[i].type)}`));
   for(const [platform,bytes] of generatedPlatforms)result.push(xlsxFile(platform==='bigseller'?'BigSeller.xlsx':'Lazada.xlsx',bytes));
-  const metadata={shop:p.shop,sku:p.sku,name:p.name,category:p.category,variants:p.variants,notes:p.notes,sourcePage:p.pageUrl,pricingStatus,sourceImageCount:images.length,finishedImageCount:finishedPhotos.length,generatedPlatforms:[...generatedPlatforms.keys()],status:pricingStatus==='CHƯA CHỐT GIÁ'||draft.missing.length?'CHỜ BỔ SUNG / KIỂM TRA':'HỒ SƠ ĐÃ DUYỆT - CHƯA XÁC NHẬN IMPORT SÀN',missing:draft.missing,updatedAt:new Date().toISOString()};
+  const metadata={shop:p.shop,sku:p.sku,name:p.name,category:p.category,variants:p.variants,notes:p.notes,sourcePage:p.pageUrl,sourceFolder:sourceFolder?.shop===p.shop?{id:sourceFolder.id,name:sourceFolder.name}:null,pricingStatus,sourceImageCount:images.length,finishedImageCount:finishedPhotos.length,generatedPlatforms:[...generatedPlatforms.keys()],status:pricingStatus==='CHƯA CHỐT GIÁ'||draft.missing.length?'CHỜ BỔ SUNG / KIỂM TRA':'HỒ SƠ ĐÃ DUYỆT - CHƯA XÁC NHẬN IMPORT SÀN',missing:draft.missing,updatedAt:new Date().toISOString()};
   result.push({name:'Thông tin và trạng thái.json',mime:'application/json',base64:utf8Base64(JSON.stringify(metadata,null,2))});
   if(result.length>32)throw Error('Bộ file vượt 32 mục; chia thành nhiều đợt.');
   return {files:result,metadata};

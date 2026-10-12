@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DRIVE_ROOT,DRIVE_SHOPS,resolveShop,resolveProductFolder,verifyProductFolder,uploadProductFile,productFolderName} from '../lib/drive-sync.mjs';
+import {DRIVE_ROOT,DRIVE_SHOPS,resolveShop,resolveProductFolder,verifyProductFolder,uploadProductFile,productFolderName,listSourceFolder,loadSourceFile,assertSourceFolder,driveAccount} from '../lib/drive-sync.mjs';
 import {connectDrive,getDriveToken,driveConnectionStatus,disconnectDrive} from '../lib/google-auth.mjs';
 const FOLDER='application/vnd.google-apps.folder';
 function driveMock(){
@@ -9,7 +9,13 @@ function driveMock(){
   let next=0;const operations=[];
   const fetchImpl=async(url,req={})=>{
     const u=new URL(url),method=req.method||'GET';let data;
-    if(method==='GET'&&u.pathname.startsWith('/drive/v3/files/')){
+    if(method==='GET'&&u.pathname.endsWith('/export')){
+       return new Response('Google Doc text', {status:200});
+     }else if(method==='GET'&&u.searchParams.get('alt')==='media'){
+       const fid=u.pathname.split('/').at(-1);const v=files.get(fid);return v?new Response(v.binary||'Plain text source',{status:200}):new Response('',{status:404});
+     }else if(method==='GET'&&u.pathname==='/drive/v3/about'){
+       data={user:{emailAddress:'shop@example.com',displayName:'Shop owner'}};
+     }else if(method==='GET'&&u.pathname.startsWith('/drive/v3/files/')){
       const id=u.pathname.split('/').at(-1);data=files.get(id);
       if(!data)return new Response('{}',{status:404});
     }else if(method==='GET'&&u.pathname==='/drive/v3/files'){
@@ -61,4 +67,28 @@ test('Chrome identity handles Google token without retaining raw refresh token',
   assert.equal((await driveConnectionStatus({manifest,storage})).connected,true);
   await disconnectDrive({identity,storage});assert.equal((await driveConnectionStatus({manifest,storage})).connected,false);
   assert.deepEqual(Object.keys(memory),[]);
+});
+
+test('direct source browser allows nested folders and rejects cross-shop IDs',async()=>{
+  const m=driveMock(),root=DRIVE_SHOPS['DHL STUDIO'];
+  const child='folder-child-ABC123',nested='folder-nested-ABC123';
+  m.files.set(child,{id:child,name:'Tên số',mimeType:FOLDER,parents:[root]});
+  m.files.set(nested,{id:nested,name:'Bộ nguồn',mimeType:FOLDER,parents:[child]});
+  const ls=await listSourceFolder('token',{shop:'DHL STUDIO',folderId:child},m.fetchImpl);
+  assert.equal(ls.folder.name,'Tên số');assert.equal(ls.entries[0].id,nested);
+  assert.equal((await assertSourceFolder('token','DHL STUDIO',nested,m.fetchImpl)).parentId,child);
+  await assert.rejects(listSourceFolder('token',{shop:'DHL SPORTS',folderId:child},m.fetchImpl),/không nằm trong shop/);
+});
+test('reads only supported source bytes from selected folder, not other shop or arbitrary URLs',async()=>{
+  const m=driveMock(),root=DRIVE_SHOPS['STORE MIU MIU'];
+  const photo={id:'img-ABC123abc',name:'Hoa mẫu.png',mimeType:'image/png',parents:[root],size:'4',binary:'abcd'};
+  const textfile={id:'note-ABC123abc',name:'Ghi chú.txt',mimeType:'text/plain',parents:[root],size:'9',binary:'flower pot'};
+  m.files.set(photo.id,photo);m.files.set(textfile.id,textfile);
+  const files=await listSourceFolder('token',{shop:'STORE MIU MIU'},m.fetchImpl);assert.equal(files.entries.length,2);
+  const p=await loadSourceFile('token',{shop:'STORE MIU MIU',folderId:root,fileId:photo.id},m.fetchImpl);
+  assert.equal(p.kind,'image');assert.equal(p.data,'data:image/png;base64,YWJjZA==');
+  const t=await loadSourceFile('token',{shop:'STORE MIU MIU',folderId:root,fileId:textfile.id},m.fetchImpl);
+  assert.match(t.data,/flower pot/);
+  await assert.rejects(loadSourceFile('token',{shop:'DHL STUDIO',folderId:root,fileId:photo.id},m.fetchImpl),/không nằm trong shop/);
+  assert.equal((await driveAccount('token',m.fetchImpl)).email,'shop@example.com');
 });

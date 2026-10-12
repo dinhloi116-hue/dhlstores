@@ -83,3 +83,34 @@ Chạy `node --test test/*.test.mjs` với Node.js 22+. Bài test xác minh logi
 - `node --test test/*.test.mjs`: có các bài kiểm thử mock cho OAuth, nhận diện 6 shop, tạo/dùng lại folder và tải file. Không cần gọi API thật khi chạy unit test.
 - **Chưa** thử đăng nhập OAuth Google trên chính Chrome của bạn và **chưa** thử ghi trên Drive thật; cần một lần chạy thử một SKU trước khi dùng hàng loạt.
 - Không ghi nhầm thư mục nếu quyền cấp cho Google account khác; verify sẽ báo lỗi.
+
+## Bản 0.3.0 — KẾT NỐI DRIVE TRỰC TIẾP, CHỌN THƯ MỤC NGUỒN
+
+**Mã nguồn:** Bản cập nhật Manifest V3 dùng `chrome.identity.getAuthToken`, với extension ID cố định là:
+
+`ojbejkjaalblfimeojmobicanhbipkel`
+
+Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổi sang 0.3.0, Chrome có thể coi đây là một extension mới; gỡ bản cũ sau khi sao lưu bản nháp, và **không di chuyển thư mục cài** tùy ý. Từ bản 0.3.0 trở đi ID được giữ ổn định bằng trường `key` chứa **khóa công khai**, không chứa khóa bí mật.
+
+### Kết nối Google (cần chủ tài khoản thao tác một lần)
+
+1. Truy cập <https://console.cloud.google.com/>, tạo/chọn Google Cloud Project và bật **Google Drive API**.
+2. Vào **Google Auth Platform** (màn hình đồng ý OAuth). Điền thông tin ứng dụng, chọn đối tượng người dùng và thêm email của bạn vào **Test users** nếu dự án ở chế độ thử nghiệm. Scope cần dùng: `https://www.googleapis.com/auth/drive` (quyền rộng để đọc/ghi trong các thư mục shop đã tồn tại). Người dùng chịu trách nhiệm cho phép quyền này.
+3. Vào **Clients → Create client → Chrome Extension**. Điền **Item ID** chính xác: `ojbejkjaalblfimeojmobicanhbipkel`. Tạo xong, sao chép **OAuth Client ID** dạng `xxxxxxxxxx-xxxx.apps.googleusercontent.com`. Đây là Client ID công khai, **không phải Gemini API key**.
+4. Trong thư mục cài extension, mở `manifest.json`, thay `oauth2.client_id` bằng OAuth Client ID vừa tạo, hoặc dùng PowerShell: `./configure-drive.ps1 -ClientId "CLIENT_ID_CUA_BAN.apps.googleusercontent.com"`. Không điền client secret, access token hoặc refresh token.
+5. Mở `chrome://extensions` → bấm **Reload** cho DHL Product Factory. Mở tab **Cài đặt → Kết nối Google Drive**; chọn đúng tài khoản Google và đồng ý phạm vi truy cập.
+6. Bấm **Kiểm tra thư mục shop** ở tab **Lưu Drive**; khi thành công, tool xác nhận cả ID, tên và vị trí shop trong `TRUNG TÂM TẠO SẢN PHẨM - 6 SHOP`.
+
+**Không thể làm thay bước 2–5 từ ChatGPT.** Kết nối Google Drive đã có trong ChatGPT không thể chuyển quyền/token sang Chrome Extension. Chưa thực hiện OAuth trên Chrome thật hoặc ghi thử trên Drive thật; cần thử với một SKU trước.
+
+### Chọn thư mục tài liệu gốc (không cần backend)
+
+- Chọn **Shop** → nhấn **Duyệt thư mục nguồn** trong tab Sản phẩm. Tool liệt kê thư mục con, cho phép duyệt tối đa 12 tầng và kiểm tra mỗi folder nằm trong đúng shop.
+- Chọn file, nhấn **Lấy file đã chọn**. Hỗ trợ ảnh JPG/PNG/WEBP tối đa 3 MB/ảnh và TXT/MD/JSON, hoặc Google Docs xuất văn bản. Gemini nhận tối đa 3 ảnh và 5.000 ký tự ghi chú. Các file chưa hỗ trợ phân tích trực tiếp (ví dụ CDR, XLSX, DOCX, SVG) có thể nhìn thấy nhưng không tự gửi sang Gemini.
+- Nhấn **Ghi nhận thư mục nguồn này** để lưu ID nguồn vào hồ sơ sản phẩm. Không di chuyển/xóa file gốc.
+- Khi hoàn tất, tab **Lưu Drive** tự tạo/dùng lại folder sản phẩm theo SKU và ghi ảnh, văn bản, prompt, SEO và Excel. Không ghi vào bảng giá Shopee tổng.
+
+### Bảo mật
+
+- Token Google không đi vào Gemini hay GitHub; Chrome Identity tự quản lý token. Module nguồn kiểm tra chuỗi thư mục cha trước khi đọc file và giới hạn dung lượng; module ghi chỉ cho phép 6 ID shop đã đối chiếu.
+- Không cài từ nguồn không tin cậy. Scope Drive cho phép quyền rộng trên tài khoản; các giới hạn thư mục thuộc **mã ứng dụng** chứ không phải ràng buộc quyền Google OAuth ở cấp máy chủ.
