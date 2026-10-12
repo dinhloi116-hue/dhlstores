@@ -4,7 +4,7 @@ $ErrorActionPreference='Stop'
 $Repo='dinhloi116-hue/dhlstores'
 $Branch='feature/dhl-product-factory-mvp-20261012'
 $Folder='tools/dhl-product-factory/chrome-extension'
-$ExpectedName='DHL Product Factory — 6 Shop'
+$ExpectedName="DHL Product Factory $([char]0x2014) 6 Shop"
 $Files=@(
  'README.md','manifest.json','background.js','panel.html','panel.css','panel.js',
  'lib/core.mjs','lib/drive-sync.mjs','lib/google-auth.mjs','lib/update-check.mjs','lib/xlsx-lite.mjs',
