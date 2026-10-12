@@ -2,12 +2,19 @@ import {SHOPS,calculatePrice,imagePrompts,validateDraft,safeFilename} from './li
 import {makeWorkbook} from './lib/xlsx-lite.mjs';
 const $=id=>document.getElementById(id);
 let draft=null,selectedLanguage='vi',images=[],prompts=[],pageUrl='',driveFolder='';
+let finishedPhotos=[],generatedPlatforms=new Map(),draftIdentity=null;
 const keys=['cost','feePercent','packing','printing','labor','other','fixedFee','targetProfit'];
 const fields={title:'Tên sản phẩm',short:'Mô tả ngắn',description:'Mô tả chi tiết',seoTitle:'Tiêu đề SEO',seoDescription:'Mô tả SEO',slug:'Đường dẫn URL',keywords:'Từ khóa',altText:'Mô tả ảnh (alt)'};
 const text=id=>$(id)?.value?.trim()||'';
 function notify(msg,ok=true){$('toast').textContent=msg;$('toast').style.color=ok?'#176b49':'#a23333';}
 function page(tab){for(const b of document.querySelectorAll('nav button'))b.classList.toggle('selected',b.dataset.tab===tab);for(const v of document.querySelectorAll('main section[data-view]'))v.hidden=v.dataset.view!==tab;}
-for(const b of document.querySelectorAll('nav button'))b.onclick=()=>page(b.dataset.tab);
+for(const b of document.querySelectorAll('nav button'))b.onclick=()=>{
+  if(b.dataset.tab==='driveSave'){
+    $('driveShopLabel').textContent=text('shop')||'Shop';
+    $('driveProductLabel').textContent=draft?.vi?.title||text('name')||'Tên sản phẩm';
+  }
+  page(b.dataset.tab);
+};
 function product(){return {shop:text('shop'),name:text('name'),sku:text('sku'),category:text('category'),variants:text('variants'),notes:text('notes'),pageUrl,images};}
 function priceInput(){return Object.fromEntries(keys.map(k=>[k,$(k).value]));}
 function saveBlob(filename,data,mime){const blob=new Blob([data],{type:mime}),url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);}
@@ -31,10 +38,10 @@ function updateContent(){if(!draft)return;const lang=draft[selectedLanguage],nod
 }
 for(const b of document.querySelectorAll('.lang'))b.onclick=()=>{selectedLanguage=b.dataset.lang;document.querySelectorAll('.lang').forEach(e=>e.classList.toggle('chosen',e===b));updateContent()};
 $('analyze').onclick=async()=>{const b=$('analyze');b.disabled=true;notify('Đang gửi ảnh và thông tin tới Gemini, vui lòng chờ...');try{
-  const r=await message({type:'analyze',product:product()});draft=validateDraft(r.draft);prompts=[];updateContent();page('content');notify('Đã tạo nội dung VI/EN. Hãy kiểm tra trước khi xuất.');
+  const r=await message({type:'analyze',product:product()});draft=validateDraft(r.draft);draftIdentity={shop:text('shop'),sku:text('sku'),name:text('name')};generatedPlatforms.clear();prompts=[];updateContent();page('content');notify('Đã tạo nội dung VI/EN. Hãy kiểm tra trước khi xuất.');
 }catch(e){notify(e.message,false)}finally{b.disabled=false;}};
 $('saveDraft').onclick=async()=>{if(!draft)return notify('Chưa có bản nháp.',false);await chrome.storage.local.set({productDraft:{draft,product:{...product(),images:[]},savedAt:Date.now()}});notify('Đã lưu bản nháp ở Chrome (không lưu ảnh gốc).');};
-$('restoreDraft').onclick=async()=>{const {productDraft}=await chrome.storage.local.get('productDraft');if(!productDraft)return notify('Chưa có bản nháp.',false);draft=validateDraft(productDraft.draft);for(const k of ['shop','name','sku','category','variants','notes'])$(k).value=productDraft.product?.[k]||'';updateContent();page('content');notify('Đã khôi phục bản nháp (cần đính kèm ảnh lại).');};
+$('restoreDraft').onclick=async()=>{const {productDraft}=await chrome.storage.local.get('productDraft');if(!productDraft)return notify('Chưa có bản nháp.',false);draft=validateDraft(productDraft.draft);generatedPlatforms.clear();draftIdentity={shop:productDraft.product?.shop,sku:productDraft.product?.sku,name:productDraft.product?.name};for(const k of ['shop','name','sku','category','variants','notes'])$(k).value=productDraft.product?.[k]||'';updateContent();page('content');notify('Đã khôi phục bản nháp (cần đính kèm ảnh lại).');};
 $('deleteDraft').onclick=async()=>{await chrome.storage.local.remove('productDraft');notify('Đã xóa bản nháp đã lưu.');};
 $('makePrompts').onclick=()=>{try{if(!draft)throw Error('Chưa phân tích sản phẩm.');prompts=imagePrompts(draft,product());const host=$('prompts');host.replaceChildren();for(const item of prompts){const card=document.createElement('div'),title=document.createElement('strong'),ta=document.createElement('textarea'),btn=document.createElement('button');card.className='prompt-card';title.textContent=`Ảnh ${item.index}: ${item.title}`;ta.value=item.prompt;ta.rows=6;ta.onchange=()=>{item.prompt=ta.value};btn.textContent='Sao chép prompt ảnh '+item.index;btn.onclick=()=>copy(ta.value);card.append(title,ta,btn);host.append(card);}notify('Đã tạo 9 prompt, không gọi API tạo ảnh.');}catch(e){notify(e.message,false)}};
 const allPrompts=()=>prompts.map(p=>`===== ẢNH ${p.index}: ${p.title} =====\n${p.prompt}`).join('\n\n');
@@ -56,5 +63,74 @@ $('shop').onchange=()=>{driveFolder='';driveItems=[];$('driveFiles').replaceChil
 $('listDrive').onclick=async()=>{try{const r=await backend('/api/drive/list',null,'GET',{shop:text('shop'),parentId:driveFolder});driveItems=r.files||[];const host=$('driveFiles');host.replaceChildren();if(driveFolder){const back=document.createElement('button');back.textContent='← Trở lại thư mục shop';back.onclick=()=>{driveFolder='';$('listDrive').click()};host.append(back);}for(const f of driveItems){if(f.mimeType==='application/vnd.google-apps.folder'){const btn=document.createElement('button');btn.textContent='📁 '+f.name;btn.onclick=()=>{driveFolder=f.id;$('listDrive').click()};host.append(btn);}else if(['image/png','image/jpeg','image/webp','text/plain','text/markdown','application/json','application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(f.mimeType)&&Number(f.size||0)<=3_000_000){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=f.id;box.name='driveFile';label.append(box,document.createTextNode(' '+f.name));host.append(label);}}notify('Đã tải danh sách file Drive (chỉ đọc).');}catch(e){notify(e.message,false)}};
 $('attachDrive').onclick=async()=>{try{const ids=[...document.querySelectorAll('input[name="driveFile"]:checked')].map(e=>e.value);if(!ids.length)throw Error('Chưa chọn file từ Drive.');const data=await backend('/api/drive/source',{shop:text('shop'),ids});for(const f of data.files||[]){if(f.kind==='image'){if(images.length>=3)throw Error('Chỉ tối đa 3 ảnh.');images.push(f.data);const img=new Image();img.src=f.data;img.alt=f.name;$('previews').append(img);}else $('notes').value=[text('notes'),`Nguồn ${f.name}:\n${f.data}`].filter(Boolean).join('\n').slice(0,5000);}notify('Đã nhập tài liệu Drive vào hồ sơ, không thay đổi file gốc.');}catch(e){notify(e.message,false)}};
 function listing(){return {reviewed:$('reviewed').checked,categoryConfirmed:$('categoryConfirmed').checked,brandConfirmed:$('brandConfirmed').checked,categoryId:text('categoryId'),brand:text('brand'),coverUrl:text('coverUrl'),imageUrls:text('imageUrls').split('\n').map(x=>x.trim()).filter(Boolean),variantName1:text('variantName1'),variantName2:text('variantName2'),weightGrams:text('weightGrams'),lengthCm:text('lengthCm'),widthCm:text('widthCm'),heightCm:text('heightCm'),variants:text('skuLines').split('\n').filter(Boolean).map((r,i)=>{const arr=r.split('|').map(v=>v.trim());if(arr.length!==5)throw Error('Dòng SKU '+(i+1)+' cần đủ 5 phần.');return {sku:arr[0],opt1:arr[1],opt2:arr[2],price:arr[3],stock:arr[4]}})};}
-async function exportPlatform(platform){try{if(!draft)throw Error('Chưa có nội dung AI.');if(!confirm('Xuất file mẫu '+platform+' để thử 1 SKU? Chưa được xác nhận nhập sàn thành công.'))return;const r=await backend('/api/export-platform',{platform,draft,product:product(),listing:listing()});const binary=atob(r.base64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);saveBlob(platform.toUpperCase()+'_CHO_DUYET_'+safeFilename(text('sku'))+'.xlsx',bytes,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');notify('Đã xuất '+platform+' trên file mẫu gốc, chờ thử import 1 SKU.');}catch(e){notify(e.message,false)}}
+async function exportPlatform(platform){try{if(!draft)throw Error('Chưa có nội dung AI.');if(!confirm('Xuất file mẫu '+platform+' để thử 1 SKU? Chưa được xác nhận nhập sàn thành công.'))return;const r=await backend('/api/export-platform',{platform,draft,product:product(),listing:listing()});const binary=atob(r.base64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);generatedPlatforms.set(platform,bytes);saveBlob(platform.toUpperCase()+'_CHO_DUYET_'+safeFilename(text('sku'))+'.xlsx',bytes,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');notify('Đã xuất '+platform+' trên file mẫu gốc, chờ thử import 1 SKU.');}catch(e){notify(e.message,false)}}
 $('bigSeller').onclick=()=>exportPlatform('bigseller');$('lazada').onclick=()=>exportPlatform('lazada');
+
+// Product finalization: single action creates/reuses Shop → Product folder and uploads every confirmed artifact.
+// Never modify the global Shopee pricing reference or the shop's official import templates.
+const IMAGE_MIMES=new Set(['image/png','image/jpeg','image/webp']);
+const mimex=m=>m==='image/png'?'png':m==='image/webp'?'webp':'jpg';
+function dataUrlFile(s,name){const m=/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(s||'');if(!m)throw Error('Ảnh gốc không hợp lệ.');return {name,mime:m[1],base64:m[2]};}
+function bytesBase64(bytes){let result='';for(let i=0;i<bytes.length;i+=16384)result+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(result);}
+function utf8Base64(s){return bytesBase64(new TextEncoder().encode(s));}
+function xlsxFile(name,bytes){return {name,mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',base64:bytesBase64(bytes)};}
+async function uploadedImage(file,name){if(!IMAGE_MIMES.has(file.type)||file.size>8_000_000)throw Error('Ảnh thành phẩm chỉ JPG/PNG/WEBP, tối đa 8 MB mỗi ảnh.');const arr=new Uint8Array(await file.arrayBuffer());return {name,mime:file.type,base64:bytesBase64(arr)};}
+$('finishedPhotos').onchange=e=>{
+  finishedPhotos=[...e.target.files].slice(0,12);
+  const oversize=finishedPhotos.filter(f=>!IMAGE_MIMES.has(f.type)||f.size>8_000_000);
+  if(oversize.length)notify('Một số ảnh thành phẩm không đúng định dạng hoặc vượt 8 MB; cần chọn lại.',false);
+  $('finishedPhotoList').textContent=finishedPhotos.map(f=>f.name+' ('+Math.round(f.size/1024)+' KB)').join(' · ');
+};
+$('copyRedirect').onclick=()=>copy(chrome.runtime.id);
+$('connectGoogle').onclick=async()=>{
+  const btn=$('connectGoogle');btn.disabled=true;
+  try{
+    const r=await message({type:'drive-connect'});
+    $('googleConnection').textContent='Đã kết nối Google Drive. Sẽ tự chọn một trong 6 thư mục shop và tạo thư mục sản phẩm khi Hoàn tất.';
+    notify('Đã cấp quyền Google Drive.');
+  }catch(e){notify(e.message,false);$('googleConnection').textContent='Chưa kết nối: '+e.message;}
+  finally{btn.disabled=false;}
+};
+$('disconnectGoogle').onclick=async()=>{try{await message({type:'drive-disconnect'});$('googleConnection').textContent='Đã ngắt kết nối Google Drive.';notify('Đã ngắt phiên Google trên extension.');}catch(e){notify(e.message,false)}};
+$('verifySaveDrive').onclick=async()=>{try{const d=await message({type:'drive-verify',shop:text('shop')});$('saveDriveProgress').textContent='Đã xác minh thư mục shop: '+d.name+' · ID '+d.id;notify('Đã xác minh địa chỉ lưu của shop.');}catch(e){notify(e.message,false);$('saveDriveProgress').textContent=e.message;}};
+(async()=>{
+  const d=await message({type:'drive-status'});if(d.connected)$('googleConnection').textContent='Đã kết nối Google Drive (Chrome quản lý và tự gia hạn token).';else if(!d.configured)$('googleConnection').textContent='Chưa cấu hình OAuth Client ID trong manifest.json. Cần làm một lần theo README.';
+})().catch(e=>notify(e.message,false));
+async function productFiles(){
+  if(!draft)throw Error('Cần phân tích/duyệt nội dung sản phẩm trước khi lưu.');
+  validateDraft(draft);const p=product();if(!p.sku||!p.name)throw Error('Cần nhập tên sản phẩm và SKU.');
+  if(!draftIdentity||draftIdentity.shop!==p.shop||draftIdentity.sku!==p.sku||draftIdentity.name!==p.name)throw Error('Thông tin shop, SKU hoặc tên đã thay đổi sau phân tích. Hãy phân tích lại để tránh lưu nhầm sản phẩm.');
+  const result=[xlsxFile('Thông tin sản phẩm.xlsx',exportInfo()),xlsxFile('SEO website.xlsx',exportSEO())];
+  let pricingStatus='CHƯA CHỐT GIÁ';
+  if(text('cost')!==''&&text('feePercent')!==''){result.push(xlsxFile('Bảng giá đề xuất.xlsx',exportPrice()));pricingStatus='ĐÃ TÍNH GIÁ ĐỀ XUẤT';}
+  if(!prompts.length)prompts=imagePrompts(draft,p);
+  result.push({name:'Prompt tạo ảnh ChatGPT.txt',mime:'text/plain',base64:utf8Base64(allPrompts())});
+  for(let i=0;i<images.length;i++){
+    const match=/^data:(image\/(?:jpeg|png|webp));/.exec(images[i]);const ext=mimex(match?.[1]);
+    result.push(dataUrlFile(images[i],`Ảnh gốc ${i+1}.${ext}`));
+  }
+  for(let i=0;i<finishedPhotos.length;i++)result.push(await uploadedImage(finishedPhotos[i],`Ảnh thành phẩm ${i+1}.${mimex(finishedPhotos[i].type)}`));
+  for(const [platform,bytes] of generatedPlatforms)result.push(xlsxFile(platform==='bigseller'?'BigSeller.xlsx':'Lazada.xlsx',bytes));
+  const metadata={shop:p.shop,sku:p.sku,name:p.name,category:p.category,variants:p.variants,notes:p.notes,sourcePage:p.pageUrl,pricingStatus,sourceImageCount:images.length,finishedImageCount:finishedPhotos.length,generatedPlatforms:[...generatedPlatforms.keys()],status:pricingStatus==='CHƯA CHỐT GIÁ'||draft.missing.length?'CHỜ BỔ SUNG / KIỂM TRA':'HỒ SƠ ĐÃ DUYỆT - CHƯA XÁC NHẬN IMPORT SÀN',missing:draft.missing,updatedAt:new Date().toISOString()};
+  result.push({name:'Thông tin và trạng thái.json',mime:'application/json',base64:utf8Base64(JSON.stringify(metadata,null,2))});
+  if(result.length>32)throw Error('Bộ file vượt 32 mục; chia thành nhiều đợt.');
+  return {files:result,metadata};
+}
+$('saveToDrive').onclick=async()=>{
+  if(!$('approveForDrive').checked)return notify('Cần tích xác nhận nội dung và thư mục trước khi lưu.',false);
+  const btn=$('saveToDrive');btn.disabled=true;
+  try{
+    const p=product(),{files,metadata}=await productFiles();
+    $('saveDriveProgress').textContent='Đang xác minh shop và tạo/tìm thư mục sản phẩm...';
+    const folder=await message({type:'drive-folder',product:{shop:p.shop,name:p.name,sku:p.sku}});
+    $('savedDriveLink').href=folder.url;$('savedDriveLink').hidden=false;
+    const done=[],errors=[];
+    for(let i=0;i<files.length;i++){
+      $('saveDriveProgress').textContent=`Đang ghi ${i+1}/${files.length} vào ${p.shop} / ${folder.name}: ${files[i].name}`;
+      try{done.push(await message({type:'drive-upload',shop:p.shop,sku:p.sku,folderId:folder.id,file:files[i]}));}
+      catch(e){errors.push(files[i].name+': '+e.message);}
+    }
+    if(errors.length){$('saveDriveProgress').textContent=`Đã ghi ${done.length}/${files.length} file; ${errors.length} file lỗi: `+errors.join(' | ');notify('Drive đã lưu một phần, hãy xem báo lỗi và chạy lại sau khi khắc phục.',false);}
+    else{$('saveDriveProgress').textContent=`Đã lưu ${done.length} file tại ${p.shop} / ${folder.name}. Trạng thái: ${metadata.status}. Bảng giá Shopee tổng không bị sửa.`;notify('Đã lưu toàn bộ file sản phẩm lên Google Drive.');}
+  }catch(e){$('saveDriveProgress').textContent='Không thể lưu: '+e.message;notify(e.message,false)}finally{btn.disabled=false;}
+};

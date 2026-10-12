@@ -1,5 +1,7 @@
 # DHL Product Factory — Chrome Extension (Manifest V3)
 
+**Bản 0.2.0: tự lưu bộ hồ sơ sản phẩm lên Google Drive sau khi duyệt.**
+
 Extension dành cho **6 shop**; dùng **Gemini** để phân tích ảnh, SEO Việt/Anh; tạo **9 prompt** gửi thủ công sang ChatGPT; tính giá và tải Excel. Mở qua Chrome **Side Panel**.
 
 ## Cài đặt bản thử (Windows / Chrome)
@@ -40,3 +42,44 @@ Không có content script thường trực, không thu thập lịch sử duyệ
 `tools/dhl-product-factory/chrome-extension` trong `dinhloi116-hue/dhlstores`.
 
 Chạy `node --test test/*.test.mjs` với Node.js 22+. Bài test xác minh logic tính giá, cấu trúc prompt, Excel, manifest và UI. Chưa test trực tiếp trên Chrome hoặc với Gemini key thật. **Đây là bản extension chưa phát hành Chrome Web Store.**
+
+
+## Bản 0.2.0 — TỰ LƯU DRIVE VÀ TẠO THƯ MỤC SẢN PHẨM
+
+### Sơ đồ thư mục (đã đối chiếu Google Drive thật 12/10/2026)
+
+`TRUNG TÂM TẠO SẢN PHẨM - 6 SHOP` → **[đúng 1 trong 6 shop]** → **[Tên sản phẩm]** → các file.
+
+- Không đặt tiền tố số, không tạo thư mục “cũ”, “chưa dùng”, “chưa phân loại” hoặc tầng trung gian.
+- Bản quyền thư mục: shop chọn bằng dropdown; công cụ kiểm tra **ID cố định, tên shop và parent của thư mục nằm trong trung tâm**. Sai thì dừng, không ghi nhầm tài khoản.
+- Tên thư mục sản phẩm lấy từ tên do bạn nhập, không tự thêm SKU vào tên. SKU được ghi vào thuộc tính riêng (appProperties) để nhận diện. SKU cũ → dùng lại đúng thư mục; tên trùng SKU khác → dừng yêu cầu kiểm tra.
+- Những file do tool đã tạo có cùng tên + SKU sẽ cập nhật bằng Google Drive API. **Không ghi đè file thủ công của bạn** hoặc file không do tool quản lý.
+
+### Bật quyền ghi trên Chrome — chỉ cấu hình một lần
+
+1. Giải nén extension vào một **thư mục cố định**, sau đó mở `chrome://extensions` → bật Developer mode → **Load unpacked**. Ghi lại **Extension ID**. Nếu đã cài bản trước thì giữ nguyên đường dẫn thư mục để giữ ID; chọn **Reload** sau khi sửa `manifest.json`.
+2. Vào `https://console.cloud.google.com/` tạo hoặc chọn dự án Google Cloud do bạn quản lý; bật **Google Drive API**. Cấu hình OAuth consent screen, thêm email Google của bạn vào **Test users** nếu dự án đang Testing.
+3. Google Cloud → Credentials → Create OAuth client → loại **Chrome Extension**. Dán đúng Extension ID vào **Item ID**. Sao chép OAuth Client ID trả về (không phải API key Gemini, không phải client secret).
+4. Mở `manifest.json` trong thư mục extension, thay **duy nhất** giá trị `oauth2.client_id` placeholder bằng OAuth Client ID mới. Đây là Client ID công khai, không phải khóa bí mật; đừng thêm `client_secret` hay refresh token.
+5. Quay lại `chrome://extensions` → nhấn **Reload**. Mở extension → **Cài đặt** → **Kết nối Google Drive** và chọn tài khoản Google có quyền vào 6 thư mục shop. Cho phép truy cập Drive.
+6. Tab **Lưu Drive** → **Kiểm tra thư mục shop**. Chỉ khi xác minh thành công mới xử lý sản phẩm và lưu.
+
+**Quyền cấp:** scope `https://www.googleapis.com/auth/drive` cho phép truy cập rộng trong tài khoản. Quyền này cần thiết để kiểm tra/ghi vào các thư mục shop đã tồn tại, nhưng mã tool có danh sách cho phép **chính xác 6 ID shop**. Khi chia sẻ extension rộng rãi, Google có thể yêu cầu xác minh ứng dụng và scope Drive. Chrome tự quản lý và làm mới access token; token không được gửi tới Gemini hay GitHub và không có refresh token trong mã nguồn.
+
+### Sử dụng hàng ngày
+
+1. Tab **Sản phẩm** → chọn shop, nhập tên sản phẩm + SKU, ảnh gốc; Gemini phân tích và tạo SEO Việt/Anh.
+2. Tab **Prompt ảnh** → tạo 9 prompt, dùng ChatGPT tạo ảnh, lưu ảnh thành phẩm về máy.
+3. Tab **Xuất file** → nhập vốn và **phí đã được đối chiếu** để tạo bảng giá; có thể xuất BigSeller/Lazada từ backend (nếu đã cấu hình và kiểm duyệt).
+4. Tab **Lưu Drive** → tải ảnh thành phẩm từ ChatGPT, đánh dấu xác nhận, bấm **Hoàn tất & tự lưu bộ file lên Drive**. Công cụ tự kiểm tra thư mục đúng Shop/SKU, tạo hoặc dùng lại thư mục, sau đó tự tải lên từng file và trả về link folder.
+5. Khi thiếu chi phí hoặc chưa chốt thuộc tính, vẫn có thể lưu hồ sơ nhưng trạng thái là **CHỜ BỔ SUNG**, không tự nhận là đã đăng sàn. Sau khi bổ sung và phân tích lại, bấm Lưu Drive để cập nhật các file được tool quản lý.
+
+**Các file do tool tự lưu khi có dữ liệu:** `Thông tin sản phẩm.xlsx`, `SEO website.xlsx`, `Bảng giá đề xuất.xlsx` (chỉ khi có đủ chi phí/phí), `Prompt tạo ảnh ChatGPT.txt`, `Ảnh gốc 1.png`… `Ảnh thành phẩm 1.png`…, `BigSeller.xlsx`/`Lazada.xlsx` (chỉ khi đã xuất được ở backend), và `Thông tin và trạng thái.json`. Các file được ghi trực tiếp **vào thư mục sản phẩm dưới shop**, không rải rác ở My Drive.
+
+**CHƯA HỖ TRỢ:** cập nhật trực tiếp workbook giá Shopee gốc `tham chiếu làm bảng giá sản phẩm bán shopee đừng động vào.xlsx` (phải làm riêng để bảo toàn công thức/kiểm SKU); đăng tự động lên sàn; xác nhận file BigSeller/Lazada import thành công vào tài khoản sàn; đồng bộ ảnh trực tiếp từ ChatGPT (ảnh phải được người dùng chọn tải vào extension).
+
+### Kiểm thử và phạm vi xác nhận
+
+- `node --test test/*.test.mjs`: có các bài kiểm thử mock cho OAuth, nhận diện 6 shop, tạo/dùng lại folder và tải file. Không cần gọi API thật khi chạy unit test.
+- **Chưa** thử đăng nhập OAuth Google trên chính Chrome của bạn và **chưa** thử ghi trên Drive thật; cần một lần chạy thử một SKU trước khi dùng hàng loạt.
+- Không ghi nhầm thư mục nếu quyền cấp cho Google account khác; verify sẽ báo lỗi.

@@ -1,4 +1,6 @@
 import {makeGeminiRequest,validateDraft} from './lib/core.mjs';
+import {connectDrive,getDriveToken,disconnectDrive,driveConnectionStatus} from './lib/google-auth.mjs';
+import {resolveShop,resolveProductFolder,verifyProductFolder,uploadProductFile} from './lib/drive-sync.mjs';
 
 chrome.runtime.onInstalled.addListener(()=>{
   chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:true}).catch(console.error);
@@ -48,6 +50,16 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
   (async()=>{
     if(message.type==='analyze')return {draft:await geminiAnalyze(message.product)};
     if(message.type==='backend')return await backendRequest(message);
+    if(message.type==='drive-connect')return await connectDrive();
+    if(message.type==='drive-status')return await driveConnectionStatus();
+    if(message.type==='drive-disconnect')return await disconnectDrive();
+    if(message.type==='drive-verify')return await resolveShop(await getDriveToken(),message.shop);
+    if(message.type==='drive-folder')return await resolveProductFolder(await getDriveToken(),message.product);
+    if(message.type==='drive-upload'){
+      const token=await getDriveToken();
+      await verifyProductFolder(token,{shop:message.shop,sku:message.sku,folderId:message.folderId});
+      return await uploadProductFile(token,message.folderId,message.sku,message.file);
+    }
     throw Error('Yêu cầu không hỗ trợ.');
   })().then(result=>sendResponse({ok:true,result})).catch(e=>sendResponse({ok:false,error:e.message||'Lỗi không xác định'}));
   return true;
