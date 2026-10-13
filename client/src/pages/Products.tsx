@@ -223,15 +223,15 @@ export default function Products() {
             {products.map((p, index) => (
               <div key={p.id} className="group relative">
               <Link href={`/product/${p.slug}`} className="block h-full">
-                  <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-md shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-lg' : ''}`}>
+                  <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-2xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-lg' : ''}`}>
                   <div className="group/media relative aspect-square overflow-hidden bg-[#0b1220] [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:22px_22px]">
                     <div className="absolute inset-0 grid place-items-center p-6 text-center text-white/80"><div><p className="font-display text-2xl font-black uppercase leading-none text-white/90">DHL</p><p className="mt-1 text-[9px] font-black uppercase tracking-[0.22em] text-sky-300">{p.type === 'physical' ? 'Sports gear' : 'Resource file'}</p></div></div>
                     {productCardImage(p) ? <img src={productCardImage(p)} alt={catalogName(p, lang)} loading={index < 4 ? "eager" : "lazy"} decoding="async" onError={event => { event.currentTarget.style.display = 'none'; }} className={`relative z-10 h-full w-full transition-transform duration-300 group-hover/media:scale-105 ${isPhysicalCatalog ? 'object-cover' : 'object-contain'}`} /> : <div className="relative z-10 grid h-full w-full place-items-center p-6 text-center text-white/75"><div><p className="font-display text-2xl font-black uppercase leading-none text-white/90">DHL</p><p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-300">{lang === 'vi' ? 'Ảnh đang cập nhật' : 'Image updating'}</p></div></div>}
                   </div>
-                  <div className={`flex flex-1 flex-col justify-between ${isPhysicalCatalog ? 'space-y-2 p-2.5 sm:p-4' : 'space-y-2 p-2.5 sm:space-y-3 sm:p-4'}`}>
+                  <div className={`flex flex-1 flex-col justify-between ${isPhysicalCatalog ? 'space-y-2 p-3 sm:p-4' : 'space-y-2 p-2.5 sm:space-y-3 sm:p-4'}`}>
                     <div>
-                      <Badge className={`${p.type === 'physical' ? 'bg-sky-100 text-sky-700' : 'bg-purple-100 text-purple-800'} mb-2 text-[10px] font-bold px-2 py-0.5`}>{p.type === 'physical' ? (lang === 'vi' ? 'Hàng vật lý' : 'Physical item') : (lang === 'vi' ? 'Tài liệu số' : 'Digital asset')}</Badge>
-                      <h3 className="text-[12px] font-bold text-slate-800 transition-colors group-hover:text-sky-600 line-clamp-2 leading-relaxed sm:text-xs">
+                      {p.type !== 'physical' && <Badge className="mb-2 bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-800">{lang === 'vi' ? 'Tài liệu số' : 'Digital asset'}</Badge>}
+                      <h3 className={`font-black text-slate-800 transition-colors group-hover:text-sky-600 line-clamp-2 leading-tight ${isPhysicalCatalog ? "text-[17px] text-center sm:text-sm" : "text-[12px] sm:text-xs"}`}>
                         {catalogName(p, lang)}
                       </h3>
                       {!isPhysicalCatalog && <p className="mt-1 line-clamp-2 text-[10px] text-slate-500 sm:text-[11px]">
@@ -239,7 +239,7 @@ export default function Products() {
                       </p>}
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <span className={`${isPhysicalCatalog ? 'text-base text-[#0759b8]' : 'text-sm text-sky-600'} font-black`}>
+                      <span className={`${isPhysicalCatalog ? 'text-[1.15rem] text-[#0759b8] text-center w-full' : 'text-sm text-sky-600'} font-black`}>
                         {isPhysicalCatalog && hasWholesalePreviewPrice(p) && <span className="mr-1 text-[10px] font-bold text-[#0759b8]"><Zap className="mr-0.5 inline-block h-3 w-3 animate-[pulse_1.8s_ease-in-out_infinite] align-[-1px] text-[#38bdf8]" aria-hidden="true" />{lang === "vi" ? "Giá sỉ từ" : "Wholesale from"}</span>}{formatCurrency(isPhysicalCatalog ? previewPrice(p) : p.price)}
                       </span>
                       <span className={`${isPhysicalCatalog ? 'hidden sm:inline-flex' : 'inline-flex'} text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded group-hover:bg-sky-500 group-hover:text-slate-950 transition-colors`}>

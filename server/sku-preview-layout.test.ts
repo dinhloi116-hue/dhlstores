@@ -375,3 +375,17 @@ describe("public SKU inventory presentation", () => {
     expect(storeSource).not.toContain("#ee4d2d");
     expect(productSource).not.toContain("#ff3b1f");
   });
+
+  it("matches the marketplace reference layout across mobile and desktop", () => {
+    const productSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+    const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
+
+    expect(productSource).toContain("contents lg:col-span-7 lg:block");
+    expect(productSource).toContain("order-1 grid gap-3");
+    expect(productSource).toContain("flex max-w-full gap-2 overflow-x-auto");
+    expect(productSource).toContain("order-2 space-y-5");
+    expect(productSource).toContain("text-[1.8rem] leading-[1.12]");
+    expect(catalogSource).toContain("grid grid-cols-2 gap-3");
+    expect(catalogSource).toContain("rounded-2xl shadow-sm");
+    expect(catalogSource).toContain("text-[17px] text-center");
+  });

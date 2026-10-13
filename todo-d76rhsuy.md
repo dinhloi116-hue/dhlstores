@@ -13,3 +13,9 @@
 - [x] Tạo sản phẩm digital với tên, mô tả, thông số và lưu ý quyền sử dụng đầy đủ VI/EN.
 - [x] Gắn giá cố định 50.000đ / 4 USD, ảnh gallery công khai và bundle tải sau thanh toán.
 - [x] Kiểm tra trang storefront desktop, full regression 191 passed / 2 skipped, TypeScript và build production; sẵn sàng đồng bộ GitHub main.
+
+## Đồng bộ giao diện web/mobile theo mẫu marketplace — 2026-10-13
+- [ ] Chuyển catalog sang lưới 2 cột mobile, ảnh vuông lớn, tên/giá dễ đọc và card gọn.
+- [ ] Tái bố cục ProductDetail: breadcrumb, gallery lớn + thumbnail ngang, giá/giảm giá/trạng thái và CTA rõ ràng.
+- [ ] Giữ đầy đủ SKU, tồn kho, Order 7 ngày, review và sản phẩm liên quan; không làm mất luồng mua hiện tại.
+- [ ] Bổ sung hồi quy, chạy test/build và chụp kiểm tra desktop/mobile.
