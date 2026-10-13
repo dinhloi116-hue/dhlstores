@@ -1,5 +1,19 @@
-<style id="dhl-v826-true-contour-style"></style>
-<script id="dhl-v826-true-contour-nest" type="text/javascript">
+<style id="dhl-v833-true-contour-style">
+#v83RotHint{display:none!important}
+#v77NestResult .v817-sub{display:none!important}
+#v77NestResult{font-size:10px!important;line-height:1.35!important;padding:7px 8px!important;min-height:0!important}
+.v817-plan{font-size:10px!important;line-height:1.35!important;margin-top:4px!important}
+.v818-box{margin:5px 0!important;padding:7px!important}
+.v85-prep{margin:5px 0!important;padding:7px!important}
+.v85-prep-title{margin-bottom:4px!important}
+.v85-lock{margin-top:5px!important}
+.v85-actions{margin-top:5px!important}
+.v85-status{font-size:9px!important;line-height:1.25!important;margin-top:4px!important}
+.v80-modebar{margin:5px 0 2px!important}
+.v80-modehint{font-size:9px!important;line-height:1.25!important;margin:2px 0 5px!important}
+#v77NestBtn,#v77UndoNest{min-height:30px!important}
+</style>
+<script id="dhl-v833-true-contour-nest" type="text/javascript">
 (function(){
 function E(id){return document.getElementById(id);}
 function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return'vi';}}
@@ -18,18 +32,18 @@ function sampleLeaf(s,root){
   for(i=1;i<=sps.Count;i++){
    try{
     sp=sps.Item(i);len=Math.abs(Number(sp.Length))||0;closed=!!sp.Closed;
-    n=Math.max(closed?10:2,Math.min(96,Math.ceil(len/1.25)));
+    n=Math.max(closed?16:4,Math.min(180,Math.ceil(len/0.8)));
     pts=[];
     for(k=0;k<(closed?n:n+1);k++){
      t=closed?(k/n):(k/n);
-     p=sp.GetPointPositionAt(t);
+     try{p=sp.GetPointPositionAt(t);}catch(sampleE){p=null;}if(!p||!isFinite(Number(p.x))||!isFinite(Number(p.y))){try{p=sp.GetPointAt(t);}catch(pointE){p=null;}}
      if(p&&isFinite(Number(p.x))&&isFinite(Number(p.y)))pts.push({x:Number(p.x)-root.l,y:root.t-Number(p.y)});
     }
     if(pts.length>=(closed?3:2)){bb=loopBox(pts);loops.push({closed:closed,pts:pts,bb:bb});}
    }catch(one){}
   }
  }
- if(!loops.length){try{lb=boxOf(s);loops.push(rectLoop(lb,root));}catch(x){}}
+ if(!loops.length){try{lb=boxOf(s);loops.push(rectLoop(lb,root));window.DHL_RECT_FALLBACKS=(window.DHL_RECT_FALLBACKS||0)+1;}catch(x){}}
  if(!loops.length)return null;
  bb={l:1e30,r:-1e30,t:1e30,b:-1e30};
  for(i=0;i<loops.length;i++){if(loops[i].bb.l<bb.l)bb.l=loops[i].bb.l;if(loops[i].bb.r>bb.r)bb.r=loops[i].bb.r;if(loops[i].bb.t<bb.t)bb.t=loops[i].bb.t;if(loops[i].bb.b>bb.b)bb.b=loops[i].bb.b;}
@@ -41,10 +55,10 @@ function anchors(item){
  function put(x,y){var key=Math.round(x*2)+','+Math.round(y*2);if(!seen[key]){seen[key]=1;a.push({x:x,y:y});}}
  put(0,0);put(item.w,0);put(0,item.h);put(item.w,item.h);
  for(i=0;i<item.leaves.length;i++)for(j=0;j<item.leaves[i].loops.length;j++){
-  pts=item.leaves[i].loops[j].pts;step=Math.max(1,Math.ceil(pts.length/10));
+  pts=item.leaves[i].loops[j].pts;step=Math.max(1,Math.ceil(pts.length/18));
   for(k=0;k<pts.length;k+=step){p=pts[k];put(p.x,p.y);}
  }
- if(a.length>32)a=a.slice(0,32);
+ if(a.length>72)a=a.slice(0,72);
  return a;
 }
 function footprint(shape){
@@ -88,53 +102,154 @@ function collide(ax,ay,A,bx,by,B,g){
  for(i=0;i<A.leaves.length;i++){la=A.leaves[i];for(j=0;j<B.leaves.length;j++){lb=B.leaves[j];if(!bbNear(la.bb,ax,ay,lb.bb,bx,by,g))continue;if(boundariesNear(la,ax,ay,lb,bx,by,g))return true;if(filledOverlap(la,ax,ay,lb,bx,by))return true;}}
  return false;
 }
-function valid(x,y,it,placed,W,H,g){var i,p;if(x<-.001||y<-.001||x+it.w>W+.001||y+it.h>H+.001)return false;for(i=0;i<placed.length;i++){p=placed[i];if(collide(x,y,it,p.x,p.y,p.item,g))return false;}return true;}
+function valid(x,y,it,placed,W,H,g){var i,p;if(!isFinite(Number(x))||!isFinite(Number(y)))return false;if(x<-.001||y<-.001||x+it.w>W+.001||y+it.h>H+.001)return false;for(i=0;i<placed.length;i++){p=placed[i];if(collide(x,y,it,p.x,p.y,p.item,g))return false;}return true;}
 function addX(list,seen,v,max){var k;if(!isFinite(v)||v<-.001||v>max+.001)return;v=Math.max(0,Math.min(max,v));k=Math.round(v*4)/4;if(!seen[k]){seen[k]=1;list.push(k);}}
 function xCandidates(it,placed,W,g,currentX){
- var xs=[],seen={},i,j,k,p,a,b,max=W-it.w;
+ var xs=[],seen={},i,j,k,p,a,b,max=W-it.w,gridStep,q,cut,step;
  addX(xs,seen,0,max);addX(xs,seen,max,max);addX(xs,seen,currentX,max);
  for(i=0;i<placed.length;i++){p=placed[i];addX(xs,seen,p.x+p.item.w+g,max);addX(xs,seen,p.x-it.w-g,max);
   for(j=0;j<it.anchors.length;j++)for(k=0;k<p.item.anchors.length;k++){a=it.anchors[j];b=p.item.anchors[k];addX(xs,seen,p.x+b.x-a.x,max);addX(xs,seen,p.x+b.x+g-a.x,max);addX(xs,seen,p.x+b.x-g-a.x,max);}
  }
+ gridStep=Math.max(1.25,Math.min(4,Math.min(it.w,it.h)/8));if(max/gridStep>220)gridStep=max/220;
+ for(q=0;q<=max+.001;q+=gridStep)addX(xs,seen,q,max);
  xs.sort(function(a,b){return a-b;});
- if(xs.length>140){var cut=[],step=xs.length/140,q;for(q=0;q<140;q++)cut.push(xs[Math.floor(q*step)]);xs=cut;}
+ if(xs.length>260){cut=[];step=xs.length/260;for(q=0;q<260;q++)cut.push(xs[Math.floor(q*step)]);xs=cut;}
  return xs;
 }
 function firstYAtX(x,it,placed,H,g,limit){
- var coarse=Math.max(.75,Math.min(2.5,g>0?g/2:1.5)),y=0,lastBad=-coarse,hi=Math.min(H-it.h,limit),fine,yy;
- for(y=0;y<=hi+.001;y+=coarse){if(valid(x,y,it,placed,1e30,H,g)){fine=Math.max(0,lastBad);for(yy=fine;yy<=y+.001;yy+=.2)if(valid(x,yy,it,placed,1e30,H,g))return yy;return y;}lastBad=y;}
+ var coarse=Math.max(.6,Math.min(2,g>0?g/3:1.2)),y=0,lastBad=-coarse,hi=Math.min(H-it.h,limit),fine,yy;
+ for(y=0;y<=hi+.001;y+=coarse){if(valid(x,y,it,placed,1e30,H,g)){fine=Math.max(0,lastBad);for(yy=fine;yy<=y+.001;yy+=.15)if(valid(x,yy,it,placed,1e30,H,g))return yy;return y;}lastBad=y;}
  return null;
 }
+function placedDepth(placed){var d=0,i;for(i=0;i<placed.length;i++)d=Math.max(d,placed[i].y+placed[i].item.h);return d;}
 function pack(items,W,H,g){
- var ord=items.slice(0),placed=[],i,it,xs,j,x,y,best,origY;
- ord.sort(function(a,b){return a._y-b._y||a._x-b._x||b.area-a.area;});
- for(i=0;i<ord.length;i++){it=ord[i];origY=Math.max(0,it._y);xs=xCandidates(it,placed,W,g,it._x);best=null;
-  for(j=0;j<xs.length;j++){x=xs[j];y=firstYAtX(x,it,placed,H,g,best?best.y:origY+Math.max(20,g*2));if(y===null)continue;if(!best||(y+it.h)<(best.y+it.h)-.001||(Math.abs(y-best.y)<.001&&x<best.x))best={x:x,y:y,item:it};}
+ var ord=items.slice(0),placed=[],i,it,xs,j,x,y,best,origY,limit,depth;
+ ord.sort(function(a,b){var m=window.DHL_ORDER||'area';if(m==='height')return b.h-a.h||b.area-a.area;if(m==='width')return b.w-a.w||b.area-a.area;return b.area-a.area||a._y-b._y||a._x-b._x;});
+ for(i=0;i<ord.length;i++){
+  it=ord[i];origY=isFinite(Number(it._y))?Math.max(0,Number(it._y)):0;xs=xCandidates(it,placed,W,g,it._x);best=null;depth=placedDepth(placed);
+  limit=Math.min(H-it.h,Math.max(origY+it.h+g*2,depth+it.h+g*2,40));
+  for(j=0;j<xs.length;j++){if(window.DHL_SEARCH_DEADLINE&&new Date().getTime()>window.DHL_SEARCH_DEADLINE)return null;x=xs[j];y=firstYAtX(x,it,placed,H,g,limit);if(y===null)continue;if(!best||(y+it.h)<(best.y+it.h)-.001||(Math.abs(y-best.y)<.001&&x<best.x))best={x:x,y:y,item:it};}
   if(!best){if(valid(it._x,it._y,it,placed,W,H,g))best={x:it._x,y:it._y,item:it};else return null;}
   placed.push(best);
  }
  return placed;
 }
 function frameIndexFor(shape,baseLeft,W,fg){var cx=Number(shape.CenterX),step=W+fg,idx=Math.round((cx-(baseLeft+W/2))/step);return idx<0?0:idx;}
-function contourCompact(){
- var a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=selected(a),W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,fg=N('v77FrameGapInput',0)*10,mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,uw=W-ml-mr,uh=H-mt-mb,page,baseLeft,baseBottom,bins={},i,idx,key,it,root,left,top,plan,p,cmd=false,opt=false,moved=0;
+function footprintAt(shape,ang){
+ var d=null,it;
+ if(!ang){it=footprint(shape);it.ang=0;return it;}
+ try{
+  d=shape.Duplicate(0,0);d.Rotate(ang);it=footprint(d);it.shape=shape;it.ang=ang;return it;
+ }finally{try{if(d)d.Delete();}catch(x){}}
+}
+function patternItems(shapes,angles){
+ var out=[],i,it,ang;
+ for(i=0;i<shapes.length;i++){ang=angles[i%angles.length];it=footprintAt(shapes[i],ang);it._ord=i;out.push(it);}
+ return out;
+}
+function planDepth(plan){var d=0,i,p;for(i=0;i<plan.length;i++){p=plan[i];d=Math.max(d,p.y+p.item.h);}return d;}
+function makePrimaryFrame(page,left,bottom,W,H){
+ var f=page.ActiveLayer.CreateRectangle2(left,bottom,W,H);
+ try{f.Fill.ApplyNoFill();}catch(e){}
+ try{f.Outline.Width=.2;f.Outline.Color.CMYKAssign(0,0,0,100);}catch(e2){}
+ try{f.Name='DHL_NEST_FRAME_1';}catch(e3){}
+ try{f.OrderToBack();}catch(e4){}
+ return f;
+}
+function contourPrimaryCopies(){
+ var a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=selected(a),W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,uw=W-ml-mr,uh=H-mt-mb,page,baseLeft,baseBottom,top,patterns=[[0],[90],[0,180],[90,270],[0,90,180,270]],names=['0°','90°','0°/180°','90°/270°','0°/90°/180°/270°'],best=null,i,items,plan,depth,j,p,sh,cmd=false,opt=false,range,res=E('v77NestResult');
  if(ss.length<2||uw<=0||uh<=0)return false;
  try{
-  doc.Unit=3;page=a.ActivePage;baseLeft=Number(page.CenterX)-W/2;baseBottom=Number(page.CenterY)-H/2;
-  for(i=0;i<ss.length;i++){idx=frameIndexFor(ss[i],baseLeft,W,fg);key=String(idx);if(!bins[key])bins[key]=[];it=footprint(ss[i]);root=boxOf(ss[i]);left=baseLeft+idx*(W+fg)+ml;top=baseBottom+H-mt;it._x=root.l-left;it._y=top-root.t;bins[key].push(it);}
-  doc.BeginCommandGroup('DHL Nameset Layout - True Contour Nest V8.26');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
-  for(key in bins)if(bins.hasOwnProperty(key)){plan=pack(bins[key],uw,uh,g);if(!plan)continue;idx=parseInt(key,10)||0;left=baseLeft+idx*(W+fg)+ml;top=baseBottom+H-mt;for(i=0;i<plan.length;i++){p=plan[i];p.item.shape.CenterX=left+p.x+p.item.w/2;p.item.shape.CenterY=top-p.y-p.item.h/2;moved++;}}
-  try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(r){}return moved>0;
- }catch(e){try{if(opt)a.Optimization=false;}catch(x){}try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(x2){}try{doc.Unit=old;}catch(x3){}return false;}
+  doc.Unit=3;
+  for(i=0;i<patterns.length;i++){
+   items=patternItems(ss,patterns[i]);plan=pack(items,uw,uh,g);if(!plan)continue;depth=planDepth(plan);
+   if(!best||depth<best.depth-.001)best={plan:plan,depth:depth,name:names[i]};
+  }
+  if(!best)return false;
+  page=a.ActivePage;baseLeft=Number(page.CenterX)-W/2;baseBottom=Number(page.CenterY)-H/2;top=baseBottom+H-mt;
+  doc.BeginCommandGroup('DHL Nameset Layout - Contour Primary Copies V8.33');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  makePrimaryFrame(page,baseLeft,baseBottom,W,H);
+  for(j=0;j<best.plan.length;j++){
+   p=best.plan[j];sh=p.item.shape;if(p.item.ang)sh.Rotate(p.item.ang);
+   sh.CenterX=baseLeft+ml+p.x+p.item.w/2;sh.CenterY=top-p.y-p.item.h/2;
+  }
+  try{range=a.CreateShapeRange();for(j=0;j<ss.length;j++)range.Add(ss[j]);range.CreateSelection();}catch(rs){}
+  try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;
+  try{window.DHL_LAST_NEST_SHAPES=ss.slice(0);window.DHL_LAST_CONTOUR_PRIMARY_DONE=true;window.DHL_LAST_CONTOUR_DEPTH_CM=Math.round(best.depth)/10;}catch(z){}
+  try{a.ActiveWindow.Refresh();}catch(r){}
+  if(res){res.setAttribute('data-used','1');res.innerHTML='<span class="v80-modebadge">'+(L()==='vi'?'Chế độ: CONTOUR PRIMARY':'Mode: CONTOUR PRIMARY')+'</span><br>✓ '+(L()==='vi'?'Đã xếp ':'Packed ')+ss.length+(L()==='vi'?' bản theo đường bao thực ngay từ đầu.':' copies by true contour from the start.')+'<span class="v817-plan">'+(L()==='vi'?'Chiều dài: ':'Length: ')+(Math.round(best.depth)/10)+' cm = '+(Math.round(best.depth)/1000)+' m<br>'+(L()==='vi'?'Mẫu xoay tốt nhất: ':'Best rotation pattern: ')+best.name+'</span>';}
+  return true;
+ }catch(e){
+  try{if(opt)a.Optimization=false;}catch(x){}
+  try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(x2){}
+  try{doc.Unit=old;}catch(x3){}
+  return false;
+ }
+}
+window.DHLContourPrimaryCopies=contourPrimaryCopies;
+function contourCompact(sourceShapes){
+ var appx=app(),doc=appx.ActiveDocument,old=doc.Unit,ss=(sourceShapes&&sourceShapes.length)?sourceShapes:selected(appx),
+ W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,fg=N('v77FrameGapInput',0)*10,
+ mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,
+ usableW=W-ml-mr,usableH=H-mt-mb,baseLeft,baseBottom,top,left,page,binDepth={},baseline=0,patterns=[[0],[90],[0,90],[90,0]],
+ best=null,depth,trial,items,sh,it,p,idx,i,j,k,cmd=false,opt=false,oldOrder,oldDeadline,oldFallback,moved=0;
+ if(ss.length<2||usableW<=0||usableH<=0)return false;
+ try{
+  doc.Unit=3;page=appx.ActivePage;baseLeft=Number(page.CenterX)-W/2;baseBottom=Number(page.CenterY)-H/2;
+  top=baseBottom+H-mt;left=baseLeft+ml;oldOrder=window.DHL_ORDER;oldDeadline=window.DHL_SEARCH_DEADLINE;
+  oldFallback=window.DHL_RECT_FALLBACKS;window.DHL_RECT_FALLBACKS=0;
+  for(i=0;i<ss.length;i++){
+   it=boxOf(ss[i]);idx=frameIndexFor(ss[i],baseLeft,W,fg);
+   binDepth[idx]=Math.max(binDepth[idx]||0,baseBottom+H-mt-it.t+it.h);
+  }
+  for(k in binDepth)if(binDepth.hasOwnProperty(k))baseline+=Math.max(0,binDepth[k]);
+  window.DHL_SEARCH_DEADLINE=new Date().getTime()+7000;
+  for(i=0;i<patterns.length;i++){
+   if(new Date().getTime()>window.DHL_SEARCH_DEADLINE)break;
+   items=[];
+   for(j=0;j<ss.length;j++){it=footprintAt(ss[j],patterns[i][j%patterns[i].length]);it._ord=j;items.push(it);}
+   for(k=0;k<3;k++){
+    if(new Date().getTime()>window.DHL_SEARCH_DEADLINE)break;
+    window.DHL_ORDER=['area','height','width'][k];trial=pack(items,usableW,usableH,g);
+    if(!trial||trial.length!==ss.length)continue;
+    depth=planDepth(trial);
+    if(!best||depth<best.depth)best={plan:trial.slice(0),depth:depth};
+   }
+  }
+  if(!best||best.depth>=baseline-.1){
+   window.DHL_CONTOUR_STATUS=best?'Không tìm được phương án ngắn hơn.':'Chưa tìm được vị trí hợp lệ.';
+   return false;
+  }
+  doc.BeginCommandGroup('DHL Global Contour Repack V8.33');cmd=true;
+  try{appx.Optimization=true;opt=true;}catch(oe){}
+  for(i=0;i<best.plan.length;i++){
+   p=best.plan[i];sh=p.item.shape;
+   if(p.item.ang)sh.Rotate(p.item.ang);
+   sh.CenterX=left+p.x+p.item.w/2;sh.CenterY=top-p.y-p.item.h/2;moved++;
+  }
+  try{if(opt)appx.Optimization=false;}catch(o2){}opt=false;
+  doc.EndCommandGroup();cmd=false;
+  window.DHL_LAST_CONTOUR_DEPTH_CM=Math.round(best.depth)/10;
+  window.DHL_CONTOUR_STATUS='Dàn lại toàn bộ Group: '+Math.round(baseline)/10+' cm → '+Math.round(best.depth)/10+' cm; fallback rectangle='+window.DHL_RECT_FALLBACKS;
+  try{appx.ActiveWindow.Refresh();}catch(refreshErr){}
+  return moved===ss.length;
+ }catch(err){
+  try{if(opt)appx.Optimization=false;}catch(x1){}
+  try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(x2){}
+  window.DHL_CONTOUR_STATUS='Lỗi: '+String(err.message||err);return false;
+ }finally{
+  try{window.DHL_ORDER=oldOrder;window.DHL_SEARCH_DEADLINE=oldDeadline;window.DHL_RECT_FALLBACKS=oldFallback;}catch(x3){}
+  try{doc.Unit=old;}catch(x4){}
+ }
 }
 var oldRun=null,oldUndo=null,lastContour=false,hooked=false;
-function run(){var ok=oldRun?oldRun():false,res;if(ok!==false){lastContour=contourCompact();if(lastContour){res=E('v77NestResult');if(res)res.innerHTML+='<br><span class="v815-sub">'+(L()==='vi'?'✓ Dàn tinh theo ĐƯỜNG BAO THỰC của đối tượng/Group (DisplayCurve), cho phép chồng bounding box nếu đường bao thật không va nhau.':'✓ Final packing uses the TRUE OBJECT/GROUP CONTOUR (DisplayCurve), so bounding boxes may overlap when real contours do not.')+'</span>';}}return ok;}
+function run(){var a0,saved=[],targets=[],range,i,ok,res,depth,primary=false;try{a0=app();saved=selected(a0);}catch(e){}try{window.DHL_LAST_NEST_SHAPES=[];}catch(clr){}ok=oldRun?oldRun():false;if(ok!==false){try{primary=!!window.DHL_LAST_CONTOUR_PRIMARY_DONE;window.DHL_LAST_CONTOUR_PRIMARY_DONE=false;}catch(pr){}try{targets=(window.DHL_LAST_NEST_SHAPES&&window.DHL_LAST_NEST_SHAPES.length)?window.DHL_LAST_NEST_SHAPES:saved;}catch(tg){targets=saved;}try{if(a0&&targets.length){range=a0.CreateShapeRange();for(i=0;i<targets.length;i++)range.Add(targets[i]);range.CreateSelection();}}catch(rs){}lastContour=primary?true:contourCompact(targets);try{depth=window.DHL_LAST_CONTOUR_DEPTH_CM;}catch(dd){depth=null;}res=E('v77NestResult');if(res){if(lastContour)res.innerHTML+='<br><span class="v830-contour-ok">'+(L()==='vi'?'✓ V8.33: contour đã chạy trên đúng '+targets.length+' vật thực tế'+(depth?' · chiều dài sau contour ~'+depth+' cm':'')+'.':'✓ V8.33: contour ran on the actual '+targets.length+' packed objects'+(depth?' · contour length ~'+depth+' cm':'')+'.')+'</span>';else if(targets.length>1)res.innerHTML+='<br><span class="v830-contour-warn">'+String(window.DHL_CONTOUR_STATUS||'Contour không cải thiện chiều dài; giữ kết quả cũ.')+'</span>';}}return ok;}
 function undo(){var a;if(lastContour){try{a=app();a.ActiveDocument.Undo();}catch(e){}lastContour=false;}if(oldUndo)return oldUndo();}
 function finish(){
  var b=E('v77NestBtn'),u=E('v77UndoNest'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];
  if(!b){setTimeout(finish,250);return;}if(!hooked){oldRun=window.V77NestSelected;oldUndo=window.V77Undo;hooked=true;}
  window.V77NestSelected=run;window.V77Undo=undo;b.onclick=run;if(u)u.onclick=undo;
- if(v&&v.length)v[0].innerHTML='v8.26';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.26 · true-contour nesting · VI / EN';
+ if(v&&v.length)v[0].innerHTML='v8.33';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.33 · contour-primary repeated-copy nesting · VI / EN';
 }
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,13400);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,13400);});else setTimeout(finish,13600);
 })();
