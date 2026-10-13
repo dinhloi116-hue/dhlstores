@@ -15,7 +15,7 @@
 - [x] Kiểm tra trang storefront desktop, full regression 191 passed / 2 skipped, TypeScript và build production; sẵn sàng đồng bộ GitHub main.
 
 ## Đồng bộ giao diện web/mobile theo mẫu marketplace — 2026-10-13
-- [ ] Chuyển catalog sang lưới 2 cột mobile, ảnh vuông lớn, tên/giá dễ đọc và card gọn.
-- [ ] Tái bố cục ProductDetail: breadcrumb, gallery lớn + thumbnail ngang, giá/giảm giá/trạng thái và CTA rõ ràng.
-- [ ] Giữ đầy đủ SKU, tồn kho, Order 7 ngày, review và sản phẩm liên quan; không làm mất luồng mua hiện tại.
-- [ ] Bổ sung hồi quy, chạy test/build và chụp kiểm tra desktop/mobile.
+- [x] Chuyển catalog sang lưới 2 cột mobile, ảnh vuông lớn, tên/giá dễ đọc và card gọn.
+- [x] Tái bố cục ProductDetail: breadcrumb, gallery lớn + thumbnail ngang, giá/giảm giá/trạng thái và CTA rõ ràng.
+- [x] Giữ đầy đủ SKU, tồn kho, Order 7 ngày, review và sản phẩm liên quan; không làm mất luồng mua hiện tại.
+- [x] Bổ sung hồi quy, chạy test/build và chụp kiểm tra desktop/mobile.
