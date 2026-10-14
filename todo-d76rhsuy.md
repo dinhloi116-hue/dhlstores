@@ -44,3 +44,8 @@
 - [x] Cải thiện SEO hiển thị: title, description, Product JSON-LD có ngôn ngữ/size/phiên bản rõ ràng.
 - [x] Thu gọn khung YouTube Shorts để không lấn át CTA, đánh giá và sản phẩm liên quan.
 - [x] Chạy 195 test passed/2 skipped, TypeScript, build, screenshot responsive và DOM browser; sẵn sàng tự động commit/push main.
+
+## Sửa tràn ngang bảng SKU trên màn hình hẹp — 2026-10-15
+- [x] Điều chỉnh grid/cột SKU: mobile dùng 2 cột ảnh/phiên bản, vùng số lượng & hành động chiếm cả chiều ngang; desktop giữ đủ 4 cột.
+- [x] Đưa các nút hành động xuống dòng hợp lý trên mobile, giữ preview ảnh không che nội dung.
+- [x] Hồi quy SKU responsive 33/33 passed, TypeScript và production build đạt; screenshot tool vẫn có lúc chờ query dữ liệu nên cần kiểm tra lại trên thiết bị thật nếu cần.

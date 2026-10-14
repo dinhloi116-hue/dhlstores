@@ -94,7 +94,7 @@ describe("public SKU inventory presentation", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
     expect(source).toContain('className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4"');
-    expect(source).toContain('<span className="text-right">Số lượng</span>');
+    expect(source).toContain('<span className="col-span-2 text-right sm:col-span-1">Số lượng & hành động</span>');
     expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('Kho: {variant.stock}');
@@ -104,7 +104,8 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('const nextQuantity = Math.min(max, Math.max(0, Math.floor(requestedQuantity)))');
     expect(source).toContain('onClick={event => event.stopPropagation()}');
     expect(source).toContain('clientY - previewHeight - 16');
-    expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)_7rem]');
+    expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)]');
+    expect(source).toContain('col-span-2 flex min-w-0 flex-wrap items-end justify-end gap-1 sm:col-span-1');
     expect(source).toContain('hidden text-right sm:block');
     expect(source).toContain('lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_9rem_11rem]');
   });
