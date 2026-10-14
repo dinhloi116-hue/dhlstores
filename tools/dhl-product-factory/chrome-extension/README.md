@@ -1,15 +1,15 @@
 # DHL Product Factory — Chrome Extension (Manifest V3)
 
-**Bản 0.4.0: Gemini + Drive nguồn/đích + kiểm tra cập nhật GitHub + bộ cập nhật Windows.**
+**Bản 0.5.0: giao diện tab rộng, Gemini + Drive nguồn/đích + kiểm tra cập nhật GitHub + bộ cập nhật Windows.**
 
-Extension dành cho **6 shop**; dùng **Gemini** để phân tích ảnh, SEO Việt/Anh; tạo **9 prompt** gửi thủ công sang ChatGPT; tính giá và tải Excel. Mở qua Chrome **Side Panel**.
+Extension dành cho **6 shop**; dùng **Gemini** để phân tích ảnh, SEO Việt/Anh; tạo **9 prompt** gửi thủ công sang ChatGPT; tính giá và tải Excel. Mở trong **một tab Chrome rộng toàn màn hình**, không còn Side Panel.
 
 ## Cài đặt bản thử (Windows / Chrome)
 
 1. Giải nén `DHL_Product_Factory_Chrome_Extension.zip` vào một thư mục cố định trên máy, ví dụ `D:\\DHL-Product-Factory-Extension`.
 2. Mở Chrome → gõ `chrome://extensions` → bật **Chế độ dành cho nhà phát triển** (Developer mode).
 3. Chọn **Tải tiện ích đã giải nén** (Load unpacked) → chọn **thư mục có `manifest.json`**.
-4. Bấm biểu tượng tiện ích DHL Product Factory trên thanh Chrome. Side Panel sẽ mở.
+4. Bấm biểu tượng tiện ích DHL Product Factory trên thanh Chrome. Tab làm việc rộng toàn màn hình sẽ mở.
 5. Tab **Cài đặt**: lấy Gemini API key tại `https://aistudio.google.com/apikey`, nhập và lưu. Key chỉ lưu trong `chrome.storage.local`, **không** nằm trong GitHub.
 6. Tab **Sản phẩm**: chọn shop, nhập thông tin, đính kèm tối đa ba ảnh thật, nhấn **Phân tích bằng Gemini**.
 7. Tab **Nội dung** kiểm tra, sửa SEO Việt/Anh; tab **Prompt ảnh** tạo/copy 9 prompt, rồi gửi kèm ảnh thật sang ChatGPT.
@@ -140,3 +140,14 @@ Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổ
 - DHL STUDIO: ảnh quảng cáo phải có logo shop nhưng file in PET/artwork giao khách PHẢI KHÔNG bị chèn logo shop.
 - Câu lệnh ảnh đầy đủ của mỗi shop nằm trên Google Drive trong `TRUNG TÂM TẠO SẢN PHẨM - 6 SHOP` → thư mục shop → Google Docs `CÂU LỆNH TẠO ẢNH SẢN PHẨM — [SHOP]`; bộ TXT ZIP đặt tại root trung tâm. Cần đính kèm file logo thật khi copy prompt sang ChatGPT.
 - Mặc định 9 prompt riêng. Với preset áo người lớn DHL SPORTS đã duyệt 8 ảnh, ưu tiên đúng 8 ảnh hiện hành; prompt thứ 9 là ảnh thông tin tùy chọn.
+
+
+## Bản 0.5.0 — MỞ TOÀN BỘ TOOL TRONG MỘT TAB CHROME
+
+- Nhấp biểu tượng **DHL Product Factory** ở thanh công cụ Chrome: mở tab `chrome-extension://<EXTENSION_ID>/panel.html` độc lập, dùng toàn bộ chiều ngang cửa sổ.
+- Nhấp lại: chuyển về tab tool đã mở, không sinh nhiều tab trùng. Các khu vực xem ảnh, tài liệu Drive, form và 9 prompt đã được mở rộng; giao diện tự co trên màn hình nhỏ.
+- Bỏ quyền `sidePanel` và khai báo `side_panel` khỏi Manifest V3; không thêm quyền `tabs` toàn cục hoặc quyền truy cập trang web mới.
+- Giữ nguyên toàn bộ tính năng Gemini, Google Drive, SEO, giá, Excel, 9 prompt và cập nhật GitHub; không tự tạo/chỉnh ảnh khác.
+- Đã nâng phiên bản manifest lên 0.5.0 để nút kiểm tra GitHub nhận ra bản mới.
+- Với bản cài thủ công: chạy `CAP-NHAT-TOOL.cmd` trong thư mục cài, sau đó nhấn **Reload** tại `chrome://extensions`. Cấu hình Google OAuth Client ID được giữ theo cơ chế updater hiện có.
+- Nếu còn một Side Panel cũ đang mở, đóng nó sau khi Reload; bấm biểu tượng extension để mở tab mới.

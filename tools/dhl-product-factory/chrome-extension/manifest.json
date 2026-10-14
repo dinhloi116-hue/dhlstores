@@ -2,10 +2,9 @@
   "manifest_version": 3,
   "name": "DHL Product Factory — 6 Shop",
   "description": "Gemini phân tích sản phẩm, SEO VI/EN, 9 prompt ảnh ChatGPT, tính giá và xuất Excel.",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "minimum_chrome_version": "116",
   "permissions": [
-    "sidePanel",
     "storage",
     "activeTab",
     "scripting",
@@ -19,10 +18,7 @@
     "https://api.github.com/*"
   ],
   "action": {
-    "default_title": "Mở DHL Product Factory"
-  },
-  "side_panel": {
-    "default_path": "panel.html"
+    "default_title": "Mở DHL Product Factory — Tab toàn màn hình"
   },
   "background": {
     "service_worker": "background.js",

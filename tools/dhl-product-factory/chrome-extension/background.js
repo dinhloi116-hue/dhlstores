@@ -3,11 +3,30 @@ import {checkGithubVersion} from './lib/update-check.mjs';
 import {connectDrive,getDriveToken,disconnectDrive,driveConnectionStatus} from './lib/google-auth.mjs';
 import {resolveShop,resolveProductFolder,verifyProductFolder,uploadProductFile,listSourceFolder,loadSourceFile,driveAccount} from './lib/drive-sync.mjs';
 
+// Open a full-size browser tab (not a narrow Side Panel).
+// Re-use the tab if it is already open, so repeated toolbar clicks do not create duplicates.
+chrome.action.onClicked.addListener(async () => {
+  const url=chrome.runtime.getURL('panel.html');
+  try {
+    const tabs=await chrome.tabs.query({url});
+    const existing=tabs.find(tab=>Number.isInteger(tab.id));
+    if(existing){
+      await chrome.tabs.update(existing.id,{active:true});
+      if(Number.isInteger(existing.windowId)){
+        try { await chrome.windows.update(existing.windowId,{focused:true}); }
+        catch(e){ console.warn('Cannot focus Chrome window:',e); }
+      }
+    }else{
+      await chrome.tabs.create({url,active:true});
+    }
+  }catch(e){
+    console.error('Cannot reuse Product Factory tab:',e);
+    await chrome.tabs.create({url,active:true});
+  }
+});
 chrome.runtime.onInstalled.addListener(()=>{
-  chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:true}).catch(console.error);
   chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}).catch(console.error);
 });
-chrome.runtime.onStartup.addListener(()=>chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:true}).catch(console.error));
 
 async function geminiAnalyze(product){
   const {geminiKey,geminiModel}=await chrome.storage.local.get(['geminiKey','geminiModel']);
