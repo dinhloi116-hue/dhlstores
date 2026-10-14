@@ -131,3 +131,12 @@ Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổ
 **An toàn:** Cập nhật chỉ tải các file thuộc `tools/dhl-product-factory/chrome-extension` trong repo công khai `dinhloi116-hue/dhlstores`, nhánh `feature/dhl-product-factory-mvp-20261012`, chốt SHA commit GitHub trước khi tải, kiểm tra khóa công khai và tên tiện ích, không đổi cấu hình OAuth. Chỉ chạy file cập nhật khi tin tưởng repo/commit. Cập nhật thất bại được thiết kế phục hồi các file đã sao lưu; nếu gián đoạn giữa chừng hãy chạy lại. Không đăng nhập Google/Gemini qua script và không gửi token, mật khẩu hoặc API key lên GitHub.
 
 **Lưu ý phát hành:** PR #4 đang ở Draft; tool cập nhật từ nhánh phát triển chứ chưa phải kênh Chrome Web Store. Sau khi quy trình ổn định, có thể chuyển sang nhánh phát hành cố định hoặc Chrome Web Store để tận dụng cơ chế tự động cập nhật của Chrome.
+
+
+## v0.4.1 — QUY TẮC LOGO 6 SHOP (14/10/2026)
+
+- 5 shop DHL STUDIO, RABBIT STORE, STORE MIU MIU, MIU CLOTHING & BEAUTY, PHONG THỦY KHÁNH HÒA: mỗi prompt tạo ảnh bắt buộc đính kèm và dùng đúng logo shop gốc, đặt logo nhỏ trên ảnh bán hàng. Thiếu logo: báo CHỜ LOGO GỐC, không tự vẽ. Store Miu Miu chỉ dùng logo Thỏ Handmade khi SKU được chỉ định.
+- DHL SPORTS: KHÔNG chèn logo/watermark shop; giữ nguyên các huy hiệu/patch/logo vốn có trên hàng thật.
+- DHL STUDIO: ảnh quảng cáo phải có logo shop nhưng file in PET/artwork giao khách PHẢI KHÔNG bị chèn logo shop.
+- Câu lệnh ảnh đầy đủ của mỗi shop nằm trên Google Drive trong `TRUNG TÂM TẠO SẢN PHẨM - 6 SHOP` → thư mục shop → Google Docs `CÂU LỆNH TẠO ẢNH SẢN PHẨM — [SHOP]`; bộ TXT ZIP đặt tại root trung tâm. Cần đính kèm file logo thật khi copy prompt sang ChatGPT.
+- Mặc định 9 prompt riêng. Với preset áo người lớn DHL SPORTS đã duyệt 8 ảnh, ưu tiên đúng 8 ảnh hiện hành; prompt thứ 9 là ảnh thông tin tùy chọn.
