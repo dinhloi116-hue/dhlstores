@@ -9,7 +9,8 @@ $Files=@(
  'README.md','manifest.json','background.js','panel.html','panel.css','panel.js',
  'lib/core.mjs','lib/drive-sync.mjs','lib/google-auth.mjs','lib/update-check.mjs','lib/xlsx-lite.mjs',
  'test/drive-sync.test.mjs','test/extension.test.mjs','test/update-check.test.mjs',
- 'configure-drive.ps1','CAU-HINH-DRIVE.cmd','CAP-NHAT-TOOL.cmd','cap-nhat-tu-git.ps1'
+ 'configure-drive.ps1','CAU-HINH-DRIVE.cmd','CAP-NHAT-TOOL.cmd','cap-nhat-tu-git.ps1',
+ 'native-updater/Host.cs','cai-dat-nut-cap-nhat.ps1','CAI-DAT-NUT-CAP-NHAT.cmd'
 )
 function Read-Manifest([string]$Path) {
   return Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json

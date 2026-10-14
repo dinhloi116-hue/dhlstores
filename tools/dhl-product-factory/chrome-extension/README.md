@@ -151,3 +151,14 @@ Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổ
 - Đã nâng phiên bản manifest lên 0.5.0 để nút kiểm tra GitHub nhận ra bản mới.
 - Với bản cài thủ công: chạy `CAP-NHAT-TOOL.cmd` trong thư mục cài, sau đó nhấn **Reload** tại `chrome://extensions`. Cấu hình Google OAuth Client ID được giữ theo cơ chế updater hiện có.
 - Nếu còn một Side Panel cũ đang mở, đóng nó sau khi Reload; bấm biểu tượng extension để mở tab mới.
+
+
+## Bản 0.6.0 — NÚT CẬP NHẬT NGAY TỪ GITHUB TRONG TAB TOOL
+
+- Lần đầu trên Windows: cài bản 0.6.0 từ ZIP vào cùng thư mục cài extension (cẩn thận giữ `oauth2.client_id` đã cấu hình). Nhấp đúp **`CAI-DAT-NUT-CAP-NHAT.cmd`** để tạo một native host EXE bằng .NET Framework có sẵn trên Windows và đăng ký cho tài khoản hiện tại, không cần quyền administrator.
+- Từ lần sau: mở DHL Product Factory → Cài đặt → **Cập nhật ngay từ GitHub**. Nút kiểm tra Native Messaging và phiên bản. Nếu có bản mới, bộ cập nhật tải các file từ commit GitHub đã chốt, kiểm tra tên+khóa công khai tiện ích, sao lưu file cũ, giữ lại OAuth Client ID và khởi động lại extension.
+- Nếu bản đã là mới nhất, tool thông báo và không ghi file. Nếu bộ cập nhật chưa cài, thông báo chạy file cài đặt một lần thay vì báo thành công giả.
+- Chỉ extension ID cố định `ojbejkjaalblfimeojmobicanhbipkel` được cấp quyền dùng native host. Host chỉ nhận thông điệp `ping` hoặc `update`; không nhận URL, đường dẫn, lệnh shell từ web.
+- Quyền Chrome mới: `nativeMessaging`. Bộ cập nhật chạy cục bộ, không gửi API key Gemini, token OAuth, mật khẩu hoặc hồ sơ khách hàng tới GitHub.
+- **Giới hạn:** chưa kiểm thử host C# và trình cài đặt trên Windows/Chrome thật. Kiểm thử Node/Chromium Linux không thay thế được bước chạy thử lần đầu; nếu cấu hình Windows chặn .NET compiler/registry, dùng `CAP-NHAT-TOOL.cmd` như phương án dự phòng.
+- **Từ v0.5.0 nâng cấp lần đầu:** bộ cập nhật cũ không có các file host mới trong danh mục tải. Tải ZIP v0.6.0, giữ cấu hình OAuth trong manifest cũ, thêm các file mới vào cùng thư mục và chạy `CAI-DAT-NUT-CAP-NHAT.cmd` một lần. Sau đó chỉ cập nhật qua nút trong tool.

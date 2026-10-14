@@ -194,12 +194,35 @@ $('saveToDrive').onclick=async()=>{
 
 
 // GitHub version checker. Chrome MV3 cannot overwrite its own unpacked files.
+$('updateNow').onclick=async()=>{
+  const btn=$('updateNow');btn.disabled=true;
+  const status=$('gitUpdateStatus');
+  status.textContent='Đang kiểm tra phiên bản trên GitHub...';
+  try{
+    await message({type:'local-updater-ping'});
+    const remote=await message({type:'github-update-check'});
+    if(remote.upToDate||!remote.updateAvailable){
+      status.textContent='Tool đã ở phiên bản mới nhất: v'+remote.latestVersion+'. Không cần cập nhật.';
+      notify('Đã ở phiên bản mới nhất.');return;
+    }
+    status.textContent='Tìm thấy v'+remote.latestVersion+'. Đang dùng bộ cập nhật Windows để tải file từ GitHub, xin chờ...';
+    const result=await message({type:'local-updater-update'});
+    status.textContent='Đã cập nhật v'+result.version+'. Đang tải lại Chrome Extension...';
+    notify('Cập nhật thành công. Tool sẽ tải lại.');
+    setTimeout(()=>{try{chrome.runtime.reload();}catch(e){notify('Đã cập nhật. Hãy bấm Reload tại chrome://extensions.',false);}},1800);
+    // A hard page refresh ensures open tabs render files from the newly installed version.
+    setTimeout(()=>location.reload(),3600);
+  }catch(e){
+    status.textContent='Không cập nhật được: '+e.message;
+    notify(e.message,false);
+  }finally{btn.disabled=false;}
+};
 $('checkGitUpdate').onclick=async()=>{
   const btn=$('checkGitUpdate');btn.disabled=true;$('gitUpdateStatus').textContent='Đang đối chiếu phiên bản trên GitHub...';
   try{
     const result=await message({type:'github-update-check'});
     $('gitUpdateStatus').textContent=result.updateAvailable
-      ?`Có phiên bản mới: ${result.latestVersion} (đang dùng ${result.currentVersion}). Mở thư mục cài, nhấp đúp CAP-NHAT-TOOL.cmd, sau đó nhấn Reload tại chrome://extensions.`
+      ?`Có phiên bản mới: ${result.latestVersion} (đang dùng ${result.currentVersion}). Hãy bấm Cập nhật ngay từ GitHub.`
       :result.upToDate?`Đã là phiên bản mới nhất: ${result.currentVersion}.`:
         `Phiên bản trên GitHub: ${result.latestVersion}, hiện tại: ${result.currentVersion}. Không cần hạ cấp.`;
     notify(result.updateAvailable?'Phát hiện bản cập nhật từ GitHub.':'Đã kiểm tra phiên bản trên GitHub.');

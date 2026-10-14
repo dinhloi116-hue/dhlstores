@@ -70,6 +70,21 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
   (async()=>{
     if(message.type==='analyze')return {draft:await geminiAnalyze(message.product)};
     if(message.type==='github-update-check')return await checkGithubVersion(chrome.runtime.getManifest());
+    if(message.type==='local-updater-ping'){
+      try{return await chrome.runtime.sendNativeMessage('vn.dhl.product_factory_updater',{command:'ping'});}
+      catch(e){throw Error('Chưa cài bộ cập nhật một lần trên Windows. Mở CAI-DAT-NUT-CAP-NHAT.cmd trong thư mục tool. Chi tiết: '+e.message);}
+    }
+    if(message.type==='local-updater-update'){
+      try{
+        const result=await chrome.runtime.sendNativeMessage('vn.dhl.product_factory_updater',{command:'update'});
+        if(!result||result.ok!==true)throw Error(result?.message||'Bộ cập nhật trả lỗi.');
+        return result;
+      }catch(e){
+        if(/native messaging host|Specified native messaging|host not found|forbidden/i.test(e.message||''))
+          throw Error('Chưa cài bộ cập nhật trên Windows. Chạy CAI-DAT-NUT-CAP-NHAT.cmd một lần rồi thử lại.');
+        throw e;
+      }
+    }
     if(message.type==='backend')return await backendRequest(message);
     if(message.type==='drive-connect'){
       await connectDrive();
