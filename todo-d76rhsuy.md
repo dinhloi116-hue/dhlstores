@@ -60,3 +60,9 @@
 - [x] Bỏ khối chọn hình thức mua khỏi khu vực chọn SKU.
 - [x] Hiển thị lựa chọn Mua ngay/Order trong hộp thanh toán trước địa chỉ và phương thức thanh toán.
 - [x] Giữ nguyên tồn kho, giá Order và luồng tạo đơn; 196 passed, 2 skipped, TypeScript/build/diff check đạt.
+
+## Cải tổ toàn bộ trang sản phẩm theo bố cục Shopee — 2026-10-15
+- [x] Bỏ khung chiều cao cố định và vùng cuộn lồng nhau ở phần sản phẩm đầu trang.
+- [x] Tổ chức lại phần đầu thành gallery bên trái, thông tin/mua hàng bên phải; đưa bảng SKU ra full-width để không cắt thao tác.
+- [x] Đưa mô tả, thông số, video, đánh giá và sản phẩm liên quan thành các khối tuần tự bên dưới; browser xác minh specs/video.
+- [x] Full regression 196 passed/2 skipped, TypeScript, production build và diff check đạt; Chromium mobile 390px xác minh 15 SKU, specs, video và không overflow.

@@ -38,7 +38,7 @@ describe("public SKU inventory presentation", () => {
   it("keeps variant identity and actions in readable marketplace regions", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("Phiên bản / SKU");
+    expect(source).toContain("Thông tin phiên bản / SKU");
     expect(source).toContain("Khả dụng & thao tác");
     expect(source).toContain('min-w-0 flex w-full flex-col items-stretch justify-end gap-1');
   });
@@ -64,8 +64,8 @@ describe("public SKU inventory presentation", () => {
     expect(source).not.toContain('purchaseModes.after(purchaseActions)');
     expect(source).not.toContain('purchaseActions.after(panel)');
     expect(source).toContain('panel.before(purchaseActions)');
-    expect(source).toContain('max-h-72 overflow-y-auto');
-    expect(source).toContain('lg:col-span-5 lg:h-full lg:overflow-y-auto lg:pr-3');
+    expect(source).not.toContain('max-h-72 overflow-y-auto');
+    expect(source).toContain('lg:col-span-5');
   });
 
   it("shows a synchronized desktop zoom pane and mobile image dialog", () => {
@@ -93,7 +93,7 @@ describe("public SKU inventory presentation", () => {
   it("keeps quantity controls visible in the compact inventory table", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4"');
+    expect(source).toContain('className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3"');
     expect(source).toContain('>Khả dụng & thao tác</span>');
     expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
@@ -105,7 +105,7 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('onClick={event => event.stopPropagation()}');
     expect(source).toContain('clientY - previewHeight - 16');
     expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)]');
-    expect(source).toContain('sm:grid-cols-[4rem_minmax(0,1fr)_minmax(14rem,auto)]');
+    expect(source).toContain('lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_11rem]');
     expect(source).toContain('min-w-0 flex w-full flex-col items-stretch justify-end gap-1');
   });
 
@@ -230,7 +230,7 @@ describe("public SKU inventory presentation", () => {
   it("shows a compact SKU thumbnail beside the variant name", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('className="h-8 w-8 shrink-0 rounded border border-slate-200 bg-white object-contain"');
+    expect(source).toContain('className={`h-11 w-11 overflow-hidden rounded-lg border border-slate-200 bg-slate-50');
     expect(source).toContain("formatVariantOptions(variant)");
   });
 
@@ -252,10 +252,11 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("const singleVariant = variants.length === 1 ? variants[0] : null");
     expect(source).toContain("SKU duy nhất · chọn số lượng");
     expect(source).toContain("product.type === \"physical\" && variants.length > 1");
-    expect(source).toContain("{variants.length > 1 ? <><div className=\"mt-4\">{skuBatchSelector}</div>");
+    expect(source).toContain("{variants.length > 1 ? <><div className=\"relative z-10 mt-3");
+    expect(source).toContain("{skuBatchSelector && <div className=\"mt-6\">{skuBatchSelector}</div>}");
     expect(source).toContain("<div className=\"space-y-2 p-2 sm:p-3\">");
     expect(source).toContain("rounded-xl border px-3 py-3 transition-all duration-200");
-    expect(source).toContain("col-span-full flex flex-wrap items-center");
+    expect(source).toContain("col-span-2 min-w-0 max-w-full flex flex-wrap items-center");
     expect(source).toContain("skuStockFilter");
     expect(source).toContain("setAllVisibleVariantQuantities(1)");
     expect(source).toContain("Chọn tất cả");
@@ -279,8 +280,8 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("const inStockSkuCount = variants.filter");
     expect(source).toContain("const totalSkuStock = variants.reduce");
     expect(source).toContain("Kho khả dụng: {totalSkuStock}");
-    expect(source).toContain("const lowStock = !outOfStock");
-    expect(source).toContain('lowStock ? `Sắp hết · ${variant.stock}`');
+    expect(source).toContain("const lowStock = !outOfStock && !isPreorder && variant.stock <= 5");
+    expect(source).toContain('variant.stock < 10 ? "text-rose-700"');
     expect(source).toContain('outOfStock ? "Hết hàng"');
     expect(source).toContain('aria-label={variant.image ? `Mở ảnh ${formatVariantOptions(variant)}`');
     expect(source).toContain('Xem ảnh');
