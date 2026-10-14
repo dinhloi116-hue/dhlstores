@@ -29,4 +29,4 @@
 - [x] Đọc thư mục Drive, nội dung VI/EN, workbook 15 SKU và 12 ảnh preview/chi tiết.
 - [x] Tạo sản phẩm physical song ngữ trong danh mục Quần Áo Bóng Đá, bố cục marketplace, slug `ao-bong-da-argentina-messi-last-dance-2024-player`.
 - [x] Lưu 15 SKU theo 3 phiên bản: Áo trơn 329.000đ, in Name M10 399.000đ, M10 + Copa 2024 449.000đ; tồn kho giữ 0 vì workbook không có số lượng tồn.
-- [ ] Xác minh storefront desktop/mobile và ghi nhận giới hạn dữ liệu tồn kho nếu cần.
+- [x] Xác minh storefront desktop bằng browser DOM: tên EN, gallery 12 ảnh và 15 ô số lượng SKU đã render; xác minh mobile viewport 390px bằng Chromium headless sau 12 giây: tên VI, gallery 12 ảnh, 15 SKU và không còn trạng thái loading; tồn kho giữ 0 vì nguồn không cung cấp quantity.
