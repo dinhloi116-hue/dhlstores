@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import CustomerContactHub from "@/components/CustomerContactHub";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { getComparedProductIds } from "@/lib/customer-tools";
+import { dhlSportsLogo } from "@/lib/dhlSportsLogo";
 
 const toolCatalog = [
   { key: "notebook-labels", name: "Tạo Nhãn Vở Online", description: "Nhập Excel, dàn nhãn A4 và xuất PDF/PNG.", href: "/tools/notebook-labels", group: "In ấn", icon: BookOpen, tone: "amber" },
@@ -229,7 +230,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
   };
 
-  const logoPath = "/manus-storage/pasted_file_Q7bOoa_image_07d9b359.png";
+  const logoPath = dhlSportsLogo;
   const submitLocalAuth = (event: React.FormEvent) => {
     event.preventDefault();
     if (authMode === 'signup') {
