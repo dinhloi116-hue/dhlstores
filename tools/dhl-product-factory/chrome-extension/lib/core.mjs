@@ -37,7 +37,7 @@ export function makeGeminiRequest(product){
   if(!Object.hasOwn(SHOPS,product.shop))throw Error('Shop không hợp lệ.');
   const images=product.images||[];
   if(!Array.isArray(images)||images.length>3)throw Error('Tối đa 3 ảnh.');
-  const parts=[{text:JSON.stringify({shop:product.shop,shopRule:SHOPS[product.shop],name:String(product.name||'').slice(0,180),sku:String(product.sku||'').slice(0,120),category:String(product.category||'').slice(0,200),variants:String(product.variants||'').slice(0,2000),notes:String(product.notes||'').slice(0,5000),pageUrl:String(product.pageUrl||'').slice(0,500)})}];
+  const parts=[{text:JSON.stringify({shop:product.shop,shopRule:SHOPS[product.shop],name:String(product.name||'').slice(0,180),sku:String(product.sku||'').slice(0,120),category:String(product.category||'').slice(0,200),variants:String(product.variants||'').slice(0,2000),notes:String(product.notes||'').slice(0,5000),sourceDocuments:(product.sourceDocuments||[]).slice(0,5).map(d=>({name:String(d.name||'').slice(0,120),text:String(d.text||'').slice(0,8500)})),pageUrl:String(product.pageUrl||'').slice(0,500)})}];
   for(const dataUrl of images){
     const m=/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
     if(!m||m[2].length>4_200_000)throw Error('Ảnh không hợp lệ, mỗi ảnh tối đa khoảng 3MB.');

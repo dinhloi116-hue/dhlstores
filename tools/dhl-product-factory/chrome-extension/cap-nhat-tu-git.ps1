@@ -8,7 +8,9 @@ $ExpectedName="DHL Product Factory $([char]0x2014) 6 Shop"
 $Files=@(
  'README.md','manifest.json','background.js','panel.html','panel.css','panel.js',
  'lib/core.mjs','lib/drive-sync.mjs','lib/google-auth.mjs','lib/update-check.mjs','lib/xlsx-lite.mjs',
+ 'lib/product-input.mjs','lib/source-docs.mjs',
  'test/drive-sync.test.mjs','test/extension.test.mjs','test/update-check.test.mjs',
+ 'test/product-input.test.mjs','test/source-docs.test.mjs','test/workflow.test.mjs',
  'configure-drive.ps1','CAU-HINH-DRIVE.cmd','CAP-NHAT-TOOL.cmd','cap-nhat-tu-git.ps1',
  'native-updater/Host.cs','cai-dat-nut-cap-nhat.ps1','CAI-DAT-NUT-CAP-NHAT.cmd'
 )

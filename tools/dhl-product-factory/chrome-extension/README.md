@@ -162,3 +162,16 @@ Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổ
 - Quyền Chrome mới: `nativeMessaging`. Bộ cập nhật chạy cục bộ, không gửi API key Gemini, token OAuth, mật khẩu hoặc hồ sơ khách hàng tới GitHub.
 - **Giới hạn:** chưa kiểm thử host C# và trình cài đặt trên Windows/Chrome thật. Kiểm thử Node/Chromium Linux không thay thế được bước chạy thử lần đầu; nếu cấu hình Windows chặn .NET compiler/registry, dùng `CAP-NHAT-TOOL.cmd` như phương án dự phòng.
 - **Từ v0.5.0 nâng cấp lần đầu:** bộ cập nhật cũ không có các file host mới trong danh mục tải. Tải ZIP v0.6.0, giữ cấu hình OAuth trong manifest cũ, thêm các file mới vào cùng thư mục và chạy `CAI-DAT-NUT-CAP-NHAT.cmd` một lần. Sau đó chỉ cập nhật qua nút trong tool.
+
+
+## v0.7.0 — LUỒNG THÔNG TIN NGUỒN → PHÂN TÍCH → BÁN HÀNG
+
+- Tab Sản phẩm bao gồm ba bước: chọn/nhập nguồn (ảnh, ghi chú, TXT/MD/CSV/JSON/HTML/DOCX/XLSX trên máy hoặc Drive), Phân tích sản phẩm bằng Gemini (không tự chuyển tab), sau đó người dùng xác minh vốn, phí, cân nặng kiện, kích thước vận chuyển và loại muốn bán.
+- Có checkbox độc lập cho các hình thức Làm sẵn, Nguyên liệu DIY, Không in, Có in. Người dùng quyết định. Các nhóm phân loại Màu, Size, Kiểu/loại tối đa 2 nhóm/sản phẩm khi xuất sàn.
+- Bảng SKU tự sinh từ dữ liệu người dùng xác nhận, không bịa giá bán/tồn kho; có thể sửa từng dòng và đồng bộ sang trường xuất BigSeller/Lazada.
+- Đầu vào giá vốn, phí, cân nặng và SKU nằm trong Sản phẩm; tab Xuất file dùng trực tiếp các ô đó, không phải nhập lại. Hồ sơ sản phẩm.xlsx và JSON trên Drive lưu thông tin bán hàng và kiện vận chuyển. Không thay mẫu import gốc/giá Shopee tổng.
+- XLSX/DOCX đọc các chuỗi XML cơ bản ở máy bằng Web DecompressionStream (không tính công thức trong Excel; nội dung Office phức tạp có thể cần xác minh bằng mắt). Tài liệu nguồn chỉ gửi đến Gemini sau khi nhấn Phân tích.
+- Giới hạn: 5 file nguồn mỗi lần, 5 MB/file; tối đa 3 ảnh; text từ nguồn có thể cắt bớt theo giới hạn.
+
+
+Trên tab toàn màn hình, nút "Dán văn bản đã sao chép từ web" có thể đọc clipboard khi Chrome cấp quyền theo thao tác người dùng; nếu bị từ chối thì dán trực tiếp bằng Ctrl+V. Không tự đọc nội dung những tab đang mở.

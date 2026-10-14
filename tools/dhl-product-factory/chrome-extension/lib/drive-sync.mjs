@@ -105,7 +105,8 @@ export async function verifyProductFolder(token,{shop,sku,folderId},fetchImpl=fe
 // Browse source materials directly with the extension's OAuth connection.
 // Every folder and file is checked to be inside the selected existing shop.
 const IMAGE_SOURCE_MIMES=new Set(['image/png','image/jpeg','image/webp']);
-const TEXT_SOURCE_MIMES=new Set(['text/plain','text/markdown','application/json','application/vnd.google-apps.document']);
+const TEXT_SOURCE_MIMES=new Set(['text/plain','text/markdown','text/csv','application/json','application/vnd.google-apps.document']);
+const OFFICE_SOURCE_MIMES=new Set(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
 export async function assertSourceFolder(token,shop,folderId,fetchImpl=fetch){
   const shopFolder=await resolveShop(token,shop,fetchImpl);
   const currentId=folderId||shopFolder.id;
@@ -129,25 +130,25 @@ export async function assertSourceFolder(token,shop,folderId,fetchImpl=fetch){
 export async function listSourceFolder(token,{shop,folderId=''},fetchImpl=fetch){
   const folder=await assertSourceFolder(token,shop,folderId,fetchImpl);
   const entries=await list(token,folder.id,'',fetchImpl);
-  return {folder,shopRootId:DRIVE_SHOPS[shop],entries:entries.filter(f=>f.mimeType===FOLDER_MIME||IMAGE_SOURCE_MIMES.has(f.mimeType)||TEXT_SOURCE_MIMES.has(f.mimeType)||f.mimeType==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'||f.mimeType==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'||f.mimeType==='image/svg+xml').map(f=>({id:f.id,name:f.name,mimeType:f.mimeType,size:Number(f.size||0),supported: f.mimeType===FOLDER_MIME||IMAGE_SOURCE_MIMES.has(f.mimeType)||TEXT_SOURCE_MIMES.has(f.mimeType)})).sort((a,b)=>(b.mimeType===FOLDER_MIME)-(a.mimeType===FOLDER_MIME)||a.name.localeCompare(b.name,'vi'))};
+  return {folder,shopRootId:DRIVE_SHOPS[shop],entries:entries.filter(f=>f.mimeType===FOLDER_MIME||IMAGE_SOURCE_MIMES.has(f.mimeType)||TEXT_SOURCE_MIMES.has(f.mimeType)||OFFICE_SOURCE_MIMES.has(f.mimeType)||OFFICE_SOURCE_MIMES.has(f.mimeType)||f.mimeType==='image/svg+xml').map(f=>({id:f.id,name:f.name,mimeType:f.mimeType,size:Number(f.size||0),supported: f.mimeType===FOLDER_MIME||IMAGE_SOURCE_MIMES.has(f.mimeType)||TEXT_SOURCE_MIMES.has(f.mimeType)||OFFICE_SOURCE_MIMES.has(f.mimeType)})).sort((a,b)=>(b.mimeType===FOLDER_MIME)-(a.mimeType===FOLDER_MIME)||a.name.localeCompare(b.name,'vi'))};
 }
 export async function loadSourceFile(token,{shop,folderId,fileId},fetchImpl=fetch){
   const folder=await assertSourceFolder(token,shop,folderId,fetchImpl);
   const file=await metadata(token,fileId,fetchImpl);
   if(!file.parents?.includes(folder.id))throw Error('File nguồn không nằm trực tiếp trong thư mục đã chọn.');
   const mime=file.mimeType;
-  if(!IMAGE_SOURCE_MIMES.has(mime)&&!TEXT_SOURCE_MIMES.has(mime))throw Error('File này chưa được hỗ trợ phân tích trực tiếp; hãy tải về và cung cấp file tương ứng.');
-  const isImage=IMAGE_SOURCE_MIMES.has(mime);
+  if(!IMAGE_SOURCE_MIMES.has(mime)&&!TEXT_SOURCE_MIMES.has(mime)&&!OFFICE_SOURCE_MIMES.has(mime))throw Error('File này chưa được hỗ trợ phân tích trực tiếp; hãy tải về và cung cấp file tương ứng.');
+  const isImage=IMAGE_SOURCE_MIMES.has(mime),isOffice=OFFICE_SOURCE_MIMES.has(mime);const limit=isImage?3_000_000:isOffice?5_000_000:200_000;
   const size=Number(file.size||0);
-  if(size>(isImage?3_000_000:200_000))throw Error('File nguồn quá lớn cho một lần phân tích.');
+  if(size>limit)throw Error('File nguồn quá lớn cho một lần phân tích.');
   const uri=mime==='application/vnd.google-apps.document'
     ?`https://www.googleapis.com/drive/v3/files/${verifiedId(fileId)}/export?mimeType=text%2Fplain`
     :`https://www.googleapis.com/drive/v3/files/${verifiedId(fileId)}?alt=media`;
   const response=await fetchImpl(uri,{headers:{Authorization:`Bearer ${token}`}});
   if(!response.ok)throw Error('Không đọc được tài liệu nguồn: HTTP '+response.status);
   const bytes=new Uint8Array(await response.arrayBuffer());
-  if(bytes.byteLength>(isImage?3_000_000:200_000))throw Error('File vượt dung lượng cho phép.');
-  if(isImage){let s='';for(let i=0;i<bytes.length;i+=16384)s+=String.fromCharCode(...bytes.subarray(i,i+16384));return {name:file.name,kind:'image',data:`data:${mime};base64,${btoa(s)}`};}
+  if(bytes.byteLength>limit)throw Error('File vượt dung lượng cho phép.');
+  if(isImage||isOffice){let s='';for(let i=0;i<bytes.length;i+=16384)s+=String.fromCharCode(...bytes.subarray(i,i+16384));return {name:file.name,kind:isOffice?'office':'image',data:isOffice?btoa(s):`data:${mime};base64,${btoa(s)}`};}
   const text=new TextDecoder('utf-8',{fatal:false}).decode(bytes).replace(/\u0000/g,'');
   return {name:file.name,kind:'text',data:text.slice(0,5000)};
 }

@@ -7,7 +7,7 @@ const root=dirname(dirname(fileURLToPath(import.meta.url)));
 const read=(p)=>readFile(join(root,p),'utf8');
 test('native messaging permission, stable identity and explicit one click button',async()=>{
  const m=JSON.parse(await read('manifest.json'));
- assert.equal(m.version,'0.6.0');assert.ok(m.permissions.includes('nativeMessaging'));
+ assert.equal(m.version,'0.7.0');assert.ok(m.permissions.includes('nativeMessaging'));
  assert.ok(!m.permissions.includes('tabs'));assert.ok(!m.permissions.includes('sidePanel'));
  const html=await read('panel.html');
  assert.match(html,/id="updateNow"/);assert.match(html,/Cập nhật ngay từ GitHub/);
