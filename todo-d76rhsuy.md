@@ -55,3 +55,8 @@
 - [x] Làm vùng thao tác đủ rộng, không cắt nút nhận thông báo, tăng giảm số lượng và mua ngay.
 - [x] Giữ bố cục dễ đọc trên desktop/mobile: desktop 3 cột, mobile 2 hàng; không dùng bảng ngang ép cột.
 - [x] Full regression 195 passed, 2 skipped; TypeScript, build và diff check đạt. Screenshot tool vẫn có lúc treo loading do query runtime.
+
+## Đưa lựa chọn Mua ngay/Order vào bước thanh toán — 2026-10-15
+- [x] Bỏ khối chọn hình thức mua khỏi khu vực chọn SKU.
+- [x] Hiển thị lựa chọn Mua ngay/Order trong hộp thanh toán trước địa chỉ và phương thức thanh toán.
+- [x] Giữ nguyên tồn kho, giá Order và luồng tạo đơn; 196 passed, 2 skipped, TypeScript/build/diff check đạt.

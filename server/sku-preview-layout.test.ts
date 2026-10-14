@@ -218,6 +218,15 @@ describe("public SKU inventory presentation", () => {
     expect(dataSource).toContain("phuongxa");
   });
 
+  it("keeps fulfillment choice in checkout instead of the SKU selection panel", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('id="checkout-fulfillment-title"');
+    expect(source).toContain("Chọn cách xử lý đơn trước khi nhập địa chỉ và thanh toán.");
+    expect(source).toContain("Bước 1 · Chọn phiên bản & xem tồn kho");
+    expect(source).not.toContain("Chọn hình thức mua trước");
+  });
+
   it("shows a compact SKU thumbnail beside the variant name", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
