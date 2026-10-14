@@ -273,6 +273,7 @@ export const products = mysqlTable("products", {
   image: text("image").notNull(),
   gallery: text("gallery"), // JSON array các URL ảnh bổ sung, ảnh đầu tiên là ảnh bìa
   fileUrl: text("fileUrl"), // Dành cho sản phẩm số (link tải file)
+  videoUrl: text("videoUrl"), // Link video YouTube giới thiệu sản phẩm
   fileSize: varchar("fileSize", { length: 64 }), // VD: "45 MB", "Vector AI/SVG"
   stock: int("stock").default(100).notNull(), // Dành cho sản phẩm vật lý (áo bóng đá)
   weightGrams: int("weightGrams").default(0).notNull(), // Khối lượng mặc định để tính phí SPX

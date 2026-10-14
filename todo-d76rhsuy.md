@@ -32,8 +32,8 @@
 - [x] Xác minh storefront desktop bằng browser DOM: tên EN, gallery 12 ảnh và 15 ô số lượng SKU đã render; xác minh mobile viewport 390px bằng Chromium headless sau 12 giây: tên VI, gallery 12 ảnh, 15 SKU và không còn trạng thái loading; tồn kho giữ 0 vì nguồn không cung cấp quantity.
 
 ## SEO động và video YouTube trong trang sản phẩm — 2026-10-15
-- [ ] Bổ sung metadata SEO động theo sản phẩm, canonical, Open Graph/Twitter và JSON-LD Product/VideoObject.
-- [ ] Bổ sung robots.txt, sitemap.xml và metadata SEO nền tảng màu xanh DHL Stores.
-- [ ] Lưu URL YouTube sản phẩm Argentina từ yt.txt và hiển thị trình phát YouTube responsive ngay trên trang sản phẩm.
-- [ ] Cho phép owner nhập/chỉnh URL YouTube trong biểu mẫu quản trị sản phẩm.
-- [ ] Chạy test, TypeScript, build và kiểm tra desktop/mobile; cập nhật checkpoint và GitHub main.
+- [x] Bổ sung metadata SEO động theo sản phẩm, canonical, Open Graph/Twitter và JSON-LD Product/VideoObject.
+- [x] Bổ sung robots.txt, sitemap.xml và metadata SEO nền tảng màu xanh DHL Stores.
+- [x] Lưu URL YouTube sản phẩm Argentina từ yt.txt và hiển thị trình phát YouTube responsive ngay trên trang sản phẩm.
+- [x] Cho phép owner nhập/chỉnh URL YouTube trong biểu mẫu quản trị sản phẩm.
+- [x] Chạy test 195 passed/2 skipped, TypeScript, production build và kiểm tra DOM desktop/mobile; đã xác minh iframe, title, canonical, JSON-LD.

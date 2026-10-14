@@ -10,6 +10,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { translations, getClientLanguage, Language } from "@/lib/i18n";
 import { catalogDescription, catalogName } from "@/lib/catalogLocale";
+import { parseYouTubeUrl } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -113,6 +114,38 @@ export default function ProductDetail() {
   const productName = product ? catalogName(product, lang) : "";
   const productDescription = product ? catalogDescription(product, lang) : "";
   const productSpecs = product ? (lang === "en" ? product.specsEn || product.specs : product.specs) : "";
+  const youtubeVideo = parseYouTubeUrl(product?.videoUrl);
+  useEffect(() => {
+    if (!product) return;
+    const canonicalUrl = `${window.location.origin}/product/${product.slug}`;
+    const imageUrl = product.gallery?.[0] || product.image;
+    const description = productDescription.slice(0, 160).trim() || `${productName} — DHL Stores`;
+    document.title = `${productName} | DHL Stores`;
+    const setMeta = (name: string, content: string, property = false) => {
+      const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let element = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!element) { element = document.createElement("meta"); element.setAttribute(property ? "property" : "name", name); document.head.appendChild(element); }
+      element.content = content;
+    };
+    setMeta("description", description);
+    setMeta("og:type", "product", true);
+    setMeta("og:title", productName, true);
+    setMeta("og:description", description, true);
+    setMeta("og:url", canonicalUrl, true);
+    setMeta("og:image", imageUrl, true);
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", productName);
+    setMeta("twitter:description", description);
+    setMeta("twitter:image", imageUrl);
+    let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+    canonical.href = canonicalUrl;
+    const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: productName, description, image: product.gallery?.length ? product.gallery : [product.image], url: canonicalUrl, brand: { "@type": "Brand", name: "DHL Stores" }, offers: { "@type": "Offer", url: canonicalUrl, priceCurrency: "VND", price: product.price, availability: product.type === "digital" || product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/PreOrder" } };
+    let schema = document.getElementById("dhl-product-jsonld") as HTMLScriptElement | null;
+    if (!schema) { schema = document.createElement("script"); schema.id = "dhl-product-jsonld"; schema.type = "application/ld+json"; document.head.appendChild(schema); }
+    schema.textContent = JSON.stringify(youtubeVideo ? { ...jsonLd, subjectOf: { "@type": "VideoObject", name: `${productName} — video giới thiệu`, description, thumbnailUrl: youtubeVideo.thumbnailUrl, embedUrl: youtubeVideo.embedUrl, contentUrl: youtubeVideo.watchUrl, uploadDate: new Date(product.createdAt).toISOString() } } : jsonLd);
+    return () => { schema?.remove(); };
+  }, [product, productName, productDescription, youtubeVideo?.id]);
   const productsQuery = trpc.store.products.useQuery({}, { enabled: Boolean(product?.id), staleTime: 60_000 });
   const variantsQuery = trpc.store.productVariants.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
   const wholesaleTiersQuery = trpc.store.productWholesaleTiers.useQuery({ productId: product?.id || 1 }, { enabled: Boolean(product?.id) });
@@ -685,6 +718,10 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
+        {youtubeVideo && <section className="mt-6 rounded-2xl border border-sky-200 bg-white p-4 shadow-sm sm:p-5" aria-labelledby="product-video-heading">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-700">Video sản phẩm</p><h2 id="product-video-heading" className="mt-1 text-xl font-black text-slate-900">Xem trực tiếp trên DHL Stores</h2></div><a href={youtubeVideo.watchUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-sky-200 px-3 py-2 text-xs font-black text-sky-700 transition hover:bg-sky-50">Mở YouTube</a></div>
+          <div className="mt-4 aspect-video overflow-hidden rounded-xl bg-slate-950 shadow-inner"><iframe src={youtubeVideo.embedUrl} title={`${productName} — video giới thiệu`} className="h-full w-full" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>
+        </section>}
         {<section className="mt-6 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

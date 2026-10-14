@@ -38,6 +38,7 @@ export interface ProductType {
   image: string;
   gallery?: string[];
   fileUrl?: string;
+  videoUrl?: string;
   fileSize?: string;
   stock: number;
   weightGrams?: number;
@@ -587,6 +588,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     image: product.image,
     gallery: gallery.length ? gallery : [product.image],
     fileUrl: product.fileUrl ?? undefined,
+    videoUrl: product.videoUrl ?? undefined,
     fileSize: product.fileSize ?? undefined,
     stock: product.stock,
     weightGrams: product.weightGrams,
@@ -1652,6 +1654,7 @@ export type CatalogProductInput = {
   image: string;
   gallery?: string[];
   fileUrl?: string;
+  videoUrl?: string;
   fileSize?: string;
   specs?: string;
   supplierUrl?: string;
@@ -1746,6 +1749,7 @@ export async function createProduct(input: CatalogProductInput) {
       image: input.image,
       gallery: input.gallery?.length ? JSON.stringify(input.gallery) : null,
       fileUrl: input.fileUrl ?? null,
+      videoUrl: input.videoUrl ?? null,
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
@@ -1774,6 +1778,7 @@ export async function createProduct(input: CatalogProductInput) {
     image: input.image,
     gallery: input.gallery,
     fileUrl: input.fileUrl,
+    videoUrl: input.videoUrl,
     fileSize: input.fileSize,
     stock: productType === "physical" ? input.stock : 9999,
     weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
@@ -1806,6 +1811,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       image: input.image,
       gallery: input.gallery?.length ? JSON.stringify(input.gallery) : null,
       fileUrl: input.fileUrl ?? null,
+      videoUrl: input.videoUrl ?? null,
       fileSize: input.fileSize ?? null,
       stock: productType === "physical" ? input.stock : 9999,
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,

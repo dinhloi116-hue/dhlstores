@@ -26,6 +26,7 @@ const productInput = z.object({
   image: z.string().trim().min(1).max(4096),
   gallery: z.array(z.string().trim().min(1).max(4096)).max(20).default([]),
   fileUrl: z.string().trim().max(4096).optional(),
+  videoUrl: z.string().trim().max(4096).refine(value => !value || /^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(value), "Video phải là link YouTube").optional(),
   fileSize: z.string().trim().max(64).optional(),
   specs: z.string().trim().max(5000).optional(),
   supplierUrl: z.string().trim().max(4096).optional(),
@@ -122,13 +123,14 @@ export const catalogAdminRouter = router({
 
   products: adminProcedure.query(() => db.getAdminProducts()),
   createProduct: adminProcedure.input(productInput).mutation(({ input }) =>
-    db.createProduct({ ...input, price: String(input.price), fileUrl: input.fileUrl || undefined, fileSize: input.fileSize || undefined, specs: input.specs || undefined, supplierUrl: input.supplierUrl || undefined }),
+    db.createProduct({ ...input, price: String(input.price), fileUrl: input.fileUrl || undefined, videoUrl: input.videoUrl || undefined, fileSize: input.fileSize || undefined, specs: input.specs || undefined, supplierUrl: input.supplierUrl || undefined }),
   ),
   updateProduct: adminProcedure.input(z.object({ productId: z.number().int().positive(), data: productInput })).mutation(({ input }) =>
     db.updateProduct(input.productId, {
       ...input.data,
       price: String(input.data.price),
       fileUrl: input.data.fileUrl || undefined,
+      videoUrl: input.data.videoUrl || undefined,
       fileSize: input.data.fileSize || undefined,
       specs: input.data.specs || undefined,
       supplierUrl: input.data.supplierUrl || undefined,
