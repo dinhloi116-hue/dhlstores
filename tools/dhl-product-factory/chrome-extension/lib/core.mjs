@@ -6,6 +6,17 @@ export const SHOPS = {
   'MIU CLOTHING & BEAUTY':'Mỹ phẩm và makeup: không bịa thành phần, công dụng, xuất xứ, hạn sử dụng.',
   'PHONG THỦY KHÁNH HÒA':'Kim loại, đồ decor: không đoán thành phần kim loại, lớp mạ hay tuyên bố hiệu quả phong thủy.'
 };
+// 14/10/2026: every shop except DHL SPORTS requires its *own* verified logo on every sales image.
+// This is a sales-image overlay, NEVER an alteration to the underlying product/artwork.
+export const SHOP_LOGO_RULES=Object.freeze({
+  'DHL SPORTS':'KHÔNG CHÈN logo/watermark ĐHL SPORTS hoặc logo shop lên ảnh bán hàng. Giữ nguyên huy hiệu đội, nhãn nhà sản xuất, patch, chữ và số vốn có trên SẢN PHẨM THẬT; không tự phát sinh logo/patch.',
+  'DHL STUDIO':'BẮT BUỘC chèn đúng LOGO DHL STUDIO GỐC được cung cấp trên MỌI ảnh quảng cáo/phân loại, ở góc nền an toàn, không che sản phẩm. Logo này TUYỆT ĐỐI KHÔNG được đưa vào FILE IN PET, artwork nền trong suốt, thiết kế hoặc đường cắt giao khách.',
+  'RABBIT STORE':'BẮT BUỘC chèn đúng LOGO RABBIT STORE GỐC được cung cấp trên MỌI ảnh bán hàng, ở góc nền không che hình in. Không giả làm logo in trên áo; không thay bằng logo Thỏ Handmade.',
+  'STORE MIU MIU':'BẮT BUỘC chèn LOGO STORE MIU MIU GỐC được cung cấp trên MỌI ảnh bán hàng. Chỉ thay bằng LOGO THỎ HANDMADE GỐC khi dòng sản phẩm/SKU đã được xác nhận dùng nhãn Thỏ Handmade; không tự dùng cả hai logo.',
+  'MIU CLOTHING & BEAUTY':'BẮT BUỘC chèn đúng LOGO MIU CLOTHING & BEAUTY GỐC được cung cấp trên MỌI ảnh bán hàng, góc nền nhỏ, không che nhãn mỹ phẩm, bảng thành phần, batch code, hạn dùng.',
+  'PHONG THỦY KHÁNH HÒA':'BẮT BUỘC chèn đúng LOGO PHONG THỦY KHÁNH HÒA GỐC được cung cấp trên MỌI ảnh bán hàng, góc nền thoáng, không che ký tự, hoa văn và chi tiết kim loại.'
+});
+
 const LABELS=['title','short','description','seoTitle','seoDescription','slug','keywords','altText'];
 const STRING_FIELDS=Object.fromEntries(LABELS.map(s=>[s,{type:'string'}]));
 const FACT_FIELDS=Object.fromEntries(['category','material','dimensions','variants','usage'].map(s=>[s,{type:'string'}]));
@@ -48,12 +59,14 @@ export const PHOTO_STEPS=[
 export function imagePrompts(draft,product){
   validateDraft(draft);if(!Object.hasOwn(SHOPS,product.shop))throw Error('Shop không hợp lệ.');
   const nameset=/nameset|name.?set|tên số/i.test([draft.vi.title,draft.facts.category,product.name].join(' '))&&['DHL SPORTS','DHL STUDIO'].includes(product.shop);
+  const shopLogoRule=SHOP_LOGO_RULES[product.shop];
+  const logoSourceNotice=product.shop==='DHL SPORTS'?'Không cần file logo SHOP; đừng chèn logo cửa hàng.':'BẮT BUỘC đính kèm ảnh FILE LOGO GỐC được duyệt của shop (riêng Store Miu Miu có thể dùng logo Thỏ Handmade chỉ khi SKU xác nhận). Thiếu logo gốc: báo CHỜ LOGO GỐC, không tự thiết kế logo và không coi ảnh là hoàn thiện.';
   const facts=[['Chất liệu',draft.facts.material],['Kích thước',draft.facts.dimensions],['Phân loại',draft.facts.variants],['Công dụng',draft.facts.usage]].filter(([,v])=>v).map(([k,v])=>k+': '+v).join('; ')||'Chưa xác minh thông số';
   const missing=draft.missing.join(', ').slice(0,600);
   return PHOTO_STEPS.map(([title,objective],i)=>{
     const mustUseInstructions=nameset&&i===7;
     const instruction=mustUseInstructions?'Ảnh hướng dẫn: BẮT BUỘC dùng đúng file "hướng dẫn in tên số.png" được gửi; giữ nguyên hình ảnh, không để AI tự vẽ lại hay tự tạo nhiệt độ/thời gian.':objective;
-    return {index:i+1,title,prompt:`Tạo DUY NHẤT 1 ảnh sản phẩm vuông 1:1, ảnh số ${i+1}/9 — ${title}.\nTôi sẽ gửi kèm ẢNH GỐC THẬT (và logo, tài liệu hướng dẫn khi cần). Nếu thiếu ảnh nguồn, hãy yêu cầu tôi đính kèm trước.\nShop: ${product.shop}. Tên sản phẩm: ${draft.vi.title}.\nThông tin đã có căn cứ: ${facts}.\nYêu cầu ảnh: ${instruction}.\nQuy định riêng của shop: ${SHOPS[product.shop]}.\nGiữ NGUYÊN màu sắc, logo, chữ, số, hình in, form, cấu tạo; ảnh studio chân thực, sắc nét, ánh sáng tự nhiên. Không chế thông số hay biến thể mới, không thêm logo nếu thiếu file logo.\nThông tin còn thiếu không được tự bịa: ${missing||'không có'}.\nXuất duy nhất một ảnh tách riêng, không ghép 9 ô.`};
+    return {index:i+1,title,prompt:`Tạo DUY NHẤT 1 ảnh sản phẩm vuông 1:1, ảnh số ${i+1}/9 — ${title}.\nTôi sẽ gửi kèm ẢNH GỐC THẬT và tài liệu hướng dẫn nếu cần. ${logoSourceNotice} Nếu thiếu ảnh nguồn, hãy yêu cầu đính kèm trước.\nShop: ${product.shop}.\nQUY TẮC LOGO SHOP (BẮT BUỘC TRÊN MỌI ẢNH ĐẦU RA): ${shopLogoRule}. Tên sản phẩm: ${draft.vi.title}.\nThông tin đã có căn cứ: ${facts}.\nYêu cầu ảnh: ${instruction}.\nQuy định riêng của shop: ${SHOPS[product.shop]}.\nGiữ NGUYÊN màu sắc, logo, chữ, số, hình in, form, cấu tạo; ảnh studio chân thực, sắc nét, ánh sáng tự nhiên. Không chế thông số hay biến thể mới, không thêm logo nếu thiếu file logo.\nThông tin còn thiếu không được tự bịa: ${missing||'không có'}.\nXuất duy nhất một ảnh tách riêng, không ghép 9 ô.`};
   });
 }
 export function ceil9000(n){if(!Number.isFinite(n)||n<0)throw Error('Giá không hợp lệ.');return Math.max(9000,Math.ceil((n-9000)/10000)*10000+9000);}
