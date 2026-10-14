@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "DHL Product Factory — 6 Shop",
+  "description": "Gemini phân tích sản phẩm, SEO VI/EN, 9 prompt ảnh ChatGPT, tính giá và xuất Excel.",
+  "version": "0.8.0",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "identity",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://www.googleapis.com/*",
+    "https://api.github.com/*"
+  ],
+  "action": {
+    "default_title": "Mở DHL Product Factory — Tab toàn màn hình"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "oauth2": {
+    "client_id": "000000000000-dhlfactoryplaceholder.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive"
+    ]
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAstzcH50RxmYP9dz21EgmSBxY7POrhNaHNuD/NuiB3FVVa53Sro1OHPyEILSb6Ro2VjfWjyDYFTaRIcRAQQWnArPgkwmrfOHCqe9fHJ7bsIy+9ejCBL5d142mgLGOkvr+NBaxbH7888TQI9sFLPg9S1EeSDWBw3cWheBmWEXnpv6amij9vACk1pJxbYwP6legTPLfYwzolAYykyj2XVZxUUJRbjqpty4QnZiBIPBYnpXtLWpR0c660BIy1cOVMMVb0yv5ioZXsuoyCIDX1KuLkjn+beNWQr7uJxvYKUM8iwyr2FQ/nnGj6g4Yg9fIKjebjIUWEwLO44l2u86Go/ECiQIDAQAB"
+}
