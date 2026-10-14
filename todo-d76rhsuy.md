@@ -49,3 +49,9 @@
 - [x] Điều chỉnh grid/cột SKU: mobile dùng 2 cột ảnh/phiên bản, vùng số lượng & hành động chiếm cả chiều ngang; desktop giữ đủ 4 cột.
 - [x] Đưa các nút hành động xuống dòng hợp lý trên mobile, giữ preview ảnh không che nội dung.
 - [x] Hồi quy SKU responsive 33/33 passed, TypeScript và production build đạt; screenshot tool vẫn có lúc chờ query dữ liệu nên cần kiểm tra lại trên thiết bị thật nếu cần.
+
+## Cải tổ ProductDetail theo bố cục marketplace kiểu Shopee — 2026-10-15
+- [x] Gộp cột SKU vào thông tin phiên bản, chỉ giữ 3 vùng: ảnh / phiên bản + SKU / kho + thao tác.
+- [x] Làm vùng thao tác đủ rộng, không cắt nút nhận thông báo, tăng giảm số lượng và mua ngay.
+- [x] Giữ bố cục dễ đọc trên desktop/mobile: desktop 3 cột, mobile 2 hàng; không dùng bảng ngang ép cột.
+- [x] Full regression 195 passed, 2 skipped; TypeScript, build và diff check đạt. Screenshot tool vẫn có lúc treo loading do query runtime.

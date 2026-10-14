@@ -35,12 +35,12 @@ describe("public SKU inventory presentation", () => {
   });
 
 
-  it("keeps SKU and stock in the same compact metadata group", () => {
+  it("keeps variant identity and actions in readable marketplace regions", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("SKU + tồn kho");
-    expect(source).toContain('hidden justify-self-end max-w-full items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1');
-    expect(source).toContain('sm:inline-flex');
+    expect(source).toContain("Phiên bản / SKU");
+    expect(source).toContain("Khả dụng & thao tác");
+    expect(source).toContain('min-w-0 flex w-full flex-col items-stretch justify-end gap-1');
   });
 
   it("opens a hover preview from the whole SKU row when that SKU has an image", () => {
@@ -94,7 +94,7 @@ describe("public SKU inventory presentation", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
     expect(source).toContain('className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:sticky xl:top-4"');
-    expect(source).toContain('<span className="col-span-2 text-right sm:col-span-1">Số lượng & hành động</span>');
+    expect(source).toContain('>Khả dụng & thao tác</span>');
     expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('Kho: {variant.stock}');
@@ -105,9 +105,8 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('onClick={event => event.stopPropagation()}');
     expect(source).toContain('clientY - previewHeight - 16');
     expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)]');
-    expect(source).toContain('col-span-2 flex min-w-0 flex-wrap items-end justify-end gap-1 sm:col-span-1');
-    expect(source).toContain('hidden text-right sm:block');
-    expect(source).toContain('lg:grid-cols-[4.5rem_minmax(0,1fr)_8rem_9rem_11rem]');
+    expect(source).toContain('sm:grid-cols-[4rem_minmax(0,1fr)_minmax(14rem,auto)]');
+    expect(source).toContain('min-w-0 flex w-full flex-col items-stretch justify-end gap-1');
   });
 
   it("protects zeroing a SKU and gives mobile quantity changes feedback", () => {
@@ -222,7 +221,7 @@ describe("public SKU inventory presentation", () => {
   it("shows a compact SKU thumbnail beside the variant name", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('className="h-7 w-7 shrink-0 rounded border border-slate-200 bg-white object-contain"');
+    expect(source).toContain('className="h-8 w-8 shrink-0 rounded border border-slate-200 bg-white object-contain"');
     expect(source).toContain("formatVariantOptions(variant)");
   });
 
