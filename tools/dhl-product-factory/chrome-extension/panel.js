@@ -1,7 +1,5 @@
-import {SHOPS,calculatePrice,imagePrompts,validateDraft,safeFilename} from './lib/core.mjs';
+import {SHOPS,calculatePrice,imagePrompts,validateDraft,safeFilename,makeSaleVariants,parseSkuLines,serializeSkuLines,saleSummary,readSourceDocument} from './lib/core.mjs';
 import {makeWorkbook} from './lib/xlsx-lite.mjs';
-import {makeSaleVariants,parseSkuLines,serializeSkuLines,saleSummary} from './lib/product-input.mjs';
-import {readSourceDocument} from './lib/source-docs.mjs';
 const $=id=>document.getElementById(id);
 let draft=null,selectedLanguage='vi',images=[],prompts=[],pageUrl='',driveFolder='',sourceFolder=null,sourceFolderView=null;
 let finishedPhotos=[],generatedPlatforms=new Map(),draftIdentity=null,sourceDocTexts=[],variantRows=[];

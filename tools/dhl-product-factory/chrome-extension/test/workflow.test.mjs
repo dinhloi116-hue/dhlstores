@@ -28,3 +28,13 @@ test('local Git updater includes all new source parser and variant modules',asyn
  const ps=await readFile(join(root,'cap-nhat-tu-git.ps1'),'utf8');
  for(const required of ['lib/product-input.mjs','lib/source-docs.mjs','test/product-input.test.mjs','test/source-docs.test.mjs','test/workflow.test.mjs'])assert.match(ps,new RegExp(required.replace(/\./g,'\\.')));
 });
+
+test('existing v0.6 updater can install v0.7 without missing JS imports',async()=>{
+ const panel=await readFile(join(root,'panel.js'),'utf8');const ps=await readFile(join(root,'cap-nhat-tu-git.ps1'),'utf8');
+ assert.doesNotMatch(panel,/from ['"]\.\/lib\/(?:product-input|source-docs)\.mjs/);
+ assert.match(panel,/readSourceDocument.*from ['"]\.\/lib\/core\.mjs/);
+ assert.match(ps,/lib\/core\.mjs/);
+ const core=await readFile(join(root,'lib/core.mjs'),'utf8');
+ assert.match(core,/export async function readSourceDocument/);
+ assert.match(core,/export function makeSaleVariants/);
+});

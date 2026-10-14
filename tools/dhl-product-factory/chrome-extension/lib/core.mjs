@@ -79,3 +79,138 @@ export function calculatePrice(v){
   const net=shopeePrice-fee;return {totalCost,shopeePrice,fee,net,profit:net-totalCost,webPrice:ceil9000(net)};
 }
 export function safeFilename(v){return String(v||'PRODUCT').normalize('NFKD').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,65);}
+
+// v0.7 backward-compat exports: v0.6 updater only downloads the legacy core.mjs.
+// Keep these exports synchronized with product-input.mjs and source-docs.mjs until migration.
+// Pure, deterministic mapping of user-confirmed sale types and variant dimensions.
+// Never infer inventory, prices, colors or sizes from photos or model output.
+export const SALE_TYPES=Object.freeze(['Làm sẵn','Nguyên liệu DIY','Không in','Có in']);
+export const DIMENSIONS=Object.freeze({color:'Màu sắc',size:'Kích cỡ',type:'Kiểu / loại'});
+export function splitOptions(raw){
+  return [...new Set(String(raw||'').split(/\r?\n/).map(v=>v.trim()).filter(Boolean))];
+}
+function skuPiece(v){
+  return String(v).normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D')
+    .replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').toUpperCase().slice(0,16)||'OPT';
+}
+export function makeSaleVariants({sku,dimensions=[],colors='',sizes='',saleTypes=[]}){
+  const selected=[...new Set(dimensions)];
+  if(selected.length>2)throw Error('Mỗi sản phẩm đăng sàn chỉ hỗ trợ tối đa 2 nhóm phân loại. Hãy bỏ tích một nhóm hoặc tách sản phẩm.');
+  if(selected.some(d=>!Object.hasOwn(DIMENSIONS,d)))throw Error('Nhóm phân loại không hợp lệ.');
+  const cleanedTypes=[...new Set(saleTypes)];
+  if(cleanedTypes.some(x=>!SALE_TYPES.includes(x)))throw Error('Loại bán không hợp lệ.');
+  const values={color:splitOptions(colors),size:splitOptions(sizes),type:cleanedTypes};
+  const options=selected.map(x=>values[x]);
+  for(let i=0;i<selected.length;i++)if(!options[i].length)throw Error('Chưa có lựa chọn cho nhóm '+DIMENSIONS[selected[i]]+'.');
+  let combos=[[]];
+  for(const names of options)combos=combos.flatMap(c=>names.map(n=>[...c,n]));
+  if(combos.length>80)throw Error('Quá 80 SKU. Hãy chia nhỏ thành nhiều sản phẩm.');
+  const prefix=String(sku||'').trim();if(!prefix)throw Error('Cần nhập SKU gốc trước khi tạo các dòng phân loại.');
+  if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/.test(prefix))throw Error('SKU gốc chỉ dùng chữ không dấu, số, gạch ngang và gạch dưới, tối đa 80 ký tự.');
+  const used=new Set();
+  const rows=combos.map((parts,index)=>{
+    let code=parts.length?`${prefix}-${parts.map(skuPiece).join('-')}`:prefix;
+    if(used.has(code))code+=`-${index+1}`;
+    used.add(code);
+    return {sku:code,opt1:parts[0]||'',opt2:parts[1]||'',price:'',stock:''};
+  });
+  return {variantName1:selected[0]?DIMENSIONS[selected[0]]:'',variantName2:selected[1]?DIMENSIONS[selected[1]]:'',rows};
+}
+export function serializeSkuLines(rows){
+  for(const row of rows){if([row.sku,row.opt1,row.opt2,row.price,row.stock].some(s=>String(s??'').includes('|')))throw Error('SKU và phân loại không được chứa dấu |.');}
+  return rows.map(r=>[r.sku,r.opt1,r.opt2,r.price,r.stock].map(v=>String(v??'').trim()).join(' | ')).join('\n');
+}
+export function parseSkuLines(text){
+  return String(text||'').split(/\r?\n/).filter(l=>l.trim()).map((line,i)=>{
+    const arr=line.split('|').map(x=>x.trim());
+    if(arr.length!==5)throw Error('Dòng SKU '+(i+1)+' phải gồm SKU | Loại 1 | Loại 2 | Giá | Tồn.');
+    const [sku,opt1,opt2,price,stock]=arr;
+    if(!sku)throw Error('Thiếu SKU dòng '+(i+1));
+    if(price!==''&&(!/^\d+(?:\.\d+)?$/.test(price)||Number(price)<=0))throw Error('Sai giá bán dòng '+(i+1));
+    if(stock!==''&&(!/^\d+$/.test(stock)))throw Error('Sai tồn kho dòng '+(i+1));
+    return {sku,opt1,opt2,price,stock};
+  });
+}
+export function saleSummary({saleTypes=[],dimensions=[],colors='',sizes='',variants=''}){
+  return [saleTypes.length?'Hình thức: '+saleTypes.join(', '):'',dimensions.includes('color')?'Màu: '+splitOptions(colors).join(', '):'',dimensions.includes('size')?'Size: '+splitOptions(sizes).join(', '):'',variants?String(variants).trim():''].filter(Boolean).join(' | ');
+}
+
+// Local source-document extraction; no remote servers or third-party scripts.
+// Basic OOXML text/cell extraction; formulas are never evaluated.
+const DOC_MAX_BYTES=5_000_000;
+const OUTPUT_MAX=16000;
+const utf8=new TextDecoder('utf-8',{fatal:false});
+function u16(a,i){return a[i]|(a[i+1]<<8)}
+function u32(a,i){return (a[i]|(a[i+1]<<8)|(a[i+2]<<16)|(a[i+3]<<24))>>>0}
+async function unzipSelected(bytes,wanted){
+  let eocd=-1;
+  for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(u32(bytes,i)===0x06054b50){eocd=i;break}
+  if(eocd<0)throw Error('Tệp Office không đúng cấu trúc ZIP.');
+  const total=u16(bytes,eocd+10),start=u32(bytes,eocd+16);let pos=start;
+  const entries=new Map();
+  for(let i=0;i<total;i++){
+    if(u32(bytes,pos)!==0x02014b50)throw Error('Tài liệu Office có danh mục lỗi.');
+    const method=u16(bytes,pos+10),compressed=u32(bytes,pos+20),uncompressed=u32(bytes,pos+24);
+    const nlen=u16(bytes,pos+28),xlen=u16(bytes,pos+30),clen=u16(bytes,pos+32),offset=u32(bytes,pos+42);
+    const name=utf8.decode(bytes.subarray(pos+46,pos+46+nlen));pos+=46+nlen+xlen+clen;
+    if(wanted(name))entries.set(name,{method,compressed,uncompressed,offset});
+  }
+  let used=0;const out=new Map();
+  for(const [name,e] of entries){
+    if(e.uncompressed>2_000_000||used+e.uncompressed>6_000_000)throw Error('Tài liệu Office có quá nhiều dữ liệu.');
+    const p=e.offset;if(u32(bytes,p)!==0x04034b50)throw Error('Tệp Office hỏng.');
+    const nlen=u16(bytes,p+26),xlen=u16(bytes,p+28),offset=p+30+nlen+xlen;
+    const data=bytes.subarray(offset,offset+e.compressed);
+    let result;
+    if(e.method===0)result=data;
+    else if(e.method===8){const stream=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));result=new Uint8Array(await new Response(stream).arrayBuffer());}
+    else throw Error('Định dạng nén Office chưa hỗ trợ.');
+    if(result.length>2_000_000)throw Error('Một phần tài liệu quá lớn.');
+    used+=result.length;out.set(name,utf8.decode(result));
+  }
+  return out;
+}
+function decodeEntities(s){return s.replace(/&#(?:x([\da-f]+)|(\d+));|&(?:amp|lt|gt|quot|apos);/gi,(m,h,d)=>{
+  if(h||d){const n=parseInt(h||d,h?16:10);return n>0&&n<=0x10ffff?String.fromCodePoint(n):'';}
+  return ({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&apos;':"'"})[m.toLowerCase()]||m;
+});}
+function xmlPlain(xml){return decodeEntities(xml.replace(/<\/?(?:w:p|p|row|si|c)(?=\s|>)[^>]*>/g,'\n').replace(/<w:tab\s*\/>/g,'\t').replace(/<[^>]*>/g,'')).replace(/\n{3,}/g,'\n\n').trim()}
+async function parseOffice(bytes,ext){
+  if(ext==='docx'){
+    const files=await unzipSelected(bytes,name=>name==='word/document.xml');
+    const xml=files.get('word/document.xml');if(!xml)throw Error('Không tìm thấy nội dung DOCX.');
+    return xmlPlain(xml);
+  }
+  const files=await unzipSelected(bytes,name=>name==='xl/sharedStrings.xml'||/^xl\/worksheets\/sheet\d+\.xml$/.test(name));
+  const shared=files.get('xl/sharedStrings.xml')||'';
+  const items=[...shared.matchAll(/<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g)].map(m=>xmlPlain(m[1]).replace(/\s+/g,' ').trim());
+  const sheets=[...files.keys()].filter(x=>/^xl\/worksheets\/sheet\d+\.xml$/.test(x)).sort((a,b)=>Number(a.match(/\d+/)?.[0])-Number(b.match(/\d+/)?.[0])).slice(0,5);
+  if(!sheets.length)throw Error('Không tìm thấy bảng tính XLSX.');
+  const out=[];
+  for(const s of sheets){
+    out.push('Bảng tính '+s.split('/').pop()+':');
+    const xml=files.get(s);let count=0;
+    for(const row of xml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)){
+      const cells=[];
+      for(const m of row[1].matchAll(/<c\b([^>]*?)(?:\/\>|>([\s\S]*?)<\/c>)/g)){
+        const attrs=m[1],body=m[2]||'',ref=/\br="([^"]+)"/.exec(attrs)?.[1]||'';
+        const val=/<v>([\s\S]*?)<\/v>/.exec(body)?.[1]||'';
+        const type=/\bt="([^"]+)"/.exec(attrs)?.[1]||'';
+        const value=type==='s'?items[Number(val)]||'':type==='inlineStr'?xmlPlain(body):decodeEntities(val);
+        if(value.trim())cells.push(ref+': '+value.trim());
+      }
+      if(cells.length){out.push(cells.join(' | '));count++}
+      if(count>150||out.join('\n').length>OUTPUT_MAX)break;
+    }
+  }
+  return out.join('\n');
+}
+export async function readSourceDocument(file){
+  const name=String(file?.name||'');const ext=name.toLowerCase().split('.').pop();
+  if(!['txt','md','csv','json','html','docx','xlsx'].includes(ext))throw Error('Chưa hỗ trợ đọc '+name+'. Chỉ hỗ trợ TXT, MD, CSV, JSON, HTML, DOCX, XLSX.');
+  if(file.size>DOC_MAX_BYTES)throw Error('Tài liệu '+name+' vượt quá 5 MB.');
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const raw=(ext==='docx'||ext==='xlsx')?await parseOffice(bytes,ext):utf8.decode(bytes);
+  const excerpt=raw.replace(/\u0000/g,'').slice(0,OUTPUT_MAX);
+  return {name,text:excerpt,truncated:raw.length>OUTPUT_MAX};
+}

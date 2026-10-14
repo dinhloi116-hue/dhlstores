@@ -175,3 +175,5 @@ Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổ
 
 
 Trên tab toàn màn hình, nút "Dán văn bản đã sao chép từ web" có thể đọc clipboard khi Chrome cấp quyền theo thao tác người dùng; nếu bị từ chối thì dán trực tiếp bằng Ctrl+V. Không tự đọc nội dung những tab đang mở.
+
+**Tương thích cập nhật từ v0.6:** mã giao diện v0.7 chỉ import từ các module có sẵn trong whitelist cập nhật v0.6 (lib/core.mjs, lib/xlsx-lite.mjs). Bộ các hàm phân loại và đọc tài liệu được export đồng thời ở core.mjs để bản cập nhật một nút cũ không bị thiếu module; các module nguồn mới cũng được lưu trong repo cho các bản phát triển sau.
