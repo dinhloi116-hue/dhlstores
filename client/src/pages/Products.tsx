@@ -156,6 +156,12 @@ export default function Products() {
             </div>
           </div>
 
+          <details className="group mt-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 open:bg-white">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-2 text-xs font-black text-slate-700 [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2"><Filter className="h-3.5 w-3.5 text-sky-500" />{lang === 'vi' ? 'Bộ lọc nâng cao' : 'Advanced filters'}{hasActiveCatalogFilters && <span className="rounded-full bg-sky-500 px-2 py-0.5 text-[10px] text-white">{lang === 'vi' ? 'đang dùng' : 'active'}</span>}</span>
+              <span className="text-lg leading-none text-slate-400 transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+            </summary>
+            <div className="space-y-2 pb-2">
           <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
             <span className="text-xs text-slate-500 font-bold mr-2 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5 text-sky-500" /> {t.allCategories}:
@@ -194,8 +200,10 @@ export default function Products() {
               </Select>
             </>}
           </div>
+            </div>
+          </details>
         </div>
-	        {!isCatalogLoading && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><p className="text-slate-600">Hiển thị <span key={`${products.length}-${searchQuery}-${selectedCategory ?? 'all'}`} className="inline-block animate-in fade-in-0 slide-in-from-bottom-1 font-black text-slate-900">{products.length}</span> sản phẩm phù hợp</p>{hasActiveCatalogFilters && <Button type="button" variant="ghost" size="sm" onClick={clearCatalogFilters} className="h-7 px-2.5 text-xs font-black text-sky-700 transition hover:bg-sky-100 hover:text-sky-800"><span aria-hidden="true">×</span> Xóa bộ lọc</Button>}</div>}
+        {!isCatalogLoading && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><p className="text-slate-600">Hiển thị <span key={`${products.length}-${searchQuery}-${selectedCategory ?? 'all'}`} className="inline-block animate-in fade-in-0 slide-in-from-bottom-1 font-black text-slate-900">{products.length}</span> sản phẩm phù hợp</p>{hasActiveCatalogFilters && <Button type="button" variant="ghost" size="sm" onClick={clearCatalogFilters} className="h-7 px-2.5 text-xs font-black text-sky-700 transition hover:bg-sky-100 hover:text-sky-800"><span aria-hidden="true">×</span> Xóa bộ lọc</Button>}</div>}
 
         {/* Product Grid */}
         {isCatalogLoading ? (

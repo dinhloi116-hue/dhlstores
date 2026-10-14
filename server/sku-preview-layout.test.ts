@@ -376,6 +376,17 @@ describe("public SKU inventory presentation", () => {
     expect(productSource).not.toContain("#ff3b1f");
   });
 
+  it("keeps the desktop web navigation simple and task-focused", () => {
+    const source = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("Navigation Links: keep only the four main destinations visible.");
+    expect(source).toContain('href="/products?type=physical"');
+    expect(source).toContain('href="/products?type=digital"');
+    expect(source).toContain('href="/tools"');
+    expect(source).not.toContain("Mở toàn bộ khu vực");
+    expect(source).not.toContain("Mở thư viện công cụ đầy đủ");
+  });
+
   it("matches the marketplace reference layout across mobile and desktop", () => {
     const productSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
     const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");

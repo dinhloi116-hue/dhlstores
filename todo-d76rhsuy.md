@@ -19,3 +19,8 @@
 - [x] Tái bố cục ProductDetail: breadcrumb, gallery lớn + thumbnail ngang, giá/giảm giá/trạng thái và CTA rõ ràng.
 - [x] Giữ đầy đủ SKU, tồn kho, Order 7 ngày, review và sản phẩm liên quan; không làm mất luồng mua hiện tại.
 - [x] Bổ sung hồi quy, chạy test/build và chụp kiểm tra desktop/mobile.
+
+## Tinh giản phiên bản web/desktop — 2026-10-15
+- [x] Rút menu desktop còn các lối chính: Trang chủ, Hàng thể thao, Tài nguyên số, Công cụ.
+- [x] Làm header, hero và thanh lọc web thoáng hơn; giữ tìm kiếm, giỏ hàng và tài khoản dễ thấy.
+- [x] Bổ sung hồi quy cho menu đơn giản; full regression đạt 193 passed, 2 skipped, TypeScript/build đạt và screenshot desktop/mobile đã kiểm tra.
