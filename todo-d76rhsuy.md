@@ -30,3 +30,10 @@
 - [x] Tạo sản phẩm physical song ngữ trong danh mục Quần Áo Bóng Đá, bố cục marketplace, slug `ao-bong-da-argentina-messi-last-dance-2024-player`.
 - [x] Lưu 15 SKU theo 3 phiên bản: Áo trơn 329.000đ, in Name M10 399.000đ, M10 + Copa 2024 449.000đ; tồn kho giữ 0 vì workbook không có số lượng tồn.
 - [x] Xác minh storefront desktop bằng browser DOM: tên EN, gallery 12 ảnh và 15 ô số lượng SKU đã render; xác minh mobile viewport 390px bằng Chromium headless sau 12 giây: tên VI, gallery 12 ảnh, 15 SKU và không còn trạng thái loading; tồn kho giữ 0 vì nguồn không cung cấp quantity.
+
+## SEO động và video YouTube trong trang sản phẩm — 2026-10-15
+- [ ] Bổ sung metadata SEO động theo sản phẩm, canonical, Open Graph/Twitter và JSON-LD Product/VideoObject.
+- [ ] Bổ sung robots.txt, sitemap.xml và metadata SEO nền tảng màu xanh DHL Stores.
+- [ ] Lưu URL YouTube sản phẩm Argentina từ yt.txt và hiển thị trình phát YouTube responsive ngay trên trang sản phẩm.
+- [ ] Cho phép owner nhập/chỉnh URL YouTube trong biểu mẫu quản trị sản phẩm.
+- [ ] Chạy test, TypeScript, build và kiểm tra desktop/mobile; cập nhật checkpoint và GitHub main.
