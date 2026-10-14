@@ -24,3 +24,9 @@
 - [x] Rút menu desktop còn các lối chính: Trang chủ, Hàng thể thao, Tài nguyên số, Công cụ.
 - [x] Làm header, hero và thanh lọc web thoáng hơn; giữ tìm kiếm, giỏ hàng và tài khoản dễ thấy.
 - [x] Bổ sung hồi quy cho menu đơn giản; full regression đạt 193 passed, 2 skipped, TypeScript/build đạt và screenshot desktop/mobile đã kiểm tra.
+
+## Đăng áo Argentina Messi Last Dance 2024 Player — 2026-10-15
+- [x] Đọc thư mục Drive, nội dung VI/EN, workbook 15 SKU và 12 ảnh preview/chi tiết.
+- [x] Tạo sản phẩm physical song ngữ trong danh mục Quần Áo Bóng Đá, bố cục marketplace, slug `ao-bong-da-argentina-messi-last-dance-2024-player`.
+- [x] Lưu 15 SKU theo 3 phiên bản: Áo trơn 329.000đ, in Name M10 399.000đ, M10 + Copa 2024 449.000đ; tồn kho giữ 0 vì workbook không có số lượng tồn.
+- [ ] Xác minh storefront desktop/mobile và ghi nhận giới hạn dữ liệu tồn kho nếu cần.
