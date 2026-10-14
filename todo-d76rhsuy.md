@@ -37,3 +37,10 @@
 - [x] Lưu URL YouTube sản phẩm Argentina từ yt.txt và hiển thị trình phát YouTube responsive ngay trên trang sản phẩm.
 - [x] Cho phép owner nhập/chỉnh URL YouTube trong biểu mẫu quản trị sản phẩm.
 - [x] Chạy test 195 passed/2 skipped, TypeScript, production build và kiểm tra DOM desktop/mobile; đã xác minh iframe, title, canonical, JSON-LD.
+
+## Làm rõ bảng size, song ngữ và video trên ProductDetail — 2026-10-15
+- [x] Đưa bảng số đo size S–XXL lên vị trí dễ thấy trước vùng SKU, có chọn size nhanh.
+- [x] Thêm công tắc VI/EN ngay cạnh tiêu đề sản phẩm và xác minh bằng browser: title, mô tả, tiêu đề thông số và nội dung specs đều đổi VI/EN; khôi phục VI thành công.
+- [x] Cải thiện SEO hiển thị: title, description, Product JSON-LD có ngôn ngữ/size/phiên bản rõ ràng.
+- [x] Thu gọn khung YouTube Shorts để không lấn át CTA, đánh giá và sản phẩm liên quan.
+- [x] Chạy 195 test passed/2 skipped, TypeScript, build, screenshot responsive và DOM browser; sẵn sàng tự động commit/push main.

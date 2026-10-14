@@ -1,5 +1,6 @@
 export type YouTubeVideo = {
   id: string;
+  isShorts: boolean;
   embedUrl: string;
   watchUrl: string;
   thumbnailUrl: string;
@@ -20,6 +21,7 @@ export function parseYouTubeUrl(value?: string | null): YouTubeVideo | null {
     if (!/^[A-Za-z0-9_-]{6,20}$/.test(id)) return null;
     return {
       id,
+      isShorts: host !== "youtu.be" && url.pathname.startsWith("/shorts/"),
       embedUrl: `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`,
       watchUrl: `https://www.youtube.com/watch?v=${id}`,
       thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
