@@ -3,20 +3,34 @@
 <nav aria-label="Chức năng"><button type="button" data-tab="input" class="selected">Sản phẩm</button><button type="button" data-tab="content">Nội dung</button><button type="button" data-tab="images">Prompt ảnh</button><button type="button" data-tab="export">Xuất file</button><button type="button" data-tab="driveSave">Lưu Drive</button><button type="button" data-tab="settings">Cài đặt</button></nav>
 <main>
 <section data-view="input">
- <h2>Tạo sản phẩm từ thông tin nguồn</h2>
- <p class="intro">Đưa ảnh, tài liệu hoặc nội dung nguồn vào trước. AI phân tích để lập hồ sơ, sau đó bạn kiểm tra giá vốn, vận chuyển và những phân loại muốn bán.</p>
- <div class="step-heading"><span>1</span><div><strong>Thông tin nguồn</strong><small>Chọn shop, gửi dữ liệu thật; chưa cần nhập hết thông tin bán hàng</small></div></div>
+ <h2>Chụp màn hình → Phân tích sản phẩm</h2>
+ <p class="intro">Chỉ cần ảnh chụp màn hình sản phẩm gốc. Những thông tin khác biết gì nhập nấy, không cần chuẩn bị trước.</p>
+ <div class="step-heading"><span>1</span><div><strong>Ảnh chụp màn hình sản phẩm</strong><small>Dán ảnh, kéo thả hoặc chọn từ máy; các ô khác đều không bắt buộc</small></div></div>
  <div class="field"><label for="shop">Shop đang tạo sản phẩm</label><select id="shop"><option>DHL SPORTS</option><option>DHL STUDIO</option><option>RABBIT STORE</option><option>STORE MIU MIU</option><option>MIU CLOTHING &amp; BEAUTY</option><option>PHONG THỦY KHÁNH HÒA</option></select></div>
+ <div id="screenshotDrop" class="screenshot-drop" tabindex="0" role="button" aria-label="Dán, kéo thả hoặc chọn ảnh chụp màn hình sản phẩm gốc">
+  <span class="screenshot-icon" aria-hidden="true">▧</span>
+  <strong>Dán ảnh chụp màn hình sản phẩm vào đây</strong>
+  <span>Nhấn <kbd>Ctrl</kbd>+<kbd>V</kbd>, kéo thả hoặc bấm để chọn ảnh</span>
+  <span class="source-hint">Có thể gửi nhiều ảnh ở nhiều lần · tối đa 6 ảnh · chỉ cần ảnh là phân tích được</span>
+  <input id="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple aria-label="Chọn ảnh chụp màn hình" tabindex="-1">
+ </div>
+ <div id="screenshotStatus" class="screenshot-status" role="status" aria-live="polite">Chưa có ảnh. Dán ngay từ clipboard hoặc chọn ảnh trên máy.</div>
+ <div id="previews" class="previews screenshot-previews"></div>
+ <div class="field optional-note"><label for="notes">Muốn bổ sung gì thì ghi thêm (không bắt buộc)</label><textarea id="notes" rows="2" placeholder="Ví dụ: hàng có 4 màu, giá vốn 13k, có size S–XXL... Không biết thì để trống."></textarea></div>
+ <details class="extra-input" id="extraInput"><summary>Thông tin khác / tệp tài liệu nguồn (tùy chọn)</summary>
+ <p>Không cần điền trước khi phân tích. Có thể bổ sung tên, SKU, ngành hàng hoặc tài liệu nếu bạn có sẵn.</p>
  <div class="cols"><div class="field"><label for="name">Tên sản phẩm (có thể bổ sung sau phân tích)</label><input id="name" placeholder="Ví dụ: Hoa đào kẽm nhung"></div><div class="field"><label for="sku">SKU gốc (chốt trước khi lưu Drive)</label><input id="sku" placeholder="Ví dụ: HOA-DAO-01"></div></div>
  <div class="field"><label for="category">Ngành hàng / mô tả ngắn</label><input id="category" placeholder="Kẽm nhung handmade, áo bóng đá, hình in PET..."></div>
- <div class="field"><label for="notes">Thông tin nguồn và đặc điểm đã biết</label><textarea id="notes" rows="5" placeholder="Dán mô tả của nhà cung cấp, chất liệu, kích thước, thông tin sản phẩm thật và yêu cầu cần giữ nguyên..."></textarea></div>
- <div class="cols"><div class="field"><label for="photos">Ảnh sản phẩm gốc (tối đa 3 ảnh × 3 MB)</label><input id="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple></div><div class="field"><label for="sourceDocs">Tệp tài liệu nguồn (TXT, CSV, DOCX, XLSX)</label><input id="sourceDocs" type="file" accept=".txt,.md,.csv,.json,.docx,.xlsx,.html" multiple><small id="sourceDocsStatus" class="field-hint">Chưa đính kèm tài liệu. Tối đa 5 tệp, mỗi tệp 5 MB.</small></div></div>
- <div id="previews" class="previews"></div>
+
+ <div class="field"><label for="sourceDocs">Tệp TXT, CSV, DOCX, XLSX (nếu có)</label><input id="sourceDocs" type="file" accept=".txt,.md,.csv,.json,.docx,.xlsx,.html" multiple><small id="sourceDocsStatus" class="field-hint">Chưa đính kèm tài liệu. Tối đa 5 tệp, mỗi tệp 5 MB.</small></div>
+ </details>
  <details class="source-drive"><summary>Chọn ảnh / tài liệu từ Google Drive</summary><p>Đọc trực tiếp trong thư mục shop và thư mục con, không sửa file nguồn.</p><div class="btns"><button type="button" id="listDrive">Duyệt thư mục nguồn</button><button type="button" id="attachDrive">Lấy file đã chọn</button><button type="button" id="useSourceFolder">Ghi nhận thư mục nguồn này</button></div><div id="sourceFolderStatus" class="notice">Chưa chọn thư mục nguồn.</div><div id="driveFiles" class="drive-files"></div></details>
  <div class="btns"><button type="button" id="readTab" class="secondary">Dán văn bản đã sao chép từ web</button></div>
  <div class="step-heading"><span>2</span><div><strong>Phân tích sản phẩm</strong><small>Gemini đọc ảnh, tài liệu, ghi chú để đề xuất hồ sơ VI/EN; dữ liệu thiếu sẽ được đánh dấu</small></div></div>
- <div class="analyze-action"><button type="button" id="analyze" class="primary">Phân tích sản phẩm bằng Gemini</button><span>Không tự bịa giá vốn, cân nặng, biến thể hoặc số đo.</span></div>
- <div id="analysisStatus" class="analysis-status" role="status">Chưa phân tích. Hãy đưa nguồn vào và nhấn nút bên trên.</div>
+ <div class="analyze-action"><button type="button" id="analyze" class="primary">✨ Phân tích sản phẩm</button><span>Gemini đọc ảnh, đề xuất nội dung. Thông tin chưa chắc chắn sẽ được đánh dấu.</span></div>
+ <div id="analysisStatus" class="analysis-status" role="status">Chỉ cần đưa ảnh vào là có thể bấm Phân tích.</div>
+ <details id="sellingDetails" class="selling-details"><summary>Bổ sung thông tin bán hàng khi cần: giá vốn, size, cân nặng, SKU</summary>
+ <p>Chỉ mở mục này khi bạn muốn tính giá, tạo phân loại hoặc xuất lên sàn. Không ảnh hưởng tới bước phân tích ảnh.</p>
  <div class="step-heading"><span>3</span><div><strong>Thông tin bán hàng cần chốt</strong><small>Chỉ tích những gì thực sự bán; trường chưa rõ để trống và bổ sung sau</small></div></div>
  <div class="selling-layout"><div class="selling-panel"><h3>Bạn muốn bán loại nào?</h3><div class="check-grid" id="saleTypes"><label><input type="checkbox" name="saleType" value="Làm sẵn"> Thành phẩm / làm sẵn</label><label><input type="checkbox" name="saleType" value="Nguyên liệu DIY"> Set nguyên liệu tự làm</label><label><input type="checkbox" name="saleType" value="Không in"> Không in / áo trơn</label><label><input type="checkbox" name="saleType" value="Có in"> Có in / cá nhân hóa</label></div><small class="field-hint">Có thể chọn nhiều loại. Không tự tạo phân loại nào chưa có hàng.</small>
  <h3>Nhóm phân loại muốn bán</h3><div class="check-grid" id="variantDimensions"><label><input id="dimColor" type="checkbox" value="color"> Màu sắc</label><label><input id="dimSize" type="checkbox" value="size"> Kích cỡ</label><label><input id="dimType" type="checkbox" value="type"> Kiểu / loại bán</label></div><div class="cols"><div class="field"><label for="colorOptions">Màu đang có hàng (mỗi dòng 1 màu)</label><textarea id="colorOptions" rows="3" placeholder="Hồng
@@ -28,6 +42,7 @@ L"></textarea></div></div><div class="field"><label for="variants">Ghi chú phâ
  <div class="selling-panel full"><h3>Bảng SKU và phân loại thực bán</h3><p>Tích tối đa 2 nhóm, nhập màu/size, chọn loại bán rồi bấm tạo dòng. Sau đó kiểm tra giá, tồn từng dòng. Có thể sửa trực tiếp.</p><div class="btns"><button id="buildVariants" type="button" class="primary">Tạo dòng phân loại đã chọn</button><button id="addVariant" type="button">Thêm 1 dòng thủ công</button></div><div id="variantStatus" class="field-hint" role="status">Chưa tạo dòng SKU.</div><div class="variant-table-wrap"><table class="variant-table"><thead><tr><th>SKU</th><th>Phân loại 1</th><th>Phân loại 2</th><th>Giá bán (đ)</th><th>Tồn kho</th><th></th></tr></thead><tbody id="variantRows"></tbody></table></div>
  <div class="cols"><div class="field"><label for="variantName1">Tên nhóm 1 dùng khi xuất sàn</label><input id="variantName1" placeholder="Màu / Kiểu / Size"></div><div class="field"><label for="variantName2">Tên nhóm 2 dùng khi xuất sàn</label><input id="variantName2" placeholder="Size / Kiểu (nếu có)"></div></div><div class="field"><label for="skuLines">Dòng SKU xuất sàn (đồng bộ tự động, có thể chỉnh)</label><textarea id="skuLines" rows="3" placeholder="SKU | Loại 1 | Loại 2 | Giá | Tồn"></textarea></div><small class="field-hint">Giá/tồn còn trống sẽ bị chặn khi xuất file đăng sàn; không tự tạo giá hoặc số tồn.</small></div>
  <div class="step-footer"><button id="goToContent" type="button" class="primary">Xem nội dung &amp; SEO đã phân tích →</button></div>
+ </details>
  <div class="notice">Tài liệu và ảnh chỉ gửi tới Gemini khi nhấn Phân tích. Không sửa bảng giá tổng, không tự đăng sàn hoặc tự lưu Drive trước khi bạn xác nhận.</div>
 </section>
 <section data-view="content" hidden><h2>Nội dung VI – EN</h2><p>Nhập sản phẩm và phân tích bằng Gemini. Nội dung có thể chỉnh trực tiếp trước khi xuất.</p><div class="btns"><button type="button" class="lang chosen" data-lang="vi">Tiếng Việt</button><button type="button" class="lang" data-lang="en">English</button></div><div id="missing" class="notice" hidden></div><div id="contentFields" class="empty">Chưa có nội dung.</div><button id="saveDraft" type="button" class="secondary">Lưu bản nháp trên Chrome</button></section>
@@ -63,7 +78,7 @@ L"></textarea></div></div><div class="field"><label for="variants">Ghi chú phâ
  <h3>Cập nhật từ GitHub</h3><p>Nút <strong>Cập nhật ngay từ GitHub</strong> có thể tự tải mã mới, giữ cấu hình Google Drive rồi tải lại tool. Lần đầu trên Windows cần nhấp đúp <code>CAI-DAT-NUT-CAP-NHAT.cmd</code> trong thư mục tool để cho phép Chrome kết nối bộ cập nhật cục bộ.</p>
  <p>Kiểm tra phiên bản mới trên GitHub. Do Chrome bảo vệ mã nguồn tiện ích, hãy nhấp đúp <code>CAP-NHAT-TOOL.cmd</code> trong thư mục cài để cập nhật thủ công nếu bộ cập nhật một lần chưa được cài; sau đó bấm Reload tại <code>chrome://extensions</code>. Không cần giải nén hay cài lại.</p>
  <div class="btns"><button id="checkGitUpdate" type="button" class="primary">Kiểm tra cập nhật Git</button><button id="updateNow" type="button" class="primary">Cập nhật ngay từ GitHub</button><button id="updateFromGit" type="button">Hướng dẫn cập nhật thủ công</button></div>
- <div id="gitUpdateStatus" class="notice">Phiên bản đang cài: v0.7.0. Chưa kiểm tra GitHub.</div>
+ <div id="gitUpdateStatus" class="notice">Phiên bản đang cài: v0.8.0. Chưa kiểm tra GitHub.</div>
  <div class="notice">Google OAuth Client ID và bản nháp lưu trên Chrome được giữ nguyên khi dùng bộ cập nhật. Extension không tự chạy chương trình trên máy tính.</div>
  <div class="notice">API key chỉ lưu trong chrome.storage.local của extension trên máy này (không đồng bộ). Đây không phải kho bí mật an toàn tuyệt đối nếu máy tính bị xâm nhập. Không dùng để phát hành extension công khai có key nhúng sẵn.</div><button type="button" id="openAIStudio">Mở Google AI Studio ↗</button><div class="btns"><button type="button" id="restoreDraft">Khôi phục bản nháp đã lưu</button><button type="button" id="deleteDraft">Xóa bản nháp đã lưu</button></div></section>
 </main>

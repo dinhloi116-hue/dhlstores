@@ -5,9 +5,9 @@ const base=dirname(dirname(fileURLToPath(import.meta.url)));
 const manifest=JSON.parse(await readFile(join(base,'manifest.json'),'utf8'));
 test('version comparator correctly handles semantic three-part versions',()=>{assert.equal(compareVersions('0.3.0','0.4.0'),1);assert.equal(compareVersions('0.4.0','0.4.0'),0);assert.equal(compareVersions('0.5.0','0.4.0'),-1);assert.throws(()=>compareVersions('bad','0.4.0'))});
 test('Git update check accepts only matching official public extension identity',async()=>{
- const remote={...manifest,version:'0.7.1'};
+ const remote={...manifest,version:'0.8.1'};
  const mock=async url=>{assert.match(url,/api\.github\.com/);return new Response(JSON.stringify({type:'file',encoding:'base64',content:Buffer.from(JSON.stringify(remote)).toString('base64')}),{status:200})};
- const v=await checkGithubVersion(manifest,mock);assert.equal(v.updateAvailable,true);assert.equal(v.latestVersion,'0.7.1');assert.match(v.repoUrl,/dhl-product-factory/);
+ const v=await checkGithubVersion(manifest,mock);assert.equal(v.updateAvailable,true);assert.equal(v.latestVersion,'0.8.1');assert.match(v.repoUrl,/dhl-product-factory/);
  await assert.rejects(()=>checkGithubVersion(manifest,async()=>new Response(JSON.stringify({type:'file',encoding:'base64',content:Buffer.from(JSON.stringify({...remote,key:'different'})).toString('base64')}),{status:200})),/không khớp/);
  assert.equal(GITHUB_REPO,'dinhloi116-hue/dhlstores');assert.equal(GITHUB_BRANCH,'feature/dhl-product-factory-mvp-20261012');
 });

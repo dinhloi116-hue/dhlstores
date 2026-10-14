@@ -1,6 +1,6 @@
 # DHL Product Factory — Chrome Extension (Manifest V3)
 
-**Bản 0.5.0: giao diện tab rộng, Gemini + Drive nguồn/đích + kiểm tra cập nhật GitHub + bộ cập nhật Windows.**
+**Bản 0.8.0: dán ảnh chụp màn hình rồi phân tích, giao diện tab rộng, Gemini + Drive nguồn/đích + kiểm tra cập nhật GitHub + bộ cập nhật Windows.**
 
 Extension dành cho **6 shop**; dùng **Gemini** để phân tích ảnh, SEO Việt/Anh; tạo **9 prompt** gửi thủ công sang ChatGPT; tính giá và tải Excel. Mở trong **một tab Chrome rộng toàn màn hình**, không còn Side Panel.
 
@@ -177,3 +177,14 @@ Bản trước 0.2.0 có ID phụ thuộc đường dẫn cài đặt. Khi đổ
 Trên tab toàn màn hình, nút "Dán văn bản đã sao chép từ web" có thể đọc clipboard khi Chrome cấp quyền theo thao tác người dùng; nếu bị từ chối thì dán trực tiếp bằng Ctrl+V. Không tự đọc nội dung những tab đang mở.
 
 **Tương thích cập nhật từ v0.6:** mã giao diện v0.7 chỉ import từ các module có sẵn trong whitelist cập nhật v0.6 (lib/core.mjs, lib/xlsx-lite.mjs). Bộ các hàm phân loại và đọc tài liệu được export đồng thời ở core.mjs để bản cập nhật một nút cũ không bị thiếu module; các module nguồn mới cũng được lưu trong repo cho các bản phát triển sau.
+
+
+## v0.8.0 — DÁN ẢNH CHỤP MÀN HÌNH RỒI PHÂN TÍCH
+
+- Màn hình mặc định chỉ cần chọn shop và **dán ảnh bằng Ctrl+V**, kéo thả ảnh hoặc bấm vào khung chọn ảnh; thêm tối đa 6 ảnh theo nhiều lượt, có preview và nút xóa từng ảnh.
+- Ảnh quá 3 MB được thử chuyển JPEG/thu nhỏ **trên máy**, trước khi gửi Gemini. Ảnh được gửi lên Gemini **chỉ khi nhấn Phân tích**; không tự gửi khi dán.
+- Có thể thêm mô tả tự do, nhưng mọi trường tên, SKU, ngành hàng, tài liệu, giá vốn, cân nặng và lựa chọn bán đều **không bắt buộc khi phân tích**.
+- Các trường tên/SKU/tệp tài liệu thu gọn vào **Thông tin khác (tùy chọn)**; phần giá, vận chuyển, phân loại nằm trong **Bổ sung thông tin bán hàng khi cần**.
+- Gemini được hướng dẫn đọc nội dung **ảnh chụp màn hình**, chỉ rút trích dữ liệu có căn cứ; không tự coi giá sản phẩm gốc là giá vốn hoặc giá bán đã duyệt.
+- Khi hoàn thiện và lưu Google Drive hoặc xuất file sàn, vẫn kiểm tra các trường bắt buộc tương ứng; không tự tạo SKU, phí, tồn kho hay kích thước.
+- Cập nhật bằng nút **Cập nhật ngay từ GitHub** trong Cài đặt sau khi thiết lập bộ cập nhật cục bộ trên Windows.
