@@ -10,6 +10,7 @@ import { getCategoryIcon } from "@/lib/category-icons";
 import { ArrowRight, Camera, ChevronRight, Download, Flame, History, PackageCheck, Search, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react";
 import { clearRecentProducts, getRecentProductIds } from "@/lib/customer-tools";
 import { isRenderableImageUrl } from "@/lib/image";
+import { formatLocalizedPrice } from "@/lib/pricing";
 
 export default function Home() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
@@ -46,8 +47,7 @@ export default function Home() {
   const formatCurrency = (value: string | number, priceUsd?: string | number | null) => {
     const amount = Number(value);
     if (!Number.isFinite(amount) || amount <= 0) return lang === "vi" ? "Đang cập nhật" : "Updating";
-    if (lang === "en" && priceUsd) return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(priceUsd));
-    return lang === "en" ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount / 25000) : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+    return formatLocalizedPrice(amount, lang, priceUsd);
   };
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase("vi");
   const suggestions = useMemo(() => !normalizedSearch ? [] : allProducts.filter(product => `${product.name} ${product.nameEn || ""} ${product.slug || ""}`.toLocaleLowerCase("vi").includes(normalizedSearch)).slice(0, 6), [allProducts, normalizedSearch]);

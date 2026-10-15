@@ -11,6 +11,7 @@ import { startLogin } from "@/const";
 import { translations, getClientLanguage, setSelectedLanguage, Language } from "@/lib/i18n";
 import { catalogDescription, catalogName } from "@/lib/catalogLocale";
 import { parseYouTubeUrl } from "@/lib/youtube";
+import { formatLocalizedPrice, localizedPriceUsd } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -141,10 +142,10 @@ export default function ProductDetail() {
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
     canonical.href = canonicalUrl;
-    const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: productName, alternateName: lang === "vi" ? product.nameEn : product.name, inLanguage: lang === "en" ? "en" : "vi", description, disambiguatingDescription: lang === "vi" ? product.descriptionEn : product.description, image: product.gallery?.length ? product.gallery : [product.image], url: canonicalUrl, brand: { "@type": "Brand", name: "DHL Stores" }, additionalProperty: sizeGuideRows.map(row => ({ "@type": "PropertyValue", name: `Size ${row.size}`, value: `${row.length} / ${row.height} / ${row.weight}` })), offers: { "@type": "Offer", url: canonicalUrl, priceCurrency: "VND", price: product.price, availability: product.type === "digital" || product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/PreOrder" } };
+    const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: productName, alternateName: lang === "vi" ? product.nameEn : product.name, inLanguage: lang === "en" ? "en" : "vi", description, disambiguatingDescription: lang === "vi" ? product.descriptionEn : product.description, image: product.gallery?.length ? product.gallery : [product.image], url: canonicalUrl, brand: { "@type": "Brand", name: "DHL Stores" }, additionalProperty: sizeGuideRows.map(row => ({ "@type": "PropertyValue", name: `Size ${row.size}`, value: `${row.length} / ${row.height} / ${row.weight}` })), offers: { "@type": "Offer", url: canonicalUrl, priceCurrency: lang === "en" ? "USD" : "VND", price: lang === "en" ? localizedPriceUsd(Number(product.price), lang, product.priceUsd) : product.price, availability: product.type === "digital" || product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/PreOrder" } };
     let schema = document.getElementById("dhl-product-jsonld") as HTMLScriptElement | null;
     if (!schema) { schema = document.createElement("script"); schema.id = "dhl-product-jsonld"; schema.type = "application/ld+json"; document.head.appendChild(schema); }
-    schema.textContent = JSON.stringify(youtubeVideo ? { ...jsonLd, subjectOf: { "@type": "VideoObject", name: `${productName} — video giới thiệu`, description, thumbnailUrl: youtubeVideo.thumbnailUrl, embedUrl: youtubeVideo.embedUrl, contentUrl: youtubeVideo.watchUrl, uploadDate: new Date(product.createdAt).toISOString() } } : jsonLd);
+    schema.textContent = JSON.stringify(youtubeVideo ? { ...jsonLd, subjectOf: { "@type": "VideoObject", name: `${productName} — ${lang === "en" ? "product video" : "video giới thiệu"}`, description, thumbnailUrl: youtubeVideo.thumbnailUrl, embedUrl: youtubeVideo.embedUrl, contentUrl: youtubeVideo.watchUrl, uploadDate: new Date(product.createdAt).toISOString() } } : jsonLd);
     return () => { schema?.remove(); };
   }, [product, productName, productDescription, youtubeVideo?.id]);
   const productsQuery = trpc.store.products.useQuery({}, { enabled: Boolean(product?.id), staleTime: 60_000 });
@@ -412,11 +413,7 @@ export default function ProductDetail() {
 
   const formatCurrency = (val: string | number, usdOverride?: string | number) => {
     const num = Number(val);
-    if (lang === 'en') {
-      const usd = Number(usdOverride);
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number.isFinite(usd) && usd > 0 ? usd : num / 25000);
-    }
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+    return formatLocalizedPrice(num, lang, usdOverride);
   };
 
   const handleAddToCart = () => {
@@ -476,6 +473,7 @@ export default function ProductDetail() {
       item: { productId: product.id, quantity: directPurchaseQuantity, variantId: selectedVariantId || undefined, fulfillmentMode: product.type === "physical" ? fulfillmentMode : undefined },
       shipping: product.type === "physical" ? inlineShipping : undefined,
       paymentMethod: paymentMethod === "wallet_balance" ? "wallet_balance" : undefined,
+      internationalPricing: lang === "en",
     });
   };
 

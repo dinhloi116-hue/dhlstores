@@ -532,6 +532,7 @@ export const appRouter = router({
     checkout: protectedProcedure
       .input(z.object({
         totalAmount: z.number(),
+        internationalPricing: z.boolean().optional(),
         items: z.array(z.object({
           productId: z.number(),
           quantity: z.number(),
@@ -566,12 +567,13 @@ export const appRouter = router({
     quickCheckout: protectedProcedure
       .input(z.object({
         item: z.object({ productId: z.number().int().positive(), quantity: z.number().int().positive().max(99), variantId: z.number().int().positive().optional(), attributes: z.string().max(255).optional(), fulfillmentMode: z.enum(["in_stock", "preorder"]).optional() }),
+        internationalPricing: z.boolean().optional(),
         shipping: z.object({ name: z.string().trim().min(2).max(255), phone: z.string().trim().min(8).max(64), address: z.string().trim().min(5).max(2000), note: z.string().trim().max(2000).optional() }).optional(),
         paymentMethod: z.enum(["sepay_vietqr", "wallet_balance"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireActiveAccount(ctx.user!.id);
-        const order = await db.createOrder(ctx.user!.id, { totalAmount: 0, items: [{ ...input.item, price: 0 }], shipping: input.shipping, clearCart: false });
+        const order = await db.createOrder(ctx.user!.id, { totalAmount: 0, internationalPricing: input.internationalPricing, items: [{ ...input.item, price: 0 }], shipping: input.shipping, clearCart: false });
         if (input.paymentMethod === "wallet_balance") {
           const payment = await db.payOrderWithWalletBalance(ctx.user!.id, order.orderId);
           return { ...order, ...payment, qrUrl: null, paymentFlow: "wallet_balance" as const };

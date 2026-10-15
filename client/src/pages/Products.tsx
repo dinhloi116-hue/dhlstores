@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Search, Filter, Eye, ShoppingCart, Zap } from "lucide-react";
 import { isRenderableImageUrl } from "@/lib/image";
+import { formatLocalizedPrice } from "@/lib/pricing";
 
 export default function Products() {
   const { isAuthenticated } = useAuth();
@@ -112,11 +113,7 @@ export default function Products() {
   const formatCurrency = (val: string | number, priceUsd?: string | number | null) => {
     const num = Number(val);
     if (!Number.isFinite(num) || num <= 0) return lang === 'vi' ? 'Đang cập nhật giá' : 'Price being updated';
-    if (lang === 'en') {
-      if (priceUsd) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(priceUsd));
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num / 25000);
-    }
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+    return formatLocalizedPrice(num, lang, priceUsd);
   };
 
   return (

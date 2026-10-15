@@ -2476,6 +2476,7 @@ export async function clearCart(userId: number) {
 
 export async function createOrder(userId: number, data: {
   totalAmount: number;
+  internationalPricing?: boolean;
   items: Array<{ productId: number; quantity: number; price: number; variantId?: number; attributes?: string; fulfillmentMode?: 'in_stock' | 'preorder' }>;
   discountCode?: string;
   shipping?: { name: string; phone: string; address: string; note?: string };
@@ -2497,7 +2498,8 @@ export async function createOrder(userId: number, data: {
     const fulfillmentMode = item.fulfillmentMode ?? 'in_stock';
     if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
     const wholesaleTier = product.type === "physical" ? selectWholesaleTier(await getProductWholesaleTiers(product.id), quantityByProduct.get(product.id) ?? item.quantity) : undefined;
-    const immediatePrice = Number(wholesaleTier?.unitPrice ?? product.price) + Number(variant?.priceAdjustment ?? 0);
+    const baseImmediatePrice = Number(wholesaleTier?.unitPrice ?? product.price) + Number(variant?.priceAdjustment ?? 0);
+    const immediatePrice = data.internationalPricing ? baseImmediatePrice * 2 : baseImmediatePrice;
     const finalPrice = fulfillmentMode === 'preorder' ? immediatePrice * 0.9 : immediatePrice;
     return {
       productId: product.id,

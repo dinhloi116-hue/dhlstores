@@ -15,6 +15,7 @@ import CustomerContactHub from "@/components/CustomerContactHub";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { getComparedProductIds } from "@/lib/customer-tools";
 import { dhlSportsLogo } from "@/lib/dhlSportsLogo";
+import { formatLocalizedPrice } from "@/lib/pricing";
 
 const toolCatalog = [
   { key: "notebook-labels", name: "Tạo Nhãn Vở Online", description: "Nhập Excel, dàn nhãn A4 và xuất PDF/PNG.", href: "/tools/notebook-labels", group: "In ấn", icon: BookOpen, tone: "amber" },
@@ -58,10 +59,31 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 	    return () => window.removeEventListener('dhlstores-language-detected', syncLanguage);
 	  }, []);
 	  useEffect(() => {
-	    if (localeQuery.data?.locale && setDetectedLanguage(localeQuery.data.locale)) {
+	    const serverLocale = localeQuery.data;
+	    const shouldUseServerLocale = serverLocale && (serverLocale.source !== "fallback" || getClientLanguage() === "en");
+	    if (shouldUseServerLocale && setDetectedLanguage(serverLocale.locale)) {
 	      setLang(localeQuery.data.locale);
 	    }
 	  }, [localeQuery.data?.locale]);
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    if (location.startsWith("/product") || location.startsWith("/products/")) return;
+    const isEnglish = lang === "en";
+    const title = isEnglish ? "DHL Stores | Sports design resources and football apparel" : "DHL Stores | Thư viện tài nguyên thiết kế thể thao";
+    const description = isEnglish ? "Shop football jerseys, namesets, sleeve patches and digital sports design resources at DHL Stores." : "Mua áo bóng đá, nameset, patch tay và tài nguyên thiết kế thể thao tại DHL Stores.";
+    document.title = title;
+    const setMeta = (name: string, content: string, property = false) => {
+      const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let element = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!element) { element = document.createElement("meta"); element.setAttribute(property ? "property" : "name", name); document.head.appendChild(element); }
+      element.content = content;
+    };
+    setMeta("description", description);
+    setMeta("og:title", title, true);
+    setMeta("og:description", description, true);
+    setMeta("og:locale", isEnglish ? "en_US" : "vi_VN", true);
+    setMeta("og:locale:alternate", isEnglish ? "vi_VN" : "en_US", true);
+  }, [lang, location]);
   useEffect(() => {
     setAccountNavPending(false);
   }, [location]);
@@ -224,10 +246,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   };
 
   const formatCurrency = (val: number) => {
-    if (lang === 'en') {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val / 25000);
-    }
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+    return formatLocalizedPrice(val, lang);
   };
 
   const logoPath = dhlSportsLogo;

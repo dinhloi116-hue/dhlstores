@@ -170,9 +170,7 @@ export default function Account() {
 
   const formatCurrency = (val: string | number) => {
     const num = Number(val);
-    if (lang === 'en') {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num / 25000);
-    }
+    if (lang === 'en') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num / 25000);
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
   };
 
