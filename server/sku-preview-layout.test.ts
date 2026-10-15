@@ -223,7 +223,9 @@ describe("public SKU inventory presentation", () => {
 
     expect(source).toContain('id="checkout-fulfillment-title"');
     expect(source).toContain("Chọn cách xử lý đơn trước khi nhập địa chỉ và thanh toán.");
-    expect(source).toContain("Bước 1 · Chọn phiên bản & xem tồn kho");
+    expect(source).toContain("Chọn phiên bản & xem tồn kho");
+    expect(source).not.toContain("Bước 1 · Chọn phiên bản & xem tồn kho");
+    expect(source).not.toContain('rounded-full bg-[#0875e1] text-[11px] font-black text-white">2</span>');
     expect(source).not.toContain("Chọn hình thức mua trước");
   });
 

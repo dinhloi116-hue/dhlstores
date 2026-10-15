@@ -16,7 +16,11 @@ export async function handleSapoInventoryHeartbeat(req: Request, res: Response) 
     const user = await sdk.authenticateRequest(req);
     if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only", timestamp });
 
-    const owner = await db.getUserByOpenId(ENV.ownerOpenId);
+    // Heartbeat credentials and the web runtime can briefly carry different
+    // OWNER_OPEN_ID values during a deployment. Prefer the configured identity,
+    // then use the single active owner record rather than silently skipping sync.
+    const configuredOwner = ENV.ownerOpenId ? await db.getUserByOpenId(ENV.ownerOpenId) : null;
+    const owner = configuredOwner ?? (await db.getAllUsers()).find(account => account.role === "owner" && account.status === "active");
     if (!owner) return res.status(200).json({ ok: true, skipped: "owner-not-found", taskUid: user.taskUid, timestamp });
 
     const locationId = process.env.SAPO_LOCATION_ID?.trim() || DEFAULT_SAPO_LOCATION_ID;

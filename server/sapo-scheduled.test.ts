@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { authenticateRequest, getUserByOpenId, getInventoryBoard, applySapoInboundInventory, pullSapoInventoryBySku } = vi.hoisted(() => ({ authenticateRequest: vi.fn(), getUserByOpenId: vi.fn(), getInventoryBoard: vi.fn(), applySapoInboundInventory: vi.fn(), pullSapoInventoryBySku: vi.fn() }));
+const { authenticateRequest, getUserByOpenId, getAllUsers, getInventoryBoard, applySapoInboundInventory, pullSapoInventoryBySku } = vi.hoisted(() => ({ authenticateRequest: vi.fn(), getUserByOpenId: vi.fn(), getAllUsers: vi.fn(), getInventoryBoard: vi.fn(), applySapoInboundInventory: vi.fn(), pullSapoInventoryBySku: vi.fn() }));
 
 vi.mock("./_core/sdk", () => ({ sdk: { authenticateRequest } }));
 vi.mock("./_core/env", () => ({ ENV: { ownerOpenId: "owner-open-id" } }));
-vi.mock("./db", () => ({ getUserByOpenId, getInventoryBoard, applySapoInboundInventory }));
+vi.mock("./db", () => ({ getUserByOpenId, getAllUsers, getInventoryBoard, applySapoInboundInventory }));
 vi.mock("./sapo", () => ({ pullSapoInventoryBySku }));
 
 import { handleSapoInventoryHeartbeat } from "./sapo-scheduled";
@@ -39,5 +39,19 @@ describe("Sapo inventory Heartbeat", () => {
     expect(pullSapoInventoryBySku).toHaveBeenCalledWith([{ localVariantId: 34, sku: "MESSI", available: 15 }], "529110");
     expect(applySapoInboundInventory).toHaveBeenCalledWith({ changes: [{ localVariantId: 34, sku: "MESSI", stock: 20, sapoVariantId: "9", inventoryItemId: "10" }], performedByUserId: 7, reason: "Tự động đồng bộ Sapo/Shopee" });
     expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ ok: true, taskUid: "task-1", updated: 1 }));
+  });
+
+  it("không bỏ qua đồng bộ khi cron có OWNER_OPEN_ID lệch nhưng database còn owner active", async () => {
+    authenticateRequest.mockResolvedValue({ isCron: true, taskUid: "task-fallback" });
+    getUserByOpenId.mockResolvedValue(null);
+    getAllUsers.mockResolvedValue([{ id: 8, role: "owner", status: "active" }]);
+    getInventoryBoard.mockResolvedValue([]);
+    pullSapoInventoryBySku.mockResolvedValue([]);
+    applySapoInboundInventory.mockResolvedValue({ updated: 0, skipped: 0 });
+    const response = responseMock();
+
+    await handleSapoInventoryHeartbeat({ originalUrl: "/api/scheduled/sapo-inventory" } as any, response);
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ ok: true, taskUid: "task-fallback", scanned: 0, updated: 0 }));
   });
 });
