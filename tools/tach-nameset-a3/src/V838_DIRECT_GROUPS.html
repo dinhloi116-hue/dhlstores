@@ -217,8 +217,12 @@ function form(){
  +'<button id="v838Run" type="button">'+T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS')+'</button>'
  +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Dàn chung khổ: kiểm tra va chạm theo bounding box an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Roll mode packs using safe bounding boxes; page mode centers each intact group.')+'</div>'
  +'<div id="v838DirectMsg"></div>';
- var anchor=E('v77NestBtn');
- if(anchor&&anchor.parentNode)card.insertBefore(b,anchor.parentNode);
+ var anchor=E('v77NestBtn'),row=anchor;
+ // insertBefore requires the reference node to be an IMMEDIATE child of card.
+ // Corel 2021 MSHTML throws NotFoundError for v77NestBtn.parentNode
+ // because the button is nested two or more levels below v77NestCard.
+ while(row&&row.parentNode&&row.parentNode!==card)row=row.parentNode;
+ if(row&&row.parentNode===card)card.insertBefore(b,row);
  else card.appendChild(b);
  E('v838Run').onclick=execute;
  var m=E('v838Mode');if(m)m.onchange=function(){var q=E('v838Run');if(q)q.innerHTML=m.value==='pages'?T('TẠO TRANG RIÊNG CHO TỪNG GROUP','ONE PAGE PER GROUP'):T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS');};
