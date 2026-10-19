@@ -19,7 +19,7 @@ function previewStatus(msg,kind){var x=E('v84ExcelPreview');if(x){x.className=ki
 function selectionStatus(msg,kind){var x=E('v84TemplateStatus');if(x){x.className=kind||'';x.innerHTML=msg;}}
 function cellText(cell){var t='',v='';try{t=String(cell.Text);}catch(e){}try{v=cell.Value2;}catch(e2){}if((!t||/^#+$/.test(t))&&v!==undefined&&v!==null)t=String(v);return txt(t);}
 function isFooterHeader(h){return h==='dòngdướisố'||h==='dongduoiso'||h==='chữdướisố'||h==='chuduoiso'||h==='dòngdưới'||h==='dongduoi'||h==='dòngphụ'||h==='dongphu'||h==='footer'||h==='bottomtext'||h==='textbelownumber'||h==='extratext'||h==='ghichúin'||h==='ghichuin';}
-function isSyntaxHeader(h){return h==='nộidungin'||h==='noidungin'||h==='cúphápin'||h==='cuphapin'||h==='tênsốdòngdưới'||h==='tensodongduoi'||h==='nameset'||h==='printtext'||h==='printcontent';}
+function isSyntaxHeader(h){return h==='nộidungin'||h==='noidungin'||h==='cúphápin'||h==='cuphapin'||h==='tênsốdòngdưới'||h==='tensodongduoi'||h==='nameset'||h==='printtext'||h==='printcontent'||h==='cúpháp'||h==='cuphap'||h==='nộidung'||h==='noidung';}
 function splitPrintSyntax(value){
  var s=txt(value),m=s.match(/^(.+?)\s+[-–—]\s+(\d{1,3}[A-Za-z]?)\s+[-–—]\s+(.+)$/);
  if(m)return{name:txt(m[1]),number:txt(m[2]),footer:txt(m[3])};
@@ -41,15 +41,15 @@ function rowsFromMatrix(m){
  if(!hasHeader){
   first=splitPrintSyntax(m[0][0]);
   if(first){cc=0;start=0;}
+  else if(m[0].length>=2&&txt(m[0][0])&&/^\d{1,3}[A-Za-z]?$/.test(txt(m[0][1]))){nc=0;sc=1;fc=m[0].length>=3?2:-1;start=0;}
   else throw new Error(LANG()==='vi'?'Cần cột Tên + Số (cột Dòng dưới tùy chọn), hoặc 1 cột Nội dung in theo cú pháp Tên - Số - Dòng dưới.':'Use Name + Number columns (optional Footer), or one Print content column formatted Name - Number - Footer.');
  }
  for(r=start;r<m.length;r++){
   n='';s='';footer='';parsed=null;
-  if(cc>=0){parsed=splitPrintSyntax(m[r][cc]);}
-  else{
+  if(nc>=0&&sc>=0){
    n=txt(m[r][nc]);s=txt(m[r][sc]);footer=fc>=0?txt(m[r][fc]):'';
    if(n&&!s)parsed=splitPrintSyntax(n);
-  }
+  }else if(cc>=0){parsed=splitPrintSyntax(m[r][cc]);}
   if(parsed){n=parsed.name;s=parsed.number;if(!footer)footer=parsed.footer;}
   if(n&&s)out.push({name:n,number:s,footer:footer,row:r+1});
  }
