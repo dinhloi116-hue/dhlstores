@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>DHL Nameset Layout</title>
-<!-- DHL_UI_VERSION=8.41 -->
+<!-- DHL_UI_VERSION=8.42 -->
 <style>
 *{box-sizing:border-box!important}
 html,body{margin:0!important;min-height:100%!important;background:#fff!important;color:#111!important;font:12px "Segoe UI",Arial,sans-serif!important;line-height:1.4!important}
@@ -31,7 +31,7 @@ button{width:100%!important;border:1px solid #999!important;border-radius:5px!im
 <body>
 <div class="card">
   <div class="top">
-    <div><span class="title">DHL NAMESET LAYOUT</span><span class="ver">v8.41</span></div>
+    <div><span class="title">DHL NAMESET LAYOUT</span><span class="ver">v8.42</span></div>
     <div class="topactions"><span class="langwrap"><button id="langVI" class="langbtn" type="button" onclick="setLanguage('vi')">VI</button><button id="langEN" class="langbtn" type="button" onclick="setLanguage('en')">EN</button></span><button class="gitbtn" id="reloadGit" type="button" onclick="reloadFromGit()" data-i18n="reload">↻ CẬP NHẬT</button></div>
   </div>
   <div id="selectionStatus" class="status">Đang đọc vùng chọn…</div>
@@ -75,7 +75,7 @@ button{width:100%!important;border:1px solid #999!important;border-radius:5px!im
     <div id="excelResult" class="note">Chọn 1 bộ mẫu tên + số còn là Text trước khi chạy.</div>
   </div>
 </div>
-<div class="footer">DHL Nameset Layout · v8.41 · VI / EN</div>
+<div class="footer">DHL Nameset Layout · v8.42 · VI / EN</div>
 
 <script src="main.js" type="text/javascript"></script>
 <script type="text/javascript">
@@ -99,7 +99,11 @@ function hookAutoSave(){var ids=['sheetWidth','sheetHeight','sheetGap','nameNumb
 function corelApp(){if(!window.external||!window.external.Application)throw new Error(I18N[currentLang].noDoc);return window.external.Application;}
 function setCurrentPrintPage(){var d=I18N[currentLang],w=Number(byId('sheetWidth').value),h=Number(byId('sheetHeight').value),doc,old,a;try{if(!(w>0&&h>0))throw new Error(d.badSize);a=corelApp();if(!a.Documents||a.Documents.Count===0)throw new Error(d.noDoc);doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;a.ActivePage.SetSize(w,h);doc.Unit=old;try{a.ActiveWindow.Refresh();}catch(x){}byId('pageResult').innerHTML=d.pageSet+w+' × '+h+' mm';saveSettings(false);}catch(e){try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}byId('pageResult').innerHTML=d.pageError+e.message;}}
 function readCurrentPageSize(){var d=I18N[currentLang],doc,old,a,w,h;try{a=corelApp();if(!a.Documents||a.Documents.Count===0)throw new Error(d.noDoc);doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;w=Math.round(Number(a.ActivePage.SizeWidth)*100)/100;h=Math.round(Number(a.ActivePage.SizeHeight)*100)/100;doc.Unit=old;byId('sheetWidth').value=w;byId('sheetHeight').value=h;byId('pageResult').innerHTML=d.pageRead+w+' × '+h+' mm';saveSettings(false);}catch(e){try{if(doc&&old!==undefined)doc.Unit=old;}catch(x){}byId('pageResult').innerHTML=d.pageError+e.message;}}
-function reloadFromGit(){var b=byId('reloadGit'),d=I18N[currentLang];try{if(b){b.disabled=true;b.innerHTML=d.loading;}var sh=new ActiveXObject('WScript.Shell'),stamp=(new Date()).getTime();var ps="powershell -NoProfile -ExecutionPolicy Bypass -Command \"$u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat?v="+stamp+"';$p=Join-Path $env:TEMP 'CAI_TOOL_TACH_NAMESET_A3_LATEST.bat';try{Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p;cmd.exe /d /c ('\"'+$p+'\" --reload-ui');exit $LASTEXITCODE}catch{exit 1}\"";var rc=sh.Run(ps,1,true);if(rc===0){var base=window.location.href.split('?')[0];window.location.replace(base+'?v='+(new Date()).getTime());}else alert(d.reloadFail+rc);}catch(e){alert(d.reloadError+e.message);}finally{if(b){b.disabled=false;b.innerHTML=I18N[currentLang].reload;}}}
+function reloadFromGit(){
+ if(window.DHLFastUpdater&&typeof window.DHLFastUpdater.run==='function')return window.DHLFastUpdater.run();
+ alert(currentLang==='en'?'Fast updater is not ready. Close and reopen DHL Nameset Layout.':'Trình cập nhật nhanh chưa sẵn sàng. Đóng rồi mở lại DHL Nameset Layout.');
+ return false;
+}
 
 function collectionToArray(c){var a=[],i;for(i=1;i<=c.Count;i++)a.push(c.Item(i));return a;}
 function selectedShapesV74(){var a=corelApp(),sr;if(!a.Documents||a.Documents.Count===0)throw new Error(I18N[currentLang].noDoc);sr=a.ActiveSelectionRange;var arr=collectionToArray(sr);if(arr.length===1){try{var ch=collectionToArray(arr[0].Shapes);if(ch.length>1)arr=ch;}catch(e){}}return arr;}
@@ -198,7 +202,7 @@ window.V77CreateOutline=V77CreateOutline;
 function normalizeSelectedPairV77(show){var d=I18N[currentLang],a,doc,oldUnit,pairs,i,g;try{a=corelApp();doc=a.ActiveDocument;oldUnit=doc.Unit;doc.Unit=3;pairs=pairNearest(selectedShapesV74());for(i=0;i<pairs.length;i++)g=normalizePairObjects(pairs[i].name,pairs[i].number);doc.Unit=oldUnit;if(show)byId('fontStatus').innerHTML=d.pairDone+g+' mm. '+d.textOnly;try{a.ActiveWindow.Refresh();}catch(x){}return true;}catch(e){try{if(doc&&oldUnit!==undefined)doc.Unit=oldUnit;}catch(x2){}if(show)byId('fontStatus').innerHTML=e.message;return false;}}
 window.normalizeSelectedPair=normalizeSelectedPairV77;
 function reloadV77(){var b=el('reloadGit'),d=L[lang()],sh,fso,temp,launcher,tf,pexe,script,cmd,rc,base;try{if(b){b.disabled=true;b.innerHTML=d.loading;}sh=new ActiveXObject('WScript.Shell');fso=new ActiveXObject('Scripting.FileSystemObject');temp=sh.ExpandEnvironmentStrings('%TEMP%');launcher=temp+'\\DHL_NAMESET_UPDATE_LAUNCHER.ps1';pexe=sh.ExpandEnvironmentStrings('%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');script="$ErrorActionPreference='Stop'\r\n$u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?v=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n$p=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET.ps1'\r\nInvoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p\r\n$pr=Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$p) -Verb RunAs -Wait -PassThru\r\nexit $pr.ExitCode\r\n";tf=fso.CreateTextFile(launcher,true,false);tf.Write(script);tf.Close();cmd='"'+pexe+'" -NoProfile -ExecutionPolicy Bypass -File "'+launcher+'"';rc=sh.Run(cmd,1,true);try{fso.DeleteFile(launcher,true);}catch(dx){}if(rc===0){base=window.location.href.split('?')[0];window.location.replace(base+'?v='+(new Date()).getTime());}else alert(d.reloadFail+rc);}catch(e){alert(d.reloadError+e.message);}finally{if(b){b.disabled=false;b.innerHTML=L[lang()].reload;}}}
-window.reloadFromGit=reloadV77;
+/* V8.42: legacy updater must never take ownership of reloadGit. */
 function hook(){addUI();var old=window.setLanguage;if(old&&!old._v77){var wrapped=function(x){old(x);applyLang();};wrapped._v77=true;window.setLanguage=wrapped;}applyLang();var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR','v77Rotate','v77OutlineOffset','v77OutlineStroke','v77MakeWhite','v77MakeCut'],i,n;for(i=0;i<ids.length;i++){n=el(ids[i]);if(n)n.onchange=function(){saveV77Settings();if(this.id==='v77NestW'||this.id==='v77NestH')clearPreset();if(this.id==='v77MakeWhite'||this.id==='v77MakeCut')updateCheckStyles();};}}
 if(window.addEventListener)window.addEventListener('load',hook,false);else if(window.attachEvent)window.attachEvent('onload',hook);else setTimeout(hook,200);
 })();
@@ -1385,40 +1389,8 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 })();
 </script>
 
-<script id="dhl-v822-update-recovery" type="text/javascript">
-(function(){
-function E(id){return document.getElementById(id);}function LANG(){try{return currentLang==='en'?'en':'vi';}catch(e){return'vi';}}
-function reloadV822(){var b=E('reloadGit'),sh,fso,temp,launcher,tf,pexe,script,cmd,rc,base,msg;try{
- if(b){b.disabled=true;b.innerHTML=LANG()==='vi'?'ĐANG CẬP NHẬT…':'UPDATING…';}
- sh=new ActiveXObject('WScript.Shell');fso=new ActiveXObject('Scripting.FileSystemObject');temp=sh.ExpandEnvironmentStrings('%TEMP%');launcher=temp+'\\DHL_NAMESET_UPDATE_LAUNCHER_V822.ps1';pexe=sh.ExpandEnvironmentStrings('%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');
- script="$ErrorActionPreference='Stop'\r\n"
- +"[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12\r\n"
- +"$log=Join-Path $env:TEMP 'DHL_NAMESET_LAUNCHER_LOG.txt'\r\n"
- +"try {\r\n"
- +"  Set-Content -LiteralPath $log -Value ('DHL launcher V8.22 '+(Get-Date)) -Encoding UTF8\r\n"
- +"  $u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?v=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n"
- +"  $p=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET.ps1'\r\n"
- +"  try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p -TimeoutSec 30 } catch {\r\n"
- +"    Add-Content -LiteralPath $log -Value ('IWR failed: '+$_.Exception.Message) -Encoding UTF8\r\n"
- +"    $curl=Join-Path $env:SystemRoot 'System32\\curl.exe'\r\n"
- +"    if(Test-Path $curl){ & $curl -L --fail --silent --show-error -o $p $u; if($LASTEXITCODE -ne 0){throw 'curl download failed'} } else { (New-Object Net.WebClient).DownloadFile($u,$p) }\r\n"
- +"  }\r\n"
- +"  if(!(Test-Path $p)){throw 'Updater was not downloaded'}\r\n"
- +"  $txt=[IO.File]::ReadAllText($p); if($txt.IndexOf('DHL Nameset Layout updater V8.22') -lt 0 -and $txt.IndexOf('DHL Nameset Layout updater V8.23') -lt 0){throw 'Downloaded updater is not a supported DHL Nameset updater'}\r\n"
- +"  $ps=Join-Path $PSHOME 'powershell.exe'\r\n"
- +"  $pr=Start-Process -FilePath $ps -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$p) -Verb RunAs -Wait -PassThru\r\n"
- +"  Add-Content -LiteralPath $log -Value ('Updater exit code: '+$pr.ExitCode) -Encoding UTF8\r\n"
- +"  exit $pr.ExitCode\r\n"
- +"} catch { Add-Content -LiteralPath $log -Value ('ERROR: '+$_.Exception.Message) -Encoding UTF8; exit 91 }\r\n";
- tf=fso.CreateTextFile(launcher,true,false);tf.Write(script);tf.Close();cmd='"'+pexe+'" -NoProfile -ExecutionPolicy Bypass -File "'+launcher+'"';rc=sh.Run(cmd,1,true);try{fso.DeleteFile(launcher,true);}catch(dx){}
- if(rc===0){base=window.location.href.split('?')[0];window.location.replace(base+'?v='+(new Date()).getTime());}
- else{msg=(LANG()==='vi'?'Cập nhật chưa chạy được. Mã lỗi ':'Update failed. Error code ')+rc+'\n'+(LANG()==='vi'?'Log: ':'Log: ')+temp+'\\DHL_NAMESET_LAUNCHER_LOG.txt';alert(msg);}
- }catch(e){alert((LANG()==='vi'?'Không cập nhật được: ':'Could not update: ')+e.message);}finally{if(b){b.disabled=false;b.innerHTML=LANG()==='vi'?'↻ CẬP NHẬT':'↻ UPDATE';}}}
-window.reloadFromGit=reloadV822;
-function finish(){var b=E('reloadGit'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(!b){setTimeout(finish,250);return;}b.onclick=reloadV822;if(v&&v.length)v[0].innerHTML='v8.22';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.22 · robust updater · VI / EN';}
-if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,9800);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,9800);});else setTimeout(finish,10000);
-})();
-</script>
+<!-- V8.42: removed legacy V8.22 launcher; it rejected modern versions and returned exit code 91. -->
+
 <style id="dhl-v823-internal-clean-style">
 #v87LicenseBar{display:none!important}
 </style>
