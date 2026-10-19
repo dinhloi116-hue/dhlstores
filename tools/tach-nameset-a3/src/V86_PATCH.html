@@ -1,3 +1,4 @@
+<!-- dhl-v836-excel-pages -->
 <style id="dhl-v834-excel-footer-style">
 #v84TemplateStatus{display:none!important}
 .v86-box{border:1px solid #cfcfcf!important;border-radius:6px!important;padding:8px!important;margin:8px 0!important;background:#fff!important}.v86-title{font-size:12px!important;font-weight:800!important;margin-bottom:6px!important}.v86-grid2,.v86-grid3{display:table!important;width:100%!important;table-layout:fixed!important}.v86-grid2>div,.v86-grid3>div{display:table-cell!important;padding-right:5px!important;vertical-align:top!important}.v86-grid2>div:last-child,.v86-grid3>div:last-child{padding-right:0!important}.v86-mini{display:block!important;font-size:10px!important;color:#555!important;margin-bottom:3px!important}.v86-note{border:1px solid #cfcfcf!important;border-left:4px solid #999!important;border-radius:5px!important;padding:7px 8px!important;margin-top:7px!important;font-size:11px!important;line-height:1.4!important}.v86-note.ok{border-left-color:#2e8b57!important}.v86-note.bad{border-left-color:#c53b45!important}.v834-footer{border:1px solid #d4d4d4!important;border-radius:5px!important;background:#fff!important;margin-top:8px!important;padding:7px!important}.v834-foot-title{font-size:11px!important;font-weight:800!important;margin-bottom:5px!important;color:#111!important}.v834-foot-grid{display:table!important;table-layout:fixed!important;width:100%!important}.v834-foot-grid>div{display:table-cell!important;vertical-align:top!important;padding-right:5px!important}.v834-foot-grid>div:last-child{padding-right:0!important}.v834-footer input,.v834-footer select{background:#fff!important;color:#111!important;opacity:1!important;border:1px solid #777!important}.v834-foot-help{font-size:10px!important;color:#333!important;margin-top:5px!important;line-height:1.35!important}.v86-btn{margin-top:7px!important}.v86-hint{font-size:10px!important;color:#555!important;line-height:1.4!important;margin-top:5px!important}
@@ -91,7 +92,7 @@ function pageLabel(s,i){
  return label.length>55?label.substr(0,55):label;
 }
 function separatePages(){
- var st=E('excelResult'),a=null,doc=null,oldUnit=null,first=null,p,groups=[],copies=[],w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),m,gw,gh,mirror=!!(E('excelMirror')&&E('excelMirror').checked),i,src,copy,cmd=false,opt=false,created=0,count=0,originalPageCount=0;
+ var st=E('excelResult'),a=null,doc=null,oldUnit=null,first=null,p,printPages=[],groups=[],copies=[],w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),m,gw,gh,mirror=!!(E('excelMirror')&&E('excelMirror').checked),i,src,copy,cmd=false,opt=false,created=0,count=0,originalPageCount=0;
  try{
   if(!(w>0&&h>0&&gap>=0))throw new Error(L()==='vi'?'Khổ giấy/khoảng cách không hợp lệ.':'Invalid print paper dimensions / margin.');
   groups=orderedExcelGroups();count=groups.length;a=corel();doc=a.ActiveDocument;oldUnit=doc.Unit;doc.Unit=3;
@@ -107,10 +108,10 @@ function separatePages(){
   }
   doc.BeginCommandGroup('DHL Excel - one nameset per page');cmd=true;
   try{a.Optimization=true;opt=true;}catch(optimization){}
+  printPages.push(first);
+  for(i=1;i<count;i++){p=doc.AddPagesEx(1,w,h);p.MoveTo(i+1);printPages.push(p);}
   for(i=0;i<count;i++){
-   src=groups[i];
-   p=i===0?first:doc.AddPagesEx(1,w,h);
-   if(i>0){p.MoveTo(i+1);}
+   src=groups[i];p=printPages[i];
    try{p.Name=pageLabel(src,i);}catch(pageNameError){}
    copy=src.CopyToLayer(p.ActiveLayer);
    if(!copy)throw new Error('CopyToLayer did not return a Shape at index '+(i+1));
