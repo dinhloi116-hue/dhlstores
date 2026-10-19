@@ -47,7 +47,7 @@ function getLogo(){
 }
 function available(){if(!prefs.on)return null;return getLogo();}
 function parkSource(page){
- if(!chosen||!page)return false;
+ if(!prefs.on||!chosen||!page)return false;
  var s=getLogo(),cx=Number(s.CenterX),cy=Number(s.CenterY),w=Math.abs(Number(s.SizeWidth)),h=Math.abs(Number(s.SizeHeight)),px=Number(page.CenterX),py=Number(page.CenterY),pw=Math.abs(Number(page.SizeWidth)),ph=Math.abs(Number(page.SizeHeight));
  if(!isFinite(cx)||!isFinite(cy)||!isFinite(px)||!isFinite(py))return false;
  var intersects=(Math.abs(cx-px)*2<w+pw)&&(Math.abs(cy-py)*2<h+ph);
@@ -227,7 +227,15 @@ function mount(){
  redraw();
  return !!(E('v837ManualPanel')&&E('v837ExcelPanel'));
 }
-function start(){var tries=0;function tick(){if(mount()||++tries>=35)return;setTimeout(tick,300);}tick();}
+function start(){
+ var tries=0;function tick(){if(mount()||++tries>=35)return;setTimeout(tick,300);}tick();
+ var old=window.setLanguage;
+ if(old&&!old._v837){var wrap=function(x){var r=old(x);setTimeout(function(){
+  var ids=['v837ManualPanel','v837ExcelPanel'],i,el;
+  for(i=0;i<ids.length;i++){el=E(ids[i]);if(el&&el.parentNode)el.parentNode.removeChild(el);}
+  mount();redraw();
+ },120);return r;};wrap._v837=true;window.setLanguage=wrap;}
+}
 readSaved();
 window.DHLNumberLogo={capture:capture,manual:manual,intoNumber:intoNumber,on: function(){return prefs.on;},available:available,settings:function(){return{on:prefs.on,pct:prefs.pct,bottom:prefs.bottom,inset:prefs.inset,mode:prefs.mode};},signature:signature,parkSource:parkSource};
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(start,1000);},false);
