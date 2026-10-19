@@ -211,7 +211,7 @@ function hookPanel(prefix,el){
 }
 function mount(){
  var m=E('run'),x=E('v86MakeGroups'),mf=E('v837ManualPanel'),xf=E('v837ExcelPanel');
- if(m&&!mf)hookPanel('v837Manual',m.parentNode);
+ if(m&&!mf)hookPanel('v837Manual',m.parentNode&&m.parentNode.parentNode?m.parentNode.parentNode:m);
  if(x&&!xf)hookPanel('v837Excel',x);
  redraw();
  return !!(E('v837ManualPanel')&&E('v837ExcelPanel'));
