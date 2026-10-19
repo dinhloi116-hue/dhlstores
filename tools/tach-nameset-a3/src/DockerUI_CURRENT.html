@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>DHL Nameset Layout</title>
-<!-- DHL_UI_VERSION=8.38 -->
+<!-- DHL_UI_VERSION=8.39 -->
 <style>
 *{box-sizing:border-box!important}
 html,body{margin:0!important;min-height:100%!important;background:#fff!important;color:#111!important;font:12px "Segoe UI",Arial,sans-serif!important;line-height:1.4!important}
@@ -1731,7 +1731,7 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 
 
 <style id="dhl-v829-ui-outline-style">
-/* V8.38: clearer controls across the whole docker */
+/* V8.39: clearer controls across the whole docker */
 input[type=text],input[type=number],input[type=file],select,textarea{
   background:#fff!important;color:#111!important;opacity:1!important;
   border:1px solid #666!important;font-weight:600!important;
@@ -1824,7 +1824,7 @@ function run(){
   makeWhite=!!(E('v77MakeWhite')&&E('v77MakeWhite').checked);makeCut=!!(E('v77MakeCut')&&E('v77MakeCut').checked);
   if(off<0||stroke<=0)throw new Error(L()==='vi'?'Khoảng cách/độ dày không hợp lệ.':'Invalid outline distance/width.');
   if(!makeWhite&&!makeCut)throw new Error(L()==='vi'?'Chọn ít nhất NỀN TRẮNG hoặc CUTLINE.':'Choose at least WHITE BORDER or CUTLINE.');
-  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.38');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.39');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
   for(i=0;i<ss.length;i++){
    base=null;outer=null;
    base=baseBoundary(a,ss[i]);
@@ -1834,7 +1834,7 @@ function run(){
   try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;
   if(created.length){try{range=a.CreateShapeRange();for(i=0;i<created.length;i++)range.Add(created[i]);range.CreateSelection();}catch(re){}}
   try{a.ActiveWindow.Refresh();}catch(rx){}
-  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.38: đã tạo đường bao cho ':'✓ V8.38: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
+  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.39: đã tạo đường bao cho ':'✓ V8.39: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
   return true;
  }catch(e){
   try{if(outer)outer.Delete();}catch(c1){}try{if(base)base.Delete();}catch(c2){}try{if(opt&&a)a.Optimization=false;}catch(c3){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(c4){}try{if(cmd&&doc){doc.EndCommandGroup();doc.Undo();}}catch(c5){}
@@ -1855,8 +1855,8 @@ function tuneUI(){
  if(btn){btn.onclick=run;btn.innerHTML=L()==='vi'?'TẠO ĐƯỜNG BAO + GROUP':'CREATE OUTLINE + GROUP';}
  window.V77CreateOutline=run;window.V76CreateOutline=run;
  if(hint)hint.innerHTML=L()==='vi'?'Chọn ảnh PNG/vector → nhập khoảng cách viền → chọn Nền trắng và/hoặc Cutline → TẠO ĐƯỜNG BAO. Tool giữ nguyên đối tượng gốc và Group kết quả.':'Select PNG/vector → set outline distance → choose White border and/or Cutline → CREATE OUTLINE. The original object is preserved and the result is grouped.';
- if(v&&v.length)v[0].innerHTML='v8.38';
- if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.38 · outline + UI + contour-primary copies · VI / EN';
+ if(v&&v.length)v[0].innerHTML='v8.39';
+ if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.39 · outline + UI + contour-primary copies · VI / EN';
 }
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);});else setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14700);
 })();
@@ -2204,6 +2204,7 @@ else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(sta
 else setTimeout(start,1200);
 })();
 </script>
+<!-- dhl-v839-mshtml-notfound-fix -->
 <style id="dhl-v838-direct-groups-style">
 #v838DirectGroups{background:#fff!important;color:#111!important;border:2px solid #555!important;border-radius:6px!important;padding:9px!important;margin:9px 0!important}
 #v838DirectGroups .v838-title{font-size:12px!important;font-weight:800!important;margin:0 0 5px!important;color:#111!important}
@@ -2423,8 +2424,12 @@ function form(){
  +'<button id="v838Run" type="button">'+T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS')+'</button>'
  +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Dàn chung khổ: kiểm tra va chạm theo bounding box an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Roll mode packs using safe bounding boxes; page mode centers each intact group.')+'</div>'
  +'<div id="v838DirectMsg"></div>';
- var anchor=E('v77NestBtn');
- if(anchor&&anchor.parentNode)card.insertBefore(b,anchor.parentNode);
+ var anchor=E('v77NestBtn'),row=anchor;
+ // insertBefore requires the reference node to be an IMMEDIATE child of card.
+ // Corel 2021 MSHTML throws NotFoundError for v77NestBtn.parentNode
+ // because the button is nested two or more levels below v77NestCard.
+ while(row&&row.parentNode&&row.parentNode!==card)row=row.parentNode;
+ if(row&&row.parentNode===card)card.insertBefore(b,row);
  else card.appendChild(b);
  E('v838Run').onclick=execute;
  var m=E('v838Mode');if(m)m.onchange=function(){var q=E('v838Run');if(q)q.innerHTML=m.value==='pages'?T('TẠO TRANG RIÊNG CHO TỪNG GROUP','ONE PAGE PER GROUP'):T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS');};
