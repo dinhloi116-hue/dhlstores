@@ -14,7 +14,7 @@ function en(){try{return currentLang==='en';}catch(e){return false;}}
 function msg(vi,english){return en()?english:vi;}
 function number(id,d){var e=E(id),n=e?Number(e.value):d;return isFinite(n)?n:d;}
 function selection(a){var s=a.ActiveSelectionRange,o=[],i;if(s)for(i=1;i<=s.Count;i++)o.push(s.Item(i));return o;}
-function groupLike(s){try{return s.Shapes&&Number(s.Shapes.Count)>0;}catch(e){return false;}}
+function groupLike(s){try{if(/^DHL_EXCEL_ROW_[0-9]+(?:_SIZE_[A-Za-z0-9_-]+)?$/.test(String(s.Name||'')))return true;}catch(tagErr){}try{return s.Shapes&&Number(s.Shapes.Count)>0;}catch(e){return false;}}
 function allGroups(shapes){var i;for(i=0;i<shapes.length;i++)if(!groupLike(shapes[i]))return false;return true;}
 function dims(s){return {w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
 function sourceTarget(s){
