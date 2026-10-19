@@ -108,6 +108,7 @@ function separatePages(){
   }
   doc.BeginCommandGroup('DHL Excel - one nameset per page');cmd=true;
   try{a.Optimization=true;opt=true;}catch(optimization){}
+  if(window.DHLNumberLogo&&typeof window.DHLNumberLogo.parkSource==='function')window.DHLNumberLogo.parkSource(first);
   printPages.push(first);
   for(i=1;i<count;i++){p=doc.AddPagesEx(1,w,h);p.MoveTo(i+1);printPages.push(p);}
   for(i=0;i<count;i++){
