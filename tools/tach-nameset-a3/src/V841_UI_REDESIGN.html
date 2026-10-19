@@ -1,0 +1,202 @@
+<style id="dhl-v841-ui-redesign-style">
+/* DHL Nameset Layout V8.41 — CorelDRAW 2021/2025 MSHTML-safe UI.
+   No flex/grid, CSS variables, :has, browser APIs or external assets. */
+
+/* Canvas, spacing, legibility */
+html,html body {background-color:#edf2f8!important;color:#142b47!important;font-family:"Segoe UI",Arial,sans-serif!important}
+html body {padding:9px!important;font-size:12px!important;line-height:1.46!important}
+body .card,body .v77-card,body .v86-box,body .v85-prep,body .v818-box,
+body .v837-logo-panel,body #v838DirectGroups,body #v832Safety,body #v836LayoutBox,
+body .v834-footer,body .v821-bulk-box {
+  background-color:#ffffff!important;color:#172c46!important;
+  border:1px solid #cad7e6!important;border-radius:9px!important;
+  padding:10px!important;margin-bottom:10px!important;
+  box-shadow:0 2px 8px rgba(16,40,76,.07)!important;
+}
+body .v818-box,body .v834-footer,body .v85-prep,body #v836LayoutBox {
+  background-color:#f8fbff!important;border-color:#d6e0ec!important;
+  box-shadow:none!important;
+}
+body #v838DirectGroups {
+  border:2px solid #2877d7!important;background-color:#f5f9ff!important;
+  box-shadow:0 2px 9px rgba(28,100,190,.12)!important;
+}
+body #v837ManualPanel,body #v837ExcelPanel {
+  border-left:4px solid #27816c!important;
+}
+
+/* Top identity bar; keep within 380px-wide Corel dock. */
+body .top{padding:3px 0 9px!important;margin:0 0 6px!important;border-bottom:1px solid #d9e4ef!important}
+body .title{font-size:15px!important;letter-spacing:.15px!important;color:#133a66!important;font-weight:800!important}
+body .ver{
+  display:inline-block!important;margin-left:5px!important;
+  color:#2365ae!important;font-size:10px!important;font-weight:800!important;
+  padding:2px 5px!important;background-color:#e6f1ff!important;
+  border:1px solid #b8d5fb!important;border-radius:5px!important;
+}
+body .topactions{vertical-align:middle!important}
+body .langwrap{border:1px solid #b0c5db!important;border-radius:5px!important}
+body .langbtn{min-width:26px!important;font-size:10px!important;padding:5px 3px!important;border:0!important;color:#365373!important;background-color:#f5f8fc!important}
+body .langbtn.active{background-color:#ddeaff!important;color:#134d95!important;text-decoration:none!important}
+
+/* Tabs: active is unmistakable without relying on font weight alone. */
+body .v82-tabs{
+  background-color:#eaf1f9!important;border:1px solid #c1d2e7!important;
+  border-radius:8px!important;margin:8px 0 10px!important;
+}
+body .v82-tabs>div{border-right:1px solid #cbd9e8!important}
+body .v82-tabbtn{
+  color:#38526e!important;background-color:#f1f5fa!important;
+  border:0!important;border-radius:0!important;
+  font-size:11px!important;font-weight:800!important;
+  padding:11px 2px 10px!important;line-height:1.15!important;
+  box-shadow:none!important;
+}
+body .v82-tabbtn:hover{background-color:#dbeaff!important;color:#14579f!important}
+body .v82-tabbtn.selected{
+  background-color:#dceafe!important;color:#0f4fa3!important;
+  font-weight:900!important;box-shadow:inset 0 -4px 0 #1768d2!important;
+}
+
+/* Sections and process headers. */
+body .sectionbar{background-color:#eff5fd!important;border:1px solid #d4e1f0!important;border-radius:7px!important;margin-bottom:9px!important}
+body .sectionbar>div{background-color:#eff5fd!important;padding:8px!important}
+body .sectionname,body .v77-title,body .v86-title,body .v85-prep-title,
+body #v838DirectGroups .v838-title,body .v837-logo-title{
+  font-weight:800!important;color:#123e70!important;
+  line-height:1.35!important;
+}
+body .sectionname{font-size:13px!important}
+body .v77-title{font-size:14px!important;border-left:4px solid #2478d2!important;padding-left:7px!important}
+body #v838DirectGroups .v838-title{
+  color:#10549e!important;font-size:13px!important;border-bottom:1px solid #c5dcf5!important;
+  padding-bottom:6px!important;margin-bottom:7px!important;
+}
+body .v810-step{border-top:1px solid #dce5ef!important;margin-top:10px!important;padding-top:10px!important}
+body .v810-step-title{color:#183f70!important;font-size:11px!important;font-weight:800!important}
+body .v810-step-state{padding:4px 6px!important;background-color:#eff3f9!important;color:#4b637d!important;border:1px solid #c3cedb!important}
+body .v810-step-state.ok{color:#0c6944!important;background-color:#e9f7ef!important;border-color:#90ccac!important}
+body .v810-step-state.wait{color:#965800!important;background-color:#fff4dc!important;border-color:#e6ba65!important}
+body .v810-step-state.lock{color:#5c6b7c!important;background-color:#edf0f4!important;border-color:#c8cfd9!important}
+body .v810-guide{border-left:4px solid #2478d2!important;border-color:#cbdced!important;background-color:#eff6ff!important;color:#23415f!important}
+
+/* Main interactive controls — no more pale/low-contrast placeholder-style text. */
+body input[type=text],body input[type=number],body input[type=file],body select,body textarea,
+body #v838DirectGroups select,body #v838DirectGroups input,
+body .v837-logo-panel select,body .v837-logo-panel input[type=number] {
+  background-color:#fff!important;color:#112e4a!important;
+  border:1px solid #8fa8c3!important;border-radius:6px!important;
+  opacity:1!important;-webkit-text-fill-color:#112e4a!important;
+  min-height:33px!important;padding:5px 7px!important;
+  font-size:12px!important;font-weight:700!important;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.035)!important;
+}
+body input[type=text]:focus,body input[type=number]:focus,body input[type=file]:focus,
+body select:focus,body textarea:focus{
+  border:2px solid #1769ce!important;background-color:#fff!important;
+  outline:none!important;box-shadow:0 0 0 2px #e0edff!important;
+}
+body input[disabled],body select[disabled],body textarea[disabled]{
+  background-color:#ecf1f7!important;color:#38546e!important;
+  border-color:#c0cad8!important;-webkit-text-fill-color:#38546e!important;
+  opacity:1!important;
+}
+body label,body .label,body .mini,body .v77-mini,body .v86-mini,
+body .v85-mini,body .v837-mini,body .v838-line label {
+  color:#314962!important;font-weight:700!important;line-height:1.35!important;
+}
+body .mini,body .v77-mini,body .v86-mini,body .v85-mini{font-size:10.5px!important}
+body .muted,body .v77-hint,body .v86-hint,body .v810-subnote,body .v837-note,
+body .v838-desc,body .v836-layout-hint{color:#526a83!important;font-size:10.5px!important;line-height:1.5!important}
+body input[type=checkbox],body input[type=radio]{vertical-align:middle!important}
+
+/* Buttons: elevated secondary controls are visually distinct from inputs. */
+html body button {
+  color:#19466f!important;background-color:#eaf2fc!important;
+  border:1px solid #aac4e3!important;border-radius:6px!important;
+  box-shadow:0 2px 0 #d0dce9!important;
+  font-weight:800!important;font-size:11px!important;
+  min-height:34px!important;line-height:1.25!important;
+  padding:7px 6px!important;cursor:pointer!important;
+}
+html body button:hover{
+  background-color:#d6e8fd!important;color:#0f4e93!important;
+  border-color:#5c95d6!important;
+}
+html body button:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.1)!important}
+html body button[disabled]{background-color:#e5eaf1!important;color:#6d7b89!important;border-color:#ccd4de!important;box-shadow:none!important;cursor:default!important}
+
+/* Solid primary call-to-action buttons. */
+body #run,body #excelRun,body #v77NestBtn,body #v77OutlineBtn,
+body #v86MakeGroups,body #v838Run,body #v837ManualApply,
+body #v85Create,body #v821SetHeight,body #v821SetWidth {
+  color:#fff!important;background-color:#1769d0!important;
+  border:1px solid #1058b5!important;font-weight:900!important;
+  box-shadow:0 3px 0 #0e4b9c!important;
+}
+body #run:hover,body #excelRun:hover,body #v77NestBtn:hover,body #v77OutlineBtn:hover,
+body #v86MakeGroups:hover,body #v838Run:hover,body #v837ManualApply:hover {
+  color:#fff!important;background-color:#0756b8!important;border-color:#054892!important;
+}
+body #run[disabled],body #excelRun[disabled],body #v77NestBtn[disabled],
+body #v77OutlineBtn[disabled],body #v86MakeGroups[disabled],body #v838Run[disabled]{
+  color:#576c83!important;background-color:#d9e2ec!important;border-color:#b9c7d6!important;
+  box-shadow:none!important;
+}
+
+/* Update button is a separate, prominent green action. */
+body #reloadGit{
+  color:#fff!important;background-color:#08795b!important;border:1px solid #086247!important;
+  border-radius:6px!important;font-weight:900!important;
+  box-shadow:0 2px 0 #09523e!important;
+  font-size:10px!important;min-height:29px!important;
+  padding:6px 8px!important;white-space:nowrap!important;
+}
+body #reloadGit:hover{background-color:#086749!important;color:#fff!important}
+body #reloadGit[disabled]{background-color:#c2d9d3!important;color:#526b64!important;box-shadow:none!important}
+
+/* Undo is visually subordinate with a clear warning color. */
+body #undo,body #v77UndoNest{
+  color:#a33d3d!important;background-color:#fff5f4!important;border:1px solid #e2b9b5!important;
+  box-shadow:0 2px 0 #f0d4d0!important;
+}
+body #undo:hover,body #v77UndoNest:hover{color:#862828!important;background-color:#ffe8e6!important}
+
+/* Active material/preset buttons. */
+body .v77-preset.selected,body .v80-modebtn.selected,body .quickbtn.active,
+body .v85-modebtn.selected {
+  color:#0b57a4!important;background-color:#dcecff!important;
+  border:2px solid #2476d2!important;box-shadow:inset 0 0 0 1px #fff!important;
+}
+body .v77-quick button{font-size:11px!important;padding:7px 4px!important}
+body .v838-line select,body #v838Mode,body #v838Rotate,body #v838Order,body #v838Mirror{
+  font-size:11px!important;min-height:33px!important;
+}
+body #v838Run{font-size:12px!important;min-height:41px!important;letter-spacing:.2px!important}
+body .v837-actions button{font-size:11px!important}
+
+/* Distinct success, error, hint and result messages. */
+body .status,body .note,body .v77-note,body .v86-note,body #v84ExcelPreview,
+body #v838DirectMsg,body .v837-msg {
+  border-radius:6px!important;border:1px solid #c8d8e9!important;
+  border-left:4px solid #397bbf!important;
+  color:#294865!important;background-color:#f1f7ff!important;
+  padding:8px!important;font-size:11px!important;line-height:1.45!important;
+  overflow-wrap:break-word!important;word-wrap:break-word!important;
+}
+body #v838DirectMsg:empty,body .v837-msg:empty{display:none!important}
+body .v86-note.ok,body #v84ExcelPreview.ok,body #v838DirectMsg.ok,body .v837-msg.ok,
+body #v86Status.v88-font-ok{
+  background-color:#ebf8f0!important;border-left-color:#168451!important;
+  border-color:#b4dbc8!important;color:#0f6341!important;
+}
+body .v86-note.bad,body #v84ExcelPreview.bad,body #v838DirectMsg.bad,
+body .v837-msg.error,body #v86Status.v88-font-bad{
+  background-color:#fff0ed!important;border-left-color:#c94b40!important;
+  border-color:#efc3bd!important;color:#9c2d25!important;
+}
+body #v77NestResult,body #v77OutlineResult{
+  font-size:11px!important;line-height:1.5!important;min-height:24px!important;
+}
+body .footer{color:#698099!important;font-size:10px!important;padding:7px!important}
+</style>
