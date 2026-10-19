@@ -46,13 +46,24 @@ function getLogo(){
  return chosen;
 }
 function available(){if(!prefs.on)return null;return getLogo();}
+function parkSource(page){
+ if(!chosen||!page)return false;
+ var s=getLogo(),cx=Number(s.CenterX),cy=Number(s.CenterY),w=Math.abs(Number(s.SizeWidth)),h=Math.abs(Number(s.SizeHeight)),px=Number(page.CenterX),py=Number(page.CenterY),pw=Math.abs(Number(page.SizeWidth)),ph=Math.abs(Number(page.SizeHeight));
+ if(!isFinite(cx)||!isFinite(cy)||!isFinite(px)||!isFinite(py))return false;
+ var intersects=(Math.abs(cx-px)*2<w+pw)&&(Math.abs(cy-py)*2<h+ph);
+ if(!intersects)return false;
+ // Keep the source logo editable but prevent it from printing as an extra shape on page 1.
+ s.CenterX=px+pw/2+w/2+30;
+ s.CenterY=py+ph/2+h/2+30;
+ return true;
+}
 function report(message,bad){var ids=['v837ManualMsg','v837ExcelMsg'],i,x;for(i=0;i<ids.length;i++){x=E(ids[i]);if(x){x.className='v837-msg'+(bad?' error':' ok');x.innerHTML=message;}}}
 function redraw(){var ids=['v837Manual','v837Excel'],i,k,p,x;for(i=0;i<ids.length;i++){p=ids[i];x=E(p+'On');if(x)x.checked=prefs.on;x=E(p+'Pct');if(x)x.value=prefs.pct;x=E(p+'Bottom');if(x)x.value=prefs.bottom;x=E(p+'Inset');if(x)x.value=prefs.inset;x=E(p+'Mode');if(x)x.value=prefs.mode;}}
 function notify(){serial++;persist();redraw();try{if(typeof window.DHLLogoSettingsChanged==='function')window.DHLLogoSettingsChanged();}catch(e){}}
 function capture(){
  try{var a=app(),ss=selected(a);if(ss.length!==1)throw err('Chỉ chọn đúng một logo (có thể là Group) rồi bấm LẤY LOGO.','Select exactly one logo (it may be a group), then click CAPTURE.');
  var s=ss[0];if(!(Number(s.SizeWidth)>0&&Number(s.SizeHeight)>0))throw err('Logo không có kích thước.','The selected logo has no size.');
- chosen=s;chosenDoc=a.ActiveDocument;report(label('✓ Đã lấy logo nguồn. Logo gốc không bị thay đổi.','✓ Logo captured. The original artwork is untouched.'),false);
+ chosen=s;chosenDoc=a.ActiveDocument;report(label('✓ Đã lấy logo nguồn. Logo gốc không bị sửa hình; khi tách trang sẽ chuyển ra ngoài khổ in nếu cần.','✓ Logo captured. The original remains editable and may be moved outside the printable page when splitting.'),false);
  notify();return true;
  }catch(e){report(String(e.message||e),true);return false;}
 }
@@ -198,7 +209,7 @@ function panel(prefix){
  +'<div><span class="v837-mini">'+label('Áp dụng logo','Logo placement')+'</span><select id="'+prefix+'Mode"><option value="per">'+label('Mỗi chữ số 1 logo','One logo per digit')+'</option><option value="whole">'+label('Một logo cho cả cụm số','One logo for whole number')+'</option></select></div>'
  +'<div class="v837-actions"><div><button type="button" id="'+prefix+'Capture">'+label('LẤY LOGO ĐANG CHỌN','CAPTURE SELECTED LOGO')+'</button></div>'
  +(isExcel?'':'<div><button type="button" id="'+prefix+'Apply">'+label('CHÈN VÀO SỐ ĐÃ CHỌN','INSERT INTO SELECTED NUMBER')+'</button></div>')+'</div>'
- +'<div class="v837-note">'+(isExcel?label('Chọn 1 logo trong Corel → LẤY LOGO → bật checkbox → tạo bộ Excel. Dòng COACH không có số sẽ bỏ qua.','Capture a Corel logo first, then enable and create Excel namesets. COACH without a number is skipped.'):label('Chọn logo rồi LẤY LOGO; tiếp tục chọn số hoặc Group nameset và bấm CHÈN. Với số đã convert curve, chọn từng digit riêng.','Capture logo first, select number text or a nameset Group and INSERT. For converted curves, select each digit separately.'))+'</div>'
+ +'<div class="v837-note">'+(isExcel?label('Chọn 1 logo trong Corel → LẤY LOGO → bật checkbox → tạo bộ Excel. COACH không có số sẽ bỏ qua. Logo nguồn đặt ngoài trang in khi tách trang.','Capture a Corel logo first, then enable and create Excel namesets. COACH without a number is skipped.'):label('Chọn logo rồi LẤY LOGO; tiếp tục chọn số hoặc Group nameset và bấm CHÈN. Với số đã convert curve, chọn từng digit riêng.','Capture logo first, select number text or a nameset Group and INSERT. For converted curves, select each digit separately.'))+'</div>'
  +'<div id="'+prefix+'Msg" class="v837-msg"></div>';
  return box;
 }
@@ -218,7 +229,7 @@ function mount(){
 }
 function start(){var tries=0;function tick(){if(mount()||++tries>=35)return;setTimeout(tick,300);}tick();}
 readSaved();
-window.DHLNumberLogo={capture:capture,manual:manual,intoNumber:intoNumber,on: function(){return prefs.on;},available:available,settings:function(){return{on:prefs.on,pct:prefs.pct,bottom:prefs.bottom,inset:prefs.inset,mode:prefs.mode};},signature:signature};
+window.DHLNumberLogo={capture:capture,manual:manual,intoNumber:intoNumber,on: function(){return prefs.on;},available:available,settings:function(){return{on:prefs.on,pct:prefs.pct,bottom:prefs.bottom,inset:prefs.inset,mode:prefs.mode};},signature:signature,parkSource:parkSource};
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(start,1000);},false);
 else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(start,1000);});
 else setTimeout(start,1200);
