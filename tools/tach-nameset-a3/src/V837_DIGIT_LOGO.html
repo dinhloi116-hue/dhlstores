@@ -34,8 +34,11 @@ function signature(){return [prefs.on?'1':'0',prefs.pct,prefs.bottom,prefs.inset
 function selected(a){var sr=a.ActiveSelectionRange,o=[],i;if(sr&&sr.Count)for(i=1;i<=sr.Count;i++)o.push(sr.Item(i));return o;}
 function getLogo(){
  if(!chosen||!chosenDoc)throw err('Chưa lấy logo từ đối tượng Corel. Chọn đúng 1 logo và bấm LẤY LOGO trước.','No logo captured. Select one logo shape in Corel and click CAPTURE LOGO.');
- var a=app();if(a.ActiveDocument!==chosenDoc){ // COM wrappers may not use reference equality; validate by document name if possible.
-   var same=false;try{same=String(a.ActiveDocument.FullFileName)===String(chosenDoc.FullFileName)&&String(a.ActiveDocument.FullFileName)!=='';}catch(q){}
+ var a=app();if(a.ActiveDocument!==chosenDoc){
+   // A Corel COM wrapper may return different JS objects for the same unsaved document.
+   var same=false,nowDoc=a.ActiveDocument;
+   try{var pathNow=String(nowDoc.FullFileName||''),pathOld=String(chosenDoc.FullFileName||'');if(pathNow&&pathOld)same=pathNow===pathOld;}catch(q){}
+   if(!same)try{same=String(nowDoc.Name||'')===String(chosenDoc.Name||'')&&String(nowDoc.Name||'')!=='';}catch(n){}
    if(!same)throw err('Đã đổi tài liệu Corel. Hãy lấy logo lại trong tài liệu hiện tại.','The Corel document changed. Capture the logo again in the current document.');
  }
  var w=Number(chosen.SizeWidth),h=Number(chosen.SizeHeight);
