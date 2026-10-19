@@ -18,7 +18,8 @@ function status(msg,kind){var x=E('excelResult');if(x){x.className='note'+(kind?
 function previewStatus(msg,kind){var x=E('v84ExcelPreview');if(x){x.className=kind||'';x.innerHTML=msg;}}
 function selectionStatus(msg,kind){var x=E('v84TemplateStatus');if(x){x.className=kind||'';x.innerHTML=msg;}}
 function cellText(cell){var t='',v='';try{t=String(cell.Text);}catch(e){}try{v=cell.Value2;}catch(e2){}if((!t||/^#+$/.test(t))&&v!==undefined&&v!==null)t=String(v);return txt(t);}
-function isFooterHeader(h){return h==='dòngdướisố'||h==='dongduoiso'||h==='chữdướisố'||h==='chuduoiso'||h==='dòngdưới'||h==='dongduoi'||h==='dòngphụ'||h==='dongphu'||h==='footer'||h==='bottomtext'||h==='textbelownumber'||h==='extratext'||h==='ghichúin'||h==='ghichuin';}
+function isFooterHeader(h){return h==='dòngdướisố'||h==='dongduoiso'||h==='chữdướisố'||h==='chuduoiso'||h==='dòngdưới'||h==='dongduoi'||h==='dòngphụ'||h==='dongphu'||h==='footer'||h==='bottomtext'||h==='textbelownumber'||h==='extratext'||h==='ghichúin'||h==='ghichuin'||h==='dòngthứ3'||h==='dongthu3'||h==='dòngthứba'||h==='dongthuba'||h==='dòng3'||h==='dong3'||h==='line3'||h==='thirdline';}
+function isSizeHeader(h){return h==='size'||h==='sizeáo'||h==='sizeao'||h==='shirt size'||h==='shirtsize'||h==='kíchcỡ'||h==='kichco'||h==='cỡáo'||h==='coao'||h==='sz';}
 function isSyntaxHeader(h){return h==='nộidungin'||h==='noidungin'||h==='cúphápin'||h==='cuphapin'||h==='tênsốdòngdưới'||h==='tensodongduoi'||h==='nameset'||h==='printtext'||h==='printcontent'||h==='cúpháp'||h==='cuphap'||h==='nộidung'||h==='noidung';}
 function splitPrintSyntax(value){
  var s=txt(value),m=s.match(/^(.+?)\s+[-–—]\s+(\d{1,3}[A-Za-z]?)\s+[-–—]\s+(.+)$/);
@@ -28,32 +29,35 @@ function splitPrintSyntax(value){
  return null;
 }
 function rowsFromMatrix(m){
- var nc=-1,sc=-1,fc=-1,cc=-1,c,r,h,out=[],n,s,footer,parsed,hasHeader=false,start=1,first;
+ var nc=-1,sc=-1,fc=-1,zc=-1,cc=-1,c,r,h,out=[],n,s,footer,size,parsed,hasHeader=false,start=1,first;
  if(!m||!m.length)throw new Error(LANG()==='vi'?'File Excel không có dữ liệu.':'Excel file has no data.');
  for(c=0;c<m[0].length;c++){
   h=head(m[0][c]);
   if(nc<0&&isNameHeader(h))nc=c;
   if(sc<0&&isNumberHeader(h))sc=c;
   if(fc<0&&isFooterHeader(h))fc=c;
+  if(zc<0&&isSizeHeader(h))zc=c;
   if(cc<0&&isSyntaxHeader(h))cc=c;
  }
  hasHeader=(nc>=0&&sc>=0)||cc>=0;
  if(!hasHeader){
   first=splitPrintSyntax(m[0][0]);
   if(first){cc=0;start=0;}
-  else if(m[0].length>=2&&txt(m[0][0])&&/^\d{1,3}[A-Za-z]?$/.test(txt(m[0][1]))){nc=0;sc=1;fc=m[0].length>=3?2:-1;start=0;}
-  else throw new Error(LANG()==='vi'?'Cần cột Tên + Số (cột Dòng dưới tùy chọn), hoặc 1 cột Nội dung in theo cú pháp Tên - Số - Dòng dưới.':'Use Name + Number columns (optional Footer), or one Print content column formatted Name - Number - Footer.');
+  else if(m[0].length>=2&&txt(m[0][0])&&/^\d{1,3}[A-Za-z]?$/.test(txt(m[0][1]))){
+   nc=0;sc=1;fc=m[0].length>=3?2:-1;zc=m[0].length>=4?3:-1;start=0;
+  }else throw new Error(LANG()==='vi'?'Cần cột Tên áo + Số áo (Dòng thứ 3, Size tùy chọn), hoặc cột Nội dung in.':'Use Shirt name + Number columns (optional Line 3 and Size), or Print content.');
  }
  for(r=start;r<m.length;r++){
-  n='';s='';footer='';parsed=null;
+  n='';s='';footer='';size='';parsed=null;
   if(nc>=0&&sc>=0){
-   n=txt(m[r][nc]);s=txt(m[r][sc]);footer=fc>=0?txt(m[r][fc]):'';
+   n=txt(m[r][nc]);s=txt(m[r][sc]);footer=fc>=0?txt(m[r][fc]):'';size=zc>=0?txt(m[r][zc]):'';
    if(n&&!s)parsed=splitPrintSyntax(n);
-  }else if(cc>=0){parsed=splitPrintSyntax(m[r][cc]);}
+  }else if(cc>=0){parsed=splitPrintSyntax(m[r][cc]);size=zc>=0?txt(m[r][zc]):'';}
   if(parsed){n=parsed.name;s=parsed.number;if(!footer)footer=parsed.footer;}
-  if(n&&s)out.push({name:n,number:s,footer:footer,row:r+1});
+  // A named two-column/three-column/four-column row may intentionally contain only a name (e.g. COACH).
+  if(n&&(s||nc>=0&&sc>=0))out.push({name:n,number:s,footer:footer,size:size,row:r+1,nameOnly:!s});
  }
- if(!out.length)throw new Error(LANG()==='vi'?'Không có dòng hợp lệ gồm Tên và Số.':'No valid rows with name and number.');
+ if(!out.length)throw new Error(LANG()==='vi'?'Không có dòng hợp lệ có tên áo.':'No valid rows with a shirt name.');
  return out;
 }
 function readWorkbook(path){var xl=null,book=null,sheet=null,used=null,m=[],r,c;try{xl=new ActiveXObject('Excel.Application');xl.Visible=false;xl.DisplayAlerts=false;book=xl.Workbooks.Open(path);sheet=book.Worksheets(1);used=sheet.UsedRange;for(r=1;r<=used.Rows.Count;r++){var row=[];for(c=1;c<=used.Columns.Count;c++)row.push(cellText(used.Cells(r,c)));m.push(row);}return rowsFromMatrix(m);}finally{try{if(book)book.Close(false);}catch(e){}try{if(xl)xl.Quit();}catch(e2){}}}
@@ -66,7 +70,7 @@ function geom(sh){return{w:Math.abs(Number(sh.SizeWidth)),h:Math.abs(Number(sh.S
 function groupPair(a,page,n,d,mirror){var r=a.CreateShapeRange(),g;r.Add(n);r.Add(d);g=r.Group();if(mirror)g.Flip(1);return g;}
 function layoutRows(rows){var p=templatePair(),a=p.a,doc=a.ActiveDocument,w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),mirror=!!E('excelMirror').checked,margin=Math.max(gap,5),oldUnit=doc.Unit,page=null,name=p.name,number=p.number,templateGap,opt=false,cmd=false,x,top,rowH=0,i,n,d,g,gg;if(!(w>0&&h>0&&gap>=0))throw new Error(LANG()==='vi'?'Khổ in hoặc khoảng cách không hợp lệ.':'Invalid sheet size or gap.');try{oldUnit=doc.Unit;doc.Unit=3;if(typeof normalizeSelectedPair==='function'){try{normalizeSelectedPair(false);}catch(nx){}}p=templatePair();name=p.name;number=p.number;templateGap=(Number(name.CenterY)-Math.abs(Number(name.SizeHeight))/2)-(Number(number.CenterY)+Math.abs(Number(number.SizeHeight))/2);doc.BeginCommandGroup('DHL Nameset Layout - Excel V8.34');cmd=true;a.Optimization=true;opt=true;page=doc.AddPagesEx(1,w,h);page.MoveTo(1);try{page.Name='DHL Excel Nameset';}catch(ne){}x=margin;top=h-margin;for(i=0;i<rows.length;i++){n=name.CopyToLayer(page.ActiveLayer);d=number.CopyToLayer(page.ActiveLayer);replaceText(n,rows[i].name);replaceText(d,rows[i].number);n.CenterX=d.CenterX;n.CenterY=d.CenterY+Math.abs(Number(d.SizeHeight))/2+templateGap+Math.abs(Number(n.SizeHeight))/2;g=groupPair(a,page,n,d,mirror);gg=geom(g);if(x+gg.w>w-margin&&x>margin){x=margin;top-=rowH+gap;rowH=0;}if(top-gg.h<margin){try{g.Delete();}catch(de){}throw new Error((LANG()==='vi'?'Khổ hiện tại chỉ xếp được ':'Current sheet only fits ')+i+'/'+rows.length+(LANG()==='vi'?' bộ. Hãy tăng chiều cao trang hoặc giảm khoảng cách.':' sets. Increase sheet height or reduce spacing.'));}g.CenterX=x+gg.w/2;g.CenterY=top-gg.h/2;x+=gg.w+gap;rowH=Math.max(rowH,gg.h);}page.Activate();a.Optimization=false;opt=false;doc.Unit=oldUnit;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}return{count:rows.length,width:w,height:h};}catch(e){try{if(opt)a.Optimization=false;}catch(x1){}try{doc.Unit=oldUnit;}catch(x2){}try{if(cmd)doc.EndCommandGroup();}catch(x3){}throw e;}}
 var cachePath='',cacheRows=null;
-function showRows(rows){var vi=LANG()==='vi',parts=[],i,max=Math.min(rows.length,5);for(i=0;i<max;i++)parts.push(esc(rows[i].name)+' — '+esc(rows[i].number)+(rows[i].footer?' — '+esc(rows[i].footer):''));previewStatus('<span class="v84-head">'+(vi?'✓ Đã đọc ':'✓ Read ')+rows.length+(vi?' dòng hợp lệ':' valid rows')+'</span><br><span class="v84-small">'+parts.join(' · ')+(rows.length>max?' …':'')+'</span>','ok');}
+function showRows(rows){var vi=LANG()==='vi',parts=[],i,max=Math.min(rows.length,5);for(i=0;i<max;i++)parts.push(esc(rows[i].name)+' — '+(rows[i].number?esc(rows[i].number):(vi?'(chỉ tên)':'(name only)'))+(rows[i].footer?' — '+esc(rows[i].footer):'')+(rows[i].size?' ['+esc(rows[i].size)+']':''));var only=0,k;for(k=0;k<rows.length;k++)if(rows[k].nameOnly)only++;previewStatus('<span class="v84-head">'+(vi?'✓ Đã đọc ':'✓ Read ')+rows.length+(vi?' dòng hợp lệ':' valid rows')+(only?' · '+only+(vi?' bộ chỉ tên':' name-only'):'')+'</span><br><span class="v84-small">'+parts.join(' · ')+(rows.length>max?' …':'')+'</span>','ok');}
 function previewFile(){var input=E('excelFile'),path=input?input.value:'',vi=LANG()==='vi';cacheRows=null;cachePath='';if(!path){previewStatus(vi?'Chưa chọn file Excel.':'No Excel file selected.','bad');return;}previewStatus(vi?'Đang đọc file…':'Reading file…','busy');setTimeout(function(){try{cacheRows=readWorkbook(path);cachePath=path;showRows(cacheRows);}catch(e){previewStatus('<b>'+(vi?'Lỗi đọc file: ':'File error: ')+'</b>'+esc(e.message),'bad');}},40);}
 function updateTemplate(){var vi=LANG()==='vi';try{var p=templatePair(),nv=textValue(p.name),sv=textValue(p.number);selectionStatus('<b>'+(vi?'✓ Mẫu đã chọn: ':'✓ Template selected: ')+'</b>'+esc(nv)+' / '+esc(sv)+'<br><span class="v84-small">'+(vi?'Có thể bấm ĐỌC EXCEL + DÀN TRANG.':'Ready to build Excel layout.')+'</span>','ok');}catch(e){selectionStatus('<b>'+(vi?'Mẫu: ':'Template: ')+'</b>'+esc(e.message),'bad');}}
 function run(){var b=E('excelRun'),input=E('excelFile'),path=input?input.value:'',vi=LANG()==='vi',old=b?b.innerHTML:'';if(!path){status(vi?'Hãy chọn file Excel trước.':'Select an Excel file first.','bad');return;}try{templatePair();}catch(te){status('<b>'+(vi?'Chưa có bộ mẫu: ':'No template: ')+'</b>'+esc(te.message),'bad');updateTemplate();return;}if(b){b.disabled=true;b.className=(b.className||'')+' v84-busy';b.innerHTML=vi?'ĐANG ĐỌC + DÀN…':'READING + LAYOUT…';}status(vi?'Đang đọc dữ liệu và tạo nameset…':'Reading data and creating namesets…','');setTimeout(function(){try{var rows=(cacheRows&&cachePath===path)?cacheRows:readWorkbook(path);cacheRows=rows;cachePath=path;showRows(rows);var out=layoutRows(rows);status('<b>'+(vi?'✓ Hoàn tất: ':'✓ Done: ')+'</b>'+(vi?'đã tạo ':'created ')+out.count+(vi?' bộ nameset trên khổ ':' namesets on ')+out.width+' × '+out.height+' mm.','ok');}catch(e){status('<b>'+(vi?'Lỗi: ':'Error: ')+'</b>'+esc(e.message),'bad');}finally{if(b){b.disabled=false;b.className=(b.className||'').replace(/\s*v84-busy\b/g,'');b.innerHTML=old|| (vi?'ĐỌC EXCEL + DÀN TRANG':'READ EXCEL + LAYOUT');}}},50);}
