@@ -1,3 +1,4 @@
+# DHL Nameset Layout updater V8.23 - legacy launcher compatibility marker only. This executes the latest direct-snapshot updater, NOT old versions.
 # DHL Nameset Layout: DIRECT LATEST snapshot updater (V8.40+).
 # No reinstall, historical version chain, workspace reset, or recursive folder scan.
 # Run elevated when the addon is installed under Program Files.
