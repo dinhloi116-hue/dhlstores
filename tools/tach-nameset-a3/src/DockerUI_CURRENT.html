@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>DHL Nameset Layout</title>
-<!-- DHL_UI_VERSION=8.39 -->
+<!-- DHL_UI_VERSION=8.40 -->
 <style>
 *{box-sizing:border-box!important}
 html,body{margin:0!important;min-height:100%!important;background:#fff!important;color:#111!important;font:12px "Segoe UI",Arial,sans-serif!important;line-height:1.4!important}
@@ -1731,7 +1731,7 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 
 
 <style id="dhl-v829-ui-outline-style">
-/* V8.39: clearer controls across the whole docker */
+/* V8.40: clearer controls across the whole docker */
 input[type=text],input[type=number],input[type=file],select,textarea{
   background:#fff!important;color:#111!important;opacity:1!important;
   border:1px solid #666!important;font-weight:600!important;
@@ -1824,7 +1824,7 @@ function run(){
   makeWhite=!!(E('v77MakeWhite')&&E('v77MakeWhite').checked);makeCut=!!(E('v77MakeCut')&&E('v77MakeCut').checked);
   if(off<0||stroke<=0)throw new Error(L()==='vi'?'Khoảng cách/độ dày không hợp lệ.':'Invalid outline distance/width.');
   if(!makeWhite&&!makeCut)throw new Error(L()==='vi'?'Chọn ít nhất NỀN TRẮNG hoặc CUTLINE.':'Choose at least WHITE BORDER or CUTLINE.');
-  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.39');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.40');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
   for(i=0;i<ss.length;i++){
    base=null;outer=null;
    base=baseBoundary(a,ss[i]);
@@ -1834,7 +1834,7 @@ function run(){
   try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;
   if(created.length){try{range=a.CreateShapeRange();for(i=0;i<created.length;i++)range.Add(created[i]);range.CreateSelection();}catch(re){}}
   try{a.ActiveWindow.Refresh();}catch(rx){}
-  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.39: đã tạo đường bao cho ':'✓ V8.39: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
+  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.40: đã tạo đường bao cho ':'✓ V8.40: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
   return true;
  }catch(e){
   try{if(outer)outer.Delete();}catch(c1){}try{if(base)base.Delete();}catch(c2){}try{if(opt&&a)a.Optimization=false;}catch(c3){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(c4){}try{if(cmd&&doc){doc.EndCommandGroup();doc.Undo();}}catch(c5){}
@@ -1855,8 +1855,8 @@ function tuneUI(){
  if(btn){btn.onclick=run;btn.innerHTML=L()==='vi'?'TẠO ĐƯỜNG BAO + GROUP':'CREATE OUTLINE + GROUP';}
  window.V77CreateOutline=run;window.V76CreateOutline=run;
  if(hint)hint.innerHTML=L()==='vi'?'Chọn ảnh PNG/vector → nhập khoảng cách viền → chọn Nền trắng và/hoặc Cutline → TẠO ĐƯỜNG BAO. Tool giữ nguyên đối tượng gốc và Group kết quả.':'Select PNG/vector → set outline distance → choose White border and/or Cutline → CREATE OUTLINE. The original object is preserved and the result is grouped.';
- if(v&&v.length)v[0].innerHTML='v8.39';
- if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.39 · outline + UI + contour-primary copies · VI / EN';
+ if(v&&v.length)v[0].innerHTML='v8.40';
+ if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.40 · outline + UI + contour-primary copies · VI / EN';
 }
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);});else setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14700);
 })();
@@ -2444,6 +2444,78 @@ window.DHLDirectGroups={run:execute,choose:choose,runPlan:runPlan,ordered:ordere
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,500);},false);
 else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,500);});
 else setTimeout(boot,700);
+})();
+</script>
+<!-- DHL DIRECT LATEST RELEASE V8.40 -->
+<script id="dhl-v840-fast-update" type="text/javascript">
+(function(){
+ var busy=false;
+ function E(id){return document.getElementById(id);}
+ function VI(){try{return currentLang!=='en';}catch(e){return true;}}
+ function label(){return VI()?'↻ CẬP NHẬT':'↻ UPDATE';}
+ function message(vi,en){return VI()?vi:en;}
+ function run(){
+  var button=E('reloadGit'),shell=null,fso=null,launcher=null,path='',rc=-1,base;
+  if(busy)return false;
+  busy=true;
+  try{
+   if(button){button.disabled=true;button.innerHTML=message('ĐANG CẬP NHẬT…','UPDATING…');}
+   shell=new ActiveXObject('WScript.Shell');
+   fso=new ActiveXObject('Scripting.FileSystemObject');
+   path=shell.ExpandEnvironmentStrings('%TEMP%')+'\\DHL_NAMESET_LATEST_LAUNCH.ps1';
+   // Bootstrap ONLY the up-to-date PowerShell updater from main.
+   // No old BAT launcher, no historical patch loop, no addon reinstall.
+   var ps=
+    "$ErrorActionPreference='Stop'\r\n"+
+    "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12\r\n"+
+    "$url='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?fresh=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n"+
+    "$dst=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET_LATEST.ps1'\r\n"+
+    "try {\r\n"+
+    "  Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dst -TimeoutSec 30\r\n"+
+    "  $ps=Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'\r\n"+
+    "  $arg=@('-NoProfile','-ExecutionPolicy','Bypass','-File',('\"'+$dst+'\"'))\r\n"+
+    "  $child=Start-Process -FilePath $ps -Verb RunAs -ArgumentList $arg -Wait -PassThru\r\n"+
+    "  exit $child.ExitCode\r\n"+
+    "} catch { Write-Host ('UPDATE FAILED: '+$_.Exception.Message); exit 1 }\r\n";
+   launcher=fso.CreateTextFile(path,true,false);
+   launcher.Write(ps);
+   launcher.Close();launcher=null;
+   var exe=shell.ExpandEnvironmentStrings('%SystemRoot%')+'\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+   var cmd='"'+exe+'" -NoProfile -ExecutionPolicy Bypass -File "'+path+'"';
+   rc=shell.Run(cmd,1,true);
+   try{fso.DeleteFile(path,true);}catch(clean){}
+   if(rc!==0)throw new Error(message('Cập nhật thất bại. Mã lỗi: ','Update failed. Exit code: ')+rc+'\\n%TEMP%\\DHL_NAMESET_UPDATE_LOG.txt');
+   base=window.location.href.split('?')[0];
+   window.location.replace(base+'?latest='+(new Date()).getTime());
+   return true;
+  }catch(err){
+   alert(message('Không thể cập nhật: ','Unable to update: ')+String(err.message||err));
+   return false;
+  }finally{
+   if(launcher)try{launcher.Close();}catch(close){}
+   if(button){button.disabled=false;button.innerHTML=label();}
+   busy=false;
+  }
+ }
+ function install(){
+  var b=E('reloadGit');
+  window.reloadFromGit=run;
+  if(b){b.onclick=run;b.setAttribute('data-dhl-fast-update','1');}
+  return !!b;
+ }
+ // Install now (DOM is already present), then after legacy V8.22's deferred
+ // 9.8-second onclick override. Prevent that legacy loader regaining control.
+ install();
+ if(window.addEventListener)window.addEventListener('load',function(){
+  setTimeout(install,250);
+  setTimeout(install,10800);
+  setTimeout(install,16000);
+ },false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){
+  setTimeout(install,250);setTimeout(install,10800);setTimeout(install,16000);
+ });
+ else {setTimeout(install,10800);setTimeout(install,16000);}
+ window.DHLFastUpdater={install:install,run:run};
 })();
 </script>
 </body>
