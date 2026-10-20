@@ -67,7 +67,7 @@ export async function resolveProductFolder(token,{shop,name,sku},fetchImpl=fetch
 }
 function validateUpload(file){
   const name=String(file?.name||'').trim();if(!name||name.length>180||/[\\/\r\n]/.test(name))throw Error('Tên file không hợp lệ');
-  const mime=String(file.mime||'');if(!/^(application\/(json|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet)|text\/plain|image\/(png|jpeg|webp))$/.test(mime))throw Error('Loại file không hỗ trợ: '+mime);
+  const mime=String(file.mime||'');if(!/^(application\/(json|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet)|text\/(plain|markdown)|image\/(png|jpeg|webp))$/.test(mime))throw Error('Loại file không hỗ trợ: '+mime);
   if(typeof file.base64!=='string'||!/^[A-Za-z0-9+/]*={0,2}$/.test(file.base64)||file.base64.length>12_000_000)throw Error('Dữ liệu file không hợp lệ');
   return {name,mime};
 }

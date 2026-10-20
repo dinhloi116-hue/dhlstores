@@ -1,4 +1,4 @@
-import {SHOPS,calculatePrice,imagePrompts,validateDraft,safeFilename,makeSaleVariants,parseSkuLines,serializeSkuLines,saleSummary,readSourceDocument} from './lib/core.mjs';
+import {SHOPS,calculatePrice,imagePrompts,validateDraft,safeFilename,buildProductMarkdown,makeSaleVariants,parseSkuLines,serializeSkuLines,saleSummary,readSourceDocument} from './lib/core.mjs';
 import {makeWorkbook} from './lib/xlsx-lite.mjs';
 const $=id=>document.getElementById(id);
 let draft=null,selectedLanguage='vi',images=[],prompts=[],pageUrl='',driveFolder='',sourceFolder=null,sourceFolderView=null;
@@ -11,7 +11,7 @@ function page(tab){for(const b of document.querySelectorAll('nav button'))b.clas
 for(const b of document.querySelectorAll('nav button'))b.onclick=()=>{
   if(b.dataset.tab==='driveSave'){
     $('driveShopLabel').textContent=text('shop')||'Shop';
-    $('driveProductLabel').textContent=draft?.vi?.title||text('name')||'Tên sản phẩm';
+    $('driveProductLabel').textContent=text('name')||draft?.vi?.title||'Tên sản phẩm';
   }
   page(b.dataset.tab);
 };
@@ -252,42 +252,51 @@ $('verifySaveDrive').onclick=async()=>{try{const d=await message({type:'drive-ve
 (async()=>{
   const d=await message({type:'drive-status'});if(d.connected)$('googleConnection').textContent='Đã kết nối Google Drive (Chrome quản lý và tự gia hạn token).';else if(!d.configured)$('googleConnection').textContent='Chưa cấu hình OAuth Client ID trong manifest.json. Cần làm một lần theo README.';
 })().catch(e=>notify(e.message,false));
-async function productFiles(){
-  if(!draft)throw Error('Cần phân tích/duyệt nội dung sản phẩm trước khi lưu.');
-  validateDraft(draft);const p=product();if(!p.sku||!p.name)throw Error('Cần nhập tên sản phẩm và SKU.');
-  if(!draftIdentity||draftIdentity.shop!==p.shop||(draftIdentity.sku&&draftIdentity.sku!==p.sku)||(draftIdentity.name&&draftIdentity.name!==p.name))throw Error('Thông tin shop, SKU hoặc tên đã thay đổi sau phân tích. Hãy phân tích lại để tránh lưu nhầm sản phẩm.');
-  const result=[xlsxFile('Thông tin sản phẩm.xlsx',exportInfo()),xlsxFile('SEO website.xlsx',exportSEO())];
-  let pricingStatus='CHƯA CHỐT GIÁ';
-  if(text('cost')!==''&&text('feePercent')!==''){result.push(xlsxFile('Bảng giá đề xuất.xlsx',exportPrice()));pricingStatus='ĐÃ TÍNH GIÁ ĐỀ XUẤT';}
-  if(!prompts.length)prompts=imagePrompts(draft,p);
-  result.push({name:'Prompt tạo ảnh ChatGPT.txt',mime:'text/plain',base64:utf8Base64(allPrompts())});
+async function productFolderAndFiles(){
+  if(!draft)throw Error('Hãy phân tích ảnh hoặc nhập thông tin rồi phân tích trước khi lưu.');
+  validateDraft(draft);
+  const p=product();
+  // A confirmed seller SKU is optional. A stable technical key prevents duplicate folders
+  // for screenshot-only product drafts; it MUST NOT be advertised as a seller SKU.
+  p.name=(p.name||draft.vi.title||'').trim();
+  if(!p.name)throw Error('AI chưa xác định được tên sản phẩm. Vui lòng nhập tên ngắn ở phần Tùy chọn.');
+  const keyBytes=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p.shop+'\n'+p.name.normalize('NFC'))));
+  const recordKey='DOC-'+[...keyBytes.slice(0,10)].map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+  if(!draftIdentity||draftIdentity.shop!==p.shop)throw Error('Đã đổi shop sau phân tích. Hãy phân tích lại để tránh lưu nhầm.');
+  const files=[];
   for(let i=0;i<images.length;i++){
-    const match=/^data:(image\/(?:jpeg|png|webp));/.exec(images[i]);const ext=mimex(match?.[1]);
-    result.push(dataUrlFile(images[i],`Ảnh gốc ${i+1}.${ext}`));
+    const match=/^data:(image\/(?:jpeg|png|webp));/.exec(images[i]);
+    files.push(dataUrlFile(images[i],`Ảnh gốc ${i+1}.${mimex(match?.[1])}`));
   }
-  for(let i=0;i<finishedPhotos.length;i++)result.push(await uploadedImage(finishedPhotos[i],`Ảnh thành phẩm ${i+1}.${mimex(finishedPhotos[i].type)}`));
-  for(const [platform,bytes] of generatedPlatforms)result.push(xlsxFile(platform==='bigseller'?'BigSeller.xlsx':'Lazada.xlsx',bytes));
-  const metadata={shop:p.shop,sku:p.sku,name:p.name,category:p.category,variants:p.variants,sales:p.sales,shipping:p.shipping,skuRows:parseSkuLines(text('skuLines')),priceInputs:priceInput(),notes:p.notes,sourceDocumentNames:sourceDocTexts.map(d=>d.name),sourcePage:p.pageUrl,sourceFolder:sourceFolder?.shop===p.shop?{id:sourceFolder.id,name:sourceFolder.name}:null,pricingStatus,sourceImageCount:images.length,finishedImageCount:finishedPhotos.length,generatedPlatforms:[...generatedPlatforms.keys()],status:pricingStatus==='CHƯA CHỐT GIÁ'||draft.missing.length?'CHỜ BỔ SUNG / KIỂM TRA':'HỒ SƠ ĐÃ DUYỆT - CHƯA XÁC NHẬN IMPORT SÀN',missing:draft.missing,updatedAt:new Date().toISOString()};
-  result.push({name:'Thông tin và trạng thái.json',mime:'application/json',base64:utf8Base64(JSON.stringify(metadata,null,2))});
-  if(result.length>32)throw Error('Bộ file vượt 32 mục; chia thành nhiều đợt.');
-  return {files:result,metadata};
+  for(let i=0;i<finishedPhotos.length;i++)files.push(await uploadedImage(finishedPhotos[i],`Ảnh thành phẩm ${i+1}.${mimex(finishedPhotos[i].type)}`));
+  const markdown=buildProductMarkdown({
+    draft,product:p,recordKey,prices:priceInput(),skuRows:parseSkuLines(text('skuLines')),
+    imageNames:files.map(f=>f.name),
+    prompts:prompts.length?prompts:imagePrompts(draft,p),
+    sourceFolder:sourceFolder?.shop===p.shop?sourceFolder:null,
+    sourceDocuments:sourceDocTexts,
+  });
+  // The ONLY non-image file auto-created by the tool for this product.
+  files.unshift({name:'THÔNG TIN SẢN PHẨM.md',mime:'text/markdown',base64:utf8Base64(markdown)});
+  if(files.length>32)throw Error('Quá nhiều ảnh cho một sản phẩm.');
+  return {folderProduct:{shop:p.shop,name:p.name,sku:recordKey},files};
 }
 $('saveToDrive').onclick=async()=>{
-  if(!$('approveForDrive').checked)return notify('Cần tích xác nhận nội dung và thư mục trước khi lưu.',false);
+  if(!$('approveForDrive').checked)return notify('Hãy xác nhận đúng shop và nội dung trước khi lưu.',false);
   const btn=$('saveToDrive');btn.disabled=true;
   try{
-    const p=product(),{files,metadata}=await productFiles();
-    $('saveDriveProgress').textContent='Đang xác minh shop và tạo/tìm thư mục sản phẩm...';
-    const folder=await message({type:'drive-folder',product:{shop:p.shop,name:p.name,sku:p.sku}});
+    const {folderProduct,files}=await productFolderAndFiles();
+    $('saveDriveProgress').textContent='Đang tạo/tìm thư mục sản phẩm trong '+folderProduct.shop+'...';
+    const folder=await message({type:'drive-folder',product:folderProduct});
     $('savedDriveLink').href=folder.url;$('savedDriveLink').hidden=false;
     const done=[],errors=[];
     for(let i=0;i<files.length;i++){
-      $('saveDriveProgress').textContent=`Đang ghi ${i+1}/${files.length} vào ${p.shop} / ${folder.name}: ${files[i].name}`;
-      try{done.push(await message({type:'drive-upload',shop:p.shop,sku:p.sku,folderId:folder.id,file:files[i]}));}
+      $('saveDriveProgress').textContent=`Đang lưu ${i+1}/${files.length}: ${files[i].name}`;
+      try{done.push(await message({type:'drive-upload',shop:folderProduct.shop,sku:folderProduct.sku,folderId:folder.id,file:files[i]}));}
       catch(e){errors.push(files[i].name+': '+e.message);}
     }
-    if(errors.length){$('saveDriveProgress').textContent=`Đã ghi ${done.length}/${files.length} file; ${errors.length} file lỗi: `+errors.join(' | ');notify('Drive đã lưu một phần, hãy xem báo lỗi và chạy lại sau khi khắc phục.',false);}
-    else{$('saveDriveProgress').textContent=`Đã lưu ${done.length} file tại ${p.shop} / ${folder.name}. Trạng thái: ${metadata.status}. Bảng giá Shopee tổng không bị sửa.`;notify('Đã lưu toàn bộ file sản phẩm lên Google Drive.');}
+    if(errors.length){$('saveDriveProgress').textContent=`Lưu được ${done.length}/${files.length} tệp. Lỗi: `+errors.join(' | ');notify('Lưu một phần. Kiểm tra lỗi rồi bấm Lưu lại; tool không xóa ảnh cũ.',false);}
+    else{$('saveDriveProgress').textContent=`Đã lưu vào ${folderProduct.shop} / ${folder.name}: 1 file Markdown và ${files.length-1} ảnh. Không tạo thêm file Excel/TXT/JSON.`;notify('Đã lưu hồ sơ sản phẩm và ảnh trên Drive.');}
   }catch(e){$('saveDriveProgress').textContent='Không thể lưu: '+e.message;notify(e.message,false)}finally{btn.disabled=false;}
 };
 

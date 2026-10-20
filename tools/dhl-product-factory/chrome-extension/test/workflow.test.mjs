@@ -20,8 +20,8 @@ test('Gemini prompt receives verified source document text and never fabricates 
 test('UI ships source document parser and binds sale / shipping metadata to export',async()=>{
  const s=await readFile(join(root,'panel.js'),'utf8');
  assert.match(s,/readSourceDocument/);assert.match(s,/makeSaleVariants/);assert.match(s,/parseSkuLines\(text\('skuLines'\)\)/);
- assert.match(s,/shipping:p.shipping/);assert.match(s,/sales:p.sales/);
- assert.match(s,/priceInputs:priceInput\(\)/);
+ assert.match(s,/buildProductMarkdown/);assert.match(s,/prices:priceInput\(\)/);
+ assert.match(s,/sourceDocuments:sourceDocTexts/);
 });
 
 test('local Git updater includes all new source parser and variant modules',async()=>{

@@ -92,3 +92,17 @@ test('reads only supported source bytes from selected folder, not other shop or 
   await assert.rejects(loadSourceFile('token',{shop:'DHL STUDIO',folderId:root,fileId:photo.id},m.fetchImpl),/không nằm trong shop/);
   assert.equal((await driveAccount('token',m.fetchImpl)).email,'shop@example.com');
 });
+
+test('markdown is stored as one app-owned file alongside photos and updated safely',async()=>{
+ const fake=driveMock(),p={shop:'DHL SPORTS',name:'Áo bóng đá mới',sku:'DOC-01TEST'};
+ const folder=await resolveProductFolder('token',p,fake.fetchImpl);
+ const md={name:'THÔNG TIN SẢN PHẨM.md',mime:'text/markdown',base64:btoa('# Test\nHello')};
+ const a=await uploadProductFile('token',folder.id,p.sku,md,fake.fetchImpl);
+ const b=await uploadProductFile('token',folder.id,p.sku,md,fake.fetchImpl);
+ assert.equal(a.action,'created');assert.equal(b.action,'updated');assert.equal(a.id,b.id);
+ const image={name:'Ảnh gốc 1.png',mime:'image/png',base64:btoa('fake image')};
+ assert.equal((await uploadProductFile('token',folder.id,p.sku,image,fake.fetchImpl)).action,'created');
+ assert.equal(fake.operations.filter(x=>x.action==='createFile').length,2);
+ fake.files.set('manual-md-ABC123',{id:'manual-md-ABC123',name:'Ảnh thành phẩm 1.png',mimeType:'image/png',parents:[folder.id]});
+ await assert.rejects(uploadProductFile('token',folder.id,p.sku,{...image,name:'Ảnh thành phẩm 1.png'},fake.fetchImpl),/Không ghi đè/);
+});

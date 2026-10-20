@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>DHL Product Factory</title><link rel="stylesheet" href="panel.css"></head><body>
 <header><div class="brand"><span class="logo">D</span><div><strong>DHL Product Factory</strong><small>Chrome Extension · 6 Shop</small></div></div><span id="status" class="status">Chưa cấu hình</span></header>
-<nav aria-label="Chức năng"><button type="button" data-tab="input" class="selected">Sản phẩm</button><button type="button" data-tab="content">Nội dung</button><button type="button" data-tab="images">Prompt ảnh</button><button type="button" data-tab="export">Xuất file</button><button type="button" data-tab="driveSave">Lưu Drive</button><button type="button" data-tab="settings">Cài đặt</button></nav>
+<nav aria-label="Chức năng"><button type="button" data-tab="input" class="selected">Sản phẩm</button><button type="button" data-tab="content">Nội dung</button><button type="button" data-tab="images">Prompt ảnh</button><button type="button" data-tab="export">Tính giá (tùy chọn)</button><button type="button" data-tab="driveSave">Lưu Drive</button><button type="button" data-tab="settings">Cài đặt</button></nav>
 <main>
 <section data-view="input">
  <h2>Chụp màn hình → Phân tích sản phẩm</h2>
@@ -48,25 +48,25 @@ L"></textarea></div></div><div class="field"><label for="variants">Ghi chú phâ
 <section data-view="content" hidden><h2>Nội dung VI – EN</h2><p>Nhập sản phẩm và phân tích bằng Gemini. Nội dung có thể chỉnh trực tiếp trước khi xuất.</p><div class="btns"><button type="button" class="lang chosen" data-lang="vi">Tiếng Việt</button><button type="button" class="lang" data-lang="en">English</button></div><div id="missing" class="notice" hidden></div><div id="contentFields" class="empty">Chưa có nội dung.</div><button id="saveDraft" type="button" class="secondary">Lưu bản nháp trên Chrome</button></section>
 <section data-view="images" hidden><h2>9 prompt ảnh cho ChatGPT</h2><p>Không gọi API tạo ảnh. Sao chép prompt, mở ChatGPT rồi đính kèm ảnh gốc, logo hoặc tài liệu hướng dẫn tương ứng.</p><div class="btns"><button id="makePrompts" type="button" class="primary">Tạo 9 prompt</button><button id="copyAll" type="button" class="secondary">Sao chép toàn bộ</button><button id="saveTxt" type="button" class="secondary">Lưu TXT</button><button id="openChatGPT" type="button" class="secondary">Mở ChatGPT ↗</button></div><div id="prompts" class="prompt-list"></div></section>
 <section data-view="export" hidden>
- <h2>Xuất Excel và file đăng sàn</h2><p>Giá vốn, cân nặng, kích thước và SKU lấy từ tab <strong>Sản phẩm → Thông tin bán hàng</strong>. Sửa tại đó để tất cả file xuất dùng cùng một bộ dữ liệu.</p><button type="button" class="secondary" id="backToInput">← Trở lại thông tin bán hàng</button>
- <h3>Xuất file Excel dùng ngay trên Chrome</h3><div class="btns"><button id="excelInfo" type="button">Thông tin VI–EN</button><button id="excelSEO" type="button">SEO VI–EN</button><button id="excelPrice" type="button">Bảng giá đề xuất</button></div>
+ <h2>Tính giá và xuất file thủ công (không bắt buộc)</h2><p>Giá vốn, cân nặng, kích thước và SKU lấy từ tab <strong>Sản phẩm → Thông tin bán hàng</strong>. Sửa tại đó để tất cả file xuất dùng cùng một bộ dữ liệu.</p><button type="button" class="secondary" id="backToInput">← Trở lại thông tin bán hàng</button>
+ <details><summary>Xuất file Excel riêng nếu thực sự cần (KHÔNG lưu vào Drive)</summary><h3>File Excel tải về máy</h3><div class="btns"><button id="excelInfo" type="button">Thông tin VI–EN</button><button id="excelSEO" type="button">SEO VI–EN</button><button id="excelPrice" type="button">Bảng giá đề xuất</button></div>
  <h3>Xuất đúng file BigSeller / Lazada</h3><div class="notice">Cần máy chủ DHL Product Factory chạy tại <code>127.0.0.1:4177</code> và có kết nối Drive. Chế độ extension độc lập không thể tự giữ các sheet ẩn của mẫu sàn.</div>
  <div class="field"><label for="backendPassword">Mật khẩu máy chủ (chỉ giữ trong phiên)</label><input id="backendPassword" type="password" autocomplete="off" placeholder="PRODUCT_STUDIO_PASSWORD"></div>
  <div class="cols"><div class="field"><label for="categoryId">ID ngành trên sàn</label><input id="categoryId" placeholder="Mã đúng từ sàn"></div><div class="field"><label for="brand">Thương hiệu Lazada</label><input id="brand" placeholder="Đúng danh sách Lazada"></div></div>
  <div class="field"><label for="coverUrl">URL ảnh bìa HTTPS công khai</label><input id="coverUrl" placeholder="https://..."></div><div class="field"><label for="imageUrls">URL ảnh phụ (mỗi dòng một URL)</label><textarea id="imageUrls" rows="2"></textarea></div>
  <div class="approval"><label><input id="reviewed" type="checkbox"> Đã duyệt mô tả, SKU và giá</label><label><input id="categoryConfirmed" type="checkbox"> Đã kiểm tra mã ngành hàng của sàn</label><label><input id="brandConfirmed" type="checkbox"> Đã đối chiếu thương hiệu Lazada</label></div>
  <div class="btns"><button id="bigSeller" type="button">Xuất BigSeller</button><button id="lazada" type="button">Xuất Lazada</button></div>
- <p>Chỉ tạo bản để kiểm duyệt, không tự đăng bán hoặc sửa bảng giá Shopee gốc.</p>
+ <p>Chỉ tạo bản để kiểm duyệt, không tự đăng bán hoặc sửa bảng giá Shopee gốc. Các file này KHÔNG được tự lưu lên Drive.</p></details>
 </section>
 <section data-view="driveSave" hidden>
- <h2>Hoàn tất & tự lưu vào Google Drive</h2>
- <p>Tool tự chọn thư mục shop đã xác minh, tạo hoặc dùng lại một thư mục mang tên sản phẩm ngay bên trong shop. Không đặt tiền tố số và không tạo thêm các tầng thư mục.</p>
+ <h2>Lưu thư mục sản phẩm</h2>
+ <p>Chỉ một thư mục theo tên sản phẩm, chứa ảnh gốc/ảnh thành phẩm và một tệp <strong>THÔNG TIN SẢN PHẨM.md</strong>. Toàn bộ SEO, giá, phân loại và câu lệnh ảnh đều nằm trong file MD này. Không tạo file Excel/TXT/JSON khác.</p>
  <div class="notice">Đường dẫn: TRUNG TÂM TẠO SẢN PHẨM - 6 SHOP → <strong id="driveShopLabel">Shop</strong> → <strong id="driveProductLabel">Tên sản phẩm</strong></div>
  <div class="field"><label for="finishedPhotos">Ảnh thành phẩm tạo trong ChatGPT (tùy chọn, chọn nhiều ảnh)</label><input id="finishedPhotos" type="file" accept="image/png,image/jpeg,image/webp" multiple></div>
  <div id="finishedPhotoList" class="drive-files"></div>
- <label class="checkline"><input type="checkbox" id="approveForDrive"> Đã kiểm tra đúng shop, tên sản phẩm, SKU và nội dung; cho phép tool tạo thư mục/lưu file trên Drive</label>
- <div class="btns"><button id="saveToDrive" type="button" class="primary">Hoàn tất & tự lưu bộ file lên Drive</button><button id="verifySaveDrive" type="button">Kiểm tra thư mục shop</button></div>
- <div id="saveDriveProgress" class="notice">Chưa lưu. Các file Excel đề xuất chỉ được lưu sau khi xác nhận. Không sửa bảng giá tổng.</div>
+ <label class="checkline"><input type="checkbox" id="approveForDrive"> Đã kiểm tra đúng shop và nội dung; đồng ý tạo/cập nhật 1 file MD và ảnh trong thư mục sản phẩm (SKU không bắt buộc)</label>
+ <div class="btns"><button id="saveToDrive" type="button" class="primary">Lưu thư mục sản phẩm (ảnh + 1 file MD)</button><button id="verifySaveDrive" type="button">Kiểm tra thư mục shop</button></div>
+ <div id="saveDriveProgress" class="notice">Chưa lưu. Chỉ lưu ảnh và 1 file Markdown; không đụng tới bảng giá tổng.</div>
  <a href="#" id="savedDriveLink" target="_blank" rel="noopener noreferrer" hidden>Mở thư mục sản phẩm đã lưu ↗</a>
  </section>
  <section data-view="settings" hidden><h2>Cài đặt Gemini</h2><div class="field"><label for="geminiKey">Gemini API Key</label><input id="geminiKey" type="password" autocomplete="new-password" placeholder="Nhập từ Google AI Studio"></div><div class="field"><label for="geminiModel">Model</label><select id="geminiModel"><option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (Free Tier nếu đủ điều kiện)</option><option value="gemini-2.5-flash">gemini-2.5-flash</option></select></div><div class="btns"><button id="storeKey" type="button" class="primary">Lưu key trên Chrome</button><button id="clearKey" type="button" class="secondary">Xóa key đã lưu</button></div><h3>Kết nối Google Drive để lưu sản phẩm</h3>
@@ -78,7 +78,7 @@ L"></textarea></div></div><div class="field"><label for="variants">Ghi chú phâ
  <h3>Cập nhật từ GitHub</h3><p>Nút <strong>Cập nhật ngay từ GitHub</strong> có thể tự tải mã mới, giữ cấu hình Google Drive rồi tải lại tool. Lần đầu trên Windows cần nhấp đúp <code>CAI-DAT-NUT-CAP-NHAT.cmd</code> trong thư mục tool để cho phép Chrome kết nối bộ cập nhật cục bộ.</p>
  <p>Kiểm tra phiên bản mới trên GitHub. Do Chrome bảo vệ mã nguồn tiện ích, hãy nhấp đúp <code>CAP-NHAT-TOOL.cmd</code> trong thư mục cài để cập nhật thủ công nếu bộ cập nhật một lần chưa được cài; sau đó bấm Reload tại <code>chrome://extensions</code>. Không cần giải nén hay cài lại.</p>
  <div class="btns"><button id="checkGitUpdate" type="button" class="primary">Kiểm tra cập nhật Git</button><button id="updateNow" type="button" class="primary">Cập nhật ngay từ GitHub</button><button id="updateFromGit" type="button">Hướng dẫn cập nhật thủ công</button></div>
- <div id="gitUpdateStatus" class="notice">Phiên bản đang cài: v0.8.0. Chưa kiểm tra GitHub.</div>
+ <div id="gitUpdateStatus" class="notice">Phiên bản đang cài: v0.9.0. Chưa kiểm tra GitHub.</div>
  <div class="notice">Google OAuth Client ID và bản nháp lưu trên Chrome được giữ nguyên khi dùng bộ cập nhật. Extension không tự chạy chương trình trên máy tính.</div>
  <div class="notice">API key chỉ lưu trong chrome.storage.local của extension trên máy này (không đồng bộ). Đây không phải kho bí mật an toàn tuyệt đối nếu máy tính bị xâm nhập. Không dùng để phát hành extension công khai có key nhúng sẵn.</div><button type="button" id="openAIStudio">Mở Google AI Studio ↗</button><div class="btns"><button type="button" id="restoreDraft">Khôi phục bản nháp đã lưu</button><button type="button" id="deleteDraft">Xóa bản nháp đã lưu</button></div></section>
 </main>

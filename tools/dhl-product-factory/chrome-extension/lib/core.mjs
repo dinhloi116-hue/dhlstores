@@ -214,3 +214,71 @@ export async function readSourceDocument(file){
   const excerpt=raw.replace(/\u0000/g,'').slice(0,OUTPUT_MAX);
   return {name,text:excerpt,truncated:raw.length>OUTPUT_MAX};
 }
+
+
+// One canonical per-product document. Drive stores this Markdown plus photos only.
+// Source documents, SEO, prices and image prompts are consolidated here; no extra files.
+export function buildProductMarkdown({draft,product,prices={},skuRows=[],imageNames=[],prompts=[],recordKey='',sourceFolder=null,sourceDocuments=[],updatedAt=new Date().toISOString()}={}){
+  validateDraft(draft);
+  if(!product||!Object.hasOwn(SHOPS,product.shop))throw Error('Shop không hợp lệ.');
+  const name=String(product.name||draft.vi.title||'').trim();
+  if(!name)throw Error('Chưa xác định được tên sản phẩm. Hãy đặt tên trước khi lưu.');
+  const val=x=>x===null||x===undefined||String(x).trim()===''?'CHỜ BỔ SUNG':String(x).trim();
+  const flat=x=>val(x).replace(/\r?\n/g,' / ').replace(/\|/g,'\\|');
+  const money=x=>x===undefined||x===null||String(x).trim()===''?'CHỜ BỔ SUNG':(Number.isFinite(Number(x))?Number(x).toLocaleString('vi-VN')+' đ':val(x));
+  const entry=(key,value)=>`- **${key}:** ${flat(value)}`;
+  const lines=[`# ${name}`,'',`> **Shop:** ${flat(product.shop)} · **Cập nhật:** ${flat(updatedAt)}`,'',
+    '## 1. Nhận diện và trạng thái',
+    entry('Tên sản phẩm',name),entry('SKU bán hàng',product.sku||''),
+    entry('Mã hồ sơ nội bộ (không phải SKU)',recordKey),
+    entry('Danh mục',draft.facts.category||product.category),entry('Chất liệu',draft.facts.material),
+    entry('Kích thước sản phẩm',draft.facts.dimensions),entry('Đặc điểm / công dụng',draft.facts.usage),
+    entry('Thông tin phân loại nguồn',draft.facts.variants),
+    entry('Trạng thái','CHỜ DUYỆT - CHƯA TỰ ĐĂNG SÀN'),'',
+    '## 2. Nguồn và hình ảnh',
+    entry('Trang nguồn',product.pageUrl),
+    entry('Thư mục nguồn Drive',sourceFolder?.name?`${sourceFolder.name} (${sourceFolder.id||''})`:''),
+    entry('Ghi chú do người dùng nhập',product.notes),
+    '', '### Danh sách ảnh trong cùng thư mục',
+    ...(imageNames.length?imageNames.map(n=>`- ${flat(n)}`):['- Chưa có ảnh được lưu.']),
+    '', '## 3. Thông tin bán hàng',
+    entry('Loại bán',product.sales?.saleTypes?.join(', ')),
+    entry('Nhóm phân loại',product.sales?.dimensions?.join(', ')),
+    entry('Màu bán thực tế',product.sales?.colors),
+    entry('Size bán thực tế',product.sales?.sizes),
+    entry('Ghi chú phân loại',product.sales?.variants||product.variants),
+    entry('Cân nặng đã đóng gói',product.shipping?.weightGrams?`${product.shipping.weightGrams} g`:''),
+    entry('Dài × rộng × cao kiện hàng',
+      [product.shipping?.lengthCm,product.shipping?.widthCm,product.shipping?.heightCm].every(x=>x!==undefined&&String(x).trim()!=='')
+        ?`${product.shipping.lengthCm} × ${product.shipping.widthCm} × ${product.shipping.heightCm} cm`:''),
+    '', '### SKU, biến thể, giá và tồn kho',
+    '| SKU | Phân loại 1 | Phân loại 2 | Giá bán | Tồn kho |',
+    '| --- | --- | --- | ---: | ---: |',
+    ...(skuRows.length?skuRows.map(r=>`| ${flat(r.sku)} | ${flat(r.opt1)} | ${flat(r.opt2)} | ${money(r.price)} | ${flat(r.stock)} |`):['| CHỜ CHỐT | — | — | — | — |']),
+    '', '## 4. Giá vốn và giá đề xuất',
+    ...[['Giá vốn',prices.cost],['Phí sàn (%)',prices.feePercent],['Đóng gói',prices.packing],['In ấn',prices.printing],['Nhân công',prices.labor],['Chi phí khác',prices.other],['Phí cố định',prices.fixedFee],['Lợi nhuận mục tiêu',prices.targetProfit]].map(([key,v])=>entry(key,key==='Phí sàn (%)'?v:money(v))),
+  ];
+  if(prices.cost!==undefined&&String(prices.cost).trim()!==''&&prices.feePercent!==undefined&&String(prices.feePercent).trim()!==''){
+    try{
+      const p=calculatePrice(prices);
+      lines.push(entry('Giá Shopee đề xuất',money(p.shopeePrice)),entry('Thực nhận dự kiến',money(p.net)),entry('Lợi nhuận dự kiến',money(p.profit)),entry('Giá Web/offline gợi ý',money(p.webPrice)));
+    }catch(e){lines.push(entry('Cần kiểm tra giá',e.message));}
+  }else lines.push('- **Giá đề xuất:** CHỜ CHỐT GIÁ VỐN / PHÍ SÀN');
+  lines.push('', '## 5. Nội dung sản phẩm và SEO',
+    '### Tiếng Việt',
+    ...[['Tên sản phẩm',draft.vi.title],['Mô tả ngắn',draft.vi.short],['Mô tả chi tiết',draft.vi.description],['SEO Title',draft.vi.seoTitle],['SEO Description',draft.vi.seoDescription],['Slug',draft.vi.slug],['Từ khóa',draft.vi.keywords],['Alt ảnh',draft.vi.altText]].flatMap(([k,v])=>[`**${k}**`,'',val(v),'']),
+    '### English',
+    ...[['Product title',draft.en.title],['Short description',draft.en.short],['Detailed description',draft.en.description],['SEO Title',draft.en.seoTitle],['SEO Description',draft.en.seoDescription],['Slug',draft.en.slug],['Keywords',draft.en.keywords],['Image alt',draft.en.altText]].flatMap(([k,v])=>[`**${k}**`,'',val(v),'']),
+    '## 6. Câu lệnh tạo ảnh ChatGPT',
+    entry('Quy định logo',product.shop==='DHL SPORTS'?'Không chèn logo cửa hàng ĐHL SPORTS; giữ nguyên huy hiệu/patch có thật.':'Ảnh bán hàng cần logo gốc đúng shop, không tự tạo logo.'),
+    '',
+    ...(prompts.length?prompts.flatMap(p=>[`### Ảnh ${p.index}: ${p.title}`,'',val(p.prompt),'']):['Chưa có prompt ảnh.']),
+    '## 7. Tài liệu nguồn đã đọc',
+    ...(sourceDocuments.length?sourceDocuments.flatMap(d=>[`### ${flat(d.name)}`,'',...String(d.text||'').split(/\r?\n/).map(line=>'> '+line),'']):['Không có tài liệu văn bản đính kèm.']),
+    '## 8. Các thông tin chưa xác minh',
+    ...(draft.missing?.length?draft.missing.map(x=>'- '+flat(x)):['- Không có mục nào được AI đánh dấu, vẫn cần người bán kiểm duyệt trước khi đăng.']),
+    '', '---',
+    'Tài liệu này là hồ sơ sản phẩm tập trung. Ảnh nằm cùng thư mục; không tự tạo Excel, TXT, JSON, file đăng sàn hay sửa bảng giá tổng trên Google Drive.',
+    '');
+  return lines.join('\n');
+}

@@ -1,3 +1,19 @@
+# DHL Product Factory — v0.9.0: MỘT SẢN PHẨM, MỘT THƯ MỤC, MỘT FILE MD
+
+**Quy trình mới (20/10/2026):** Chụp màn hình → Dán ảnh → Phân tích → Lưu Drive.
+
+Google Drive: `TRUNG TÂM TẠO SẢN PHẨM - 6 SHOP / <SHOP> / <TÊN SẢN PHẨM> /`, bên trong chỉ tự lưu ảnh nguồn, ảnh thành phẩm và **`THÔNG TIN SẢN PHẨM.md`** chứa tất cả dữ liệu, hai ngôn ngữ SEO, giá vốn/giá gợi ý (nếu có đủ phí), SKU, thông tin ảnh, tài liệu nguồn, 9 prompt và mục cần kiểm tra. Không tự tạo Excel/TXT/JSON/BigSeller/Lazada ở Drive.
+
+Tên sản phẩm AI gợi ý được sử dụng nếu chưa nhập thủ công. SKU bán hàng **không bắt buộc** để lưu; hệ thống luôn dùng mã hồ sơ kỹ thuật SHA-256 ổn định theo shop/tên (độc lập với SKU bán hàng, để cập nhật cùng thư mục kể cả khi SKU thay đổi) (không công bố đó là SKU). Nếu có thư mục trùng tên nhưng khác mã hồ sơ, dừng để kiểm tra; không tự ghi đè.
+
+**Quan trọng:** File cũ trong các thư mục sản phẩm đã tạo ở phiên bản trước **không bị xóa** và vẫn còn nguyên. Nếu phát hiện MD tên trùng không do tool tạo, tool không ghi đè. Bảng giá Shopee tổng và file gốc không bị sửa.
+
+**Giới hạn:** Google Drive OAuth cần được chủ tài khoản cấp quyền trong Chrome. Chưa chứng thực đăng nhập/ghi Drive thật trên thiết bị của chủ shop. Kiểm thử bằng mock.
+
+**Lưu ý:** Nút tải Excel/BigSeller theo yêu cầu riêng trong giao diện là chức năng xuất thủ công (nếu cần), **không** được lưu tự động lên Drive.
+
+---
+
 # DHL Product Factory — Chrome Extension (Manifest V3)
 
 **Bản 0.8.0: dán ảnh chụp màn hình rồi phân tích, giao diện tab rộng, Gemini + Drive nguồn/đích + kiểm tra cập nhật GitHub + bộ cập nhật Windows.**

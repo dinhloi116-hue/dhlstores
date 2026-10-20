@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DHL Product Factory — 6 Shop",
-  "description": "Gemini phân tích sản phẩm, SEO VI/EN, 9 prompt ảnh ChatGPT, tính giá và xuất Excel.",
-  "version": "0.8.0",
+  "description": "Phân tích ảnh sản phẩm, tạo thư mục Google Drive chứa ảnh và một file Markdown tổng hợp.",
+  "version": "0.9.0",
   "minimum_chrome_version": "116",
   "permissions": [
     "storage",
