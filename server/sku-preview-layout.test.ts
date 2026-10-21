@@ -43,6 +43,19 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('min-w-0 flex w-full flex-col items-stretch justify-end gap-1');
   });
 
+  it("uses a simple style-then-size purchase flow for HD football kits", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const isHdFootballProduct");
+    expect(source).toContain("Choose style and size");
+    expect(source).toContain("Chọn Không in hoặc Có in (nhãn shop)");
+    expect(source).toContain("const hdPriceMin");
+    expect(source).toContain("const hdPriceMax");
+    expect(source).toContain("variants.length > 1 && !isHdFootballProduct");
+    expect(source).toContain("{!isHdFootballProduct && skuInventoryPanel}");
+    expect(source).toContain('lang === "vi" ? "Thêm vào giỏ hàng" : "Add to cart"');
+  });
+
   it("opens a hover preview from the whole SKU row when that SKU has an image", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
@@ -59,7 +72,7 @@ describe("public SKU inventory presentation", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
     expect(source).toContain('className="space-y-4">{optionGroups.map');
-    expect(source).toContain('{skuInventoryPanel}');
+    expect(source).toContain('{!isHdFootballProduct && skuInventoryPanel}');
     expect(source).toContain('id="product-purchase-actions"');
     expect(source).not.toContain('purchaseModes.after(purchaseActions)');
     expect(source).not.toContain('purchaseActions.after(panel)');
@@ -254,7 +267,7 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain("const singleVariant = variants.length === 1 ? variants[0] : null");
     expect(source).toContain("SKU duy nhất · chọn số lượng");
     expect(source).toContain("product.type === \"physical\" && variants.length > 1");
-    expect(source).toContain("{variants.length > 1 ? <><div className=\"relative z-10 mt-3");
+    expect(source).toContain("{variants.length > 1 && !isHdFootballProduct ? <><div className=\"relative z-10 mt-3");
     expect(source).toContain("{skuBatchSelector && <div className=\"mt-6\">{skuBatchSelector}</div>}");
     expect(source).toContain("<div className=\"space-y-2 p-2 sm:p-3\">");
     expect(source).toContain("rounded-xl border px-3 py-3 transition-all duration-200");
