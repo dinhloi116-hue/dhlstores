@@ -53,7 +53,6 @@ export default function Products() {
   const [sortBy, setSortBy] = useState<string>("default");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [sizeFilter, setSizeFilter] = useState("");
   const [colorFilter, setColorFilter] = useState("");
   const [catalogQuickFilter, setCatalogQuickFilter] = useState<"all" | "digital" | "physical" | "in-stock">("all");
   useEffect(() => {
@@ -65,7 +64,6 @@ export default function Products() {
     setSearchQuery("");
     setMinPrice("");
     setMaxPrice("");
-    setSizeFilter("");
     setColorFilter("");
     setCatalogQuickFilter("all");
   };
@@ -78,7 +76,6 @@ export default function Products() {
     type: isTypeScoped ? (isPhysicalCatalog ? "physical" : "digital") : undefined,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
-    size: isPhysicalCatalog ? (sizeFilter || undefined) : undefined,
     color: isPhysicalCatalog ? (colorFilter || undefined) : undefined,
   });
 
@@ -100,7 +97,7 @@ export default function Products() {
   const productCardImage = (product: (typeof products)[number]) => productCardGallery(product)[0] || "";
   const hasWholesalePreviewPrice = (product: (typeof products)[number]) => lowestWholesalePriceByProduct.has(product.id);
   const isCatalogLoading = categoriesQuery.isLoading || productsQuery.isLoading;
-	  const hasActiveCatalogFilters = selectedCategory !== undefined || Boolean(searchQuery || minPrice || maxPrice || sizeFilter || colorFilter) || catalogQuickFilter !== "all";
+	  const hasActiveCatalogFilters = selectedCategory !== undefined || Boolean(searchQuery || minPrice || maxPrice || colorFilter) || catalogQuickFilter !== "all";
   const [quickViewProduct, setQuickViewProduct] = useState<(typeof products)[number] | null>(null);
   const [hoverPreview, setHoverPreview] = useState<{ productId: number; index: number } | null>(null);
 
@@ -171,38 +168,14 @@ export default function Products() {
               <span className="text-lg leading-none text-slate-400 transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
             </summary>
             <div className="space-y-2 pb-2">
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
-            <span className="text-xs text-slate-500 font-bold mr-2 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-sky-500" /> {t.allCategories}:
-            </span>
-            <button
-              onClick={() => setSelectedCategory(undefined)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:-translate-y-0.5 ${selectedCategory === undefined ? 'bg-sky-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-sky-50 hover:text-sky-700'}`}
-            >
-              {t.allCategories}
-            </button>
-            {categories.map(c => (
-              <button
-                key={c.id}
-                onClick={() => setSelectedCategory(c.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:-translate-y-0.5 ${selectedCategory === c.id ? 'bg-sky-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-sky-50 hover:text-sky-700'}`}
-              >
-                {catalogName(c, lang)}
-              </button>
-            ))}
-          </div>
 	          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
 	            <span className="text-xs font-bold text-slate-500">Lọc nhanh:</span>
 	            {([['all', 'Tất cả'], ...(!isPhysicalCatalog ? [['digital', 'Tài nguyên số'], ['physical', 'Hàng vật lý']] : []), ['in-stock', 'Có thể mua ngay']] as Array<["all" | "digital" | "physical" | "in-stock", string]>).map(([value, label]) => <button key={value} type="button" onClick={() => setCatalogQuickFilter(value)} className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${catalogQuickFilter === value ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50'}`}>{label}</button>)}
 	          </div>
-          <div className={`grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 ${isPhysicalCatalog ? 'border-sky-100 sm:grid-cols-4' : 'sm:grid-cols-2'}`}>
+          <div className={`grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 ${isPhysicalCatalog ? 'border-sky-100 sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
             <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá từ (đ)' : 'Min price'} value={minPrice} onChange={(event) => setMinPrice(event.target.value)} className={`h-9 rounded-lg text-xs ${isPhysicalCatalog ? 'bg-sky-50/40' : 'bg-slate-50'}`} />
             <Input type="number" min="0" placeholder={lang === 'vi' ? 'Giá đến (đ)' : 'Max price'} value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} className={`h-9 rounded-lg text-xs ${isPhysicalCatalog ? 'bg-sky-50/40' : 'bg-slate-50'}`} />
             {isPhysicalCatalog && <>
-              <Select value={sizeFilter || 'all'} onValueChange={(value) => setSizeFilter(value === 'all' ? '' : value)}>
-                <SelectTrigger className="h-9 rounded-lg bg-sky-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Kích thước' : 'Size'} /></SelectTrigger>
-                <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi kích thước' : 'All sizes'}</SelectItem>{(facetsQuery.data?.sizes || []).map(size => <SelectItem key={size} value={size}>{size}</SelectItem>)}</SelectContent>
-              </Select>
               <Select value={colorFilter || 'all'} onValueChange={(value) => setColorFilter(value === 'all' ? '' : value)}>
                 <SelectTrigger className="h-9 rounded-lg bg-sky-50/40 text-xs"><SelectValue placeholder={lang === 'vi' ? 'Màu sắc' : 'Color'} /></SelectTrigger>
                 <SelectContent><SelectItem value="all">{lang === 'vi' ? 'Mọi màu sắc' : 'All colors'}</SelectItem>{(facetsQuery.data?.colors || []).map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}</SelectContent>
@@ -212,6 +185,28 @@ export default function Products() {
             </div>
           </details>
         </div>
+        <section aria-labelledby="catalog-major-categories" className="mb-5 rounded-2xl border border-sky-100 bg-white p-3 shadow-sm sm:p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">DHL Stores</p>
+              <h2 id="catalog-major-categories" className="mt-0.5 text-base font-black text-slate-900 sm:text-lg">{lang === 'vi' ? 'Danh mục lớn' : 'Main categories'}</h2>
+            </div>
+            <span className="text-[11px] font-bold text-slate-500">{lang === 'vi' ? 'Chọn để lọc nhanh' : 'Choose to filter'}</span>
+          </div>
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 snap-x sm:flex-wrap sm:overflow-visible">
+            <button type="button" onClick={() => setSelectedCategory(undefined)} className={`flex min-w-[128px] snap-start items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-black transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 sm:min-w-0 ${selectedCategory === undefined ? 'border-sky-500 bg-sky-500 text-white shadow-md shadow-sky-100' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-sky-300 hover:bg-sky-50'}`}>
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sm font-black ${selectedCategory === undefined ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'}`}>All</span>
+              <span>{t.allCategories}</span>
+            </button>
+            {categories.map(category => {
+              const categoryLabel = catalogName(category, lang);
+              return <button key={category.id} type="button" onClick={() => setSelectedCategory(category.id)} className={`flex min-w-[158px] snap-start items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-black transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 sm:min-w-0 ${selectedCategory === category.id ? 'border-sky-500 bg-sky-500 text-white shadow-md shadow-sky-100' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-sky-300 hover:bg-sky-50'}`}>
+                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sm font-black ${selectedCategory === category.id ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'}`}>{categoryLabel.trim().charAt(0).toUpperCase() || '•'}</span>
+                <span className="line-clamp-2">{categoryLabel}</span>
+              </button>;
+            })}
+          </div>
+        </section>
         {!isCatalogLoading && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><p className="text-slate-600">Hiển thị <span key={`${products.length}-${searchQuery}-${selectedCategory ?? 'all'}`} className="inline-block animate-in fade-in-0 slide-in-from-bottom-1 font-black text-slate-900">{products.length}</span> sản phẩm phù hợp</p>{hasActiveCatalogFilters && <Button type="button" variant="ghost" size="sm" onClick={clearCatalogFilters} className="h-7 px-2.5 text-xs font-black text-sky-700 transition hover:bg-sky-100 hover:text-sky-800"><span aria-hidden="true">×</span> Xóa bộ lọc</Button>}</div>}
 
         {/* Product Grid */}

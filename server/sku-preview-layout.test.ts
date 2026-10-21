@@ -425,3 +425,18 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("rounded-2xl shadow-sm");
     expect(catalogSource).toContain("text-[17px] text-center");
   });
+
+describe("HD football purchase selector", () => {
+  it("uses one normalized size group, keeps out-of-stock sizes selectable for Order, and exposes size pricing plus Zalo", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('const normalizeOptionName = (name: string) => /kích\\s*(cỡ|thước)|size/i.test(name) ? "Kích cỡ" : name.trim();');
+    expect(source).toContain('const hdSizeGroup = optionGroups.find(group => group.name === "Kích cỡ");');
+    expect(source).toContain('id="hd-size-chart"');
+    expect(source).toContain("Out-of-stock sizes can still be ordered");
+    expect(source).toContain("const orderableHd = isHdFootballProduct;");
+    expect(source).toContain("const max = isPreorder || orderableHd ? 99");
+    expect(source).toContain("https://zalo.me/0963898871");
+    expect(source).toContain("Nhắn Zalo tư vấn chọn size");
+  });
+});
