@@ -441,6 +441,7 @@ describe("HD football purchase selector", () => {
     expect(source).toContain("const orderableHd = isHdFootballProduct;");
     expect(source).toContain("const max = isPreorder || orderableHd ? 99");
     expect(source).toContain("https://zalo.me/0963898871");
-    expect(source).toContain("Nhắn Zalo tư vấn chọn size");
+    expect(source).toContain("Đặt hàng qua Zalo");
+    expect(source).toContain("Order via Zalo");
   });
 });

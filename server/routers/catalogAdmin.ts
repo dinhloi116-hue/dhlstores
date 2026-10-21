@@ -4,6 +4,7 @@ import * as db from "../db";
 import { storagePut } from "../storage";
 import { adminProcedure, router } from "../_core/trpc";
 import { parseExcelProducts, toOptionGroups } from "../excelProductImport";
+import { isNationalTeamPlayerProduct, isPlayerProduct, CLUB_PLAYER_CATEGORY, NATIONAL_TEAM_PLAYER_CATEGORY } from "../catalogAutoCategorization";
 
 const categoryInput = z.object({
   name: z.string().trim().min(2).max(128),
@@ -215,6 +216,7 @@ export const catalogAdminRouter = router({
     const skipped: string[] = [];
     let copiedImages = 0;
     const imageWarnings: string[] = [];
+    const playerCategories = new Map<string, typeof category>();
     for (const rawImported of parsed.products) {
       const materialized = await materializeImportedImages(rawImported);
       const imported = materialized.product;
@@ -225,11 +227,24 @@ export const catalogAdminRouter = router({
         throw new Error(`Slug ${imported.slug} đã tồn tại`);
       }
       const basePrice = imported.variants.length ? Math.min(...imported.variants.map(variant => variant.price || imported.price)) : imported.price;
-      const product = await db.createProduct({ name: imported.name, nameEn: imported.nameEn, slug: imported.slug, description: imported.description.slice(0, 5000), descriptionEn: imported.descriptionEn?.slice(0, 5000), price: String(basePrice), categoryId: category.id, image: imported.image, gallery: imported.gallery, specs: [imported.tags ? `Tags: ${imported.tags}` : "", imported.specs].filter(Boolean).join("\n"), specsEn: imported.specsEn, supplierUrl: imported.supplierUrl, stock: imported.stock, weightGrams: imported.weightGrams, purchaseLayout: "marketplace", featured: false, isActive: true });
+      const isPlayer = isPlayerProduct(imported.name, imported.nameEn);
+      let targetCategory = category;
+      if (isPlayer) {
+        const categoryConfig = isNationalTeamPlayerProduct(imported.name, imported.nameEn) ? NATIONAL_TEAM_PLAYER_CATEGORY : CLUB_PLAYER_CATEGORY;
+        const cachedCategory = playerCategories.get(categoryConfig.slug);
+        if (cachedCategory) {
+          targetCategory = cachedCategory;
+        } else {
+          const existingPlayerCategory = (await db.getAdminCategories()).find(item => item.slug === categoryConfig.slug);
+          targetCategory = existingPlayerCategory ?? await db.createCategory(categoryConfig) ?? category;
+          playerCategories.set(categoryConfig.slug, targetCategory);
+        }
+      }
+      const product = await db.createProduct({ name: imported.name, nameEn: imported.nameEn, slug: imported.slug, description: imported.description.slice(0, 5000), descriptionEn: imported.descriptionEn?.slice(0, 5000), price: String(basePrice), categoryId: targetCategory.id, image: imported.image, gallery: imported.gallery, specs: [imported.tags ? `Tags: ${imported.tags}` : "", imported.specs].filter(Boolean).join("\n"), specsEn: imported.specsEn, supplierUrl: imported.supplierUrl, stock: imported.stock, weightGrams: imported.weightGrams, purchaseLayout: "marketplace", featured: false, isActive: true });
       if (!product) throw new Error(`Không thể tạo sản phẩm ${imported.name}`);
       createdProducts += 1;
       existingSlugs.add(imported.slug);
-      if (category.type === "physical" && imported.variants.length) {
+      if (targetCategory.type === "physical" && imported.variants.length) {
         const groups = toOptionGroups(imported);
         if (groups.length) await db.replaceProductOptionGroups({ productId: product.id, groups });
         for (const variant of imported.variants) {
