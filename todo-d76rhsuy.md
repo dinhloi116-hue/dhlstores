@@ -1,7 +1,4 @@
 
-## Mẫu HD VIE/EN và thứ tự Kiểu–Size — 2026-10-21
-- [x] Parser nhận workbook có tab dữ liệu và tab `VIE`/`EN`; lưu `nameEn`, `descriptionEn`, `specsEn` vào product để ProductDetail đổi thông tin rõ ràng theo ngôn ngữ.
-- [x] Chuẩn hóa thứ tự option group thành `Kiểu: Không in, Có in` rồi `Kích cỡ: S, M, L, XL, XXL`; sort variants theo cùng thứ tự khi import.
-- [x] Nhập sản phẩm Việt Nam HD vào category physical: 8 ảnh gallery, 10 SKU, tên/mô tả song ngữ; browser VI xác minh 10 SKU/size và browser EN xác minh title `VIETNAM AWAY 2026 FOOTBALL KIT`, `Style`, `Size`, `lang=en`, giá USD.
-- [x] Sắp xếp lại cả sản phẩm Portugal HD cũ và Vietnam HD mới trong database theo `Không in → S…XXL`, `Có in → S…XXL`; full regression 202 passed/2 skipped, TypeScript và production build đạt.
-- [x] Lưu checkpoint mới tại version `eeb01459`; commit `fe7b8fd` đã push thành công lên `github/main`, xác nhận local và `github/main` cùng SHA.
+## Khắc phục lỗi production `insertBefore` — 2026-10-21
+- [x] Ngăn tiện ích dịch tự động của trình duyệt thay đổi DOM React bằng `translate=no`, class `notranslate` và meta notranslate; giữ chuyển ngôn ngữ VI/EN nội bộ.
+- [x] Test 203 passed/2 skipped, TypeScript, production build và diff check đạt; checkpoint/push main sẽ thực hiện ngay sau xác minh artifact.
