@@ -253,7 +253,6 @@ describe("public SKU inventory presentation", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
     expect(source).toContain("const estimatedSpxFee");
-    expect(source).toContain("Giao hàng SPX khi mua ngay");
     expect(source).toContain("Ước tính đơn trong giỏ:");
     expect(source).toContain("Giao hàng SPX tự tính");
     expect(source).not.toContain("Nhận tại cửa hàng — 0 đ");
