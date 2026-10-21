@@ -1,9 +1,9 @@
 
 ## Sửa bộ chọn size HD và bảng số đo — 2026-10-22
-- [ ] Bỏ bộ lọc Kích thước khỏi toolbar catalog theo yêu cầu; không ảnh hưởng ô tìm kiếm và danh mục lớn.
-- [ ] Trong ProductDetail HD chỉ giữ một nhóm Kích cỡ; cho phép chọn mọi size S–XXL kể cả SKU tồn 0 để đặt trước/Order.
-- [ ] Hiển thị bảng số đo ngay bên dưới bộ chọn Kiểu/Kích cỡ, phân biệt rõ S–XXL và VI/EN.
-- [ ] Thêm hồi quy tương tác/markup, kiểm tra browser mobile/desktop, full test/build, checkpoint và push main.
+- [x] Bỏ bộ lọc Kích thước khỏi toolbar catalog; giữ nguyên ô tìm kiếm, bộ lọc màu và dải danh mục lớn.
+- [x] ProductDetail HD chỉ còn một nhóm Kích cỡ chuẩn hóa; mọi size S–XXL kể cả SKU tồn 0 đều chọn được và tự chuyển fulfillment sang Order.
+- [x] Hiển thị bảng giá `Size and price by style` và bảng số đo thật `Reference size guide`/`Bảng số đo tham khảo` ngay dưới bộ chọn Kiểu/Kích cỡ; browser xác minh 5 dòng S–XXL, chiều cao và cân nặng bằng cả EN/VI.
+- [ ] Hồi quy 209 passed/2 skipped, TypeScript, production build và browser desktop/mobile đã đạt; cần lưu checkpoint mới và push main cho bảng số đo.
 
 ## Hoàn thiện chọn size và Zalo trên HD — 2026-10-22
 - [x] Hợp nhất `Kích cỡ`/`Kích thước` thành một nhóm; browser English chỉ còn một selector Kiểu–Size.

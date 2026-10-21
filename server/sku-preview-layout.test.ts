@@ -433,6 +433,10 @@ describe("HD football purchase selector", () => {
     expect(source).toContain('const normalizeOptionName = (name: string) => /kích\\s*(cỡ|thước)|size/i.test(name) ? "Kích cỡ" : name.trim();');
     expect(source).toContain('const hdSizeGroup = optionGroups.find(group => group.name === "Kích cỡ");');
     expect(source).toContain('id="hd-size-chart"');
+    expect(source).toContain('id="hd-measurement-chart"');
+    expect(source).toContain("Reference size guide");
+    expect(source).toContain("Height (cm)");
+    expect(source).toContain("145–155");
     expect(source).toContain("Out-of-stock sizes can still be ordered");
     expect(source).toContain("const orderableHd = isHdFootballProduct;");
     expect(source).toContain("const max = isPreorder || orderableHd ? 99");
