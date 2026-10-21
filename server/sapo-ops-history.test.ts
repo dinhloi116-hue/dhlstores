@@ -10,15 +10,15 @@ describe("Sapo operations history", () => {
     const routers = read("server/routers.ts");
     expect(routers).toContain("sapoSyncHistory");
     expect(routers).toContain("sapoLatestSync");
-    expect(routers).toContain("recordSapoOutboundEvents");
+    expect(routers).not.toContain("sapoSyncRun");
   });
 
   it("renders manual sync and history controls in operations center", () => {
     const page = read("client/src/pages/OperationsCenter.tsx");
-    expect(page).toContain("Đồng bộ sang Sapo");
+    expect(page).toContain("Chiều ghi về Sapo: đã khóa");
     expect(page).toContain("Lịch sử đồng bộ tồn");
     expect(page).toContain("Sapo → web");
-    expect(page).toContain("web → Sapo");
+    expect(page).toContain("web → Sapo (cũ)");
   });
 
   it("shows the latest Sapo sync timestamp on the product inventory UI", () => {

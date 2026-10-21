@@ -9,7 +9,7 @@ import { buildSePayQrUrl, buildStoreVietQrUrl } from "./sepay";
 import { catalogAdminRouter } from "./routers/catalogAdmin";
 import { sdk } from "./_core/sdk";
 import { storagePut } from "./storage";
-import { checkSapoProductReadConnection, pullSapoInventoryBySku, syncSapoInventoryBySku } from "./sapo";
+import { checkSapoProductReadConnection, pullSapoInventoryBySku } from "./sapo";
 import { invokeLLM } from "./_core/llm";
 import { resolveStoreLocale } from "./locale";
 
@@ -172,8 +172,6 @@ export const appRouter = router({
     sapoConnection: ownerProcedure.query(() => checkSapoProductReadConnection()),
     sapoSyncHistory: ownerProcedure.input(z.object({ limit: z.number().int().min(1).max(200).optional() }).optional()).query(({ input }) => db.getSapoSyncHistory(input?.limit || 60)),
     sapoLatestSync: publicProcedure.input(z.object({ variantIds: z.array(z.number().int().positive()).max(100) })).query(({ input }) => db.getLatestSapoSyncAtByVariantIds(input.variantIds)),
-    sapoSyncPreview: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(({ input }) => syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: true, maxRows: 20 })),
-    sapoSyncRun: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(20) })).mutation(async ({ input }) => { const result = await syncSapoInventoryBySku(input.rows, input.locationId, { dryRun: false, maxRows: 20 }); const inventory = await db.getInventoryBoard(); const idsBySku = new Map(inventory.filter(row => row.target === "variant" && row.sku).map(row => [row.sku, row.id])); await db.recordSapoOutboundEvents(result.results.map(row => ({ ...row, localVariantId: idsBySku.get(row.sku) }))); return result; }),
     sapoInboundPull: ownerProcedure.input(z.object({ locationId: z.string().trim().min(1).max(64), rows: z.array(z.object({ localVariantId: z.number().int().positive(), sku: z.string().trim().max(128), available: z.number().int().min(0).max(999_999) })).min(1).max(50) })).mutation(({ input }) => pullSapoInventoryBySku(input.rows, input.locationId)),
     sapoInboundApply: ownerProcedure.input(z.object({ changes: z.array(z.object({ localVariantId: z.number().int().positive(), sku: z.string().trim().max(128), stock: z.number().int().min(0).max(999_999), sapoVariantId: z.string().optional(), inventoryItemId: z.string().optional() })).min(1).max(50), reason: z.string().trim().min(3).max(255).optional() })).mutation(({ ctx, input }) => db.applySapoInboundInventory({ ...input, performedByUserId: ctx.user!.id })),
     members: ownerProcedure.query(() => db.getAllUsers()),

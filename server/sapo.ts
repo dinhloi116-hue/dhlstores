@@ -2,8 +2,8 @@ export type SapoConnectionStatus = {
   configured: boolean;
   connected: boolean;
   catalogAuthority: "dhlstores";
-  inventoryDirection: "dhlstores_to_sapo";
-  inventorySyncEnabled: false;
+  inventoryDirection: "sapo_to_dhlstores";
+  inventorySyncEnabled: true;
   host?: string;
   status?: number;
   productCount?: number;
@@ -12,9 +12,9 @@ export type SapoConnectionStatus = {
 
 export const SAPO_SYNC_POLICY = {
   catalogAuthority: "dhlstores" as const,
-  inventoryDirection: "dhlstores_to_sapo" as const,
-  inventorySyncEnabled: false as const,
-  summary: "DHL Stores quản lý sản phẩm, SKU, giá và tồn kho. Sapo chỉ nhận đồng bộ tồn kho theo SKU khi quyền API ghi được xác minh.",
+  inventoryDirection: "sapo_to_dhlstores" as const,
+  inventorySyncEnabled: true as const,
+  summary: "Sapo là nguồn tồn kho. DHL Stores chỉ đọc tồn từ Sapo và cập nhật tồn website; website không ghi ngược tồn về Sapo.",
 };
 
 type SapoEnvironment = {
@@ -98,7 +98,7 @@ export async function checkSapoProductReadConnection(
       host: configuration.host,
       status: response.status,
       productCount,
-      message: "Kết nối Sapo đã sẵn sàng để đối chiếu SKU; DHL Stores vẫn là kho chính và chưa bật ghi tồn sang Sapo.",
+      message: "Kết nối Sapo đã sẵn sàng để đọc tồn theo SKU; tồn kho chỉ đồng bộ một chiều Sapo → DHL Stores.",
     };
   } catch {
     return {
@@ -133,38 +133,10 @@ export async function setSapoInventoryLevel(
   env: SapoEnvironment = readSapoEnvironment(),
   fetchImpl: FetchLike = fetch,
 ): Promise<SapoInventorySetResult> {
-  const configuration = getSapoConfiguration(env);
-  if (!configuration.configured) return { ok: false, message: configuration.message };
-  if (!Number.isFinite(input.available) || input.available < 0) return { ok: false, message: "Số tồn Sapo không hợp lệ." };
-
-  const authorization = Buffer.from(`${configuration.apiKey}:${configuration.apiSecret}`).toString("base64");
-  try {
-    const response = await fetchImpl(`https://${configuration.host}/admin/inventory_levels/set.json`, {
-      method: "PUT",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Basic ${authorization}`,
-        "User-Agent": "DHL-Stores-Sapo-Sync/1.0",
-      },
-      body: JSON.stringify({ inventory_level: { location_id: input.locationId, inventory_item_id: input.inventoryItemId, available: Math.round(input.available) } }),
-    });
-    const body = await response.text();
-    if (!response.ok) {
-      const message = response.status === 401 || response.status === 403
-        ? "Sapo từ chối quyền ghi tồn kho."
-        : `Sapo trả về trạng thái ${response.status} khi ghi tồn kho.`;
-      return { ok: false, status: response.status, message };
-    }
-    try {
-      const parsed = JSON.parse(body) as { inventory_level?: { id?: number; available?: number } };
-      return { ok: true, status: response.status, inventoryLevelId: parsed.inventory_level?.id === undefined ? undefined : String(parsed.inventory_level.id), available: parsed.inventory_level?.available, message: "Đã cập nhật tồn kho Sapo." };
-    } catch {
-      return { ok: false, status: response.status, message: "Sapo phản hồi dữ liệu tồn kho không đúng định dạng JSON." };
-    }
-  } catch {
-    return { ok: false, message: "Không thể kết nối HTTPS đến API ghi tồn kho Sapo." };
-  }
+  void input;
+  void env;
+  void fetchImpl;
+  return { ok: false, message: "Đã khóa chiều ghi tồn về Sapo: chỉ cho phép Sapo → DHL Stores." };
 }
 
 
@@ -213,42 +185,10 @@ export async function syncSapoInventoryBySku(
   env: SapoEnvironment = readSapoEnvironment(),
   fetchImpl: FetchLike = fetch,
 ): Promise<{ dryRun: boolean; results: SapoInventorySyncRowResult[] }> {
-  const configuration = getSapoConfiguration(env);
+  void locationId;
+  void env;
+  void fetchImpl;
   const dryRun = options.dryRun !== false;
   const maxRows = Math.min(Math.max(options.maxRows ?? 20, 1), 20);
-  if (!configuration.configured) return { dryRun, results: rows.slice(0, maxRows).map(row => ({ ...row, status: "failed", message: configuration.message })) };
-
-  const authorization = Buffer.from(`${configuration.apiKey}:${configuration.apiSecret}`).toString("base64");
-  const headers = { Accept: "application/json", "Content-Type": "application/json", Authorization: `Basic ${authorization}`, "User-Agent": "DHL-Stores-Sapo-Sync/1.0" };
-  const results: SapoInventorySyncRowResult[] = [];
-  for (const row of rows.slice(0, maxRows)) {
-    const sku = row.sku.trim();
-    if (!sku || !Number.isInteger(row.available) || row.available < 0) {
-      results.push({ ...row, status: "skipped", message: "SKU hoặc số tồn không hợp lệ." });
-      continue;
-    }
-    try {
-      const variantResponse = await fetchImpl(`https://${configuration.host}/admin/variants.json?sku=${encodeURIComponent(sku)}&limit=1`, { headers });
-      const variantBody = await variantResponse.text();
-      if (!variantResponse.ok) {
-        results.push({ ...row, status: "failed", message: `Không đọc được SKU trên Sapo (HTTP ${variantResponse.status}).` });
-        continue;
-      }
-      const parsed = JSON.parse(variantBody) as { variants?: Array<{ id?: number; inventory_item_id?: number }> };
-      const variant = parsed.variants?.[0];
-      if (!variant?.id || !variant.inventory_item_id) {
-        results.push({ ...row, status: "failed", message: "Không tìm thấy SKU tương ứng trên Sapo." });
-        continue;
-      }
-      if (dryRun) {
-        results.push({ ...row, status: "preview", message: "SKU khớp; sẵn sàng đồng bộ.", sapoVariantId: String(variant.id), inventoryItemId: String(variant.inventory_item_id) });
-        continue;
-      }
-      const update = await setSapoInventoryLevel({ locationId, inventoryItemId: String(variant.inventory_item_id), available: row.available }, env, fetchImpl);
-      results.push({ ...row, status: update.ok ? "synced" : "failed", message: update.message, sapoVariantId: String(variant.id), inventoryItemId: String(variant.inventory_item_id) });
-    } catch {
-      results.push({ ...row, status: "failed", message: "Không thể đọc hoặc đồng bộ SKU với Sapo." });
-    }
-  }
-  return { dryRun, results };
+  return { dryRun, results: rows.slice(0, maxRows).map(row => ({ ...row, status: "skipped", message: "Đã khóa chiều DHL Stores → Sapo; hãy dùng Kéo tồn Sapo → web." })) };
 }

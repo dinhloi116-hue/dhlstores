@@ -2,24 +2,23 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("Sapo Sync Preview UI", () => {
-  it("exposes owner-only preview and run mutations with the safe batch contract", () => {
+  it("exposes only owner-controlled inbound mutations", () => {
     const routerSource = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
-    expect(routerSource).toContain("sapoSyncPreview: ownerProcedure");
-    expect(routerSource).toContain("sapoSyncRun: ownerProcedure");
-    expect(routerSource).toContain("maxRows: 20");
-    expect(routerSource).toContain("dryRun: true");
-    expect(routerSource).toContain("dryRun: false");
+    expect(routerSource).toContain("sapoInboundPull: ownerProcedure");
+    expect(routerSource).toContain("sapoInboundApply: ownerProcedure");
+    expect(routerSource).not.toContain("sapoSyncPreview");
+    expect(routerSource).not.toContain("sapoSyncRun");
   });
 
-  it("renders selection, location, preview, explicit sync confirmation, and per-row results", () => {
+  it("renders Sapo-to-web selection and per-row results without outbound controls", () => {
     const source = readFileSync(new URL("../client/src/pages/OperationsCenter.tsx", import.meta.url), "utf8");
     expect(source).toContain("Sapo Sync Preview");
     expect(source).toContain("sapoLocationId");
     expect(source).toContain("sapoSelectedRows");
-    expect(source).toContain("sapoSyncPreview.useMutation");
-    expect(source).toContain("sapoSyncRun.useMutation");
-    expect(source).toContain("window.confirm(`Ghi tồn");
+    expect(source).toContain("sapoInboundPull.useMutation");
+    expect(source).toContain("sapoInboundApply.useMutation");
+    expect(source).toContain("Sapo → DHL Stores");
+    expect(source).not.toContain("Đồng bộ sang Sapo");
     expect(source).toContain("Kết quả gần nhất");
-    expect(source).toContain("Đồng bộ sang Sapo");
   });
 });

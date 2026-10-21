@@ -47,8 +47,21 @@ export default function CustomerContactHub() {
 
   useEffect(() => {
     const openInternalChat = () => setChatOpen(true);
+    const openProductChat = (event: Event) => {
+      const detail = (event as CustomEvent<{ productName?: string; productSlug?: string }>).detail;
+      const productName = detail?.productName?.trim();
+      const productUrl = detail?.productSlug ? `${window.location.origin}/product/${detail.productSlug}` : "";
+      if (productName) {
+        setChatMessage(current => current.trim() ? current : `Tôi muốn hỏi về sản phẩm: ${productName}${productUrl ? `\n${productUrl}` : ""}`);
+      }
+      setChatOpen(true);
+    };
     window.addEventListener("dhlstores-open-chat", openInternalChat);
-    return () => window.removeEventListener("dhlstores-open-chat", openInternalChat);
+    window.addEventListener("dhlstores-open-product-chat", openProductChat);
+    return () => {
+      window.removeEventListener("dhlstores-open-chat", openInternalChat);
+      window.removeEventListener("dhlstores-open-product-chat", openProductChat);
+    };
   }, []);
 
   const conversationQuery = trpc.support.conversation.useQuery({ visitorKey }, {
