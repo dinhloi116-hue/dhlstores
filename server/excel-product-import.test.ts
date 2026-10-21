@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import { normalizeImageUrl, parseExcelProducts } from "./excelProductImport";
+import { normalizeImageUrl, parseExcelProducts, toOptionGroups } from "./excelProductImport";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -56,6 +56,10 @@ describe("excel product import", () => {
     expect(parsed.products[0].gallery).toEqual(["https://example.com/ao.jpg", "https://example.com/ao-detail.jpg", "https://example.com/ao-back.jpg"]);
     expect(parsed.products[0].variants).toEqual(expect.arrayContaining([expect.objectContaining({ sku: "AO-DO-M", attributes: expect.arrayContaining([expect.objectContaining({ name: "Màu sắc", value: "Đỏ" })]) })]));
     expect(parsed.products[0].variants.find(variant => variant.sku === "AO-XANH-L")?.image).toBe("https://example.com/ao-xanh.jpg");
+  });
+
+  it("normalizes the HD football template's compact size label into a storefront-friendly option", () => {
+    expect(toOptionGroups({ variants: [{ sku: "HD-L", price: 119000, image: "https://example.com/kit.jpg", stock: 0, costPrice: 0, attributes: [{ name: "Kíchcỡ", value: "L" }] }] } as Parameters<typeof toOptionGroups>[0])).toEqual([{ name: "Kích cỡ", values: ["L"] }]);
   });
 
   it("reports the source row when an Excel product starts without a name", () => {

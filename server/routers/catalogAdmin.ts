@@ -12,6 +12,7 @@ const categoryInput = z.object({
   description: z.string().trim().max(2000).optional(),
   descriptionEn: z.string().trim().max(2000).optional(),
   iconKey: z.string().trim().min(1).max(64).default("Package"),
+  type: z.enum(["physical", "digital", "all"]).default("all"),
   isActive: z.boolean().default(true),
 });
 
@@ -233,7 +234,7 @@ export const catalogAdminRouter = router({
         for (const variant of imported.variants) {
           const attributes = variant.attributes.map(attribute => `${attribute.name}: ${attribute.value}`).join("\n");
           const color = variant.attributes.find(attribute => /màu|color/i.test(attribute.name))?.value;
-          const size = variant.attributes.find(attribute => /size|kích thước/i.test(attribute.name))?.value;
+          const size = variant.attributes.find(attribute => /size|kích\s*cỡ|kíchcỡ|kích thước/i.test(attribute.name))?.value;
           const created = await db.createProductVariant({ productId: product.id, size, color, attributes: attributes || undefined, sku: variant.sku || undefined, image: variant.image || undefined, priceAdjustment: String(Math.max(0, variant.price - basePrice)), costPrice: String(variant.costPrice), stock: variant.stock, weightGrams: variant.weightGrams, isActive: true });
           if (created) createdVariants += 1;
         }

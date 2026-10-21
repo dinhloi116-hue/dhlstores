@@ -1640,6 +1640,7 @@ export type CatalogCategoryInput = {
   description?: string;
   descriptionEn?: string;
   iconKey?: string;
+  type?: "physical" | "digital" | "all";
   isActive: boolean;
 };
 
@@ -1680,7 +1681,7 @@ export async function createCategory(input: CatalogCategoryInput) {
       description: input.description ?? null,
       descriptionEn: input.descriptionEn ?? null,
       iconKey: input.iconKey ?? "Package",
-      type: "digital",
+      type: input.type ?? "all",
       isActive: input.isActive,
     });
     const row = await connection.select().from(categories).where(eq(categories.id, Number(inserted[0].insertId))).limit(1);
@@ -1694,7 +1695,7 @@ export async function createCategory(input: CatalogCategoryInput) {
     description: input.description ?? "",
     descriptionEn: input.descriptionEn,
     iconKey: input.iconKey ?? "Package",
-    type: "digital",
+    type: input.type ?? "all",
     isActive: input.isActive,
   };
   memoryCategories.push(category);
@@ -1711,6 +1712,7 @@ export async function updateCategory(categoryId: number, input: CatalogCategoryI
       description: input.description ?? null,
       descriptionEn: input.descriptionEn ?? null,
       iconKey: input.iconKey ?? "Package",
+      type: input.type ?? "all",
       isActive: input.isActive,
     }).where(eq(categories.id, categoryId));
     return { success: true };

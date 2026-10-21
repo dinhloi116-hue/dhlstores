@@ -33,6 +33,13 @@ describe("catalogAdmin", () => {
     ]));
   });
 
+  it("creates a physical category for an Excel template", async () => {
+    const caller = appRouter.createCaller(createContext("owner"));
+    const suffix = Date.now().toString(36);
+    const category = await caller.catalogAdmin.createCategory({ name: `HD football ${suffix}`, slug: `hd-football-${suffix}`, description: "Physical kits", type: "physical", isActive: true });
+    expect(category).toMatchObject({ type: "physical", slug: `hd-football-${suffix}` });
+  });
+
   it("lets the owner create and hide a category and product", async () => {
     const caller = appRouter.createCaller(createContext("owner"));
     const suffix = Date.now().toString(36);

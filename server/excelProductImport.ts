@@ -60,7 +60,8 @@ function optionPairs(row: Record<string, unknown>, inheritedNames: Map<number, s
   for (const index of [1, 2, 3]) {
     const declaredName = text(row[`Thuộc tính ${index}`]);
     if (declaredName) inheritedNames.set(index, declaredName);
-    const name = declaredName || inheritedNames.get(index) || "";
+    const rawName = declaredName || inheritedNames.get(index) || "";
+    const name = /^kíchcỡ$/i.test(rawName.trim()) ? "Kích cỡ" : rawName;
     const value = text(row[`Giá trị thuộc tính ${index}`]);
     if (name && value) options.push({ name, value });
   }
@@ -149,6 +150,9 @@ export function parseExcelProducts(buffer: Buffer) {
 
 export function toOptionGroups(product: ImportedProduct) {
   const groups = new Map<string, string[]>();
-  for (const variant of product.variants) for (const attribute of variant.attributes) groups.set(attribute.name, Array.from(new Set([...(groups.get(attribute.name) || []), attribute.value])));
+  for (const variant of product.variants) for (const attribute of variant.attributes) {
+    const name = /^kíchcỡ$/i.test(attribute.name.trim()) ? "Kích cỡ" : attribute.name;
+    groups.set(name, Array.from(new Set([...(groups.get(name) || []), attribute.value])));
+  }
   return Array.from(groups.entries()).map(([name, values]) => ({ name, values }));
 }
