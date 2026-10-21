@@ -12,10 +12,12 @@ describe("homepage category tabs", () => {
     expect(homeSource).not.toContain('className="border-b border-slate-200 bg-white shadow-sm"');
   });
 
-  it("provides a quick preview without nesting a button inside a product link", () => {
-    expect(homeSource).toContain("setQuickViewProduct(product)");
-    expect(homeSource).toContain('lang === "vi" ? "Xem nhanh" : "Quick view"');
-    expect(homeSource).toContain("<Dialog open={Boolean(quickViewProduct)}");
-    expect(homeSource).toContain("Xem chi tiết & chọn SKU");
+  it("cycles product gallery images on hover without a Quick view button", () => {
+    expect(homeSource).toContain("productImages(product)");
+    expect(homeSource).toContain("setHoverPreview({ productId: product.id, index: 0 })");
+    expect(homeSource).toContain("onMouseLeave={() => setHoverPreview(null)}");
+    expect(homeSource).toContain("setInterval");
+    expect(homeSource).not.toContain("Xem nhanh");
+    expect(homeSource).not.toContain("Quick view");
   });
 });

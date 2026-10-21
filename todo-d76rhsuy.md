@@ -9,6 +9,11 @@
 - [x] Mở Dialog có ảnh minh họa, mô tả, giá, tồn kho và link chi tiết.
 - [x] Kiểm tra responsive, full regression, checkpoint và commit/push main.
 
+## Thanh danh mục homepage theo mẫu dải ngang — 2026-10-22
+- [ ] Hiển thị đầy đủ nhóm danh mục bán chạy theo thứ tự storefront, không phụ thuộc việc API trả thiếu category.
+- [ ] Giữ đúng bố cục dải ngang nền xanh: ô đang chọn màu trắng, icon, nhãn 2 dòng và vuốt ngang trên mobile.
+- [ ] Liên kết đúng category thật nếu có, fallback về tìm kiếm theo danh mục; test responsive, checkpoint và commit/push main.
+
 ## Lời nhắn cho shop trên mọi sản phẩm — 2026-10-22
 - [x] Thêm CTA “Để lại lời nhắn cho shop” trên ProductDetail của cả physical/digital, song ngữ VI/EN.
 - [x] Mở form nhắn tin nội bộ với product context (tên/slug), không chuyển sang Zalo; khách chưa đăng nhập được yêu cầu đăng nhập rõ ràng.
