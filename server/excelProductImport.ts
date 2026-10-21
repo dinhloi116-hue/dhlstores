@@ -14,11 +14,14 @@ export type ImportedProduct = {
   sourceKey: string;
   slug: string;
   name: string;
+  nameEn?: string;
   description: string;
+  descriptionEn?: string;
   image: string;
   gallery: string[];
   tags: string;
   specs: string;
+  specsEn?: string;
   supplierUrl?: string;
   price: number;
   stock: number;
@@ -46,6 +49,10 @@ function amount(value: unknown) {
 }
 function slugify(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 220) || `san-pham-${Date.now()}`; }
 function cleanDescription(value: unknown) { return text(value).replace(/<\/?pre>/gi, "").replace(/<br\s*\/?\s*>/gi, "\n").replace(/<[^>]+>/g, "").trim(); }
+function sheetDescription(workbook: XLSX.WorkBook, sheetName: string) {
+  return cleanDescription(sheetRows(workbook, sheetName).map(row => row.map(text).join(" ")).filter(Boolean).join("\n"));
+}
+function firstDescriptionLine(value: string) { return value.split(/\r?\n/).map(line => line.replace(/^#+\s*/, "").trim()).find(Boolean) || ""; }
 function rowImageValues(row: Record<string, unknown>) {
   const imageColumns = Object.keys(row)
     .filter(key => /^(?:Ảnh|Hình ảnh)\s*(?:đại diện|bìa|\d+)$/i.test(key.trim()))
@@ -113,7 +120,7 @@ function parseCommonWorkbook(workbook: XLSX.WorkBook) {
   const slug = slugify(name);
   const sku = profile.get("SKU sản phẩm dự kiến") || "";
   const variant: ImportedVariant = { sku, price, image, stock, costPrice, weightGrams, attributes };
-  return { sheetName: profileSheet, rowCount: Math.max(...workbook.SheetNames.map(sheet => sheetRows(workbook, sheet).length)), products: [{ sourceKey: slug, slug, name, description, image, gallery, tags, specs, supplierUrl: supplierUrl || undefined, price, stock, costPrice, weightGrams, variants: [variant], wholesaleTiers }], errors: [] };
+  return { sheetName: profileSheet, rowCount: Math.max(...workbook.SheetNames.map(sheet => sheetRows(workbook, sheet).length)), products: [{ sourceKey: slug, slug, name, nameEn: undefined, description, descriptionEn: undefined, image, gallery, tags, specs, specsEn: undefined, supplierUrl: supplierUrl || undefined, price, stock, costPrice, weightGrams, variants: [variant], wholesaleTiers }], errors: [] };
 }
 
 export function parseExcelProducts(buffer: Buffer) {
@@ -126,6 +133,11 @@ export function parseExcelProducts(buffer: Buffer) {
   if (!rows.length) throw new Error("File Excel không có dòng sản phẩm");
   if (rows.length > 1_000) throw new Error("Mỗi lần chỉ được nhập tối đa 1.000 dòng Excel");
   if (!Object.prototype.hasOwnProperty.call(rows[0], headers.name)) throw new Error("Không tìm thấy cột Tên sản phẩm* trong file Excel");
+  const viSheet = workbook.SheetNames.find(name => /^vie?$/i.test(name));
+  const enSheet = workbook.SheetNames.find(name => /^en(?:g)?$/i.test(name));
+  const descriptionVi = viSheet ? sheetDescription(workbook, viSheet) : "";
+  const descriptionEn = enSheet ? sheetDescription(workbook, enSheet) : "";
+  const nameEn = firstDescriptionLine(descriptionEn);
   const bySourceKey = new Map<string, ImportedProduct>(); const optionNamesByProduct = new Map<string, Map<number, string>>(); const errors: Array<{ row: number; message: string }> = []; let activeKey = "";
   for (let index = 0; index < rows.length; index += 1) {
     const row = rows[index]; const name = text(row[headers.name]); const alias = text(row[headers.alias]); const sourceKey = alias || (name ? slugify(name) : activeKey);
@@ -134,7 +146,7 @@ export function parseExcelProducts(buffer: Buffer) {
     if (!product) {
       if (!name) { errors.push({ row: index + 2, message: "Dòng mở đầu một sản phẩm cần có Tên sản phẩm*" }); continue; }
       const gallery = Array.from(new Set(rowImageValues(row)));
-      product = { sourceKey, slug: slugify(alias || name), name, description: cleanDescription(row[headers.description]), image: gallery[0] || normalizeImageUrl(row[headers.variantImage]) || "generated:catalog-cover", gallery, tags: text(row[headers.tags]), specs: "", price, stock: 0, costPrice: 0, variants: [], wholesaleTiers: [] };
+      product = { sourceKey, slug: slugify(alias || name), name, nameEn: nameEn || undefined, description: descriptionVi || cleanDescription(row[headers.description]), descriptionEn: descriptionEn || undefined, image: gallery[0] || normalizeImageUrl(row[headers.variantImage]) || "generated:catalog-cover", gallery, tags: text(row[headers.tags]), specs: "Kiểu: Không in, Có in\nKích cỡ: S, M, L, XL, XXL", specsEn: "Style: No printing, With printing\nSize: S, M, L, XL, XXL", price, stock: 0, costPrice: 0, variants: [], wholesaleTiers: [] };
       bySourceKey.set(sourceKey, product); optionNamesByProduct.set(sourceKey, new Map());
     }
     const extraImages = rowImageValues(row);
@@ -142,7 +154,7 @@ export function parseExcelProducts(buffer: Buffer) {
     const attributes = optionPairs(row, optionNamesByProduct.get(sourceKey) || new Map()); const sku = text(row[headers.sku]);
     if (attributes.length || sku) product.variants.push({ sku, price, image: normalizeImageUrl(row[headers.variantImage]) || product.image, stock: 0, costPrice: 0, attributes });
   }
-  const products = Array.from(bySourceKey.values());
+  const products = Array.from(bySourceKey.values()).map(product => ({ ...product, variants: [...product.variants].sort(compareImportedVariants) }));
   if (!products.length && !errors.length) throw new Error("Không tìm thấy sản phẩm hợp lệ trong file Excel");
   if (products.length > 100) throw new Error("Mỗi lần chỉ được nhập tối đa 100 sản phẩm");
   return { sheetName: firstSheetName, rowCount: rows.length, products, errors };
@@ -154,5 +166,21 @@ export function toOptionGroups(product: ImportedProduct) {
     const name = /^kíchcỡ$/i.test(attribute.name.trim()) ? "Kích cỡ" : attribute.name;
     groups.set(name, Array.from(new Set([...(groups.get(name) || []), attribute.value])));
   }
-  return Array.from(groups.entries()).map(([name, values]) => ({ name, values }));
+  return Array.from(groups.entries()).sort(([a], [b]) => (a === "Kiểu" ? -1 : b === "Kiểu" ? 1 : a === "Kích cỡ" ? -1 : b === "Kích cỡ" ? 1 : 0)).map(([name, values]) => ({ name, values: values.sort((a, b) => orderedOptionValue(name, a) - orderedOptionValue(name, b) || a.localeCompare(b, "vi")) }));
+}
+
+function orderedOptionValue(name: string, value: string) {
+  const normalized = value.trim().toLocaleLowerCase("vi");
+  if (/kiểu|style/i.test(name)) return normalized.includes("không") || normalized.includes("no") ? 0 : normalized.includes("có") || normalized.includes("with") ? 1 : 50;
+  if (/size|kích\s*cỡ|kíchcỡ|kích thước/i.test(name)) return ["s", "m", "l", "xl", "xxl"].indexOf(normalized) + 1 || 50;
+  return 50;
+}
+function compareImportedVariants(a: ImportedVariant, b: ImportedVariant) {
+  for (const [name, matcher] of [["Kiểu", /kiểu|style/i], ["Kích cỡ", /size|kích\s*cỡ|kíchcỡ|kích thước/i]] as const) {
+    const av = a.attributes.find(attribute => matcher.test(attribute.name))?.value || "";
+    const bv = b.attributes.find(attribute => matcher.test(attribute.name))?.value || "";
+    const order = orderedOptionValue(name, av) - orderedOptionValue(name, bv);
+    if (order) return order;
+  }
+  return a.sku.localeCompare(b.sku, "vi");
 }

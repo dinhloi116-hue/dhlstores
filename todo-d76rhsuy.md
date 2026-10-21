@@ -1,6 +1,7 @@
 
-## Mẫu Excel Quần Áo Bóng Đá HD và sản phẩm Bồ Đào Nha — 2026-10-21
-- [x] Thêm lựa chọn mẫu “Quần Áo Bóng Đá HD” trong khu Nhập sản phẩm từ Excel, mô tả cấu trúc và link tải static `/templates/quan-ao-bong-da-hd.xlsx`; HTTP kiểm chứng 200, đúng 11.417 bytes/ZIP.
-- [x] Tạo danh mục physical “Quần Áo Bóng Đá HD” (id 38970027); handler `onChange` và effect selector đặt `excelCategoryId` sang category này sau khi chọn mẫu HD, áp dụng cả trước/sau khi preview.
-- [x] Đọc/preview file mẫu, nhập sản phẩm Bồ Đào Nha xanh rêu với 11 ảnh gallery, 2 nhóm lựa chọn (Kiểu/Kích cỡ), 10 SKU và giá 119.000–149.000đ; storefront đã render sản phẩm, gallery, size và SKU.
-- [x] Chuẩn hóa parser nhãn “Kíchcỡ” → “Kích cỡ”, cập nhật dữ liệu thật của 10 SKU; full regression 201 passed/2 skipped, TypeScript, build và diff check đạt.
+## Mẫu HD VIE/EN và thứ tự Kiểu–Size — 2026-10-21
+- [x] Parser nhận workbook có tab dữ liệu và tab `VIE`/`EN`; lưu `nameEn`, `descriptionEn`, `specsEn` vào product để ProductDetail đổi thông tin rõ ràng theo ngôn ngữ.
+- [x] Chuẩn hóa thứ tự option group thành `Kiểu: Không in, Có in` rồi `Kích cỡ: S, M, L, XL, XXL`; sort variants theo cùng thứ tự khi import.
+- [x] Nhập sản phẩm Việt Nam HD vào category physical: 8 ảnh gallery, 10 SKU, tên/mô tả song ngữ; browser VI xác minh 10 SKU/size và browser EN xác minh title `VIETNAM AWAY 2026 FOOTBALL KIT`, `Style`, `Size`, `lang=en`, giá USD.
+- [x] Sắp xếp lại cả sản phẩm Portugal HD cũ và Vietnam HD mới trong database theo `Không in → S…XXL`, `Có in → S…XXL`; full regression 202 passed/2 skipped, TypeScript và production build đạt.
+- [ ] Lưu checkpoint mới và commit/push GitHub main.

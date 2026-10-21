@@ -1658,6 +1658,7 @@ export type CatalogProductInput = {
   videoUrl?: string;
   fileSize?: string;
   specs?: string;
+  specsEn?: string;
   supplierUrl?: string;
   stock: number;
   weightGrams?: number;
@@ -1757,6 +1758,7 @@ export async function createProduct(input: CatalogProductInput) {
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       specs: input.specs ?? null,
+      specsEn: input.specsEn ?? null,
       supplierUrl: input.supplierUrl ?? null,
       featured: input.featured,
       isActive: input.isActive,
@@ -1786,6 +1788,7 @@ export async function createProduct(input: CatalogProductInput) {
     weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
     purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
     specs: input.specs,
+    specsEn: input.specsEn,
     supplierUrl: input.supplierUrl,
     featured: input.featured,
     isActive: input.isActive,
@@ -1819,6 +1822,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       specs: input.specs ?? null,
+      specsEn: input.specsEn ?? null,
       supplierUrl: input.supplierUrl ?? null,
       featured: input.featured,
       isActive: input.isActive,

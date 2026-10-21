@@ -30,6 +30,7 @@ const productInput = z.object({
   videoUrl: z.string().trim().max(4096).refine(value => !value || /^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(value), "Video phải là link YouTube").optional(),
   fileSize: z.string().trim().max(64).optional(),
   specs: z.string().trim().max(5000).optional(),
+  specsEn: z.string().trim().max(5000).optional(),
   supplierUrl: z.string().trim().max(4096).optional(),
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
   weightGrams: z.coerce.number().int().min(0).max(100_000).default(0),
@@ -224,7 +225,7 @@ export const catalogAdminRouter = router({
         throw new Error(`Slug ${imported.slug} đã tồn tại`);
       }
       const basePrice = imported.variants.length ? Math.min(...imported.variants.map(variant => variant.price || imported.price)) : imported.price;
-      const product = await db.createProduct({ name: imported.name, slug: imported.slug, description: imported.description.slice(0, 5000), price: String(basePrice), categoryId: category.id, image: imported.image, gallery: imported.gallery, specs: [imported.tags ? `Tags: ${imported.tags}` : "", imported.specs].filter(Boolean).join("\n"), supplierUrl: imported.supplierUrl, stock: imported.stock, weightGrams: imported.weightGrams, purchaseLayout: "marketplace", featured: false, isActive: true });
+      const product = await db.createProduct({ name: imported.name, nameEn: imported.nameEn, slug: imported.slug, description: imported.description.slice(0, 5000), descriptionEn: imported.descriptionEn?.slice(0, 5000), price: String(basePrice), categoryId: category.id, image: imported.image, gallery: imported.gallery, specs: [imported.tags ? `Tags: ${imported.tags}` : "", imported.specs].filter(Boolean).join("\n"), specsEn: imported.specsEn, supplierUrl: imported.supplierUrl, stock: imported.stock, weightGrams: imported.weightGrams, purchaseLayout: "marketplace", featured: false, isActive: true });
       if (!product) throw new Error(`Không thể tạo sản phẩm ${imported.name}`);
       createdProducts += 1;
       existingSlugs.add(imported.slug);

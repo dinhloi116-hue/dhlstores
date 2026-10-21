@@ -31,6 +31,20 @@ function makeCommonWorkbook() {
   return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 }
 
+function makeBilingualHdWorkbook() {
+  const rows = [
+    { "Đường dẫn/Alias": "ao-viet-nam-hd", "Tên sản phẩm*": "Bộ Áo Bóng Đá Việt Nam 2026", "Thuộc tính 1": "Kiểu", "Giá trị thuộc tính 1": "Có in ( nhắn shop)", "Thuộc tính 2": "Kích cỡ", "Giá trị thuộc tính 2": "XL", "Mã SKU": "VN-IN-XL", "Ảnh đại diện": "https://example.com/cover.jpg", "Ảnh phiên bản": "https://example.com/in-xl.jpg", "Giá": 149000 },
+    { "Đường dẫn/Alias": "ao-viet-nam-hd", "Thuộc tính 1": "Kiểu", "Giá trị thuộc tính 1": "Không in", "Thuộc tính 2": "Kích cỡ", "Giá trị thuộc tính 2": "S", "Mã SKU": "VN-PLAIN-S", "Ảnh phiên bản": "https://example.com/plain-s.jpg", "Giá": 119000 },
+    { "Đường dẫn/Alias": "ao-viet-nam-hd", "Thuộc tính 1": "Kiểu", "Giá trị thuộc tính 1": "Có in ( nhắn shop)", "Thuộc tính 2": "Kích cỡ", "Giá trị thuộc tính 2": "M", "Mã SKU": "VN-IN-M", "Giá": 149000 },
+    { "Đường dẫn/Alias": "ao-viet-nam-hd", "Thuộc tính 1": "Kiểu", "Giá trị thuộc tính 1": "Không in", "Thuộc tính 2": "Kích cỡ", "Giá trị thuộc tính 2": "XXL", "Mã SKU": "VN-PLAIN-XXL", "Giá": 119000 },
+  ];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "Sheet0");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["## BỘ ÁO BÓNG ĐÁ VIỆT NAM 2026"], ["Mô tả tiếng Việt"]]), "VIE");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["## VIETNAM 2026 FOOTBALL KIT"], ["English description"]]), "EN");
+  return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+}
+
 function adminContext(): TrpcContext {
   return {
     user: { id: 880001, openId: "excel-admin", name: "Excel admin", email: "excel@example.com", loginMethod: "local", role: "owner", status: "active", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() },
@@ -60,6 +74,16 @@ describe("excel product import", () => {
 
   it("normalizes the HD football template's compact size label into a storefront-friendly option", () => {
     expect(toOptionGroups({ variants: [{ sku: "HD-L", price: 119000, image: "https://example.com/kit.jpg", stock: 0, costPrice: 0, attributes: [{ name: "Kíchcỡ", value: "L" }] }] } as Parameters<typeof toOptionGroups>[0])).toEqual([{ name: "Kích cỡ", values: ["L"] }]);
+  });
+
+  it("reads VIE/EN sheets and orders football kit variants by style then size", () => {
+    const parsed = parseExcelProducts(makeBilingualHdWorkbook());
+    const product = parsed.products[0];
+    expect(product.nameEn).toBe("VIETNAM 2026 FOOTBALL KIT");
+    expect(product.description).toContain("BỘ ÁO BÓNG ĐÁ");
+    expect(product.descriptionEn).toContain("VIETNAM 2026 FOOTBALL KIT");
+    expect(toOptionGroups(product)).toEqual([{ name: "Kiểu", values: ["Không in", "Có in ( nhắn shop)"] }, { name: "Kích cỡ", values: ["S", "M", "XL", "XXL"] }]);
+    expect(product.variants.map(variant => variant.sku)).toEqual(["VN-PLAIN-S", "VN-PLAIN-XXL", "VN-IN-M", "VN-IN-XL"]);
   });
 
   it("reports the source row when an Excel product starts without a name", () => {
