@@ -188,7 +188,7 @@ describe("public SKU inventory presentation", () => {
     expect(source).not.toContain('>Đặt hàng</span>');
   });
 
-  it("keeps real product images clean without overlay badges", () => {
+  it("keeps real product images clean without legacy overlay badges", () => {
     const assetSource = readFileSync(new URL("../client/src/components/AssetVisual.tsx", import.meta.url), "utf8");
     const catalogSource = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
     const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
@@ -198,7 +198,8 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("productCardImage(p)");
     expect(homeSource).toContain("isRenderableImageUrl(product.image)");
     expect(catalogSource).not.toContain("absolute left-2 top-2 z-20");
-    expect(catalogSource).not.toContain("absolute bottom-2 left-2 z-20");
+    expect(catalogSource).toContain("aria-label={lang === 'vi' ? `Đang xem ảnh");
+    expect(catalogSource).toContain("hidden items-center gap-1 rounded-full");
   });
 
   it("uses a clear pending-price label across customer product surfaces", () => {

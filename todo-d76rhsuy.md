@@ -1,6 +1,5 @@
 
-## Rút gọn giao diện mua HD theo ảnh Shopee — 2026-10-22
-- [x] Tách hero HD thành gallery trái và mua hàng phải; bỏ ô zoom phụ trống trên desktop.
-- [x] Giữ trong hero chỉ title, giá, Kiểu, Kích cỡ, số lượng, Thêm vào giỏ và Mua ngay; xóa yêu thích/so sánh, card shop, giá sỉ, size guide trùng, card SKU và CTA sticky lặp.
-- [x] Đưa mô tả, thông số, đánh giá và một khối sản phẩm liên quan xuống dưới; ẩn video/help/recommendation trùng cho HD.
-- [x] Full regression 204 passed/2 skipped, TypeScript, production build và diff check đạt; browser live xác minh DOM tải đủ, mặc định Size S/Không in, đúng 2 CTA hiển thị trong hero, `#product-purchase-actions` có `display:none`, và các khối thừa không còn trong vùng mua; nhãn Sports shop còn lại chỉ là nav header.
+## Hover preview ảnh trên thẻ catalog — 2026-10-22
+- [x] Khi rê chuột trên thẻ sản phẩm, tự động chuyển qua gallery ảnh của chính sản phẩm đó mỗi 1,2 giây; rời chuột thì trở về ảnh bìa.
+- [x] Có indicator `Preview image n of total` desktop-only; không ảnh hưởng link mở sản phẩm, Quick view, Quick add và chỉ dùng URL gallery đã có, không gọi API mới.
+- [x] Mobile 390px vẫn render card/gallery không runtime error; animation dùng `motion-safe`; hover live đã xác minh ảnh đổi và reset đúng; test hover 3 passed, full regression 206 passed/2 skipped, TypeScript/build/diff check đạt.

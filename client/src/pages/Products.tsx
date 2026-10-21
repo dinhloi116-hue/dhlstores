@@ -96,11 +96,23 @@ export default function Products() {
   const wholesaleTiersQuery = trpc.store.productWholesaleTiersForProducts.useQuery({ productIds: physicalProductIds.length ? physicalProductIds : [1] }, { enabled: isPhysicalCatalog && physicalProductIds.length > 0 });
   const lowestWholesalePriceByProduct = useMemo(() => new Map((wholesaleTiersQuery.data || []).flatMap(entry => { const prices = entry.tiers.map(tier => Number(tier.unitPrice)).filter(price => Number.isFinite(price) && price > 0); return prices.length ? [[entry.productId, Math.min(...prices)] as const] : []; })), [wholesaleTiersQuery.data]);
   const previewPrice = (product: (typeof products)[number]) => lowestWholesalePriceByProduct.get(product.id) || Number(product.price);
-  const productCardImage = (product: (typeof products)[number]) => [product.image, ...(product.gallery || [])].find(image => isRenderableImageUrl(image)) || "";
+  const productCardGallery = (product: (typeof products)[number]) => Array.from(new Set([product.image, ...(product.gallery || [])].filter((image): image is string => isRenderableImageUrl(image))));
+  const productCardImage = (product: (typeof products)[number]) => productCardGallery(product)[0] || "";
   const hasWholesalePreviewPrice = (product: (typeof products)[number]) => lowestWholesalePriceByProduct.has(product.id);
   const isCatalogLoading = categoriesQuery.isLoading || productsQuery.isLoading;
 	  const hasActiveCatalogFilters = selectedCategory !== undefined || Boolean(searchQuery || minPrice || maxPrice || sizeFilter || colorFilter) || catalogQuickFilter !== "all";
   const [quickViewProduct, setQuickViewProduct] = useState<(typeof products)[number] | null>(null);
+  const [hoverPreview, setHoverPreview] = useState<{ productId: number; index: number } | null>(null);
+
+  useEffect(() => {
+    if (!hoverPreview) return;
+    const previewProduct = products.find(product => product.id === hoverPreview.productId);
+    if (!previewProduct) return;
+    const gallery = productCardGallery(previewProduct);
+    if (gallery.length < 2) return;
+    const timer = window.setInterval(() => setHoverPreview(current => current && current.productId === hoverPreview.productId ? { ...current, index: (current.index + 1) % gallery.length } : current), 1200);
+    return () => window.clearInterval(timer);
+  }, [hoverPreview, products]);
 
   if (sortBy === "price-asc") {
     products = [...products].sort((a, b) => Number(a.price) - Number(b.price));
@@ -225,13 +237,16 @@ export default function Products() {
           </div>
         ) : (
           <div className={`grid grid-cols-2 gap-3 sm:gap-6 ${isPhysicalCatalog ? 'lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : 'lg:grid-cols-3 xl:grid-cols-4'}`}>
-            {products.map((p, index) => (
-              <div key={p.id} className="group relative">
+            {products.map((p, index) => {
+              const cardGallery = productCardGallery(p);
+              const activeCardImage = hoverPreview?.productId === p.id ? cardGallery[hoverPreview.index % cardGallery.length] : productCardImage(p);
+              return <div key={p.id} className="group relative" onMouseEnter={() => cardGallery.length > 1 && setHoverPreview({ productId: p.id, index: 1 })} onMouseLeave={() => setHoverPreview(current => current?.productId === p.id ? null : current)}>
               <Link href={`/product/${p.slug}`} className="block h-full">
                   <div className={`dhl-hover-card flex h-full flex-col overflow-hidden border border-slate-200 bg-white ${isPhysicalCatalog ? 'rounded-2xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-lg' : ''}`}>
                   <div className="group/media relative aspect-square overflow-hidden bg-[#0b1220] [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:22px_22px]">
                     <div className="absolute inset-0 grid place-items-center p-6 text-center text-white/80"><div><p className="font-display text-2xl font-black uppercase leading-none text-white/90">DHL</p><p className="mt-1 text-[9px] font-black uppercase tracking-[0.22em] text-sky-300">{p.type === 'physical' ? 'Sports gear' : 'Resource file'}</p></div></div>
-                    {productCardImage(p) ? <img src={productCardImage(p)} alt={catalogName(p, lang)} loading={index < 4 ? "eager" : "lazy"} decoding="async" onError={event => { event.currentTarget.style.display = 'none'; }} className={`relative z-10 h-full w-full transition-transform duration-300 group-hover/media:scale-105 ${isPhysicalCatalog ? 'object-cover' : 'object-contain'}`} /> : <div className="relative z-10 grid h-full w-full place-items-center p-6 text-center text-white/75"><div><p className="font-display text-2xl font-black uppercase leading-none text-white/90">DHL</p><p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-300">{lang === 'vi' ? 'Ảnh đang cập nhật' : 'Image updating'}</p></div></div>}
+                    {activeCardImage ? <img key={activeCardImage} src={activeCardImage} alt={catalogName(p, lang)} loading={index < 4 ? "eager" : "lazy"} decoding="async" onError={event => { event.currentTarget.style.display = 'none'; }} className={`relative z-10 h-full w-full transition-transform duration-300 group-hover/media:scale-105 motion-safe:animate-[dhl-card-image-in_220ms_ease-out] ${isPhysicalCatalog ? 'object-cover' : 'object-contain'}`} /> : <div className="relative z-10 grid h-full w-full place-items-center p-6 text-center text-white/75"><div><p className="font-display text-2xl font-black uppercase leading-none text-white/90">DHL</p><p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-300">{lang === 'vi' ? 'Ảnh đang cập nhật' : 'Image updating'}</p></div></div>}
+                    {cardGallery.length > 1 && <div className="pointer-events-none absolute bottom-2 left-2 z-20 hidden items-center gap-1 rounded-full bg-slate-950/65 px-2 py-1 text-[9px] font-black text-white backdrop-blur-sm sm:flex" aria-label={lang === 'vi' ? `Đang xem ảnh ${((hoverPreview?.productId === p.id ? hoverPreview.index : 0) % cardGallery.length) + 1} trên ${cardGallery.length}` : `Preview image ${((hoverPreview?.productId === p.id ? hoverPreview.index : 0) % cardGallery.length) + 1} of ${cardGallery.length}`}><span className="text-sky-300">●</span>{((hoverPreview?.productId === p.id ? hoverPreview.index : 0) % cardGallery.length) + 1}/{cardGallery.length}</div>}
                   </div>
                   <div className={`flex flex-1 flex-col justify-between ${isPhysicalCatalog ? 'space-y-2 p-3 sm:p-4' : 'space-y-2 p-2.5 sm:space-y-3 sm:p-4'}`}>
                     <div>
@@ -255,8 +270,8 @@ export default function Products() {
                 </div>
               </Link>
               <div className="absolute right-2 top-2 z-30 flex items-center gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100"><button type="button" onClick={() => setQuickViewProduct(p)} aria-label={`${lang === 'vi' ? 'Xem nhanh' : 'Quick view'} ${catalogName(p, lang)}`} className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/80 bg-white/95 px-2 text-[10px] font-black text-slate-800 shadow-sm transition hover:bg-sky-400 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"><Eye className="h-3.5 w-3.5" /><span className="hidden sm:inline">{lang === 'vi' ? 'Xem nhanh' : 'Quick view'}</span></button>{(p.type === 'digital' || Number(p.stock) > 0) && <button type="button" disabled={addToCartMutation.isPending} onClick={() => handleQuickAdd(p)} aria-label={`${lang === 'vi' ? 'Thêm nhanh' : 'Quick add'} ${catalogName(p, lang)}`} className="inline-flex h-8 items-center gap-1 rounded-lg bg-sky-500 px-2 text-[10px] font-black text-slate-950 shadow-sm transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"><ShoppingCart className="h-3.5 w-3.5" /><span className="hidden sm:inline">{lang === 'vi' ? 'Thêm nhanh' : 'Quick add'}</span></button>}</div>
-              </div>
-            ))}
+              </div>;
+            })}
           </div>
         )}
       </div>
