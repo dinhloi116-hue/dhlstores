@@ -1,0 +1,241 @@
+<style id="dhl-v838-direct-groups-style">
+#v838DirectGroups{background:#fff!important;color:#111!important;border:2px solid #555!important;border-radius:6px!important;padding:9px!important;margin:9px 0!important}
+#v838DirectGroups .v838-title{font-size:12px!important;font-weight:800!important;margin:0 0 5px!important;color:#111!important}
+#v838DirectGroups .v838-desc{font-size:10px!important;line-height:1.4!important;color:#333!important;margin-bottom:7px!important}
+#v838DirectGroups .v838-line{display:table!important;width:100%!important;table-layout:fixed!important;margin:5px 0!important}
+#v838DirectGroups .v838-line>div{display:table-cell!important;vertical-align:top!important;padding-right:5px!important}
+#v838DirectGroups .v838-line>div:last-child{padding-right:0!important}
+#v838DirectGroups label{font-size:10px!important;display:block!important;color:#222!important;margin-bottom:3px!important}
+#v838DirectGroups select,#v838DirectGroups input{color:#111!important;background:#fff!important;opacity:1!important;border:1px solid #777!important;box-sizing:border-box!important;width:100%!important;font-weight:600!important;min-height:30px!important}
+#v838DirectGroups button{width:100%!important;font-weight:800!important;font-size:11px!important;min-height:34px!important;margin:5px 0!important}
+#v838DirectMsg{font-size:10px!important;white-space:normal!important;line-height:1.5!important;color:#222!important;margin-top:6px!important}
+#v838DirectMsg.bad{color:#990000!important;font-weight:700!important}
+#v838DirectMsg.ok{color:#095e34!important;font-weight:700!important}
+</style>
+<script id="dhl-v838-direct-groups">
+(function(){
+function E(x){return document.getElementById(x);}
+function VI(){try{return currentLang!=='en';}catch(e){return true;}}
+function T(a,b){return VI()?a:b;}
+function N(id,n){var e=E(id),v=e?Number(e.value):n;return isFinite(v)?v:n;}
+function app(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(T('Không kết nối được CorelDRAW.','Cannot connect to CorelDRAW.'));}
+function html(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function output(s,good){var e=E('v838DirectMsg');if(e){e.className=good?'ok':'bad';e.innerHTML=html(s);}}
+function group(s){
+ try{if(s.Shapes&&Number(s.Shapes.Count)>0)return true;}catch(e){}
+ // Excel nameset without a number is legitimately one text shape; don't treat it as an arbitrary loose object.
+ try{return /^DHL_EXCEL_ROW_\d+(?:_SIZE_[A-Za-z0-9_-]+)?$/.test(String(s.Name||''));}catch(e2){return false;}
+}
+function shapes(a){
+ var r=a.ActiveSelectionRange,arr=[],i;
+ if(r&&r.Count)for(i=1;i<=r.Count;i++)arr.push(r.Item(i));
+ if(!arr.length)throw new Error(T('Chọn các Group cần dàn trong Corel trước.','Select the Corel groups to pack first.'));
+ for(i=0;i<arr.length;i++)if(!group(arr[i]))throw new Error(T('Vùng chọn có '+arr.length+' đối tượng, nhưng đối tượng thứ '+(i+1)+' chưa Group. Không tự tách chữ/số/logo. Hãy Ctrl+G từng bộ rồi chọn lại.','Object '+(i+1)+' of '+arr.length+' is not a group. Group each complete set first.'));
+ return arr;
+}
+function config(){
+ var W=N('v77NestW',580),H=N('v77NestH',2000),gap=N('v77NestGap',5);
+ var mt=N('v77MarginT',0),mb=N('v77MarginB',0),ml=N('v77MarginL',0),mr=N('v77MarginR',0);
+ var rotate=E('v838Rotate')&&E('v838Rotate').value==='auto',order=E('v838Order')?E('v838Order').value:'visual';
+ var mode=E('v838Mode')?E('v838Mode').value:'pack',mirror=!!(E('v838Mirror')&&E('v838Mirror').value==='yes');
+ if(!(W>0&&H>0&&gap>=0&&mt>=0&&mb>=0&&ml>=0&&mr>=0&&W>ml+mr&&H>mt+mb))throw new Error(T('Khổ, lề hoặc khoảng cách không hợp lệ.','Invalid material size, margins or gap.'));
+ return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,frameGap:N('v77FrameGapInput',0)};
+}
+function shapeSize(s){return{w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
+function canFit(s,c){var d=shapeSize(s);return(d.w<=c.usableW+.001&&d.h<=c.usableH+.001)||(c.rotate&&d.h<=c.usableW+.001&&d.w<=c.usableH+.001);}
+function ordered(arr,mode){
+ var out=arr.slice(0);
+ if(mode==='visual'){out.sort(function(a,b){
+   var ay=Number(a.CenterY),by=Number(b.CenterY),ah=Math.abs(Number(a.SizeHeight)),bh=Math.abs(Number(b.SizeHeight));
+   if(Math.abs(ay-by)<Math.max(ah,bh)*.4)return Number(a.CenterX)-Number(b.CenterX);
+   return by-ay;
+ });}
+ return out;
+}
+function overlap(a,b){return a.x<b.x+b.w-.001&&a.x+a.w>b.x+.001&&a.y<b.y+b.h-.001&&a.y+a.h>b.y+.001;}
+function split(rect,used){
+ if(!overlap(rect,used))return[rect];
+ var o=[],right=rect.x+rect.w,bottom=rect.y+rect.h;
+ if(used.x>rect.x+.001)o.push({x:rect.x,y:rect.y,w:used.x-rect.x,h:rect.h});
+ if(used.x+used.w<right-.001)o.push({x:used.x+used.w,y:rect.y,w:right-used.x-used.w,h:rect.h});
+ if(used.y>rect.y+.001)o.push({x:rect.x,y:rect.y,w:rect.w,h:used.y-rect.y});
+ if(used.y+used.h<bottom-.001)o.push({x:rect.x,y:used.y+used.h,w:rect.w,h:bottom-used.y-used.h});
+ return o;
+}
+function contain(a,b){return a.x>=b.x-.001&&a.y>=b.y-.001&&a.x+a.w<=b.x+b.w+.001&&a.y+a.h<=b.y+b.h+.001;}
+function consume(bin,p,bufferW,bufferH){
+ var used={x:p.x,y:p.y,w:bufferW,h:bufferH},next=[],i,j,keep=[];
+ for(i=0;i<bin.free.length;i++){var parts=split(bin.free[i],used);for(j=0;j<parts.length;j++)if(parts[j].w>.001&&parts[j].h>.001)next.push(parts[j]);}
+ for(i=0;i<next.length;i++){var dominated=false;for(j=0;j<next.length;j++)if(i!==j&&contain(next[i],next[j])&&(next[i].w<next[j].w-.001||next[i].h<next[j].h-.001)){dominated=true;break;}if(!dominated)keep.push(next[i]);}
+ bin.free=keep;bin.places.push(p);bin.depth=Math.max(bin.depth,p.y+p.h);
+}
+function runPlan(items,c,kind){
+ var ord=items.slice(0),bins=[],i,j,k,dim,opts,f,best,bin,x,y,bufferW,bufferH,used,binId;
+ if(kind==='area')ord.sort(function(a,b){return b.area-a.area;});
+ if(kind==='height')ord.sort(function(a,b){return b.h-a.h;});
+ if(kind==='width')ord.sort(function(a,b){return b.w-a.w;});
+ if(kind==='visual')ord.sort(function(a,b){return a.index-b.index;});
+ for(i=0;i<ord.length;i++){
+  dim=ord[i];opts=[{w:dim.w,h:dim.h,angle:0}];
+  if(c.rotate&&Math.abs(dim.w-dim.h)>.001)opts.push({w:dim.h,h:dim.w,angle:90});
+  best=null;
+  for(j=0;j<=bins.length;j++){
+   bin=j<bins.length?bins[j]:{free:[{x:0,y:0,w:c.usableW+c.gap,h:c.usableH+c.gap}],places:[],depth:0};
+   for(k=0;k<bin.free.length;k++)for(var t=0;t<opts.length;t++){
+    var opt=opts[t];bufferW=opt.w+c.gap;bufferH=opt.h+c.gap;f=bin.free[k];
+    if(bufferW>f.w+.001||bufferH>f.h+.001)continue;
+    x=f.x;y=f.y;
+    if(x+opt.w>c.usableW+.001||y+opt.h>c.usableH+.001)continue;
+    var score=j*1e10+Math.max(bin.depth,y+opt.h)*1e4+y*10+x+ (opt.angle?0.05:0);
+    if(!best||score<best.score)best={score:score,binIndex:j,x:x,y:y,w:opt.w,h:opt.h,angle:opt.angle,item:dim};
+   }
+  }
+  if(!best)return null;
+  if(best.binIndex===bins.length)bins.push({free:[{x:0,y:0,w:c.usableW+c.gap,h:c.usableH+c.gap}],places:[],depth:0});
+  bin=bins[best.binIndex];consume(bin,best,best.w+c.gap,best.h+c.gap);
+ }
+ var total=0;for(i=0;i<bins.length;i++)total+=bins[i].depth;
+ return{bins:bins,total:total};
+}
+function choose(items,c){
+ var kinds=['area','height','width','visual'],best=null,i,p;
+ for(i=0;i<kinds.length;i++){p=runPlan(items,c,kinds[i]);if(p&&(!best||p.bins.length<best.bins.length||p.bins.length===best.bins.length&&p.total<best.total)){best=p;best.kind=kinds[i];}}
+ return best;
+}
+function sizePage(page,w,h){
+ if(Math.abs(Math.abs(Number(page.SizeWidth))-w)<.5&&Math.abs(Math.abs(Number(page.SizeHeight))-h)<.5)return;
+ if(typeof page.SetSize==='function')page.SetSize(w,h);
+ else{page.SizeWidth=w;page.SizeHeight=h;}
+ if(Math.abs(Math.abs(Number(page.SizeWidth))-w)>.5||Math.abs(Math.abs(Number(page.SizeHeight))-h)>.5)throw new Error(T('Không đặt được khổ trang.','Unable to resize print page.'));
+}
+function frame(layer,l,b,w,h,i){
+ var s=layer.CreateRectangle2(l,b,w,h);
+ try{s.Fill.ApplyNoFill();}catch(e){}
+ try{s.Outline.Width=.2;s.Outline.Color.CMYKAssign(0,0,0,100);}catch(e2){}
+ try{s.Name='DHL_GROUP_NEST_FRAME_'+i;}catch(e3){}
+ try{s.OrderToBack();}catch(e4){}
+}
+function packGroups(a,ss,c){
+ var doc=a.ActiveDocument,ord=ordered(ss,c.order),items=[],old=doc.Unit,i,d,plan,page,baseLeft,baseBottom,left,top,bi,place,sh,cmd=false,opt=false;
+ try{
+  doc.Unit=3;
+  for(i=0;i<ord.length;i++){
+   d=shapeSize(ord[i]);if(!(d.w>0&&d.h>0))throw new Error(T('Group thứ '+(i+1)+' không có kích thước hợp lệ.','Group '+(i+1)+' has an invalid size.'));
+   if(!canFit(ord[i],c))throw new Error(T('Group '+(i+1)+' không vừa khổ, kể cả xoay. Không thu nhỏ mẫu.','Group '+(i+1)+' cannot fit the chosen material width, even rotated.'));
+   items.push({shape:ord[i],index:i,w:d.w,h:d.h,area:d.w*d.h});
+  }
+  plan=choose(items,c);if(!plan||!plan.bins.length)throw new Error(T('Không tìm được cách dàn hợp lệ.','No valid group arrangement.'));
+  page=a.ActivePage;baseLeft=Number(page.CenterX)-c.W/2;baseBottom=Number(page.CenterY)-c.H/2;
+  doc.BeginCommandGroup('DHL Pack Selected Groups V8.38');cmd=true;
+  try{a.Optimization=true;opt=true;}catch(x){}
+  for(bi=0;bi<plan.bins.length;bi++){
+   left=baseLeft+bi*(c.W+c.frameGap);top=baseBottom+c.H-c.mt;
+   frame(page.ActiveLayer,left,baseBottom,c.W,c.H,bi+1);
+   for(i=0;i<plan.bins[bi].places.length;i++){
+    place=plan.bins[bi].places[i];sh=place.item.shape;
+    if(place.angle)sh.Rotate(place.angle);
+    sh.CenterX=left+c.ml+place.x+place.w/2;
+    sh.CenterY=top-place.y-place.h/2;
+    if(c.mirror)sh.Flip(1);
+   }
+  }
+  try{a.Optimization=false;}catch(y){}opt=false;
+  doc.EndCommandGroup();cmd=false;doc.Unit=old;
+  try{a.ActiveWindow.Refresh();}catch(e){}
+  output(T('✓ Đã dàn '+ss.length+' Group trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên nội dung Group. Chế độ khung bao an toàn.','✓ Packed '+ss.length+' groups in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Group contents unchanged. Safe rectangular geometry.'),true);
+  return true;
+ }catch(e){
+  try{if(opt)a.Optimization=false;}catch(x2){}
+  try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(undo){}
+  output(String(e.message||e),false);return false;
+ }finally{try{doc.Unit=old;}catch(restore){}}
+}
+function pagesGroups(a,ss,c){
+ var doc=a.ActiveDocument,old=doc.Unit,arr=ordered(ss,c.order),first=null,pages=[],copies=[],i,s,shape,sz,cmd=false,opt=false,sourceCount=0;
+ try{
+  doc.Unit=3;
+  if(Number(doc.Pages.Count)!==1)throw new Error(T('Chế độ mỗi Group một trang yêu cầu tài liệu đang có đúng một trang nguồn. Hãy dùng bản sao CDR một trang.','Single-page source document required for one-group-per-page mode.'));
+  first=a.ActivePage;
+  // Reject unselected live objects on the source layer to prevent accidental extra print art.
+  try{sourceCount=Number(first.ActiveLayer.Shapes.Count);}catch(e){sourceCount=arr.length;}
+  if(sourceCount>arr.length)throw new Error(T('Trang nguồn còn '+(sourceCount-arr.length)+' đối tượng chưa chọn (có thể logo/khung). Hãy chọn đúng toàn bộ Group và di chuyển các vật khác ra khỏi trang trước.','Source page contains '+(sourceCount-arr.length)+' unselected objects. Remove them from print page first.'));
+  for(i=0;i<arr.length;i++){
+   sz=shapeSize(arr[i]);
+   if(!canFit(arr[i],c))throw new Error(T('Group '+(i+1)+' quá lớn cho trang; không tự thu nhỏ.','Group '+(i+1)+' is oversized; no automatic scaling.'));
+  }
+  doc.BeginCommandGroup('DHL One Selected Group Per Page V8.38');cmd=true;
+  try{a.Optimization=true;opt=true;}catch(x){}
+  sizePage(first,c.W,c.H);pages.push(first);
+  for(i=1;i<arr.length;i++){var page=doc.AddPagesEx(1,c.W,c.H);page.MoveTo(i+1);pages.push(page);}
+  for(i=0;i<arr.length;i++){
+   s=arr[i];sz=shapeSize(s);
+   shape=s.CopyToLayer(pages[i].ActiveLayer);
+   if(!shape)throw new Error(T('Lỗi sao chép Group '+(i+1)+'.','Failed copying group '+(i+1)+'.'));
+   if(c.rotate&&sz.w>c.usableW+.001)shape.Rotate(90);
+   shape.CenterX=Number(pages[i].CenterX)+(c.ml-c.mr)/2;
+   shape.CenterY=Number(pages[i].CenterY)+(c.mb-c.mt)/2;
+   if(c.mirror)shape.Flip(1);
+   try{pages[i].Name='GROUP '+(i+1);}catch(pageLabel){}
+   copies.push(shape);
+  }
+  if(Number(doc.Pages.Count)!==arr.length)throw new Error(T('Không đủ số trang sau khi tạo.','Incorrect page count after creation.'));
+  // Original group artworks are removed only after all page copies exist.
+  for(i=0;i<arr.length;i++)arr[i].Delete();
+  try{first.Activate();copies[0].CreateSelection();}catch(sel){}
+  try{a.Optimization=false;}catch(y){}opt=false;
+  doc.EndCommandGroup();cmd=false;doc.Unit=old;
+  try{a.ActiveWindow.Refresh();}catch(e){}
+  output(T('✓ Đã tạo '+arr.length+' trang, mỗi trang đúng một Group, giữ nguyên tỉ lệ và nội dung.','✓ Created '+arr.length+' pages, one intact group per page, without changing dimensions.'),true);
+  return true;
+ }catch(e){
+  try{if(opt)a.Optimization=false;}catch(x2){}
+  try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(undo){}
+  output(String(e.message||e),false);return false;
+ }finally{try{doc.Unit=old;}catch(restore){}}
+}
+function execute(){
+ var a,doc,old,sel,conf,ok=false;
+ try{
+  a=app();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;
+  sel=shapes(a);conf=config();
+  if(typeof window.DHLLicenseGate==='function'&&!window.DHLLicenseGate())return false;
+  return conf.mode==='pages'?pagesGroups(a,sel,conf):packGroups(a,sel,conf);
+ }catch(e){output(String(e.message||e),false);return false;}
+ finally{try{if(doc&&old!==undefined)doc.Unit=old;}catch(x){}}
+}
+function form(){
+ var card=E('v77NestCard'),b;
+ if(!card)return false;
+ if(E('v838DirectGroups'))return true;
+ b=document.createElement('div');b.id='v838DirectGroups';
+ b.innerHTML='<div class="v838-title">'+T('DÀN GROUP ĐÃ CHỌN — KHÔNG CẦN EXCEL','PACK SELECTED GROUPS — NO EXCEL')+'</div>'
+ +'<div class="v838-desc">'+T('Ctrl+G từng bộ hoàn chỉnh → chọn tất cả Group → chọn cách dàn. Không phân tích lại tên, số hay logo.','Group each complete print set, select all groups and choose the layout. No text/number parsing.')+'</div>'
+ +'<div class="v838-line"><div><label>'+T('Cách dàn','Layout')+'</label><select id="v838Mode"><option value="pack">'+T('Dàn chung khổ / cuộn','Pack on material / roll')+'</option><option value="pages">'+T('Mỗi Group = 1 trang','One group per page')+'</option></select></div>'
+ +'<div><label>'+T('Xoay','Rotate')+'</label><select id="v838Rotate"><option value="none">'+T('Giữ hướng hiện tại','Keep orientation')+'</option><option value="auto">'+T('Cho phép xoay 90°','Allow 90° rotation')+'</option></select></div></div>'
+ +'<div class="v838-line"><div><label>'+T('Thứ tự','Order')+'</label><select id="v838Order"><option value="visual">'+T('Trái → phải, trên → dưới','Visual order')+'</option><option value="select">'+T('Theo vùng chọn','Selection order')+'</option></select></div>'
+ +'<div><label>'+T('Lật gương bản in','Mirror output')+'</label><select id="v838Mirror"><option value="no">'+T('Không','No')+'</option><option value="yes">'+T('Có','Yes')+'</option></select></div></div>'
+ +'<button id="v838Run" type="button">'+T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS')+'</button>'
+ +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Dàn chung khổ: kiểm tra va chạm theo bounding box an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Roll mode packs using safe bounding boxes; page mode centers each intact group.')+'</div>'
+ +'<div id="v838DirectMsg"></div>';
+ var anchor=E('v77NestBtn'),row=anchor;
+ // insertBefore requires the reference node to be an IMMEDIATE child of card.
+ // Corel 2021 MSHTML throws NotFoundError for v77NestBtn.parentNode
+ // because the button is nested two or more levels below v77NestCard.
+ while(row&&row.parentNode&&row.parentNode!==card)row=row.parentNode;
+ if(row&&row.parentNode===card)card.insertBefore(b,row);
+ else card.appendChild(b);
+ E('v838Run').onclick=execute;
+ var m=E('v838Mode');if(m)m.onchange=function(){var q=E('v838Run');if(q)q.innerHTML=m.value==='pages'?T('TẠO TRANG RIÊNG CHO TỪNG GROUP','ONE PAGE PER GROUP'):T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS');};
+ E('v838Mirror').onchange=function(){this.value=this.value==='yes'?'yes':'no';};
+ try{var saved=localStorage.getItem('dhl_v838_direct_groups');if(saved==='pages')m.value='pages';}catch(e){}
+ if(m)m.onchange();
+ if(m){m.addEventListener?m.addEventListener('change',function(){try{localStorage.setItem('dhl_v838_direct_groups',this.value);}catch(e){}},false):null;}
+ return true;
+}
+function boot(){var n=0;function check(){if(form()||n++>50)return;setTimeout(check,260);}check();}
+window.DHLDirectGroups={run:execute,choose:choose,runPlan:runPlan,ordered:ordered,config:config,group:group};
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,500);},false);
+else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,500);});
+else setTimeout(boot,700);
+})();
+</script>

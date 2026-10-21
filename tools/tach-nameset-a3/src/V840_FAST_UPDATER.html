@@ -1,0 +1,71 @@
+<script id="dhl-v840-fast-update" type="text/javascript">
+(function(){
+ var busy=false;
+ function E(id){return document.getElementById(id);}
+ function VI(){try{return currentLang!=='en';}catch(e){return true;}}
+ function label(){return VI()?'↻ CẬP NHẬT':'↻ UPDATE';}
+ function message(vi,en){return VI()?vi:en;}
+ function run(){
+  var button=E('reloadGit'),shell=null,fso=null,launcher=null,path='',rc=-1,base;
+  if(busy)return false;
+  busy=true;
+  try{
+   if(button){button.disabled=true;button.innerHTML=message('ĐANG CẬP NHẬT…','UPDATING…');}
+   shell=new ActiveXObject('WScript.Shell');
+   fso=new ActiveXObject('Scripting.FileSystemObject');
+   path=shell.ExpandEnvironmentStrings('%TEMP%')+'\\DHL_NAMESET_LATEST_LAUNCH.ps1';
+   // Bootstrap ONLY the up-to-date PowerShell updater from main.
+   // No old BAT launcher, no historical patch loop, no addon reinstall.
+   var ps=
+    "$ErrorActionPreference='Stop'\r\n"+
+    "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12\r\n"+
+    "$url='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?fresh=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n"+
+    "$dst=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET_LATEST.ps1'\r\n"+
+    "try {\r\n"+
+    "  Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dst -TimeoutSec 30\r\n"+
+    "  $ps=Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'\r\n"+
+    "  $arg=@('-NoProfile','-ExecutionPolicy','Bypass','-File',('\"'+$dst+'\"'))\r\n"+
+    "  $child=Start-Process -FilePath $ps -Verb RunAs -ArgumentList $arg -Wait -PassThru\r\n"+
+    "  exit $child.ExitCode\r\n"+
+    "} catch { Write-Host ('UPDATE FAILED: '+$_.Exception.Message); exit 1 }\r\n";
+   launcher=fso.CreateTextFile(path,true,false);
+   launcher.Write(ps);
+   launcher.Close();launcher=null;
+   var exe=shell.ExpandEnvironmentStrings('%SystemRoot%')+'\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+   var cmd='"'+exe+'" -NoProfile -ExecutionPolicy Bypass -File "'+path+'"';
+   rc=shell.Run(cmd,1,true);
+   try{fso.DeleteFile(path,true);}catch(clean){}
+   if(rc!==0)throw new Error(message('Cập nhật thất bại. Mã lỗi: ','Update failed. Exit code: ')+rc+'\\n%TEMP%\\DHL_NAMESET_UPDATE_LOG.txt');
+   base=window.location.href.split('?')[0];
+   window.location.replace(base+'?latest='+(new Date()).getTime());
+   return true;
+  }catch(err){
+   alert(message('Không thể cập nhật: ','Unable to update: ')+String(err.message||err));
+   return false;
+  }finally{
+   if(launcher)try{launcher.Close();}catch(close){}
+   if(button){button.disabled=false;button.innerHTML=label();}
+   busy=false;
+  }
+ }
+ function install(){
+  var b=E('reloadGit');
+  window.reloadFromGit=run;
+  if(b){b.onclick=run;b.setAttribute('data-dhl-fast-update','1');}
+  return !!b;
+ }
+ // Install now (DOM is already present), then after legacy V8.22's deferred
+ // 9.8-second onclick override. Prevent that legacy loader regaining control.
+ install();
+ if(window.addEventListener)window.addEventListener('load',function(){
+  setTimeout(install,250);
+  setTimeout(install,10800);
+  setTimeout(install,16000);
+ },false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){
+  setTimeout(install,250);setTimeout(install,10800);setTimeout(install,16000);
+ });
+ else {setTimeout(install,10800);setTimeout(install,16000);}
+ window.DHLFastUpdater={install:install,run:run};
+})();
+</script>

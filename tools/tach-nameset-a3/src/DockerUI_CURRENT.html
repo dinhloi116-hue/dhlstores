@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>DHL Nameset Layout</title>
-<!-- DHL_UI_VERSION=8.33 -->
+<!-- DHL_UI_VERSION=8.42 -->
 <style>
 *{box-sizing:border-box!important}
 html,body{margin:0!important;min-height:100%!important;background:#fff!important;color:#111!important;font:12px "Segoe UI",Arial,sans-serif!important;line-height:1.4!important}
@@ -31,7 +31,7 @@ button{width:100%!important;border:1px solid #999!important;border-radius:5px!im
 <body>
 <div class="card">
   <div class="top">
-    <div><span class="title">DHL NAMESET LAYOUT</span><span class="ver">v8.24</span></div>
+    <div><span class="title">DHL NAMESET LAYOUT</span><span class="ver">v8.42</span></div>
     <div class="topactions"><span class="langwrap"><button id="langVI" class="langbtn" type="button" onclick="setLanguage('vi')">VI</button><button id="langEN" class="langbtn" type="button" onclick="setLanguage('en')">EN</button></span><button class="gitbtn" id="reloadGit" type="button" onclick="reloadFromGit()" data-i18n="reload">↻ CẬP NHẬT</button></div>
   </div>
   <div id="selectionStatus" class="status">Đang đọc vùng chọn…</div>
@@ -75,7 +75,7 @@ button{width:100%!important;border:1px solid #999!important;border-radius:5px!im
     <div id="excelResult" class="note">Chọn 1 bộ mẫu tên + số còn là Text trước khi chạy.</div>
   </div>
 </div>
-<div class="footer">DHL Nameset Layout · v7.4 · VI / EN</div>
+<div class="footer">DHL Nameset Layout · v8.42 · VI / EN</div>
 
 <script src="main.js" type="text/javascript"></script>
 <script type="text/javascript">
@@ -99,7 +99,11 @@ function hookAutoSave(){var ids=['sheetWidth','sheetHeight','sheetGap','nameNumb
 function corelApp(){if(!window.external||!window.external.Application)throw new Error(I18N[currentLang].noDoc);return window.external.Application;}
 function setCurrentPrintPage(){var d=I18N[currentLang],w=Number(byId('sheetWidth').value),h=Number(byId('sheetHeight').value),doc,old,a;try{if(!(w>0&&h>0))throw new Error(d.badSize);a=corelApp();if(!a.Documents||a.Documents.Count===0)throw new Error(d.noDoc);doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;a.ActivePage.SetSize(w,h);doc.Unit=old;try{a.ActiveWindow.Refresh();}catch(x){}byId('pageResult').innerHTML=d.pageSet+w+' × '+h+' mm';saveSettings(false);}catch(e){try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}byId('pageResult').innerHTML=d.pageError+e.message;}}
 function readCurrentPageSize(){var d=I18N[currentLang],doc,old,a,w,h;try{a=corelApp();if(!a.Documents||a.Documents.Count===0)throw new Error(d.noDoc);doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;w=Math.round(Number(a.ActivePage.SizeWidth)*100)/100;h=Math.round(Number(a.ActivePage.SizeHeight)*100)/100;doc.Unit=old;byId('sheetWidth').value=w;byId('sheetHeight').value=h;byId('pageResult').innerHTML=d.pageRead+w+' × '+h+' mm';saveSettings(false);}catch(e){try{if(doc&&old!==undefined)doc.Unit=old;}catch(x){}byId('pageResult').innerHTML=d.pageError+e.message;}}
-function reloadFromGit(){var b=byId('reloadGit'),d=I18N[currentLang];try{if(b){b.disabled=true;b.innerHTML=d.loading;}var sh=new ActiveXObject('WScript.Shell'),stamp=(new Date()).getTime();var ps="powershell -NoProfile -ExecutionPolicy Bypass -Command \"$u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/CAI_TOOL_TACH_NAMESET_A3.bat?v="+stamp+"';$p=Join-Path $env:TEMP 'CAI_TOOL_TACH_NAMESET_A3_LATEST.bat';try{Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p;cmd.exe /d /c ('\"'+$p+'\" --reload-ui');exit $LASTEXITCODE}catch{exit 1}\"";var rc=sh.Run(ps,1,true);if(rc===0){var base=window.location.href.split('?')[0];window.location.replace(base+'?v='+(new Date()).getTime());}else alert(d.reloadFail+rc);}catch(e){alert(d.reloadError+e.message);}finally{if(b){b.disabled=false;b.innerHTML=I18N[currentLang].reload;}}}
+function reloadFromGit(){
+ if(window.DHLFastUpdater&&typeof window.DHLFastUpdater.run==='function')return window.DHLFastUpdater.run();
+ alert(currentLang==='en'?'Fast updater is not ready. Close and reopen DHL Nameset Layout.':'Trình cập nhật nhanh chưa sẵn sàng. Đóng rồi mở lại DHL Nameset Layout.');
+ return false;
+}
 
 function collectionToArray(c){var a=[],i;for(i=1;i<=c.Count;i++)a.push(c.Item(i));return a;}
 function selectedShapesV74(){var a=corelApp(),sr;if(!a.Documents||a.Documents.Count===0)throw new Error(I18N[currentLang].noDoc);sr=a.ActiveSelectionRange;var arr=collectionToArray(sr);if(arr.length===1){try{var ch=collectionToArray(arr[0].Shapes);if(ch.length>1)arr=ch;}catch(e){}}return arr;}
@@ -198,7 +202,7 @@ window.V77CreateOutline=V77CreateOutline;
 function normalizeSelectedPairV77(show){var d=I18N[currentLang],a,doc,oldUnit,pairs,i,g;try{a=corelApp();doc=a.ActiveDocument;oldUnit=doc.Unit;doc.Unit=3;pairs=pairNearest(selectedShapesV74());for(i=0;i<pairs.length;i++)g=normalizePairObjects(pairs[i].name,pairs[i].number);doc.Unit=oldUnit;if(show)byId('fontStatus').innerHTML=d.pairDone+g+' mm. '+d.textOnly;try{a.ActiveWindow.Refresh();}catch(x){}return true;}catch(e){try{if(doc&&oldUnit!==undefined)doc.Unit=oldUnit;}catch(x2){}if(show)byId('fontStatus').innerHTML=e.message;return false;}}
 window.normalizeSelectedPair=normalizeSelectedPairV77;
 function reloadV77(){var b=el('reloadGit'),d=L[lang()],sh,fso,temp,launcher,tf,pexe,script,cmd,rc,base;try{if(b){b.disabled=true;b.innerHTML=d.loading;}sh=new ActiveXObject('WScript.Shell');fso=new ActiveXObject('Scripting.FileSystemObject');temp=sh.ExpandEnvironmentStrings('%TEMP%');launcher=temp+'\\DHL_NAMESET_UPDATE_LAUNCHER.ps1';pexe=sh.ExpandEnvironmentStrings('%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');script="$ErrorActionPreference='Stop'\r\n$u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?v=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n$p=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET.ps1'\r\nInvoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p\r\n$pr=Start-Process -FilePath (Join-Path $PSHOME 'powershell.exe') -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$p) -Verb RunAs -Wait -PassThru\r\nexit $pr.ExitCode\r\n";tf=fso.CreateTextFile(launcher,true,false);tf.Write(script);tf.Close();cmd='"'+pexe+'" -NoProfile -ExecutionPolicy Bypass -File "'+launcher+'"';rc=sh.Run(cmd,1,true);try{fso.DeleteFile(launcher,true);}catch(dx){}if(rc===0){base=window.location.href.split('?')[0];window.location.replace(base+'?v='+(new Date()).getTime());}else alert(d.reloadFail+rc);}catch(e){alert(d.reloadError+e.message);}finally{if(b){b.disabled=false;b.innerHTML=L[lang()].reload;}}}
-window.reloadFromGit=reloadV77;
+/* V8.42: legacy updater must never take ownership of reloadGit. */
 function hook(){addUI();var old=window.setLanguage;if(old&&!old._v77){var wrapped=function(x){old(x);applyLang();};wrapped._v77=true;window.setLanguage=wrapped;}applyLang();var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR','v77Rotate','v77OutlineOffset','v77OutlineStroke','v77MakeWhite','v77MakeCut'],i,n;for(i=0;i<ids.length;i++){n=el(ids[i]);if(n)n.onchange=function(){saveV77Settings();if(this.id==='v77NestW'||this.id==='v77NestH')clearPreset();if(this.id==='v77MakeWhite'||this.id==='v77MakeCut')updateCheckStyles();};}}
 if(window.addEventListener)window.addEventListener('load',hook,false);else if(window.attachEvent)window.attachEvent('onload',hook);else setTimeout(hook,200);
 })();
@@ -450,6 +454,7 @@ function finish(){if(!E('v77NestCard')||!E('v77NestBtn')){setTimeout(finish,150)
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,1100);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,1100);});else setTimeout(finish,1300);
 })();
 </script>
+<!-- dhl-v835-import-4col-size -->
 <style id="dhl-v84-excel-style">
 #v84ExcelPreview,#v84TemplateStatus{border:1px solid #cfcfcf!important;border-radius:5px!important;padding:7px 8px!important;margin:6px 0!important;background:#fff!important;font-size:11px!important;line-height:1.4!important;min-height:30px!important}
 #v84ExcelPreview.ok,#v84TemplateStatus.ok{border-left:4px solid #2e8b57!important}
@@ -470,7 +475,48 @@ function status(msg,kind){var x=E('excelResult');if(x){x.className='note'+(kind?
 function previewStatus(msg,kind){var x=E('v84ExcelPreview');if(x){x.className=kind||'';x.innerHTML=msg;}}
 function selectionStatus(msg,kind){var x=E('v84TemplateStatus');if(x){x.className=kind||'';x.innerHTML=msg;}}
 function cellText(cell){var t='',v='';try{t=String(cell.Text);}catch(e){}try{v=cell.Value2;}catch(e2){}if((!t||/^#+$/.test(t))&&v!==undefined&&v!==null)t=String(v);return txt(t);}
-function rowsFromMatrix(m){var nc=-1,sc=-1,c,r,h,out=[];if(!m||!m.length)throw new Error(LANG()==='vi'?'File Excel không có dữ liệu.':'Excel file has no data.');for(c=0;c<m[0].length;c++){h=head(m[0][c]);if(nc<0&&isNameHeader(h))nc=c;if(sc<0&&isNumberHeader(h))sc=c;}if(nc<0||sc<0){throw new Error(LANG()==='vi'?'Không tìm thấy cột “Tên in áo/Họ tên” và “Số áo” ở hàng đầu.':'Could not find “Print name/Name” and “Shirt number” columns in the first row.');}for(r=1;r<m.length;r++){var n=txt(m[r][nc]),s=txt(m[r][sc]);if(n&&s)out.push({name:n,number:s,row:r+1});}if(!out.length)throw new Error(LANG()==='vi'?'Không có dòng nào đủ cả Tên in áo và Số áo.':'No row contains both name and shirt number.');return out;}
+function isFooterHeader(h){return h==='dòngdướisố'||h==='dongduoiso'||h==='chữdướisố'||h==='chuduoiso'||h==='dòngdưới'||h==='dongduoi'||h==='dòngphụ'||h==='dongphu'||h==='footer'||h==='bottomtext'||h==='textbelownumber'||h==='extratext'||h==='ghichúin'||h==='ghichuin'||h==='dòngthứ3'||h==='dongthu3'||h==='dòngthứba'||h==='dongthuba'||h==='dòng3'||h==='dong3'||h==='line3'||h==='thirdline';}
+function isSizeHeader(h){return h==='size'||h==='sizeáo'||h==='sizeao'||h==='shirt size'||h==='shirtsize'||h==='kíchcỡ'||h==='kichco'||h==='cỡáo'||h==='coao'||h==='sz';}
+function isSyntaxHeader(h){return h==='nộidungin'||h==='noidungin'||h==='cúphápin'||h==='cuphapin'||h==='tênsốdòngdưới'||h==='tensodongduoi'||h==='nameset'||h==='printtext'||h==='printcontent'||h==='cúpháp'||h==='cuphap'||h==='nộidung'||h==='noidung';}
+function splitPrintSyntax(value){
+ var s=txt(value),m=s.match(/^(.+?)\s+[-–—]\s+(\d{1,3}[A-Za-z]?)\s+[-–—]\s+(.+)$/);
+ if(m)return{name:txt(m[1]),number:txt(m[2]),footer:txt(m[3])};
+ m=s.match(/^(.+?)\s+[-–—]\s+(\d{1,3}[A-Za-z]?)$/);
+ if(m)return{name:txt(m[1]),number:txt(m[2]),footer:''};
+ return null;
+}
+function rowsFromMatrix(m){
+ var nc=-1,sc=-1,fc=-1,zc=-1,cc=-1,c,r,h,out=[],n,s,footer,size,parsed,hasHeader=false,start=1,first;
+ if(!m||!m.length)throw new Error(LANG()==='vi'?'File Excel không có dữ liệu.':'Excel file has no data.');
+ for(c=0;c<m[0].length;c++){
+  h=head(m[0][c]);
+  if(nc<0&&isNameHeader(h))nc=c;
+  if(sc<0&&isNumberHeader(h))sc=c;
+  if(fc<0&&isFooterHeader(h))fc=c;
+  if(zc<0&&isSizeHeader(h))zc=c;
+  if(cc<0&&isSyntaxHeader(h))cc=c;
+ }
+ hasHeader=(nc>=0&&sc>=0)||cc>=0;
+ if(!hasHeader){
+  first=splitPrintSyntax(m[0][0]);
+  if(first){cc=0;start=0;}
+  else if(m[0].length>=2&&txt(m[0][0])&&/^\d{1,3}[A-Za-z]?$/.test(txt(m[0][1]))){
+   nc=0;sc=1;fc=m[0].length>=3?2:-1;zc=m[0].length>=4?3:-1;start=0;
+  }else throw new Error(LANG()==='vi'?'Cần cột Tên áo + Số áo (Dòng thứ 3, Size tùy chọn), hoặc cột Nội dung in.':'Use Shirt name + Number columns (optional Line 3 and Size), or Print content.');
+ }
+ for(r=start;r<m.length;r++){
+  n='';s='';footer='';size='';parsed=null;
+  if(nc>=0&&sc>=0){
+   n=txt(m[r][nc]);s=txt(m[r][sc]);footer=fc>=0?txt(m[r][fc]):'';size=zc>=0?txt(m[r][zc]):'';
+   if(n&&!s)parsed=splitPrintSyntax(n);
+  }else if(cc>=0){parsed=splitPrintSyntax(m[r][cc]);size=zc>=0?txt(m[r][zc]):'';}
+  if(parsed){n=parsed.name;s=parsed.number;if(!footer)footer=parsed.footer;}
+  // A named two-column/three-column/four-column row may intentionally contain only a name (e.g. COACH).
+  if(n&&(s||nc>=0&&sc>=0))out.push({name:n,number:s,footer:footer,size:size,row:r+1,nameOnly:!s});
+ }
+ if(!out.length)throw new Error(LANG()==='vi'?'Không có dòng hợp lệ có tên áo.':'No valid rows with a shirt name.');
+ return out;
+}
 function readWorkbook(path){var xl=null,book=null,sheet=null,used=null,m=[],r,c;try{xl=new ActiveXObject('Excel.Application');xl.Visible=false;xl.DisplayAlerts=false;book=xl.Workbooks.Open(path);sheet=book.Worksheets(1);used=sheet.UsedRange;for(r=1;r<=used.Rows.Count;r++){var row=[];for(c=1;c<=used.Columns.Count;c++)row.push(cellText(used.Cells(r,c)));m.push(row);}return rowsFromMatrix(m);}finally{try{if(book)book.Close(false);}catch(e){}try{if(xl)xl.Quit();}catch(e2){}}}
 function corel(){if(window.external&&window.external.Application)return window.external.Application;throw new Error(LANG()==='vi'?'Không kết nối được với CorelDRAW.':'Cannot connect to CorelDRAW.');}
 function selected(a){var sr=a.ActiveSelectionRange,out=[],i;if(!sr)return out;for(i=1;i<=sr.Count;i++)out.push(sr.Item(i));if(out.length===1){try{var ch=out[0].Shapes;if(ch&&ch.Count>1){out=[];for(i=1;i<=ch.Count;i++)out.push(ch.Item(i));}}catch(e){}}return out;}
@@ -479,13 +525,13 @@ function templatePair(){var a=corel(),ss=selected(a),i,t;if(ss.length!==2)throw 
 function replaceText(sh,v){try{sh.Text.Story.Text=String(v);}catch(e){throw new Error(LANG()==='vi'?'Không thay được Text mẫu. Hãy kiểm tra tên và số vẫn là Text.':'Could not replace template Text.');}}
 function geom(sh){return{w:Math.abs(Number(sh.SizeWidth)),h:Math.abs(Number(sh.SizeHeight))};}
 function groupPair(a,page,n,d,mirror){var r=a.CreateShapeRange(),g;r.Add(n);r.Add(d);g=r.Group();if(mirror)g.Flip(1);return g;}
-function layoutRows(rows){var p=templatePair(),a=p.a,doc=a.ActiveDocument,w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),mirror=!!E('excelMirror').checked,margin=Math.max(gap,5),oldUnit=doc.Unit,page=null,name=p.name,number=p.number,templateGap,opt=false,cmd=false,x,top,rowH=0,i,n,d,g,gg;if(!(w>0&&h>0&&gap>=0))throw new Error(LANG()==='vi'?'Khổ in hoặc khoảng cách không hợp lệ.':'Invalid sheet size or gap.');try{oldUnit=doc.Unit;doc.Unit=3;if(typeof normalizeSelectedPair==='function'){try{normalizeSelectedPair(false);}catch(nx){}}p=templatePair();name=p.name;number=p.number;templateGap=(Number(name.CenterY)-Math.abs(Number(name.SizeHeight))/2)-(Number(number.CenterY)+Math.abs(Number(number.SizeHeight))/2);doc.BeginCommandGroup('DHL Nameset Layout - Excel V8.4');cmd=true;a.Optimization=true;opt=true;page=doc.AddPagesEx(1,w,h);page.MoveTo(1);try{page.Name='DHL Excel Nameset';}catch(ne){}x=margin;top=h-margin;for(i=0;i<rows.length;i++){n=name.CopyToLayer(page.ActiveLayer);d=number.CopyToLayer(page.ActiveLayer);replaceText(n,rows[i].name);replaceText(d,rows[i].number);n.CenterX=d.CenterX;n.CenterY=d.CenterY+Math.abs(Number(d.SizeHeight))/2+templateGap+Math.abs(Number(n.SizeHeight))/2;g=groupPair(a,page,n,d,mirror);gg=geom(g);if(x+gg.w>w-margin&&x>margin){x=margin;top-=rowH+gap;rowH=0;}if(top-gg.h<margin){try{g.Delete();}catch(de){}throw new Error((LANG()==='vi'?'Khổ hiện tại chỉ xếp được ':'Current sheet only fits ')+i+'/'+rows.length+(LANG()==='vi'?' bộ. Hãy tăng chiều cao trang hoặc giảm khoảng cách.':' sets. Increase sheet height or reduce spacing.'));}g.CenterX=x+gg.w/2;g.CenterY=top-gg.h/2;x+=gg.w+gap;rowH=Math.max(rowH,gg.h);}page.Activate();a.Optimization=false;opt=false;doc.Unit=oldUnit;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}return{count:rows.length,width:w,height:h};}catch(e){try{if(opt)a.Optimization=false;}catch(x1){}try{doc.Unit=oldUnit;}catch(x2){}try{if(cmd)doc.EndCommandGroup();}catch(x3){}throw e;}}
+function layoutRows(rows){var p=templatePair(),a=p.a,doc=a.ActiveDocument,w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),mirror=!!E('excelMirror').checked,margin=Math.max(gap,5),oldUnit=doc.Unit,page=null,name=p.name,number=p.number,templateGap,opt=false,cmd=false,x,top,rowH=0,i,n,d,g,gg;if(!(w>0&&h>0&&gap>=0))throw new Error(LANG()==='vi'?'Khổ in hoặc khoảng cách không hợp lệ.':'Invalid sheet size or gap.');try{oldUnit=doc.Unit;doc.Unit=3;if(typeof normalizeSelectedPair==='function'){try{normalizeSelectedPair(false);}catch(nx){}}p=templatePair();name=p.name;number=p.number;templateGap=(Number(name.CenterY)-Math.abs(Number(name.SizeHeight))/2)-(Number(number.CenterY)+Math.abs(Number(number.SizeHeight))/2);doc.BeginCommandGroup('DHL Nameset Layout - Excel V8.35');cmd=true;a.Optimization=true;opt=true;page=doc.AddPagesEx(1,w,h);page.MoveTo(1);try{page.Name='DHL Excel Nameset';}catch(ne){}x=margin;top=h-margin;for(i=0;i<rows.length;i++){n=name.CopyToLayer(page.ActiveLayer);d=number.CopyToLayer(page.ActiveLayer);replaceText(n,rows[i].name);replaceText(d,rows[i].number);n.CenterX=d.CenterX;n.CenterY=d.CenterY+Math.abs(Number(d.SizeHeight))/2+templateGap+Math.abs(Number(n.SizeHeight))/2;g=groupPair(a,page,n,d,mirror);gg=geom(g);if(x+gg.w>w-margin&&x>margin){x=margin;top-=rowH+gap;rowH=0;}if(top-gg.h<margin){try{g.Delete();}catch(de){}throw new Error((LANG()==='vi'?'Khổ hiện tại chỉ xếp được ':'Current sheet only fits ')+i+'/'+rows.length+(LANG()==='vi'?' bộ. Hãy tăng chiều cao trang hoặc giảm khoảng cách.':' sets. Increase sheet height or reduce spacing.'));}g.CenterX=x+gg.w/2;g.CenterY=top-gg.h/2;x+=gg.w+gap;rowH=Math.max(rowH,gg.h);}page.Activate();a.Optimization=false;opt=false;doc.Unit=oldUnit;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}return{count:rows.length,width:w,height:h};}catch(e){try{if(opt)a.Optimization=false;}catch(x1){}try{doc.Unit=oldUnit;}catch(x2){}try{if(cmd)doc.EndCommandGroup();}catch(x3){}throw e;}}
 var cachePath='',cacheRows=null;
-function showRows(rows){var vi=LANG()==='vi',parts=[],i,max=Math.min(rows.length,5);for(i=0;i<max;i++)parts.push(esc(rows[i].name)+' — '+esc(rows[i].number));previewStatus('<span class="v84-head">'+(vi?'✓ Đã đọc ':'✓ Read ')+rows.length+(vi?' dòng hợp lệ':' valid rows')+'</span><br><span class="v84-small">'+parts.join(' · ')+(rows.length>max?' …':'')+'</span>','ok');}
+function showRows(rows){var vi=LANG()==='vi',parts=[],i,max=Math.min(rows.length,5);for(i=0;i<max;i++)parts.push(esc(rows[i].name)+' — '+(rows[i].number?esc(rows[i].number):(vi?'(chỉ tên)':'(name only)'))+(rows[i].footer?' — '+esc(rows[i].footer):'')+(rows[i].size?' ['+esc(rows[i].size)+']':''));var only=0,k;for(k=0;k<rows.length;k++)if(rows[k].nameOnly)only++;previewStatus('<span class="v84-head">'+(vi?'✓ Đã đọc ':'✓ Read ')+rows.length+(vi?' dòng hợp lệ':' valid rows')+(only?' · '+only+(vi?' bộ chỉ tên':' name-only'):'')+'</span><br><span class="v84-small">'+parts.join(' · ')+(rows.length>max?' …':'')+'</span>','ok');}
 function previewFile(){var input=E('excelFile'),path=input?input.value:'',vi=LANG()==='vi';cacheRows=null;cachePath='';if(!path){previewStatus(vi?'Chưa chọn file Excel.':'No Excel file selected.','bad');return;}previewStatus(vi?'Đang đọc file…':'Reading file…','busy');setTimeout(function(){try{cacheRows=readWorkbook(path);cachePath=path;showRows(cacheRows);}catch(e){previewStatus('<b>'+(vi?'Lỗi đọc file: ':'File error: ')+'</b>'+esc(e.message),'bad');}},40);}
 function updateTemplate(){var vi=LANG()==='vi';try{var p=templatePair(),nv=textValue(p.name),sv=textValue(p.number);selectionStatus('<b>'+(vi?'✓ Mẫu đã chọn: ':'✓ Template selected: ')+'</b>'+esc(nv)+' / '+esc(sv)+'<br><span class="v84-small">'+(vi?'Có thể bấm ĐỌC EXCEL + DÀN TRANG.':'Ready to build Excel layout.')+'</span>','ok');}catch(e){selectionStatus('<b>'+(vi?'Mẫu: ':'Template: ')+'</b>'+esc(e.message),'bad');}}
 function run(){var b=E('excelRun'),input=E('excelFile'),path=input?input.value:'',vi=LANG()==='vi',old=b?b.innerHTML:'';if(!path){status(vi?'Hãy chọn file Excel trước.':'Select an Excel file first.','bad');return;}try{templatePair();}catch(te){status('<b>'+(vi?'Chưa có bộ mẫu: ':'No template: ')+'</b>'+esc(te.message),'bad');updateTemplate();return;}if(b){b.disabled=true;b.className=(b.className||'')+' v84-busy';b.innerHTML=vi?'ĐANG ĐỌC + DÀN…':'READING + LAYOUT…';}status(vi?'Đang đọc dữ liệu và tạo nameset…':'Reading data and creating namesets…','');setTimeout(function(){try{var rows=(cacheRows&&cachePath===path)?cacheRows:readWorkbook(path);cacheRows=rows;cachePath=path;showRows(rows);var out=layoutRows(rows);status('<b>'+(vi?'✓ Hoàn tất: ':'✓ Done: ')+'</b>'+(vi?'đã tạo ':'created ')+out.count+(vi?' bộ nameset trên khổ ':' namesets on ')+out.width+' × '+out.height+' mm.','ok');}catch(e){status('<b>'+(vi?'Lỗi: ':'Error: ')+'</b>'+esc(e.message),'bad');}finally{if(b){b.disabled=false;b.className=(b.className||'').replace(/\s*v84-busy\b/g,'');b.innerHTML=old|| (vi?'ĐỌC EXCEL + DÀN TRANG':'READ EXCEL + LAYOUT');}}},50);}
-function relabel(){var vi=LANG()==='vi',hint=E('columnHint'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(hint)hint.innerHTML=vi?'Cột chuẩn: <b>Tên in áo</b> (hoặc Họ tên/Tên/Name) | <b>Số áo</b>.':'Columns: <b>Print name</b> (or Name/Player) | <b>Shirt number</b>.';if(v&&v.length)v[0].innerHTML='v8.4';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.4 · Excel preview · VI / EN';}
+function relabel(){var vi=LANG()==='vi',hint=E('columnHint'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(hint)hint.innerHTML=vi?'Cột: <b>Tên | Số | Dòng dưới số (tùy chọn)</b> hoặc <b>Nội dung in</b>: MESSI - 10 - A12-K41-MK.':'Columns: <b>Name | Number | Footer (optional)</b> or <b>Print content</b>: MESSI - 10 - A12-K41-MK.';if(v&&v.length)v[0].innerHTML='v8.35';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.35 · Excel preview · VI / EN';}
 function build(){var input=E('excelFile'),runBtn=E('excelRun'),body=E('excelBody'),p,s;if(!input||!runBtn||!body)return false;if(!E('v84ExcelPreview')){p=document.createElement('div');p.id='v84ExcelPreview';p.className='bad';p.innerHTML=LANG()==='vi'?'Chọn file để tool tự kiểm tra dữ liệu.':'Choose a file to validate data.';if(input.nextSibling)input.parentNode.insertBefore(p,input.nextSibling);else input.parentNode.appendChild(p);}if(!E('v84TemplateStatus')){s=document.createElement('div');s.id='v84TemplateStatus';s.className='bad';s.innerHTML=LANG()==='vi'?'Mẫu: hãy chọn đúng 2 Text (tên + số).':'Template: select exactly 2 Text objects (name + number).';runBtn.parentNode.insertBefore(s,runBtn);}input.onchange=previewFile;runBtn.onclick=run;setInterval(updateTemplate,800);relabel();return true;}
 function finish(){if(!build()){setTimeout(finish,180);return;}var old=window.setLanguage;if(old&&!old._v84){var wrap=function(x){old(x);setTimeout(function(){relabel();updateTemplate();if(cacheRows)showRows(cacheRows);},40);};wrap._v84=true;window.setLanguage=wrap;}updateTemplate();}
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,1350);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,1350);});else setTimeout(finish,1500);
@@ -519,37 +565,176 @@ function finish(){if(!buildUI()){setTimeout(finish,180);return;}oldNest=window.V
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,1650);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,1650);});else setTimeout(finish,1800);
 })();
 </script>
-<style id="dhl-v86-excel-rowgroups-style">
+<!-- dhl-v836-excel-pages -->
+<!-- dhl-v836-excel-pages -->
+<style id="dhl-v834-excel-footer-style">
 #v84TemplateStatus{display:none!important}
-.v86-box{border:1px solid #cfcfcf!important;border-radius:6px!important;padding:8px!important;margin:8px 0!important;background:#fff!important}.v86-title{font-size:12px!important;font-weight:800!important;margin-bottom:6px!important}.v86-grid2,.v86-grid3{display:table!important;width:100%!important;table-layout:fixed!important}.v86-grid2>div,.v86-grid3>div{display:table-cell!important;padding-right:5px!important;vertical-align:top!important}.v86-grid2>div:last-child,.v86-grid3>div:last-child{padding-right:0!important}.v86-mini{display:block!important;font-size:10px!important;color:#555!important;margin-bottom:3px!important}.v86-note{border:1px solid #cfcfcf!important;border-left:4px solid #999!important;border-radius:5px!important;padding:7px 8px!important;margin-top:7px!important;font-size:11px!important;line-height:1.4!important}.v86-note.ok{border-left-color:#2e8b57!important}.v86-note.bad{border-left-color:#c53b45!important}.v86-btn{margin-top:7px!important}.v86-hint{font-size:10px!important;color:#555!important;line-height:1.4!important;margin-top:5px!important}
+.v86-box{border:1px solid #cfcfcf!important;border-radius:6px!important;padding:8px!important;margin:8px 0!important;background:#fff!important}.v86-title{font-size:12px!important;font-weight:800!important;margin-bottom:6px!important}.v86-grid2,.v86-grid3{display:table!important;width:100%!important;table-layout:fixed!important}.v86-grid2>div,.v86-grid3>div{display:table-cell!important;padding-right:5px!important;vertical-align:top!important}.v86-grid2>div:last-child,.v86-grid3>div:last-child{padding-right:0!important}.v86-mini{display:block!important;font-size:10px!important;color:#555!important;margin-bottom:3px!important}.v86-note{border:1px solid #cfcfcf!important;border-left:4px solid #999!important;border-radius:5px!important;padding:7px 8px!important;margin-top:7px!important;font-size:11px!important;line-height:1.4!important}.v86-note.ok{border-left-color:#2e8b57!important}.v86-note.bad{border-left-color:#c53b45!important}.v834-footer{border:1px solid #d4d4d4!important;border-radius:5px!important;background:#fff!important;margin-top:8px!important;padding:7px!important}.v834-foot-title{font-size:11px!important;font-weight:800!important;margin-bottom:5px!important;color:#111!important}.v834-foot-grid{display:table!important;table-layout:fixed!important;width:100%!important}.v834-foot-grid>div{display:table-cell!important;vertical-align:top!important;padding-right:5px!important}.v834-foot-grid>div:last-child{padding-right:0!important}.v834-footer input,.v834-footer select{background:#fff!important;color:#111!important;opacity:1!important;border:1px solid #777!important}.v834-foot-help{font-size:10px!important;color:#333!important;margin-top:5px!important;line-height:1.35!important}.v86-btn{margin-top:7px!important}.v86-hint{font-size:10px!important;color:#555!important;line-height:1.4!important;margin-top:5px!important}
+#v836LayoutBox{border:1px solid #c7c7c7;border-radius:5px;padding:8px;margin:8px 0;background:white;color:#151515}
+.v836-layout-title{font-size:11px;font-weight:800;margin-bottom:5px}
+#v836LayoutMode{display:block;width:100%!important;color:#111!important;background:#fff!important;opacity:1!important;font-weight:bold}
+.v836-layout-hint{font-size:10px!important;line-height:1.4;color:#333;margin-top:5px}
 </style>
-<script id="dhl-v86-excel-rowgroups" type="text/javascript">
+<script id="dhl-v834-excel-footer" type="text/javascript">
 (function(){
 function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}function txt(v){return String(v===undefined||v===null?'':v).replace(/^\s+|\s+$/g,'');}function r2(v){return Math.round(v*100)/100;}
 var lastGroups=[],lastRows=[],lastPath='';
 function corel(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(L()==='vi'?'Không kết nối được CorelDRAW.':'Cannot connect to CorelDRAW.');}
-function T(){return L()==='vi'?{title:'TẠO BỘ TỪ TỪNG DÒNG EXCEL',fontName:'Font tên',fontNo:'Font số',load:'NẠP DANH SÁCH FONT',nameH:'Cao tên (cm)',noH:'Cao số (cm)',pairGap:'Cách tên → số (cm)',make:'TẠO CÁC BỘ TỪ EXCEL',hint:'Mỗi dòng Excel = đúng 1 bộ. Tên và số cùng dòng sẽ được căn giữa ngang rồi Group với nhau. Không ghép theo khoảng cách gần nhất.',needFile:'Hãy chọn file Excel trước.',needFont:'Hãy chọn Font tên và Font số trước.',made:'✓ Đã tạo {n} Group từ {n} dòng Excel. Mỗi Group đúng 1 tên + 1 số cùng dòng.',makeErr:'Không tạo được bộ: ',layout:'DÀN CÁC BỘ VÀO TRANG IN',layoutHint:'Sau khi tạo bộ: chọn khổ in / nhập Rộng × Cao → bấm SET TRANG IN → bấm DÀN CÁC BỘ VÀO TRANG IN.',needGroups:'Chưa có bộ Excel nào để dàn. Hãy bấm TẠO CÁC BỘ TỪ EXCEL trước.',setPageFirst:'Khổ page hiện tại chưa khớp thông số Rộng × Cao. Hãy bấm SET TRANG IN trước.',laid:'✓ Đã dàn {a}/{b} Group vào trang in hiện tại.',notFit:'⚠ Trang hiện tại chỉ chứa được {a}/{b} Group. Hãy tăng chiều cao trang hoặc giảm kích thước/khoảng cách.',fontLoaded:'✓ Đã nạp {n} font.',fontFail:'Không nạp được font: '}:{title:'BUILD GROUPS FROM EXCEL ROWS',fontName:'Name font',fontNo:'Number font',load:'LOAD FONT LIST',nameH:'Name height (cm)',noH:'Number height (cm)',pairGap:'Name → number gap (cm)',make:'CREATE GROUPS FROM EXCEL',hint:'Each Excel row becomes exactly one group. Name and number from the same row are centered horizontally and grouped together. No nearest-pair matching.',needFile:'Choose an Excel file first.',needFont:'Choose both name and number fonts first.',made:'✓ Created {n} groups from {n} Excel rows. Each group contains the name + number from the same row.',makeErr:'Could not create groups: ',layout:'LAYOUT GROUPS ON PRINT PAGE',layoutHint:'After creating groups: choose/enter Width × Height → click SET PRINT PAGE → click LAYOUT GROUPS ON PRINT PAGE.',needGroups:'No Excel groups yet. Click CREATE GROUPS FROM EXCEL first.',setPageFirst:'Current page size does not match Width × Height. Click SET PRINT PAGE first.',laid:'✓ Laid out {a}/{b} groups on the current print page.',notFit:'⚠ Current page fits only {a}/{b} groups. Increase page height or reduce sizes/gap.',fontLoaded:'✓ Loaded {n} fonts.',fontFail:'Could not load fonts: '};}
+function T(){return L()==='vi'?{title:'TẠO BỘ TỪ TỪNG DÒNG EXCEL',fontName:'Font tên',fontNo:'Font số',load:'NẠP DANH SÁCH FONT',nameH:'Cao tên (cm)',noH:'Cao số (cm)',pairGap:'Cách tên → số (cm)',make:'TẠO CÁC BỘ TỪ EXCEL',hint:'Đọc Tên áo | Số áo | Dòng thứ 3 | Size. Size lưu để phân loại, không tự đổi kích thước in. Dòng thiếu số chỉ in tên.',needFile:'Hãy chọn file Excel trước.',needFont:'Hãy chọn Font tên và Font số trước.',made:'✓ Đã tạo {n} bộ in từ Excel; giữ dòng chỉ tên và nhãn Size.',makeErr:'Không tạo được bộ: ',layout:'DÀN CÁC BỘ VÀO TRANG IN',layoutHint:'Sau khi tạo bộ: chọn khổ in / nhập Rộng × Cao → bấm SET TRANG IN → bấm DÀN CÁC BỘ VÀO TRANG IN.',needGroups:'Chưa có bộ Excel nào để dàn. Hãy bấm TẠO CÁC BỘ TỪ EXCEL trước.',setPageFirst:'Khổ page hiện tại chưa khớp thông số Rộng × Cao. Hãy bấm SET TRANG IN trước.',laid:'✓ Đã dàn {a}/{b} Group vào trang in hiện tại.',notFit:'⚠ Trang hiện tại chỉ chứa được {a}/{b} Group. Hãy tăng chiều cao trang hoặc giảm kích thước/khoảng cách.',fontLoaded:'✓ Đã nạp {n} font.',fontFail:'Không nạp được font: '}:{title:'BUILD GROUPS FROM EXCEL ROWS',fontName:'Name font',fontNo:'Number font',load:'LOAD FONT LIST',nameH:'Name height (cm)',noH:'Number height (cm)',pairGap:'Name → number gap (cm)',make:'CREATE GROUPS FROM EXCEL',hint:'Reads Shirt name | Number | Line 3 | Size. Size is metadata only. Missing number prints name only.',needFile:'Choose an Excel file first.',needFont:'Choose both name and number fonts first.',made:'✓ Created {n} print sets from Excel, preserving name-only items and Size tags.',makeErr:'Could not create groups: ',layout:'LAYOUT GROUPS ON PRINT PAGE',layoutHint:'After creating groups: choose/enter Width × Height → click SET PRINT PAGE → click LAYOUT GROUPS ON PRINT PAGE.',needGroups:'No Excel groups yet. Click CREATE GROUPS FROM EXCEL first.',setPageFirst:'Current page size does not match Width × Height. Click SET PRINT PAGE first.',laid:'✓ Laid out {a}/{b} groups on the current print page.',notFit:'⚠ Current page fits only {a}/{b} groups. Increase page height or reduce sizes/gap.',fontLoaded:'✓ Loaded {n} fonts.',fontFail:'Could not load fonts: '};}
 function fmt(s,m){var k;for(k in m)if(m.hasOwnProperty(k))s=s.replace('{'+k+'}',m[k]);return s;}
 function head(v){return txt(v).toLowerCase().replace(/[\s_\-\.\/\\]+/g,'');}
 function isNameHeader(h){return h==='tênináo'||h==='teninao'||h==='tênáo'||h==='tenao'||h==='họtên'||h==='hoten'||h==='tên'||h==='ten'||h==='name'||h==='player'||h==='playername';}
 function isNumberHeader(h){return h==='sốáo'||h==='soao'||h==='số'||h==='so'||h==='number'||h==='no'||h==='shirtno'||h==='shirtnumber';}
 function cellText(cell){var t='',v='';try{t=String(cell.Text);}catch(e){}try{v=cell.Value2;}catch(e2){}if((!t||/^#+$/.test(t))&&v!==undefined&&v!==null)t=String(v);return txt(t);}
-function rowsFromMatrix(m){var nc=-1,sc=-1,c,r,h,out=[];if(!m||!m.length)throw new Error(L()==='vi'?'File Excel không có dữ liệu.':'Excel file has no data.');for(c=0;c<m[0].length;c++){h=head(m[0][c]);if(nc<0&&isNameHeader(h))nc=c;if(sc<0&&isNumberHeader(h))sc=c;}if(nc<0||sc<0)throw new Error(L()==='vi'?'Không tìm thấy cột Tên in áo và Số áo.':'Could not find name and shirt-number columns.');for(r=1;r<m.length;r++){var n=txt(m[r][nc]),s=txt(m[r][sc]);if(n&&s)out.push({name:n,number:s,row:r+1});}if(!out.length)throw new Error(L()==='vi'?'Không có dòng nào đủ cả tên và số.':'No complete name/number rows found.');return out;}
+function isFooterHeader(h){return h==='dòngdướisố'||h==='dongduoiso'||h==='chữdướisố'||h==='chuduoiso'||h==='dòngdưới'||h==='dongduoi'||h==='dòngphụ'||h==='dongphu'||h==='footer'||h==='bottomtext'||h==='textbelownumber'||h==='extratext'||h==='ghichúin'||h==='ghichuin'||h==='dòngthứ3'||h==='dongthu3'||h==='dòngthứba'||h==='dongthuba'||h==='dòng3'||h==='dong3'||h==='line3'||h==='thirdline';}
+function isSizeHeader(h){return h==='size'||h==='sizeáo'||h==='sizeao'||h==='shirt size'||h==='shirtsize'||h==='kíchcỡ'||h==='kichco'||h==='cỡáo'||h==='coao'||h==='sz';}
+function isSyntaxHeader(h){return h==='nộidungin'||h==='noidungin'||h==='cúphápin'||h==='cuphapin'||h==='tênsốdòngdưới'||h==='tensodongduoi'||h==='nameset'||h==='printtext'||h==='printcontent'||h==='cúpháp'||h==='cuphap'||h==='nộidung'||h==='noidung';}
+function splitPrintSyntax(value){
+ var s=txt(value),m=s.match(/^(.+?)\s+[-–—]\s+(\d{1,3}[A-Za-z]?)\s+[-–—]\s+(.+)$/);
+ if(m)return{name:txt(m[1]),number:txt(m[2]),footer:txt(m[3])};
+ m=s.match(/^(.+?)\s+[-–—]\s+(\d{1,3}[A-Za-z]?)$/);
+ if(m)return{name:txt(m[1]),number:txt(m[2]),footer:''};
+ return null;
+}
+function rowsFromMatrix(m){
+ var nc=-1,sc=-1,fc=-1,zc=-1,cc=-1,c,r,h,out=[],n,s,footer,size,parsed,hasHeader=false,start=1,first;
+ if(!m||!m.length)throw new Error(L()==='vi'?'File Excel không có dữ liệu.':'Excel file has no data.');
+ for(c=0;c<m[0].length;c++){
+  h=head(m[0][c]);
+  if(nc<0&&isNameHeader(h))nc=c;
+  if(sc<0&&isNumberHeader(h))sc=c;
+  if(fc<0&&isFooterHeader(h))fc=c;
+  if(zc<0&&isSizeHeader(h))zc=c;
+  if(cc<0&&isSyntaxHeader(h))cc=c;
+ }
+ hasHeader=(nc>=0&&sc>=0)||cc>=0;
+ if(!hasHeader){
+  first=splitPrintSyntax(m[0][0]);
+  if(first){cc=0;start=0;}
+  else if(m[0].length>=2&&txt(m[0][0])&&/^\d{1,3}[A-Za-z]?$/.test(txt(m[0][1]))){
+   nc=0;sc=1;fc=m[0].length>=3?2:-1;zc=m[0].length>=4?3:-1;start=0;
+  }else throw new Error(L()==='vi'?'Cần cột Tên áo + Số áo (Dòng thứ 3, Size tùy chọn), hoặc cột Nội dung in.':'Use Shirt name + Number columns (optional Line 3 and Size), or Print content.');
+ }
+ for(r=start;r<m.length;r++){
+  n='';s='';footer='';size='';parsed=null;
+  if(nc>=0&&sc>=0){
+   n=txt(m[r][nc]);s=txt(m[r][sc]);footer=fc>=0?txt(m[r][fc]):'';size=zc>=0?txt(m[r][zc]):'';
+   if(n&&!s)parsed=splitPrintSyntax(n);
+  }else if(cc>=0){parsed=splitPrintSyntax(m[r][cc]);size=zc>=0?txt(m[r][zc]):'';}
+  if(parsed){n=parsed.name;s=parsed.number;if(!footer)footer=parsed.footer;}
+  // A named two-column/three-column/four-column row may intentionally contain only a name (e.g. COACH).
+  if(n&&(s||nc>=0&&sc>=0))out.push({name:n,number:s,footer:footer,size:size,row:r+1,nameOnly:!s});
+ }
+ if(!out.length)throw new Error(L()==='vi'?'Không có dòng hợp lệ có tên áo.':'No valid rows with a shirt name.');
+ return out;
+}
 function readWorkbook(path){var xl=null,book=null,sheet=null,used=null,m=[],r,c;try{xl=new ActiveXObject('Excel.Application');xl.Visible=false;xl.DisplayAlerts=false;book=xl.Workbooks.Open(path);sheet=book.Worksheets(1);used=sheet.UsedRange;for(r=1;r<=used.Rows.Count;r++){var row=[];for(c=1;c<=used.Columns.Count;c++)row.push(cellText(used.Cells(r,c)));m.push(row);}return rowsFromMatrix(m);}finally{try{if(book)book.Close(false);}catch(e){}try{if(xl)xl.Quit();}catch(e2){}}}
-function save(){try{localStorage.setItem('dhl_v86_excel',[E('v86NameFont').value,E('v86NoFont').value,E('v86NameH').value,E('v86NoH').value,E('v86PairGap').value].join('|'));}catch(e){}}
-function load(){try{var s=localStorage.getItem('dhl_v86_excel'),p;if(s){p=s.split('|');if(p.length>=5){E('v86NameFont').setAttribute('data-want',p[0]||'');E('v86NoFont').setAttribute('data-want',p[1]||'');E('v86NameH').value=p[2]||'5';E('v86NoH').value=p[3]||'25';E('v86PairGap').value=p[4]||'3';}}}catch(e){}}
-function cloneFonts(){var src=E('nameFont'),nf=E('v86NameFont'),df=E('v86NoFont'),i,wantN=nf.getAttribute('data-want')||nf.value,wantD=df.getAttribute('data-want')||df.value;if(!src||!nf||!df)return 0;while(nf.options.length>1)nf.remove(1);while(df.options.length>1)df.remove(1);for(i=1;i<src.options.length;i++){nf.options.add(new Option(src.options[i].text,src.options[i].value));df.options.add(new Option(src.options[i].text,src.options[i].value));}if(wantN)nf.value=wantN;if(wantD)df.value=wantD;return Math.max(0,src.options.length-1);}
+function save(){try{localStorage.setItem('dhl_v86_excel',[E('v86NameFont').value,E('v86NoFont').value,E('v86NameH').value,E('v86NoH').value,E('v86PairGap').value].join('|'));localStorage.setItem('dhl_v834_footer',[(E('v86FootFont')||{}).value||'',(E('v86FootH')||{}).value||'2',(E('v86FootGap')||{}).value||'1'].join('|'));}catch(e){}}
+function load(){try{var s=localStorage.getItem('dhl_v86_excel'),p;if(s){p=s.split('|');if(p.length>=5){E('v86NameFont').setAttribute('data-want',p[0]||'');E('v86NoFont').setAttribute('data-want',p[1]||'');E('v86NameH').value=p[2]||'5';E('v86NoH').value=p[3]||'25';E('v86PairGap').value=p[4]||'3';}}s=localStorage.getItem('dhl_v834_footer');if(s){p=s.split('|');if(p.length>=3){E('v86FootFont').setAttribute('data-want',p[0]||'');E('v86FootH').value=p[1]||'2';E('v86FootGap').value=p[2]||'1';}}}catch(e){}}
+function cloneFonts(){var src=E('nameFont'),nf=E('v86NameFont'),df=E('v86NoFont'),ff=E('v86FootFont'),i,wantN=nf.getAttribute('data-want')||nf.value,wantD=df.getAttribute('data-want')||df.value,wantF=ff?(ff.getAttribute('data-want')||ff.value):'';if(!src||!nf||!df)return 0;while(nf.options.length>1)nf.remove(1);while(df.options.length>1)df.remove(1);if(ff)while(ff.options.length>1)ff.remove(1);for(i=1;i<src.options.length;i++){nf.options.add(new Option(src.options[i].text,src.options[i].value));df.options.add(new Option(src.options[i].text,src.options[i].value));if(ff)ff.options.add(new Option(src.options[i].text,src.options[i].value));}if(wantN)nf.value=wantN;if(wantD)df.value=wantD;if(ff&&wantF)ff.value=wantF;return Math.max(0,src.options.length-1);}
 function loadFonts(){var st=E('v86Status');try{if(typeof loadInstalledFonts==='function')loadInstalledFonts();var n=cloneFonts();st.className='v86-note ok';st.innerHTML=fmt(T().fontLoaded,{n:n});save();}catch(e){st.className='v86-note bad';st.innerHTML=T().fontFail+esc(e.message);}}
 function applyFont(sh,font){if(typeof applyFontRecursive==='function'){applyFontRecursive(sh,font);return;}try{sh.Text.Story.Font=font;}catch(e){throw new Error((L()==='vi'?'Không áp được font ':'Could not apply font ')+font);}}
 function setHeight(sh,hmm){var h=Math.abs(Number(sh.SizeHeight)),w=Math.abs(Number(sh.SizeWidth));if(!(h>0&&w>0&&hmm>0))throw new Error(L()==='vi'?'Kích thước chữ không hợp lệ.':'Invalid text size.');sh.SetSize(w*hmm/h,hmm);}
 function makeText(layer,text,font,hmm){var s=layer.CreateArtisticText(0,0,String(text));applyFont(s,font);setHeight(s,hmm);return s;}
-function groupPair(a,nameShape,noShape,gap){var nh=Math.abs(Number(nameShape.SizeHeight)),dh=Math.abs(Number(noShape.SizeHeight)),r,g;nameShape.CenterX=noShape.CenterX;nameShape.CenterY=noShape.CenterY+dh/2+gap+nh/2;r=a.CreateShapeRange();r.Add(nameShape);r.Add(noShape);g=r.Group();return g;}
-function makeGroups(){var input=E('excelFile'),path=input?input.value:'',nf=E('v86NameFont').value,df=E('v86NoFont').value,nh=Number(E('v86NameH').value)*10,dh=Number(E('v86NoH').value)*10,pairGap=Number(E('v86PairGap').value)*10,st=E('v86Status'),a,doc,old,opt=false,cmd=false,page,rows,range,i,n,d,g,startX,startY,colH=0,maxColW=0;if(!path){st.className='v86-note bad';st.innerHTML=T().needFile;return;}if(!nf||!df){st.className='v86-note bad';st.innerHTML=T().needFont;return;}if(!(nh>0&&dh>0&&pairGap>=0)){st.className='v86-note bad';st.innerHTML=L()==='vi'?'Chiều cao/cách tên-số không hợp lệ.':'Invalid name/number size or gap.';return;}try{save();rows=(lastPath===path&&lastRows.length)?lastRows:readWorkbook(path);lastRows=rows;lastPath=path;a=corel();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;page=a.ActivePage;doc.BeginCommandGroup('DHL Excel - Create row groups V8.6');cmd=true;a.Optimization=true;opt=true;range=a.CreateShapeRange();lastGroups=[];startX=Number(page.CenterX)+Math.abs(Number(page.SizeWidth))/2+30;startY=Number(page.CenterY)+Math.abs(Number(page.SizeHeight))/2-20;for(i=0;i<rows.length;i++){n=makeText(page.ActiveLayer,rows[i].name,nf,nh);d=makeText(page.ActiveLayer,rows[i].number,df,dh);d.CenterX=startX;d.CenterY=startY-colH-dh/2;g=groupPair(a,n,d,pairGap);try{g.Name='DHL_EXCEL_ROW_'+rows[i].row;}catch(ne){}lastGroups.push(g);range.Add(g);colH+=Math.abs(Number(g.SizeHeight))+10;maxColW=Math.max(maxColW,Math.abs(Number(g.SizeWidth)));if(colH>Math.abs(Number(page.SizeHeight))*1.4){startX+=maxColW+20;startY=Number(page.CenterY)+Math.abs(Number(page.SizeHeight))/2-20;colH=0;maxColW=0;}}range.CreateSelection();a.Optimization=false;opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}st.className='v86-note ok';st.innerHTML=fmt(T().made,{n:rows.length});var er=E('excelResult');if(er){er.className='note';er.innerHTML=T().layoutHint;}}catch(e){try{if(opt&&a)a.Optimization=false;}catch(x){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}try{if(cmd&&doc)doc.EndCommandGroup();}catch(x3){}st.className='v86-note bad';st.innerHTML=T().makeErr+esc(e.message);}}
+function groupPair(a,nameShape,noShape,gap,footerShape,footerGap,numberLogos){var nh=Math.abs(Number(nameShape.SizeHeight)),dh=Math.abs(Number(noShape.SizeHeight)),r,g,fh,i;nameShape.CenterX=noShape.CenterX;nameShape.CenterY=noShape.CenterY+dh/2+gap+nh/2;r=a.CreateShapeRange();r.Add(nameShape);r.Add(noShape);if(footerShape){fh=Math.abs(Number(footerShape.SizeHeight));footerShape.CenterX=noShape.CenterX;footerShape.CenterY=noShape.CenterY-dh/2-footerGap-fh/2;r.Add(footerShape);}if(numberLogos)for(i=0;i<numberLogos.length;i++)r.Add(numberLogos[i]);g=r.Group();return g;}
+function makeGroups(){var input=E('excelFile'),path=input?input.value:'',nf=E('v86NameFont').value,df=E('v86NoFont').value,nh=Number(E('v86NameH').value)*10,dh=Number(E('v86NoH').value)*10,pairGap=Number(E('v86PairGap').value)*10,footFont=(E('v86FootFont')&&E('v86FootFont').value)||nf,footH=Number(E('v86FootH').value)*10,footGap=Number(E('v86FootGap').value)*10,st=E('v86Status'),a,doc,old,opt=false,cmd=false,page,rows,range,i,n,d,ft,g,numberLogos,startX,startY,colH=0,maxColW=0;if(!path){st.className='v86-note bad';st.innerHTML=T().needFile;return;}if(!nf||!df){st.className='v86-note bad';st.innerHTML=T().needFont;return;}if(!(nh>0&&dh>0&&pairGap>=0&&footH>0&&footGap>=0)){st.className='v86-note bad';st.innerHTML=L()==='vi'?'Chiều cao/cách tên-số không hợp lệ.':'Invalid name/number size or gap.';return;}try{save();if(window.DHLNumberLogo&&window.DHLNumberLogo.on())window.DHLNumberLogo.available();rows=readWorkbook(path);lastRows=rows;lastPath=path;a=corel();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;page=a.ActivePage;doc.BeginCommandGroup('DHL Excel - Create row groups V8.37');cmd=true;a.Optimization=true;opt=true;range=a.CreateShapeRange();lastGroups=[];startX=Number(page.CenterX)+Math.abs(Number(page.SizeWidth))/2+30;startY=Number(page.CenterY)+Math.abs(Number(page.SizeHeight))/2-20;for(i=0;i<rows.length;i++){n=makeText(page.ActiveLayer,rows[i].name,nf,nh);if(rows[i].number){d=makeText(page.ActiveLayer,rows[i].number,df,dh);d.CenterX=startX;d.CenterY=startY-colH-dh/2;numberLogos=window.DHLNumberLogo?window.DHLNumberLogo.intoNumber(d,rows[i].number,page.ActiveLayer):[];ft=rows[i].footer?makeText(page.ActiveLayer,rows[i].footer,footFont,footH):null;g=groupPair(a,n,d,pairGap,ft,footGap,numberLogos);}else{d=null;ft=rows[i].footer?makeText(page.ActiveLayer,rows[i].footer,footFont,footH):null;n.CenterX=startX;n.CenterY=startY-colH-nh/2;if(ft){ft.CenterX=n.CenterX;ft.CenterY=n.CenterY-nh/2-footGap-footH/2;var onlyRange=a.CreateShapeRange();onlyRange.Add(n);onlyRange.Add(ft);g=onlyRange.Group();}else g=n;}try{g.Name='DHL_EXCEL_ROW_'+rows[i].row+(rows[i].size?'_SIZE_'+rows[i].size.replace(/[^A-Za-z0-9_-]/g,''):'');}catch(ne){}lastGroups.push(g);range.Add(g);colH+=Math.abs(Number(g.SizeHeight))+10;maxColW=Math.max(maxColW,Math.abs(Number(g.SizeWidth)));if(colH>Math.abs(Number(page.SizeHeight))*1.4){startX+=maxColW+20;startY=Number(page.CenterY)+Math.abs(Number(page.SizeHeight))/2-20;colH=0;maxColW=0;}}range.CreateSelection();a.Optimization=false;opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}st.className='v86-note ok';st.innerHTML=fmt(T().made,{n:rows.length});var er=E('excelResult');if(er){er.className='note';er.innerHTML=T().layoutHint;}}catch(e){try{if(opt&&a)a.Optimization=false;}catch(x){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}try{if(cmd&&doc){doc.EndCommandGroup();doc.Undo();lastGroups=[];}}catch(x3){}st.className='v86-note bad';st.innerHTML=T().makeErr+esc(e.message);}}
 function liveGroups(){var a=corel(),sr=a.ActiveSelectionRange,out=[],i;if(sr&&sr.Count){for(i=1;i<=sr.Count;i++)out.push(sr.Item(i));if(out.length)return out;}out=[];for(i=0;i<lastGroups.length;i++){try{var x=lastGroups[i].SizeWidth;if(Number(x)>=0)out.push(lastGroups[i]);}catch(e){}}return out;}
-function layout(){var st=E('excelResult'),a,doc,old,opt=false,cmd=false,page,groups,w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),pw,ph,margin,x,top,rowH=0,i,g,gw,gh,placed=0;if(!(w>0&&h>0&&gap>=0)){st.innerHTML=L()==='vi'?'Khổ in không hợp lệ.':'Invalid print size.';return;}try{groups=liveGroups();if(!groups.length)throw new Error(T().needGroups);a=corel();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;page=a.ActivePage;pw=Math.abs(Number(page.SizeWidth));ph=Math.abs(Number(page.SizeHeight));if(Math.abs(pw-w)>0.5||Math.abs(ph-h)>0.5)throw new Error(T().setPageFirst);margin=Math.max(gap,2);x=Number(page.CenterX)-w/2+margin;top=Number(page.CenterY)+h/2-margin;doc.BeginCommandGroup('DHL Excel - Layout row groups V8.6');cmd=true;a.Optimization=true;opt=true;for(i=0;i<groups.length;i++){g=groups[i];gw=Math.abs(Number(g.SizeWidth));gh=Math.abs(Number(g.SizeHeight));if(gw>w-2*margin||gh>h-2*margin)continue;if(x+gw>Number(page.CenterX)+w/2-margin&&x>Number(page.CenterX)-w/2+margin){x=Number(page.CenterX)-w/2+margin;top-=rowH+gap;rowH=0;}if(top-gh<Number(page.CenterY)-h/2+margin)break;g.CenterX=x+gw/2;g.CenterY=top-gh/2;x+=gw+gap;rowH=Math.max(rowH,gh);placed++;}if(E('excelMirror')&&E('excelMirror').checked){for(i=0;i<placed;i++)try{groups[i].Flip(1);}catch(fx){}}a.Optimization=false;opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}st.className='note';st.innerHTML=placed===groups.length?fmt(T().laid,{a:placed,b:groups.length}):fmt(T().notFit,{a:placed,b:groups.length});}catch(e){try{if(opt&&a)a.Optimization=false;}catch(x){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}try{if(cmd&&doc)doc.EndCommandGroup();}catch(x3){}st.className='note';st.innerHTML=esc(e.message);}}
-function build(){var body=E('excelBody'),preview=E('v84ExcelPreview'),box,run=E('excelRun'),hint=E('columnHint');if(!body||!preview||!run)return false;if(E('v86ExcelBox'))return true;box=document.createElement('div');box.id='v86ExcelBox';box.className='v86-box';box.innerHTML='<div class="v86-title" id="v86Title"></div><div class="v86-grid2"><div><span class="v86-mini" id="v86NameFontLabel"></span><select id="v86NameFont"><option value="">-- chọn font --</option></select></div><div><span class="v86-mini" id="v86NoFontLabel"></span><select id="v86NoFont"><option value="">-- chọn font --</option></select></div></div><button type="button" class="v86-btn" id="v86LoadFonts"></button><div class="v86-grid3" style="margin-top:7px!important"><div><span class="v86-mini" id="v86NameHLabel"></span><input id="v86NameH" type="number" value="5" min="0.1" step="0.1"/></div><div><span class="v86-mini" id="v86NoHLabel"></span><input id="v86NoH" type="number" value="25" min="0.1" step="0.1"/></div><div><span class="v86-mini" id="v86GapLabel"></span><input id="v86PairGap" type="number" value="3" min="0" step="0.1"/></div></div><div class="v86-hint" id="v86Hint"></div><button type="button" class="v86-btn" id="v86MakeGroups"></button><div id="v86Status" class="v86-note"></div>';preview.parentNode.insertBefore(box,preview.nextSibling);load();E('v86LoadFonts').onclick=loadFonts;E('v86MakeGroups').onclick=makeGroups;E('v86NameFont').onchange=save;E('v86NoFont').onchange=save;E('v86NameH').onchange=save;E('v86NoH').onchange=save;E('v86PairGap').onchange=save;run.onclick=layout;if(hint)hint.innerHTML=L()==='vi'?'Quy tắc: <b>mỗi dòng Excel = 1 Group tên + số cùng dòng</b>. Không ghép gần nhất.':'Rule: <b>each Excel row = one same-row name + number group</b>. No nearest matching.';return true;}
-function relabel(){var t=T(),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[],run=E('excelRun');if(E('v86Title'))E('v86Title').innerHTML=t.title;if(E('v86NameFontLabel'))E('v86NameFontLabel').innerHTML=t.fontName;if(E('v86NoFontLabel'))E('v86NoFontLabel').innerHTML=t.fontNo;if(E('v86LoadFonts'))E('v86LoadFonts').innerHTML=t.load;if(E('v86NameHLabel'))E('v86NameHLabel').innerHTML=t.nameH;if(E('v86NoHLabel'))E('v86NoHLabel').innerHTML=t.noH;if(E('v86GapLabel'))E('v86GapLabel').innerHTML=t.pairGap;if(E('v86Hint'))E('v86Hint').innerHTML=t.hint;if(E('v86MakeGroups'))E('v86MakeGroups').innerHTML=t.make;if(run)run.innerHTML=t.layout;if(v&&v.length)v[0].innerHTML='v8.6';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.6 · Excel row-group workflow · VI / EN';}
-function finish(){if(!build()){setTimeout(finish,180);return;}relabel();try{if(E('nameFont')&&E('nameFont').options.length>1)cloneFonts();}catch(e){}var old=window.setLanguage;if(old&&!old._v86){var wrap=function(x){old(x);setTimeout(function(){relabel();var hint=E('columnHint');if(hint)hint.innerHTML=L()==='vi'?'Quy tắc: <b>mỗi dòng Excel = 1 Group tên + số cùng dòng</b>. Không ghép gần nhất.':'Rule: <b>each Excel row = one same-row name + number group</b>. No nearest matching.';},50);};wrap._v86=true;window.setLanguage=wrap;}}
+function orderedExcelGroups(){
+ var out=[],i,s,row,pairs=[],other=[],a=corel(),sr=a.ActiveSelectionRange;
+ // Prefer the groups created by the last Excel import, in workbook row order.
+ for(i=0;i<lastGroups.length;i++)try{s=lastGroups[i];if(Math.abs(Number(s.SizeWidth))>0)out.push(s);}catch(e){}
+ if(!out.length&&sr&&sr.Count)for(i=1;i<=sr.Count;i++)out.push(sr.Item(i));
+ if(!out.length)throw new Error(L()==='vi'?'Chưa có bộ in nào. Bấm TẠO CÁC BỘ TỪ EXCEL trước.':'No print sets. Create sets from Excel first.');
+ for(i=0;i<out.length;i++){
+  s=out[i];
+  try{row=/^DHL_EXCEL_ROW_(\d+)/.exec(String(s.Name||''));}catch(x){row=null;}
+  if(row)pairs.push({row:Number(row[1]),shape:s});else other.push(s);
+ }
+ if(pairs.length===out.length){pairs.sort(function(a,b){return a.row-b.row;});out=[];for(i=0;i<pairs.length;i++)out.push(pairs[i].shape);}
+ return out;
+}
+function pageLabel(s,i){
+ var label='NAMESET '+(i+1),n='';
+ try{n=String(s.Name||'');}catch(e){}
+ if(n)label+=' '+n.replace(/^DHL_EXCEL_ROW_/,'R');
+ return label.length>55?label.substr(0,55):label;
+}
+function separatePages(){
+ var st=E('excelResult'),a=null,doc=null,oldUnit=null,first=null,p,printPages=[],groups=[],copies=[],w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),m,gw,gh,mirror=!!(E('excelMirror')&&E('excelMirror').checked),i,src,copy,cmd=false,opt=false,created=0,count=0,originalPageCount=0;
+ try{
+  if(!(w>0&&h>0&&gap>=0))throw new Error(L()==='vi'?'Khổ giấy/khoảng cách không hợp lệ.':'Invalid print paper dimensions / margin.');
+  groups=orderedExcelGroups();count=groups.length;a=corel();doc=a.ActiveDocument;oldUnit=doc.Unit;doc.Unit=3;
+  originalPageCount=Number(doc.Pages.Count);
+  if(originalPageCount!==1)throw new Error(L()==='vi'?'Để tạo đúng '+count+' trang (không dư trang trắng), hãy dùng tài liệu Corel chỉ có 1 trang nguồn. Hiện có '+originalPageCount+' trang.':'To create exactly '+count+' print pages, use a document with one source page. Current page count: '+originalPageCount+'.');
+  first=a.ActivePage;
+  if(Math.abs(Math.abs(Number(first.SizeWidth))-w)>0.5||Math.abs(Math.abs(Number(first.SizeHeight))-h)>0.5)throw new Error(L()==='vi'?'Khổ trang chưa khớp. Bấm SET TRANG IN ở bước 4 trước.':'Paper size mismatch. Click SET PRINT PAGE at step 4 first.');
+  m=Math.max(2,gap);
+  for(i=0;i<count;i++){
+   gw=Math.abs(Number(groups[i].SizeWidth));gh=Math.abs(Number(groups[i].SizeHeight));
+   if(!(gw>0&&gh>0))throw new Error('Group '+(i+1)+': '+(L()==='vi'?'kích thước không hợp lệ.':'invalid size.'));
+   if(gw>w-2*m+.001||gh>h-2*m+.001)throw new Error((L()==='vi'?'Bộ ':'Set ')+(i+1)+(L()==='vi'?' có kích thước ':' measures ')+(Math.round(gw*10)/10)+' × '+(Math.round(gh*10)/10)+(L()==='vi'?' mm, lớn hơn vùng in khả dụng ':' mm, exceeds usable area ')+(Math.round((w-2*m)*10)/10)+' × '+(Math.round((h-2*m)*10)/10)+' mm. '+(L()==='vi'?'Cần chỉnh kích thước, khổ giấy hoặc cách mép trước; chưa thay đổi bản gốc.':'Resize the set, paper or margins before proceeding; originals unchanged.'));
+  }
+  doc.BeginCommandGroup('DHL Excel - one nameset per page');cmd=true;
+  try{a.Optimization=true;opt=true;}catch(optimization){}
+  if(window.DHLNumberLogo&&typeof window.DHLNumberLogo.parkSource==='function')window.DHLNumberLogo.parkSource(first);
+  printPages.push(first);
+  for(i=1;i<count;i++){p=doc.AddPagesEx(1,w,h);p.MoveTo(i+1);printPages.push(p);}
+  for(i=0;i<count;i++){
+   src=groups[i];p=printPages[i];
+   try{p.Name=pageLabel(src,i);}catch(pageNameError){}
+   copy=src.CopyToLayer(p.ActiveLayer);
+   if(!copy)throw new Error('CopyToLayer did not return a Shape at index '+(i+1));
+   copies.push(copy);
+   if(mirror)copy.Flip(1);
+   copy.CenterX=Number(p.CenterX);
+   copy.CenterY=Number(p.CenterY);
+   created++;
+  }
+  if(Number(doc.Pages.Count)!==count)throw new Error(L()==='vi'?'Số trang tạo không khớp: '+doc.Pages.Count+'/'+count+'.':'Page count mismatch: '+doc.Pages.Count+'/'+count+'.');
+  // Delete source groups only after all destination copies are complete.
+  for(i=0;i<groups.length;i++)groups[i].Delete();
+  first.Activate();
+  try{if(copies.length)copies[0].CreateSelection();}catch(sel){}
+  try{if(opt)a.Optimization=false;}catch(finishOpt){}opt=false;
+  doc.EndCommandGroup();cmd=false;doc.Unit=oldUnit;
+  try{a.ActiveWindow.Refresh();}catch(refresh){}
+  lastGroups=copies; // The new copies are now the output, not the original source shapes.
+  if(st){st.className='note ok';st.innerHTML=L()==='vi'?'✓ Đã tạo đúng '+count+' trang in, mỗi trang 1 bộ nameset. Giữ nguyên tỷ lệ và Group; đã chuyển bộ từ trang nguồn sang từng trang (không dư trang nguồn).':'✓ Created exactly '+count+' printable pages, one set per page, preserving each group and its dimensions. No extra source page.';}
+  return true;
+ }catch(e){
+  try{if(opt&&a)a.Optimization=false;}catch(x1){}
+  try{if(cmd&&doc){doc.EndCommandGroup();cmd=false;doc.Undo();}}catch(x2){}
+  try{if(doc&&oldUnit!==null)doc.Unit=oldUnit;}catch(x3){}
+  if(st){st.className='note bad';st.innerHTML=(L()==='vi'?'Không tạo được trang riêng: ':'Could not generate individual pages: ')+esc(e.message||e);}
+  return false;
+ }
+}
+function updateExcelLayoutMode(){
+ var mode=E('v836LayoutMode'),btn=E('excelRun'),help=E('v836LayoutHint'),vi=L()==='vi',single=!mode||mode.value==='single';
+ if(btn)btn.innerHTML=single?(vi?'DÀN MỖI BỘ → 1 TRANG RIÊNG':'ONE SET → ONE PAGE'):(vi?'DÀN NHIỀU BỘ CHUNG TRANG':'PACK MULTIPLE SETS PER PAGE');
+ if(help)help.innerHTML=single?(vi?'Mặc định: 37 dòng Excel → 37 trang in. Dùng trang nguồn làm trang 1, không tạo trang trắng dư; căn giữa, không tự thu nhỏ hay tách Group.':'Default: 37 Excel rows → 37 print pages. Reuses the source page as page 1; centered sets with no automatic resize/group split.'):
+ (vi?'Chế độ cũ: xếp nhiều bộ trên trang hiện tại. Nếu không đủ chỗ sẽ báo số bộ chưa xếp, không tự tạo thêm trang.':'Legacy mode: pack multiple sets on current page; no automatic pagination.');
+ try{localStorage.setItem('dhl_v836_layout',single?'single':'packed');}catch(err){}
+}
+function buildExcelLayoutMode(){
+ var run=E('excelRun'),box,sel,label,hint,saved;
+ if(!run||E('v836LayoutBox'))return;
+ box=document.createElement('div');box.id='v836LayoutBox';box.className='v836-layout-mode';
+ label=document.createElement('div');label.id='v836LayoutTitle';label.className='v836-layout-title';
+ label.innerHTML=L()==='vi'?'CHẾ ĐỘ DÀN EXCEL':'EXCEL LAYOUT MODE';
+ sel=document.createElement('select');sel.id='v836LayoutMode';
+ sel.innerHTML='<option value="single">Mỗi bộ = 1 trang riêng</option><option value="packed">Nhiều bộ chung trang</option>';
+ try{saved=localStorage.getItem('dhl_v836_layout');}catch(e){}
+ sel.value=saved==='packed'?'packed':'single';sel.onchange=updateExcelLayoutMode;
+ hint=document.createElement('div');hint.id='v836LayoutHint';hint.className='v836-layout-hint';
+ box.appendChild(label);box.appendChild(sel);box.appendChild(hint);
+ run.parentNode.insertBefore(box,run);
+ updateExcelLayoutMode();
+}
+function layout(){if(!E('v836LayoutMode')||E('v836LayoutMode').value==='single')return separatePages();var st=E('excelResult'),a,doc,old,opt=false,cmd=false,page,groups,w=Number(E('sheetWidth').value),h=Number(E('sheetHeight').value),gap=Number(E('sheetGap').value),pw,ph,margin,x,top,rowH=0,i,g,gw,gh,placed=0;if(!(w>0&&h>0&&gap>=0)){st.innerHTML=L()==='vi'?'Khổ in không hợp lệ.':'Invalid print size.';return;}try{groups=liveGroups();if(!groups.length)throw new Error(T().needGroups);a=corel();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;page=a.ActivePage;pw=Math.abs(Number(page.SizeWidth));ph=Math.abs(Number(page.SizeHeight));if(Math.abs(pw-w)>0.5||Math.abs(ph-h)>0.5)throw new Error(T().setPageFirst);margin=Math.max(gap,2);x=Number(page.CenterX)-w/2+margin;top=Number(page.CenterY)+h/2-margin;doc.BeginCommandGroup('DHL Excel - Layout row groups V8.37');cmd=true;a.Optimization=true;opt=true;for(i=0;i<groups.length;i++){g=groups[i];gw=Math.abs(Number(g.SizeWidth));gh=Math.abs(Number(g.SizeHeight));if(gw>w-2*margin||gh>h-2*margin)continue;if(x+gw>Number(page.CenterX)+w/2-margin&&x>Number(page.CenterX)-w/2+margin){x=Number(page.CenterX)-w/2+margin;top-=rowH+gap;rowH=0;}if(top-gh<Number(page.CenterY)-h/2+margin)break;g.CenterX=x+gw/2;g.CenterY=top-gh/2;x+=gw+gap;rowH=Math.max(rowH,gh);placed++;}if(E('excelMirror')&&E('excelMirror').checked){for(i=0;i<placed;i++)try{groups[i].Flip(1);}catch(fx){}}a.Optimization=false;opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;try{a.ActiveWindow.Refresh();}catch(rx){}st.className='note';st.innerHTML=placed===groups.length?fmt(T().laid,{a:placed,b:groups.length}):fmt(T().notFit,{a:placed,b:groups.length});}catch(e){try{if(opt&&a)a.Optimization=false;}catch(x){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(x2){}try{if(cmd&&doc)doc.EndCommandGroup();}catch(x3){}st.className='note';st.innerHTML=esc(e.message);}}
+function build(){var body=E('excelBody'),preview=E('v84ExcelPreview'),box,run=E('excelRun'),hint=E('columnHint');if(!body||!preview||!run)return false;if(E('v86ExcelBox'))return true;box=document.createElement('div');box.id='v86ExcelBox';box.className='v86-box';box.innerHTML='<div class="v86-title" id="v86Title"></div><div class="v86-grid2"><div><span class="v86-mini" id="v86NameFontLabel"></span><select id="v86NameFont"><option value="">-- chọn font --</option></select></div><div><span class="v86-mini" id="v86NoFontLabel"></span><select id="v86NoFont"><option value="">-- chọn font --</option></select></div></div><button type="button" class="v86-btn" id="v86LoadFonts"></button><div class="v86-grid3" style="margin-top:7px!important"><div><span class="v86-mini" id="v86NameHLabel"></span><input id="v86NameH" type="number" value="5" min="0.1" step="0.1"/></div><div><span class="v86-mini" id="v86NoHLabel"></span><input id="v86NoH" type="number" value="25" min="0.1" step="0.1"/></div><div><span class="v86-mini" id="v86GapLabel"></span><input id="v86PairGap" type="number" value="3" min="0" step="0.1"/></div></div><div class="v834-footer" id="v834FooterBox"><div class="v834-foot-title" id="v834FooterTitle"></div><div class="v834-foot-grid"><div><span class="v86-mini" id="v834FootFontLabel"></span><select id="v86FootFont"><option value="">Giữ font tên</option></select></div><div><span class="v86-mini" id="v834FootHeightLabel"></span><input id="v86FootH" type="number" value="2" min="0.1" step="0.1"/></div><div><span class="v86-mini" id="v834FootGapLabel"></span><input id="v86FootGap" type="number" value="1" min="0" step="0.1"/></div></div><div id="v834FootHelp" class="v834-foot-help"></div></div><div class="v86-hint" id="v86Hint"></div><button type="button" class="v86-btn" id="v86MakeGroups"></button><div id="v86Status" class="v86-note"></div>';preview.parentNode.insertBefore(box,preview.nextSibling);load();E('v86LoadFonts').onclick=loadFonts;E('v86MakeGroups').onclick=makeGroups;E('v86NameFont').onchange=save;E('v86NoFont').onchange=save;E('v86NameH').onchange=save;E('v86NoH').onchange=save;E('v86PairGap').onchange=save;E('v86FootFont').onchange=save;E('v86FootH').onchange=save;E('v86FootGap').onchange=save;run.onclick=layout;buildExcelLayoutMode();if(hint)hint.innerHTML=L()==='vi'?'Excel: <b>Tên áo | Số áo | Dòng thứ 3 | Size (tùy chọn)</b>, hoặc 1 cột <b>Nội dung in</b>: MESSI - 10 - A12-K41-MK. Mỗi dòng = 1 Group.':'Excel: <b>Shirt name | Number | Line 3 | Size (optional)</b>, or 1 <b>Print content</b> cell: MESSI - 10 - A12-K41-MK. Each row is one group.';return true;}
+function relabel(){var t=T(),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[],run=E('excelRun');if(E('v86Title'))E('v86Title').innerHTML=t.title;if(E('v86NameFontLabel'))E('v86NameFontLabel').innerHTML=t.fontName;if(E('v86NoFontLabel'))E('v86NoFontLabel').innerHTML=t.fontNo;if(E('v86LoadFonts'))E('v86LoadFonts').innerHTML=t.load;if(E('v86NameHLabel'))E('v86NameHLabel').innerHTML=t.nameH;if(E('v86NoHLabel'))E('v86NoHLabel').innerHTML=t.noH;if(E('v86GapLabel'))E('v86GapLabel').innerHTML=t.pairGap;if(E('v86Hint'))E('v86Hint').innerHTML=t.hint;if(E('v86MakeGroups'))E('v86MakeGroups').innerHTML=t.make;if(E('v834FooterTitle'))E('v834FooterTitle').innerHTML=L()==='vi'?'DÒNG IN DƯỚI SỐ (TÙY CHỌN)':'OPTIONAL TEXT BELOW NUMBER';if(E('v834FootFontLabel'))E('v834FootFontLabel').innerHTML=L()==='vi'?'Font dòng dưới':'Footer font';if(E('v834FootHeightLabel'))E('v834FootHeightLabel').innerHTML=L()==='vi'?'Cao (cm)':'Height (cm)';if(E('v834FootGapLabel'))E('v834FootGapLabel').innerHTML=L()==='vi'?'Cách số (cm)':'Gap (cm)';if(E('v834FootHelp'))E('v834FootHelp').innerHTML=L()==='vi'?'Chỉ in khi Excel có dòng dưới. Không có thì vẫn tạo bộ tên + số bình thường.':'Only printed for Excel rows containing footer text. Other rows stay name + number.';if(E('v86FootFont')&&E('v86FootFont').options.length)E('v86FootFont').options[0].text=L()==='vi'?'Giữ font tên':'Same as name font';if(E('v836LayoutTitle'))E('v836LayoutTitle').innerHTML=L()==='vi'?'CHẾ ĐỘ DÀN EXCEL':'EXCEL LAYOUT MODE';if(E('v836LayoutMode')){E('v836LayoutMode').options[0].text=L()==='vi'?'Mỗi bộ = 1 trang riêng':'One set per page';E('v836LayoutMode').options[1].text=L()==='vi'?'Nhiều bộ chung trang':'Multiple sets on one page';}updateExcelLayoutMode();if(v&&v.length)v[0].innerHTML='v8.37';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.37 · Excel row-group workflow · VI / EN';}
+function finish(){if(!build()){setTimeout(finish,180);return;}relabel();try{if(E('nameFont')&&E('nameFont').options.length>1)cloneFonts();}catch(e){}var old=window.setLanguage;if(old&&!old._v86){var wrap=function(x){old(x);setTimeout(function(){relabel();var hint=E('columnHint');if(hint)hint.innerHTML=L()==='vi'?'Excel: <b>Tên | Số | Dòng dưới số (tùy chọn)</b>, hoặc 1 cột <b>Nội dung in</b>: MESSI - 10 - A12-K41-MK. Mỗi dòng = 1 Group.':'Excel: <b>Name | Number | Footer (optional)</b>, or 1 <b>Print content</b> cell: MESSI - 10 - A12-K41-MK. Each row is one group.';},50);};wrap._v86=true;window.setLanguage=wrap;}}
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,2150);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,2150);});else setTimeout(finish,2300);
 })();
 </script>
@@ -653,7 +838,7 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 function E(id){return document.getElementById(id);}function L(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}function txt(x){return String(x===undefined||x===null?'':x).replace(/^\s+|\s+$/g,'');}
 var madeSig='',pageSig='',hooked=false;
 function clsHas(el,c){return !!(el&&(' '+String(el.className||'')+' ').indexOf(' '+c+' ')>=0);}
-function setupSig(){var f=E('excelFile'),nf=E('v86NameFont'),df=E('v86NoFont'),nh=E('v86NameH'),dh=E('v86NoH'),gp=E('v86PairGap');return [f?f.value:'',nf?nf.value:'',df?df.value:'',nh?nh.value:'',dh?dh.value:'',gp?gp.value:''].join('|');}
+function setupSig(){var f=E('excelFile'),nf=E('v86NameFont'),df=E('v86NoFont'),nh=E('v86NameH'),dh=E('v86NoH'),gp=E('v86PairGap');return [f?f.value:'',nf?nf.value:'',df?df.value:'',nh?nh.value:'',dh?dh.value:'',gp?gp.value:'',(E('v86FootFont')||{}).value||'',(E('v86FootH')||{}).value||'',(E('v86FootGap')||{}).value||'',window.DHLNumberLogo?window.DHLNumberLogo.signature():''].join('|');}
 function sizeSig(){return [(E('sheetWidth')||{}).value||'',(E('sheetHeight')||{}).value||''].join('|');}
 function fileReady(){var f=E('excelFile'),p=E('v84ExcelPreview');return !!(f&&txt(f.value)&&p&&clsHas(p,'ok'));}
 function fontReady(){var n=E('v86NameFont'),d=E('v86NoFont'),nh=Number((E('v86NameH')||{}).value),dh=Number((E('v86NoH')||{}).value),g=Number((E('v86PairGap')||{}).value);return !!(fileReady()&&n&&d&&txt(n.value)&&txt(d.value)&&nh>0&&dh>0&&g>=0);}
@@ -677,7 +862,7 @@ function build(){var body=E('excelBody'),file=E('excelFile'),preview=E('v84Excel
  return true;}
 function relabel(){var vi=L()==='vi',v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(E('v810Guide'))E('v810Guide').innerHTML=vi?'<b>LÀM THEO THỨ TỰ TỪ TRÊN XUỐNG.</b> Bước sau chỉ mở khi bước trước đã hoàn tất.':'<b>FOLLOW THE STEPS TOP TO BOTTOM.</b> A later step unlocks only after the previous one is complete.';if(E('v810S1Title'))E('v810S1Title').innerHTML=vi?'BƯỚC 1 — CHỌN & KIỂM TRA FILE EXCEL':'STEP 1 — CHOOSE & VALIDATE EXCEL';if(E('v810S2Title'))E('v810S2Title').innerHTML=vi?'BƯỚC 2 — CHỌN FONT & KÍCH THƯỚC':'STEP 2 — CHOOSE FONTS & SIZES';if(E('v810S3Title'))E('v810S3Title').innerHTML=vi?'BƯỚC 3 — TẠO GROUP TÊN + SỐ':'STEP 3 — CREATE NAME + NUMBER GROUPS';if(E('v810S4Title'))E('v810S4Title').innerHTML=vi?'BƯỚC 4 — CHỌN KHỔ & SET TRANG IN':'STEP 4 — CHOOSE SIZE & SET PRINT PAGE';if(E('v810S5Title'))E('v810S5Title').innerHTML=vi?'BƯỚC 5 — DÀN CÁC GROUP VÀO TRANG':'STEP 5 — LAYOUT GROUPS ON PAGE';if(v&&v.length)v[0].innerHTML='v8.10';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.10 · ordered workflow · VI / EN';refresh();}
 function chainChange(el,fn){if(!el)return;var old=el.onchange;el.onchange=function(e){var r;if(old)r=old.call(el,e);fn();return r;};}
-function hookActions(){if(hooked)return;hooked=true;var file=E('excelFile'),mk=E('v86MakeGroups'),oldMk=mk?mk.onclick:null,run=E('excelRun'),oldRun=run?run.onclick:null,oldSet=window.setCurrentPrintPage;chainChange(file,function(){madeSig='';pageSig='';setTimeout(refresh,130);});chainChange(E('v86NameFont'),function(){pageSig='';refresh();});chainChange(E('v86NoFont'),function(){pageSig='';refresh();});chainChange(E('v86NameH'),function(){pageSig='';refresh();});chainChange(E('v86NoH'),function(){pageSig='';refresh();});chainChange(E('v86PairGap'),function(){pageSig='';refresh();});chainChange(E('sheetWidth'),function(){refresh();});chainChange(E('sheetHeight'),function(){refresh();});
+function hookActions(){if(hooked)return;hooked=true;window.DHLLogoSettingsChanged=function(){pageSig='';refresh();};var file=E('excelFile'),mk=E('v86MakeGroups'),oldMk=mk?mk.onclick:null,run=E('excelRun'),oldRun=run?run.onclick:null,oldSet=window.setCurrentPrintPage;chainChange(file,function(){madeSig='';pageSig='';setTimeout(refresh,130);});chainChange(E('v86NameFont'),function(){pageSig='';refresh();});chainChange(E('v86NoFont'),function(){pageSig='';refresh();});chainChange(E('v86NameH'),function(){pageSig='';refresh();});chainChange(E('v86NoH'),function(){pageSig='';refresh();});chainChange(E('v86PairGap'),function(){pageSig='';refresh();});chainChange(E('v86FootFont'),function(){pageSig='';refresh();});chainChange(E('v86FootH'),function(){pageSig='';refresh();});chainChange(E('v86FootGap'),function(){pageSig='';refresh();});chainChange(E('sheetWidth'),function(){refresh();});chainChange(E('sheetHeight'),function(){refresh();});
  if(mk){mk.onclick=function(e){var r;if(!fontReady()){refresh();return false;}if(oldMk)r=oldMk.call(mk,e);setTimeout(function(){var s=E('v86Status');if(s&&clsHas(s,'ok')){madeSig=setupSig();pageSig='';}refresh();},60);return r;};}
  if(typeof oldSet==='function'&&!oldSet._v810){var sw=function(){var r=oldSet.apply(window,arguments);setTimeout(function(){var p=E('pageResult');if(p&&String(p.innerHTML||'').indexOf('✓')>=0)pageSig=sizeSig();else pageSig='';refresh();},40);return r;};sw._v810=true;window.setCurrentPrintPage=sw;}
  if(run){run.onclick=function(e){if(!pageReady()){var er=E('excelResult');if(er)er.innerHTML=L()==='vi'?'Hãy hoàn tất BƯỚC 4: SET TRANG IN trước.':'Finish STEP 4: SET PRINT PAGE first.';refresh();return false;}if(oldRun)return oldRun.call(run,e);return true;};}
@@ -686,6 +871,8 @@ function finish(){if(!build()){setTimeout(finish,200);return;}hookActions();rela
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,3500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,3500);});else setTimeout(finish,3700);
 })();
 </script>
+
+
 
 <style id="dhl-v811-font-order-style">
 .v811-fontload-wrap{margin:6px 0 8px!important}.v811-fontload-note{font-size:10px!important;color:#555!important;line-height:1.35!important;margin:3px 0 6px!important}.v811-locked{opacity:.58!important}
@@ -1202,40 +1389,8 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 })();
 </script>
 
-<script id="dhl-v822-update-recovery" type="text/javascript">
-(function(){
-function E(id){return document.getElementById(id);}function LANG(){try{return currentLang==='en'?'en':'vi';}catch(e){return'vi';}}
-function reloadV822(){var b=E('reloadGit'),sh,fso,temp,launcher,tf,pexe,script,cmd,rc,base,msg;try{
- if(b){b.disabled=true;b.innerHTML=LANG()==='vi'?'ĐANG CẬP NHẬT…':'UPDATING…';}
- sh=new ActiveXObject('WScript.Shell');fso=new ActiveXObject('Scripting.FileSystemObject');temp=sh.ExpandEnvironmentStrings('%TEMP%');launcher=temp+'\\DHL_NAMESET_UPDATE_LAUNCHER_V822.ps1';pexe=sh.ExpandEnvironmentStrings('%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');
- script="$ErrorActionPreference='Stop'\r\n"
- +"[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12\r\n"
- +"$log=Join-Path $env:TEMP 'DHL_NAMESET_LAUNCHER_LOG.txt'\r\n"
- +"try {\r\n"
- +"  Set-Content -LiteralPath $log -Value ('DHL launcher V8.22 '+(Get-Date)) -Encoding UTF8\r\n"
- +"  $u='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?v=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n"
- +"  $p=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET.ps1'\r\n"
- +"  try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p -TimeoutSec 30 } catch {\r\n"
- +"    Add-Content -LiteralPath $log -Value ('IWR failed: '+$_.Exception.Message) -Encoding UTF8\r\n"
- +"    $curl=Join-Path $env:SystemRoot 'System32\\curl.exe'\r\n"
- +"    if(Test-Path $curl){ & $curl -L --fail --silent --show-error -o $p $u; if($LASTEXITCODE -ne 0){throw 'curl download failed'} } else { (New-Object Net.WebClient).DownloadFile($u,$p) }\r\n"
- +"  }\r\n"
- +"  if(!(Test-Path $p)){throw 'Updater was not downloaded'}\r\n"
- +"  $txt=[IO.File]::ReadAllText($p); if($txt.IndexOf('DHL Nameset Layout updater V8.22') -lt 0 -and $txt.IndexOf('DHL Nameset Layout updater V8.23') -lt 0){throw 'Downloaded updater is not a supported DHL Nameset updater'}\r\n"
- +"  $ps=Join-Path $PSHOME 'powershell.exe'\r\n"
- +"  $pr=Start-Process -FilePath $ps -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$p) -Verb RunAs -Wait -PassThru\r\n"
- +"  Add-Content -LiteralPath $log -Value ('Updater exit code: '+$pr.ExitCode) -Encoding UTF8\r\n"
- +"  exit $pr.ExitCode\r\n"
- +"} catch { Add-Content -LiteralPath $log -Value ('ERROR: '+$_.Exception.Message) -Encoding UTF8; exit 91 }\r\n";
- tf=fso.CreateTextFile(launcher,true,false);tf.Write(script);tf.Close();cmd='"'+pexe+'" -NoProfile -ExecutionPolicy Bypass -File "'+launcher+'"';rc=sh.Run(cmd,1,true);try{fso.DeleteFile(launcher,true);}catch(dx){}
- if(rc===0){base=window.location.href.split('?')[0];window.location.replace(base+'?v='+(new Date()).getTime());}
- else{msg=(LANG()==='vi'?'Cập nhật chưa chạy được. Mã lỗi ':'Update failed. Error code ')+rc+'\n'+(LANG()==='vi'?'Log: ':'Log: ')+temp+'\\DHL_NAMESET_LAUNCHER_LOG.txt';alert(msg);}
- }catch(e){alert((LANG()==='vi'?'Không cập nhật được: ':'Could not update: ')+e.message);}finally{if(b){b.disabled=false;b.innerHTML=LANG()==='vi'?'↻ CẬP NHẬT':'↻ UPDATE';}}}
-window.reloadFromGit=reloadV822;
-function finish(){var b=E('reloadGit'),v=document.getElementsByClassName?document.getElementsByClassName('ver'):[],f=document.getElementsByClassName?document.getElementsByClassName('footer'):[];if(!b){setTimeout(finish,250);return;}b.onclick=reloadV822;if(v&&v.length)v[0].innerHTML='v8.22';if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.22 · robust updater · VI / EN';}
-if(window.addEventListener)window.addEventListener('load',function(){setTimeout(finish,9800);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(finish,9800);});else setTimeout(finish,10000);
-})();
-</script>
+<!-- V8.42: removed legacy V8.22 launcher; it rejected modern versions and returned exit code 91. -->
+
 <style id="dhl-v823-internal-clean-style">
 #v87LicenseBar{display:none!important}
 </style>
@@ -1548,7 +1703,7 @@ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(
 
 
 <style id="dhl-v829-ui-outline-style">
-/* V8.33: clearer controls across the whole docker */
+/* V8.42: clearer controls across the whole docker */
 input[type=text],input[type=number],input[type=file],select,textarea{
   background:#fff!important;color:#111!important;opacity:1!important;
   border:1px solid #666!important;font-weight:600!important;
@@ -1641,7 +1796,7 @@ function run(){
   makeWhite=!!(E('v77MakeWhite')&&E('v77MakeWhite').checked);makeCut=!!(E('v77MakeCut')&&E('v77MakeCut').checked);
   if(off<0||stroke<=0)throw new Error(L()==='vi'?'Khoảng cách/độ dày không hợp lệ.':'Invalid outline distance/width.');
   if(!makeWhite&&!makeCut)throw new Error(L()==='vi'?'Chọn ít nhất NỀN TRẮNG hoặc CUTLINE.':'Choose at least WHITE BORDER or CUTLINE.');
-  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.33');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
+  old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Nameset Layout - Outline V8.42');cmd=true;try{a.Optimization=true;opt=true;}catch(o){}
   for(i=0;i<ss.length;i++){
    base=null;outer=null;
    base=baseBoundary(a,ss[i]);
@@ -1651,7 +1806,7 @@ function run(){
   try{if(opt)a.Optimization=false;}catch(o2){}opt=false;doc.Unit=old;doc.EndCommandGroup();cmd=false;
   if(created.length){try{range=a.CreateShapeRange();for(i=0;i<created.length;i++)range.Add(created[i]);range.CreateSelection();}catch(re){}}
   try{a.ActiveWindow.Refresh();}catch(rx){}
-  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.33: đã tạo đường bao cho ':'✓ V8.33: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
+  if(res){res.setAttribute('data-used','1');res.innerHTML=(L()==='vi'?'✓ V8.42: đã tạo đường bao cho ':'✓ V8.42: created outlines for ')+created.length+(L()==='vi'?' đối tượng · khoảng cách ':' object(s) · distance ')+offCm+' cm.';}
   return true;
  }catch(e){
   try{if(outer)outer.Delete();}catch(c1){}try{if(base)base.Delete();}catch(c2){}try{if(opt&&a)a.Optimization=false;}catch(c3){}try{if(doc&&old!==undefined)doc.Unit=old;}catch(c4){}try{if(cmd&&doc){doc.EndCommandGroup();doc.Undo();}}catch(c5){}
@@ -1672,8 +1827,8 @@ function tuneUI(){
  if(btn){btn.onclick=run;btn.innerHTML=L()==='vi'?'TẠO ĐƯỜNG BAO + GROUP':'CREATE OUTLINE + GROUP';}
  window.V77CreateOutline=run;window.V76CreateOutline=run;
  if(hint)hint.innerHTML=L()==='vi'?'Chọn ảnh PNG/vector → nhập khoảng cách viền → chọn Nền trắng và/hoặc Cutline → TẠO ĐƯỜNG BAO. Tool giữ nguyên đối tượng gốc và Group kết quả.':'Select PNG/vector → set outline distance → choose White border and/or Cutline → CREATE OUTLINE. The original object is preserved and the result is grouped.';
- if(v&&v.length)v[0].innerHTML='v8.33';
- if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.33 · outline + UI + contour-primary copies · VI / EN';
+ if(v&&v.length)v[0].innerHTML='v8.42';
+ if(f&&f.length)f[0].innerHTML='DHL Nameset Layout · v8.42 · outline + UI + contour-primary copies · VI / EN';
 }
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);},false);else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14500);});else setTimeout(function(){tuneUI();unlockEntryFields();setInterval(unlockEntryFields,700);},14700);
 })();
@@ -1694,7 +1849,7 @@ function en(){try{return currentLang==='en';}catch(e){return false;}}
 function msg(vi,english){return en()?english:vi;}
 function number(id,d){var e=E(id),n=e?Number(e.value):d;return isFinite(n)?n:d;}
 function selection(a){var s=a.ActiveSelectionRange,o=[],i;if(s)for(i=1;i<=s.Count;i++)o.push(s.Item(i));return o;}
-function groupLike(s){try{return s.Shapes&&Number(s.Shapes.Count)>0;}catch(e){return false;}}
+function groupLike(s){try{if(/^DHL_EXCEL_ROW_[0-9]+(?:_SIZE_[A-Za-z0-9_-]+)?$/.test(String(s.Name||'')))return true;}catch(tagErr){}try{return s.Shapes&&Number(s.Shapes.Count)>0;}catch(e){return false;}}
 function allGroups(shapes){var i;for(i=0;i<shapes.length;i++)if(!groupLike(shapes[i]))return false;return true;}
 function dims(s){return {w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
 function sourceTarget(s){
@@ -1776,5 +1931,767 @@ else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(ins
 else setTimeout(install,700);
 })();
 </script>
+<style id="dhl-v837-digit-logo-style">
+.v837-logo-panel{border:1px solid #bbb!important;border-radius:6px!important;padding:8px!important;margin:8px 0!important;background:#fff!important;color:#111!important}
+.v837-logo-title{font-size:11px!important;font-weight:800!important;line-height:1.4!important}
+.v837-logo-label{display:block!important;margin:6px 0!important;font-size:11px!important;line-height:1.35!important;color:#111!important}
+.v837-logo-label input{vertical-align:middle!important;width:auto!important;min-height:0!important;margin-right:5px!important}
+.v837-grid{display:table!important;table-layout:fixed!important;width:100%!important;margin:5px 0!important}
+.v837-grid>div{display:table-cell!important;vertical-align:top!important;padding-right:5px!important}
+.v837-grid>div:last-child{padding-right:0!important}
+.v837-mini{font-size:10px!important;color:#222!important;display:block!important;margin-bottom:3px!important}
+.v837-grid input,.v837-grid select{width:100%!important;box-sizing:border-box!important;background:#fff!important;color:#111!important;opacity:1!important;border:1px solid #888!important;font-weight:600!important}
+.v837-actions{display:table!important;width:100%!important;table-layout:fixed!important;margin:5px 0!important}
+.v837-actions>div{display:table-cell!important;padding-right:4px!important}
+.v837-actions>div:last-child{padding-right:0!important}
+.v837-actions button{width:100%!important;padding:6px 3px!important;min-height:31px!important;font-size:10px!important;font-weight:bold!important}
+.v837-note{color:#333!important;font-size:10px!important;line-height:1.45!important;white-space:normal!important}
+.v837-msg{font-size:10px!important;line-height:1.45!important;margin-top:5px!important;word-wrap:break-word!important}
+.v837-msg.error{color:#a10000!important;font-weight:700!important}
+.v837-msg.ok{color:#146236!important;font-weight:700!important}
+</style>
+<script id="dhl-v837-digit-logo" type="text/javascript">
+(function(){
+function E(id){return document.getElementById(id);}
+function lang(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}
+function label(v,e){return lang()==='vi'?v:e;}
+function err(v,e){return new Error(label(v,e));}
+function app(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw err('Không kết nối được CorelDRAW.','CorelDRAW is not available.');}
+function finite(x){return isFinite(Number(x))&&x!==null&&x!=='';}
+function bounded(x,lo,hi,n){x=Number(x);return finite(x)&&x>=lo&&x<=hi?x:n;}
+var prefs={on:false,pct:9,bottom:2,inset:1,mode:'per'};
+var chosen=null,chosenDoc=null,serial=0;
+function readSaved(){try{var raw=localStorage.getItem('dhl_v837_logo'),v;if(raw){v=raw.split('|');prefs.on=v[0]==='1';prefs.pct=bounded(v[1],2,30,9);prefs.bottom=bounded(v[2],0,30,2);prefs.inset=bounded(v[3],0,10,1);prefs.mode=v[4]==='whole'?'whole':'per';}}catch(e){}}
+function persist(){try{localStorage.setItem('dhl_v837_logo',[prefs.on?'1':'0',prefs.pct,prefs.bottom,prefs.inset,prefs.mode].join('|'));}catch(e){}}
+function signature(){return [prefs.on?'1':'0',prefs.pct,prefs.bottom,prefs.inset,prefs.mode,serial,chosen?'selected':'missing'].join('|');}
+function selected(a){var sr=a.ActiveSelectionRange,o=[],i;if(sr&&sr.Count)for(i=1;i<=sr.Count;i++)o.push(sr.Item(i));return o;}
+function getLogo(){
+ if(!chosen||!chosenDoc)throw err('Chưa lấy logo từ đối tượng Corel. Chọn đúng 1 logo và bấm LẤY LOGO trước.','No logo captured. Select one logo shape in Corel and click CAPTURE LOGO.');
+ var a=app();if(a.ActiveDocument!==chosenDoc){
+   // A Corel COM wrapper may return different JS objects for the same unsaved document.
+   var same=false,nowDoc=a.ActiveDocument;
+   try{var pathNow=String(nowDoc.FullFileName||''),pathOld=String(chosenDoc.FullFileName||'');if(pathNow&&pathOld)same=pathNow===pathOld;}catch(q){}
+   if(!same)try{same=String(nowDoc.Name||'')===String(chosenDoc.Name||'')&&String(nowDoc.Name||'')!=='';}catch(n){}
+   if(!same)throw err('Đã đổi tài liệu Corel. Hãy lấy logo lại trong tài liệu hiện tại.','The Corel document changed. Capture the logo again in the current document.');
+ }
+ var w=Number(chosen.SizeWidth),h=Number(chosen.SizeHeight);
+ if(!(w>0&&h>0))throw err('Logo nguồn đã bị xóa hoặc không có kích thước hợp lệ.','The original logo is missing or has invalid dimensions.');
+ return chosen;
+}
+function available(){if(!prefs.on)return null;return getLogo();}
+function parkSource(page){
+ if(!prefs.on||!chosen||!page)return false;
+ var s=getLogo(),cx=Number(s.CenterX),cy=Number(s.CenterY),w=Math.abs(Number(s.SizeWidth)),h=Math.abs(Number(s.SizeHeight)),px=Number(page.CenterX),py=Number(page.CenterY),pw=Math.abs(Number(page.SizeWidth)),ph=Math.abs(Number(page.SizeHeight));
+ if(!isFinite(cx)||!isFinite(cy)||!isFinite(px)||!isFinite(py))return false;
+ var intersects=(Math.abs(cx-px)*2<w+pw)&&(Math.abs(cy-py)*2<h+ph);
+ if(!intersects)return false;
+ // Keep the source logo editable but prevent it from printing as an extra shape on page 1.
+ s.CenterX=px+pw/2+w/2+30;
+ s.CenterY=py+ph/2+h/2+30;
+ return true;
+}
+function report(message,bad){var ids=['v837ManualMsg','v837ExcelMsg'],i,x;for(i=0;i<ids.length;i++){x=E(ids[i]);if(x){x.className='v837-msg'+(bad?' error':' ok');x.innerHTML=message;}}}
+function redraw(){var ids=['v837Manual','v837Excel'],i,k,p,x;for(i=0;i<ids.length;i++){p=ids[i];x=E(p+'On');if(x)x.checked=prefs.on;x=E(p+'Pct');if(x)x.value=prefs.pct;x=E(p+'Bottom');if(x)x.value=prefs.bottom;x=E(p+'Inset');if(x)x.value=prefs.inset;x=E(p+'Mode');if(x)x.value=prefs.mode;}}
+function notify(){serial++;persist();redraw();try{if(typeof window.DHLLogoSettingsChanged==='function')window.DHLLogoSettingsChanged();}catch(e){}}
+function capture(){
+ try{var a=app(),ss=selected(a);if(ss.length!==1)throw err('Chỉ chọn đúng một logo (có thể là Group) rồi bấm LẤY LOGO.','Select exactly one logo (it may be a group), then click CAPTURE.');
+ var s=ss[0];if(!(Number(s.SizeWidth)>0&&Number(s.SizeHeight)>0))throw err('Logo không có kích thước.','The selected logo has no size.');
+ chosen=s;chosenDoc=a.ActiveDocument;report(label('✓ Đã lấy logo nguồn. Logo gốc không bị sửa hình; khi tách trang sẽ chuyển ra ngoài khổ in nếu cần.','✓ Logo captured. The original remains editable and may be moved outside the printable page when splitting.'),false);
+ notify();return true;
+ }catch(e){report(String(e.message||e),true);return false;}
+}
+function updateFrom(prefix){
+ var eOn=E(prefix+'On'),pct=E(prefix+'Pct'),bottom=E(prefix+'Bottom'),inset=E(prefix+'Inset'),mode=E(prefix+'Mode');
+ prefs.on=!!(eOn&&eOn.checked);
+ prefs.pct=bounded(pct?pct.value:null,2,30,9);
+ prefs.bottom=bounded(bottom?bottom.value:null,0,30,2);
+ prefs.inset=bounded(inset?inset.value:null,0,10,1);
+ prefs.mode=mode&&mode.value==='whole'?'whole':'per';
+ notify();
+}
+function textOf(sh){try{return String(sh.Text.Story.Text).replace(/^\s+|\s+$/g,'');}catch(e){return '';}}
+function numberText(s){var t=textOf(s);return /^\d{1,4}$/.test(t)?t:'';}
+function glyphWidths(sh,digits){
+ var fullW=Math.abs(Number(sh.SizeWidth)),fullH=Math.abs(Number(sh.SizeHeight)),parts=[],sum=0,i,tmp,tw,th,glyph;
+ for(i=0;i<digits.length;i++){
+  tmp=null;
+  try{tmp=sh.Duplicate();tmp.Text.Story.Text=digits.charAt(i);tw=Math.abs(Number(tmp.SizeWidth));th=Math.abs(Number(tmp.SizeHeight));glyph=tw>0&&th>0?tw*(fullH/th):0;}
+  catch(e){glyph=0;}
+  finally{try{if(tmp)tmp.Delete();}catch(x){}}
+  if(!(glyph>0))glyph=fullW/digits.length;
+  parts.push(glyph);sum+=glyph;
+ }
+ if(!(sum>0))throw err('Không đo được chiều rộng chữ số.','Cannot measure the digits.');
+ for(i=0;i<parts.length;i++)parts[i]=fullW*parts[i]/sum;
+ return parts;
+}
+function slotsFor(numberShape,digits,mode){
+ var w=Math.abs(Number(numberShape.SizeWidth)),l=Number(numberShape.CenterX)-w/2,parts,i,pos,out=[];
+ if(!w||!finite(l))throw err('Đối tượng số không có kích thước hợp lệ.','Invalid number dimensions.');
+ if(mode==='whole')return [{cx:Number(numberShape.CenterX),width:w,digit:digits}];
+ if(digits.length===1)return[{cx:Number(numberShape.CenterX),width:w,digit:digits}];
+ parts=glyphWidths(numberShape,digits);pos=l;
+ for(i=0;i<parts.length;i++){out.push({cx:pos+parts[i]/2,width:parts[i],digit:digits.charAt(i)});pos+=parts[i];}
+ return out;
+}
+function cloneAt(source,layer,cx,bottomY,slotWidth,height){
+ var clone=null,ow,oh,maxWidth,newH,newW,k;
+ try{
+  clone=source.CopyToLayer(layer);
+  if(!clone)throw err('Corel không thể sao chép logo.','CorelDRAW could not copy the logo.');
+  ow=Math.abs(Number(clone.SizeWidth));oh=Math.abs(Number(clone.SizeHeight));
+  if(!(ow>0&&oh>0))throw err('Logo nguồn có chiều rộng/cao bằng 0.','Logo has zero width/height.');
+  maxWidth=slotWidth-2*prefs.inset;
+  if(!(maxWidth>0))throw err('Không đủ bề rộng của số để chèn logo. Giảm inset hoặc giảm cỡ logo.','The digit is too narrow. Reduce the horizontal inset or logo size.');
+  newH=Math.min(height,maxWidth*oh/ow);
+  if(newH<0.5)throw err('Logo quá nhỏ để in rõ ở chân số.','The logo would be too small to print.');
+  newW=ow*newH/oh;
+  clone.SetSize(newW,newH);
+  clone.CenterX=cx;
+  clone.CenterY=bottomY+prefs.bottom+newH/2;
+  try{clone.Name='DHL_DIGIT_LOGO';}catch(x){}
+  try{clone.OrderFrontOne();}catch(y){}
+  return clone;
+ }catch(e){try{if(clone)clone.Delete();}catch(clean){}throw e;}
+}
+function intoNumber(sh,digits,layer){
+ if(!prefs.on)return[];
+ var source=getLogo(),t=String(digits||''),slots,clones=[],i,h,bottomY,desired;
+ if(!/^\d{1,4}$/.test(t))return[];
+ h=Math.abs(Number(sh.SizeHeight));
+ if(!(h>0))throw err('Số không có chiều cao.','The number has no height.');
+ slots=slotsFor(sh,t,prefs.mode);desired=h*prefs.pct/100;
+ bottomY=Number(sh.CenterY)-h/2;
+ try{
+  for(i=0;i<slots.length;i++)clones.push(cloneAt(source,layer,slots[i].cx,bottomY,slots[i].width,desired));
+  return clones;
+ }catch(e){for(i=0;i<clones.length;i++)try{clones[i].Delete();}catch(clean){}throw e;}
+}
+function onVector(sh,layer){
+ if(!prefs.on)return[];
+ var source=getLogo(),h=Math.abs(Number(sh.SizeHeight)),w=Math.abs(Number(sh.SizeWidth));
+ if(!(h>0&&w>0))throw err('Đối tượng số không có kích thước.','Vector digit has no size.');
+ return [cloneAt(source,layer,Number(sh.CenterX),Number(sh.CenterY)-h/2,w,h*prefs.pct/100)];
+}
+function tagged(root,depth){
+ var name='',kids=null,i;
+ try{name=String(root.Name||'');}catch(e){}
+ if(name.indexOf('DHL_DIGIT_LOGO')===0)return true;
+ if(depth>=9)return false;
+ try{kids=root.Shapes;}catch(e2){}
+ if(kids)try{for(i=1;i<=kids.Count;i++)if(tagged(kids.Item(i),depth+1))return true;}catch(x){}
+ return false;
+}
+function collectNumbers(root,out,depth){
+ var kids=null,i,t;if(depth>9)return;
+ t=numberText(root);if(t){out.push({shape:root,text:t});return;}
+ try{kids=root.Shapes;}catch(e){}
+ if(kids)try{for(i=1;i<=kids.Count;i++)collectNumbers(kids.Item(i),out,depth+1);}catch(x){}
+}
+function manual(){
+ var a=null,doc=null,old=null,ss=[],nums=[],logos=[],grouped=null,range,i,j,k,layer,cmd=false,source;
+ try{
+  if(!prefs.on)throw err('Hãy bật CHÈN LOGO trước.','Enable INSERT LOGO first.');
+  source=getLogo();a=app();ss=selected(a);
+  if(!ss.length)throw err('Chọn số hoặc Group nameset cần chèn logo.','Select a number or nameset Group.');
+  if(ss.length===1&&ss[0]===source)throw err('Đang chọn logo nguồn, hãy chọn số trước.','You selected the source logo. Select the number instead.');
+  for(i=0;i<ss.length;i++)if(tagged(ss[i],0))throw err('Group đã có logo. Không chèn lặp; hãy hoàn tác/xóa logo cũ trước.','This Group already has digit logos. Remove the existing logos first.');
+  for(i=0;i<ss.length;i++)collectNumbers(ss[i],nums,0);
+  if(!nums.length){
+   if(ss.length>3)throw err('Không tìm thấy chữ số. Với font số đã convert, chỉ chọn trực tiếp từng digit (tối đa 3), không chọn cả nameset.','No digit text found. For curves, select individual digit shapes (up to 3), not the entire nameset.');
+   for(i=0;i<ss.length;i++){
+    try{if(ss[i].Shapes&&ss[i].Shapes.Count>0)throw err('Group curve chưa thể nhận biết ranh giới từng digit. Chọn từng digit riêng.','For grouped curves, select separate digit shapes.');}catch(check){if(check.message&&check.message.indexOf('digit')>=0)throw check;}
+   }
+  }
+  doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;doc.BeginCommandGroup('DHL Number Logo V8.37');cmd=true;
+  if(nums.length){
+   for(i=0;i<nums.length;i++){
+    layer=nums[i].shape.Layer;
+    var made=intoNumber(nums[i].shape,nums[i].text,layer);
+    for(j=0;j<made.length;j++)logos.push(made[j]);
+   }
+  }else{
+   for(i=0;i<ss.length;i++){
+    var each=onVector(ss[i],ss[i].Layer);
+    for(j=0;j<each.length;j++)logos.push(each[j]);
+   }
+  }
+  range=a.CreateShapeRange();
+  for(i=0;i<ss.length;i++)range.Add(ss[i]);
+  for(i=0;i<logos.length;i++)range.Add(logos[i]);
+  grouped=range.Group();try{grouped.Name='DHL_NAMESET_WITH_DIGIT_LOGO';}catch(n){}
+  doc.EndCommandGroup();cmd=false;doc.Unit=old;
+  try{grouped.CreateSelection();}catch(x){}
+  try{a.ActiveWindow.Refresh();}catch(x2){}
+  report(label('✓ Đã chèn '+logos.length+' logo và Group cùng số; có thể dàn/tách trang.','✓ Inserted '+logos.length+' logo(s), grouped with the number, ready for layout/pages.'),false);
+  return true;
+ }catch(e){
+  try{if(cmd&&doc){doc.EndCommandGroup();doc.Undo();}}catch(revert){}
+  try{if(doc&&old!==null)doc.Unit=old;}catch(restore){}
+  report(String(e.message||e),true);return false;
+ }
+}
+function panel(prefix){
+ var isExcel=prefix==='v837Excel',box=document.createElement('div');
+ box.id=prefix+'Panel';box.className='v837-logo-panel';
+ box.innerHTML='<div class="v837-logo-title">'+label('LOGO Ở CHÂN TỪNG CHỮ SỐ','LOGO AT THE FOOT OF EACH DIGIT')+'</div>'
+ +'<label class="v837-logo-label"><input id="'+prefix+'On" type="checkbox"/>'+label('Bật chèn logo vào số','Insert logo into number')+'</label>'
+ +'<div class="v837-grid"><div><span class="v837-mini">'+label('Cỡ logo (% cao số)','Logo (% number height)')+'</span><input id="'+prefix+'Pct" type="number" min="2" max="30" step="0.5"/></div>'
+ +'<div><span class="v837-mini">'+label('Cách đáy (mm)','Bottom offset (mm)')+'</span><input id="'+prefix+'Bottom" type="number" min="0" max="30" step="0.5"/></div>'
+ +'<div><span class="v837-mini">'+label('Lề ngang (mm)','Side inset (mm)')+'</span><input id="'+prefix+'Inset" type="number" min="0" max="10" step="0.5"/></div></div>'
+ +'<div><span class="v837-mini">'+label('Áp dụng logo','Logo placement')+'</span><select id="'+prefix+'Mode"><option value="per">'+label('Mỗi chữ số 1 logo','One logo per digit')+'</option><option value="whole">'+label('Một logo cho cả cụm số','One logo for whole number')+'</option></select></div>'
+ +'<div class="v837-actions"><div><button type="button" id="'+prefix+'Capture">'+label('LẤY LOGO ĐANG CHỌN','CAPTURE SELECTED LOGO')+'</button></div>'
+ +(isExcel?'':'<div><button type="button" id="'+prefix+'Apply">'+label('CHÈN VÀO SỐ ĐÃ CHỌN','INSERT INTO SELECTED NUMBER')+'</button></div>')+'</div>'
+ +'<div class="v837-note">'+(isExcel?label('Chọn 1 logo trong Corel → LẤY LOGO → bật checkbox → tạo bộ Excel. COACH không có số sẽ bỏ qua. Logo nguồn đặt ngoài trang in khi tách trang.','Capture a Corel logo first, then enable and create Excel namesets. COACH without a number is skipped.'):label('Chọn logo rồi LẤY LOGO; tiếp tục chọn số hoặc Group nameset và bấm CHÈN. Với số đã convert curve, chọn từng digit riêng.','Capture logo first, select number text or a nameset Group and INSERT. For converted curves, select each digit separately.'))+'</div>'
+ +'<div id="'+prefix+'Msg" class="v837-msg"></div>';
+ return box;
+}
+function hookPanel(prefix,el){
+ var box=panel(prefix),controls=['On','Pct','Bottom','Inset','Mode'],i,node,cap;
+ el.parentNode.insertBefore(box,el);
+ for(i=0;i<controls.length;i++){node=E(prefix+controls[i]);if(node)node.onchange=(function(p){return function(){updateFrom(p);};})(prefix);}
+ cap=E(prefix+'Capture');if(cap)cap.onclick=capture;
+ if(prefix==='v837Manual'){node=E(prefix+'Apply');if(node)node.onclick=manual;}
+}
+function mount(){
+ var m=E('run'),x=E('v86MakeGroups'),mf=E('v837ManualPanel'),xf=E('v837ExcelPanel');
+ if(m&&!mf)hookPanel('v837Manual',m.parentNode&&m.parentNode.parentNode?m.parentNode.parentNode:m);
+ if(x&&!xf)hookPanel('v837Excel',x);
+ redraw();
+ return !!(E('v837ManualPanel')&&E('v837ExcelPanel'));
+}
+function start(){
+ var tries=0;function tick(){if(mount()||++tries>=35)return;setTimeout(tick,300);}tick();
+ var old=window.setLanguage;
+ if(old&&!old._v837){var wrap=function(x){var r=old(x);setTimeout(function(){
+  var ids=['v837ManualPanel','v837ExcelPanel'],i,el;
+  for(i=0;i<ids.length;i++){el=E(ids[i]);if(el&&el.parentNode)el.parentNode.removeChild(el);}
+  mount();redraw();
+ },120);return r;};wrap._v837=true;window.setLanguage=wrap;}
+}
+readSaved();
+window.DHLNumberLogo={capture:capture,manual:manual,intoNumber:intoNumber,on: function(){return prefs.on;},available:available,settings:function(){return{on:prefs.on,pct:prefs.pct,bottom:prefs.bottom,inset:prefs.inset,mode:prefs.mode};},signature:signature,parkSource:parkSource};
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(start,1000);},false);
+else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(start,1000);});
+else setTimeout(start,1200);
+})();
+</script>
+<!-- dhl-v839-mshtml-notfound-fix -->
+<style id="dhl-v838-direct-groups-style">
+#v838DirectGroups{background:#fff!important;color:#111!important;border:2px solid #555!important;border-radius:6px!important;padding:9px!important;margin:9px 0!important}
+#v838DirectGroups .v838-title{font-size:12px!important;font-weight:800!important;margin:0 0 5px!important;color:#111!important}
+#v838DirectGroups .v838-desc{font-size:10px!important;line-height:1.4!important;color:#333!important;margin-bottom:7px!important}
+#v838DirectGroups .v838-line{display:table!important;width:100%!important;table-layout:fixed!important;margin:5px 0!important}
+#v838DirectGroups .v838-line>div{display:table-cell!important;vertical-align:top!important;padding-right:5px!important}
+#v838DirectGroups .v838-line>div:last-child{padding-right:0!important}
+#v838DirectGroups label{font-size:10px!important;display:block!important;color:#222!important;margin-bottom:3px!important}
+#v838DirectGroups select,#v838DirectGroups input{color:#111!important;background:#fff!important;opacity:1!important;border:1px solid #777!important;box-sizing:border-box!important;width:100%!important;font-weight:600!important;min-height:30px!important}
+#v838DirectGroups button{width:100%!important;font-weight:800!important;font-size:11px!important;min-height:34px!important;margin:5px 0!important}
+#v838DirectMsg{font-size:10px!important;white-space:normal!important;line-height:1.5!important;color:#222!important;margin-top:6px!important}
+#v838DirectMsg.bad{color:#990000!important;font-weight:700!important}
+#v838DirectMsg.ok{color:#095e34!important;font-weight:700!important}
+</style>
+<script id="dhl-v838-direct-groups">
+(function(){
+function E(x){return document.getElementById(x);}
+function VI(){try{return currentLang!=='en';}catch(e){return true;}}
+function T(a,b){return VI()?a:b;}
+function N(id,n){var e=E(id),v=e?Number(e.value):n;return isFinite(v)?v:n;}
+function app(){if(window.external&&window.external.Application)return window.external.Application;if(typeof corelApp==='function')return corelApp();throw new Error(T('Không kết nối được CorelDRAW.','Cannot connect to CorelDRAW.'));}
+function html(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function output(s,good){var e=E('v838DirectMsg');if(e){e.className=good?'ok':'bad';e.innerHTML=html(s);}}
+function group(s){
+ try{if(s.Shapes&&Number(s.Shapes.Count)>0)return true;}catch(e){}
+ // Excel nameset without a number is legitimately one text shape; don't treat it as an arbitrary loose object.
+ try{return /^DHL_EXCEL_ROW_\d+(?:_SIZE_[A-Za-z0-9_-]+)?$/.test(String(s.Name||''));}catch(e2){return false;}
+}
+function shapes(a){
+ var r=a.ActiveSelectionRange,arr=[],i;
+ if(r&&r.Count)for(i=1;i<=r.Count;i++)arr.push(r.Item(i));
+ if(!arr.length)throw new Error(T('Chọn các Group cần dàn trong Corel trước.','Select the Corel groups to pack first.'));
+ for(i=0;i<arr.length;i++)if(!group(arr[i]))throw new Error(T('Vùng chọn có '+arr.length+' đối tượng, nhưng đối tượng thứ '+(i+1)+' chưa Group. Không tự tách chữ/số/logo. Hãy Ctrl+G từng bộ rồi chọn lại.','Object '+(i+1)+' of '+arr.length+' is not a group. Group each complete set first.'));
+ return arr;
+}
+function config(){
+ var W=N('v77NestW',580),H=N('v77NestH',2000),gap=N('v77NestGap',5);
+ var mt=N('v77MarginT',0),mb=N('v77MarginB',0),ml=N('v77MarginL',0),mr=N('v77MarginR',0);
+ var rotate=E('v838Rotate')&&E('v838Rotate').value==='auto',order=E('v838Order')?E('v838Order').value:'visual';
+ var mode=E('v838Mode')?E('v838Mode').value:'pack',mirror=!!(E('v838Mirror')&&E('v838Mirror').value==='yes');
+ if(!(W>0&&H>0&&gap>=0&&mt>=0&&mb>=0&&ml>=0&&mr>=0&&W>ml+mr&&H>mt+mb))throw new Error(T('Khổ, lề hoặc khoảng cách không hợp lệ.','Invalid material size, margins or gap.'));
+ return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,frameGap:N('v77FrameGapInput',0)};
+}
+function shapeSize(s){return{w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
+function canFit(s,c){var d=shapeSize(s);return(d.w<=c.usableW+.001&&d.h<=c.usableH+.001)||(c.rotate&&d.h<=c.usableW+.001&&d.w<=c.usableH+.001);}
+function ordered(arr,mode){
+ var out=arr.slice(0);
+ if(mode==='visual'){out.sort(function(a,b){
+   var ay=Number(a.CenterY),by=Number(b.CenterY),ah=Math.abs(Number(a.SizeHeight)),bh=Math.abs(Number(b.SizeHeight));
+   if(Math.abs(ay-by)<Math.max(ah,bh)*.4)return Number(a.CenterX)-Number(b.CenterX);
+   return by-ay;
+ });}
+ return out;
+}
+function overlap(a,b){return a.x<b.x+b.w-.001&&a.x+a.w>b.x+.001&&a.y<b.y+b.h-.001&&a.y+a.h>b.y+.001;}
+function split(rect,used){
+ if(!overlap(rect,used))return[rect];
+ var o=[],right=rect.x+rect.w,bottom=rect.y+rect.h;
+ if(used.x>rect.x+.001)o.push({x:rect.x,y:rect.y,w:used.x-rect.x,h:rect.h});
+ if(used.x+used.w<right-.001)o.push({x:used.x+used.w,y:rect.y,w:right-used.x-used.w,h:rect.h});
+ if(used.y>rect.y+.001)o.push({x:rect.x,y:rect.y,w:rect.w,h:used.y-rect.y});
+ if(used.y+used.h<bottom-.001)o.push({x:rect.x,y:used.y+used.h,w:rect.w,h:bottom-used.y-used.h});
+ return o;
+}
+function contain(a,b){return a.x>=b.x-.001&&a.y>=b.y-.001&&a.x+a.w<=b.x+b.w+.001&&a.y+a.h<=b.y+b.h+.001;}
+function consume(bin,p,bufferW,bufferH){
+ var used={x:p.x,y:p.y,w:bufferW,h:bufferH},next=[],i,j,keep=[];
+ for(i=0;i<bin.free.length;i++){var parts=split(bin.free[i],used);for(j=0;j<parts.length;j++)if(parts[j].w>.001&&parts[j].h>.001)next.push(parts[j]);}
+ for(i=0;i<next.length;i++){var dominated=false;for(j=0;j<next.length;j++)if(i!==j&&contain(next[i],next[j])&&(next[i].w<next[j].w-.001||next[i].h<next[j].h-.001)){dominated=true;break;}if(!dominated)keep.push(next[i]);}
+ bin.free=keep;bin.places.push(p);bin.depth=Math.max(bin.depth,p.y+p.h);
+}
+function runPlan(items,c,kind){
+ var ord=items.slice(0),bins=[],i,j,k,dim,opts,f,best,bin,x,y,bufferW,bufferH,used,binId;
+ if(kind==='area')ord.sort(function(a,b){return b.area-a.area;});
+ if(kind==='height')ord.sort(function(a,b){return b.h-a.h;});
+ if(kind==='width')ord.sort(function(a,b){return b.w-a.w;});
+ if(kind==='visual')ord.sort(function(a,b){return a.index-b.index;});
+ for(i=0;i<ord.length;i++){
+  dim=ord[i];opts=[{w:dim.w,h:dim.h,angle:0}];
+  if(c.rotate&&Math.abs(dim.w-dim.h)>.001)opts.push({w:dim.h,h:dim.w,angle:90});
+  best=null;
+  for(j=0;j<=bins.length;j++){
+   bin=j<bins.length?bins[j]:{free:[{x:0,y:0,w:c.usableW+c.gap,h:c.usableH+c.gap}],places:[],depth:0};
+   for(k=0;k<bin.free.length;k++)for(var t=0;t<opts.length;t++){
+    var opt=opts[t];bufferW=opt.w+c.gap;bufferH=opt.h+c.gap;f=bin.free[k];
+    if(bufferW>f.w+.001||bufferH>f.h+.001)continue;
+    x=f.x;y=f.y;
+    if(x+opt.w>c.usableW+.001||y+opt.h>c.usableH+.001)continue;
+    var score=j*1e10+Math.max(bin.depth,y+opt.h)*1e4+y*10+x+ (opt.angle?0.05:0);
+    if(!best||score<best.score)best={score:score,binIndex:j,x:x,y:y,w:opt.w,h:opt.h,angle:opt.angle,item:dim};
+   }
+  }
+  if(!best)return null;
+  if(best.binIndex===bins.length)bins.push({free:[{x:0,y:0,w:c.usableW+c.gap,h:c.usableH+c.gap}],places:[],depth:0});
+  bin=bins[best.binIndex];consume(bin,best,best.w+c.gap,best.h+c.gap);
+ }
+ var total=0;for(i=0;i<bins.length;i++)total+=bins[i].depth;
+ return{bins:bins,total:total};
+}
+function choose(items,c){
+ var kinds=['area','height','width','visual'],best=null,i,p;
+ for(i=0;i<kinds.length;i++){p=runPlan(items,c,kinds[i]);if(p&&(!best||p.bins.length<best.bins.length||p.bins.length===best.bins.length&&p.total<best.total)){best=p;best.kind=kinds[i];}}
+ return best;
+}
+function sizePage(page,w,h){
+ if(Math.abs(Math.abs(Number(page.SizeWidth))-w)<.5&&Math.abs(Math.abs(Number(page.SizeHeight))-h)<.5)return;
+ if(typeof page.SetSize==='function')page.SetSize(w,h);
+ else{page.SizeWidth=w;page.SizeHeight=h;}
+ if(Math.abs(Math.abs(Number(page.SizeWidth))-w)>.5||Math.abs(Math.abs(Number(page.SizeHeight))-h)>.5)throw new Error(T('Không đặt được khổ trang.','Unable to resize print page.'));
+}
+function frame(layer,l,b,w,h,i){
+ var s=layer.CreateRectangle2(l,b,w,h);
+ try{s.Fill.ApplyNoFill();}catch(e){}
+ try{s.Outline.Width=.2;s.Outline.Color.CMYKAssign(0,0,0,100);}catch(e2){}
+ try{s.Name='DHL_GROUP_NEST_FRAME_'+i;}catch(e3){}
+ try{s.OrderToBack();}catch(e4){}
+}
+function packGroups(a,ss,c){
+ var doc=a.ActiveDocument,ord=ordered(ss,c.order),items=[],old=doc.Unit,i,d,plan,page,baseLeft,baseBottom,left,top,bi,place,sh,cmd=false,opt=false;
+ try{
+  doc.Unit=3;
+  for(i=0;i<ord.length;i++){
+   d=shapeSize(ord[i]);if(!(d.w>0&&d.h>0))throw new Error(T('Group thứ '+(i+1)+' không có kích thước hợp lệ.','Group '+(i+1)+' has an invalid size.'));
+   if(!canFit(ord[i],c))throw new Error(T('Group '+(i+1)+' không vừa khổ, kể cả xoay. Không thu nhỏ mẫu.','Group '+(i+1)+' cannot fit the chosen material width, even rotated.'));
+   items.push({shape:ord[i],index:i,w:d.w,h:d.h,area:d.w*d.h});
+  }
+  plan=choose(items,c);if(!plan||!plan.bins.length)throw new Error(T('Không tìm được cách dàn hợp lệ.','No valid group arrangement.'));
+  page=a.ActivePage;baseLeft=Number(page.CenterX)-c.W/2;baseBottom=Number(page.CenterY)-c.H/2;
+  doc.BeginCommandGroup('DHL Pack Selected Groups V8.38');cmd=true;
+  try{a.Optimization=true;opt=true;}catch(x){}
+  for(bi=0;bi<plan.bins.length;bi++){
+   left=baseLeft+bi*(c.W+c.frameGap);top=baseBottom+c.H-c.mt;
+   frame(page.ActiveLayer,left,baseBottom,c.W,c.H,bi+1);
+   for(i=0;i<plan.bins[bi].places.length;i++){
+    place=plan.bins[bi].places[i];sh=place.item.shape;
+    if(place.angle)sh.Rotate(place.angle);
+    sh.CenterX=left+c.ml+place.x+place.w/2;
+    sh.CenterY=top-place.y-place.h/2;
+    if(c.mirror)sh.Flip(1);
+   }
+  }
+  try{a.Optimization=false;}catch(y){}opt=false;
+  doc.EndCommandGroup();cmd=false;doc.Unit=old;
+  try{a.ActiveWindow.Refresh();}catch(e){}
+  output(T('✓ Đã dàn '+ss.length+' Group trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên nội dung Group. Chế độ khung bao an toàn.','✓ Packed '+ss.length+' groups in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Group contents unchanged. Safe rectangular geometry.'),true);
+  return true;
+ }catch(e){
+  try{if(opt)a.Optimization=false;}catch(x2){}
+  try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(undo){}
+  output(String(e.message||e),false);return false;
+ }finally{try{doc.Unit=old;}catch(restore){}}
+}
+function pagesGroups(a,ss,c){
+ var doc=a.ActiveDocument,old=doc.Unit,arr=ordered(ss,c.order),first=null,pages=[],copies=[],i,s,shape,sz,cmd=false,opt=false,sourceCount=0;
+ try{
+  doc.Unit=3;
+  if(Number(doc.Pages.Count)!==1)throw new Error(T('Chế độ mỗi Group một trang yêu cầu tài liệu đang có đúng một trang nguồn. Hãy dùng bản sao CDR một trang.','Single-page source document required for one-group-per-page mode.'));
+  first=a.ActivePage;
+  // Reject unselected live objects on the source layer to prevent accidental extra print art.
+  try{sourceCount=Number(first.ActiveLayer.Shapes.Count);}catch(e){sourceCount=arr.length;}
+  if(sourceCount>arr.length)throw new Error(T('Trang nguồn còn '+(sourceCount-arr.length)+' đối tượng chưa chọn (có thể logo/khung). Hãy chọn đúng toàn bộ Group và di chuyển các vật khác ra khỏi trang trước.','Source page contains '+(sourceCount-arr.length)+' unselected objects. Remove them from print page first.'));
+  for(i=0;i<arr.length;i++){
+   sz=shapeSize(arr[i]);
+   if(!canFit(arr[i],c))throw new Error(T('Group '+(i+1)+' quá lớn cho trang; không tự thu nhỏ.','Group '+(i+1)+' is oversized; no automatic scaling.'));
+  }
+  doc.BeginCommandGroup('DHL One Selected Group Per Page V8.38');cmd=true;
+  try{a.Optimization=true;opt=true;}catch(x){}
+  sizePage(first,c.W,c.H);pages.push(first);
+  for(i=1;i<arr.length;i++){var page=doc.AddPagesEx(1,c.W,c.H);page.MoveTo(i+1);pages.push(page);}
+  for(i=0;i<arr.length;i++){
+   s=arr[i];sz=shapeSize(s);
+   shape=s.CopyToLayer(pages[i].ActiveLayer);
+   if(!shape)throw new Error(T('Lỗi sao chép Group '+(i+1)+'.','Failed copying group '+(i+1)+'.'));
+   if(c.rotate&&sz.w>c.usableW+.001)shape.Rotate(90);
+   shape.CenterX=Number(pages[i].CenterX)+(c.ml-c.mr)/2;
+   shape.CenterY=Number(pages[i].CenterY)+(c.mb-c.mt)/2;
+   if(c.mirror)shape.Flip(1);
+   try{pages[i].Name='GROUP '+(i+1);}catch(pageLabel){}
+   copies.push(shape);
+  }
+  if(Number(doc.Pages.Count)!==arr.length)throw new Error(T('Không đủ số trang sau khi tạo.','Incorrect page count after creation.'));
+  // Original group artworks are removed only after all page copies exist.
+  for(i=0;i<arr.length;i++)arr[i].Delete();
+  try{first.Activate();copies[0].CreateSelection();}catch(sel){}
+  try{a.Optimization=false;}catch(y){}opt=false;
+  doc.EndCommandGroup();cmd=false;doc.Unit=old;
+  try{a.ActiveWindow.Refresh();}catch(e){}
+  output(T('✓ Đã tạo '+arr.length+' trang, mỗi trang đúng một Group, giữ nguyên tỉ lệ và nội dung.','✓ Created '+arr.length+' pages, one intact group per page, without changing dimensions.'),true);
+  return true;
+ }catch(e){
+  try{if(opt)a.Optimization=false;}catch(x2){}
+  try{if(cmd){doc.EndCommandGroup();doc.Undo();}}catch(undo){}
+  output(String(e.message||e),false);return false;
+ }finally{try{doc.Unit=old;}catch(restore){}}
+}
+function execute(){
+ var a,doc,old,sel,conf,ok=false;
+ try{
+  a=app();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;
+  sel=shapes(a);conf=config();
+  if(typeof window.DHLLicenseGate==='function'&&!window.DHLLicenseGate())return false;
+  return conf.mode==='pages'?pagesGroups(a,sel,conf):packGroups(a,sel,conf);
+ }catch(e){output(String(e.message||e),false);return false;}
+ finally{try{if(doc&&old!==undefined)doc.Unit=old;}catch(x){}}
+}
+function form(){
+ var card=E('v77NestCard'),b;
+ if(!card)return false;
+ if(E('v838DirectGroups'))return true;
+ b=document.createElement('div');b.id='v838DirectGroups';
+ b.innerHTML='<div class="v838-title">'+T('DÀN GROUP ĐÃ CHỌN — KHÔNG CẦN EXCEL','PACK SELECTED GROUPS — NO EXCEL')+'</div>'
+ +'<div class="v838-desc">'+T('Ctrl+G từng bộ hoàn chỉnh → chọn tất cả Group → chọn cách dàn. Không phân tích lại tên, số hay logo.','Group each complete print set, select all groups and choose the layout. No text/number parsing.')+'</div>'
+ +'<div class="v838-line"><div><label>'+T('Cách dàn','Layout')+'</label><select id="v838Mode"><option value="pack">'+T('Dàn chung khổ / cuộn','Pack on material / roll')+'</option><option value="pages">'+T('Mỗi Group = 1 trang','One group per page')+'</option></select></div>'
+ +'<div><label>'+T('Xoay','Rotate')+'</label><select id="v838Rotate"><option value="none">'+T('Giữ hướng hiện tại','Keep orientation')+'</option><option value="auto">'+T('Cho phép xoay 90°','Allow 90° rotation')+'</option></select></div></div>'
+ +'<div class="v838-line"><div><label>'+T('Thứ tự','Order')+'</label><select id="v838Order"><option value="visual">'+T('Trái → phải, trên → dưới','Visual order')+'</option><option value="select">'+T('Theo vùng chọn','Selection order')+'</option></select></div>'
+ +'<div><label>'+T('Lật gương bản in','Mirror output')+'</label><select id="v838Mirror"><option value="no">'+T('Không','No')+'</option><option value="yes">'+T('Có','Yes')+'</option></select></div></div>'
+ +'<button id="v838Run" type="button">'+T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS')+'</button>'
+ +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Dàn chung khổ: kiểm tra va chạm theo bounding box an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Roll mode packs using safe bounding boxes; page mode centers each intact group.')+'</div>'
+ +'<div id="v838DirectMsg"></div>';
+ var anchor=E('v77NestBtn'),row=anchor;
+ // insertBefore requires the reference node to be an IMMEDIATE child of card.
+ // Corel 2021 MSHTML throws NotFoundError for v77NestBtn.parentNode
+ // because the button is nested two or more levels below v77NestCard.
+ while(row&&row.parentNode&&row.parentNode!==card)row=row.parentNode;
+ if(row&&row.parentNode===card)card.insertBefore(b,row);
+ else card.appendChild(b);
+ E('v838Run').onclick=execute;
+ var m=E('v838Mode');if(m)m.onchange=function(){var q=E('v838Run');if(q)q.innerHTML=m.value==='pages'?T('TẠO TRANG RIÊNG CHO TỪNG GROUP','ONE PAGE PER GROUP'):T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS');};
+ E('v838Mirror').onchange=function(){this.value=this.value==='yes'?'yes':'no';};
+ try{var saved=localStorage.getItem('dhl_v838_direct_groups');if(saved==='pages')m.value='pages';}catch(e){}
+ if(m)m.onchange();
+ if(m){m.addEventListener?m.addEventListener('change',function(){try{localStorage.setItem('dhl_v838_direct_groups',this.value);}catch(e){}},false):null;}
+ return true;
+}
+function boot(){var n=0;function check(){if(form()||n++>50)return;setTimeout(check,260);}check();}
+window.DHLDirectGroups={run:execute,choose:choose,runPlan:runPlan,ordered:ordered,config:config,group:group};
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,500);},false);
+else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,500);});
+else setTimeout(boot,700);
+})();
+</script>
+<!-- DHL DIRECT LATEST RELEASE V8.40 -->
+<script id="dhl-v840-fast-update" type="text/javascript">
+(function(){
+ var busy=false;
+ function E(id){return document.getElementById(id);}
+ function VI(){try{return currentLang!=='en';}catch(e){return true;}}
+ function label(){return VI()?'↻ CẬP NHẬT':'↻ UPDATE';}
+ function message(vi,en){return VI()?vi:en;}
+ function run(){
+  var button=E('reloadGit'),shell=null,fso=null,launcher=null,path='',rc=-1,base;
+  if(busy)return false;
+  busy=true;
+  try{
+   if(button){button.disabled=true;button.innerHTML=message('ĐANG CẬP NHẬT…','UPDATING…');}
+   shell=new ActiveXObject('WScript.Shell');
+   fso=new ActiveXObject('Scripting.FileSystemObject');
+   path=shell.ExpandEnvironmentStrings('%TEMP%')+'\\DHL_NAMESET_LATEST_LAUNCH.ps1';
+   // Bootstrap ONLY the up-to-date PowerShell updater from main.
+   // No old BAT launcher, no historical patch loop, no addon reinstall.
+   var ps=
+    "$ErrorActionPreference='Stop'\r\n"+
+    "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12\r\n"+
+    "$url='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?fresh=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n"+
+    "$dst=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET_LATEST.ps1'\r\n"+
+    "try {\r\n"+
+    "  Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dst -TimeoutSec 30\r\n"+
+    "  $ps=Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'\r\n"+
+    "  $arg=@('-NoProfile','-ExecutionPolicy','Bypass','-File',('\"'+$dst+'\"'))\r\n"+
+    "  $child=Start-Process -FilePath $ps -Verb RunAs -ArgumentList $arg -Wait -PassThru\r\n"+
+    "  exit $child.ExitCode\r\n"+
+    "} catch { Write-Host ('UPDATE FAILED: '+$_.Exception.Message); exit 1 }\r\n";
+   launcher=fso.CreateTextFile(path,true,false);
+   launcher.Write(ps);
+   launcher.Close();launcher=null;
+   var exe=shell.ExpandEnvironmentStrings('%SystemRoot%')+'\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+   var cmd='"'+exe+'" -NoProfile -ExecutionPolicy Bypass -File "'+path+'"';
+   rc=shell.Run(cmd,1,true);
+   try{fso.DeleteFile(path,true);}catch(clean){}
+   if(rc!==0)throw new Error(message('Cập nhật thất bại. Mã lỗi: ','Update failed. Exit code: ')+rc+'\\n%TEMP%\\DHL_NAMESET_UPDATE_LOG.txt');
+   base=window.location.href.split('?')[0];
+   window.location.replace(base+'?latest='+(new Date()).getTime());
+   return true;
+  }catch(err){
+   alert(message('Không thể cập nhật: ','Unable to update: ')+String(err.message||err));
+   return false;
+  }finally{
+   if(launcher)try{launcher.Close();}catch(close){}
+   if(button){button.disabled=false;button.innerHTML=label();}
+   busy=false;
+  }
+ }
+ function install(){
+  var b=E('reloadGit');
+  window.reloadFromGit=run;
+  if(b){b.onclick=run;b.setAttribute('data-dhl-fast-update','1');}
+  return !!b;
+ }
+ // Install now (DOM is already present), then after legacy V8.22's deferred
+ // 9.8-second onclick override. Prevent that legacy loader regaining control.
+ install();
+ if(window.addEventListener)window.addEventListener('load',function(){
+  setTimeout(install,250);
+  setTimeout(install,10800);
+  setTimeout(install,16000);
+ },false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){
+  setTimeout(install,250);setTimeout(install,10800);setTimeout(install,16000);
+ });
+ else {setTimeout(install,10800);setTimeout(install,16000);}
+ window.DHLFastUpdater={install:install,run:run};
+})();
+</script>
+<!-- DHL UI V8.41 visually distinct action hierarchy -->
+<style id="dhl-v841-ui-redesign-style">
+/* DHL Nameset Layout V8.41 — CorelDRAW 2021/2025 MSHTML-safe UI.
+   No flex/grid, CSS variables, :has, browser APIs or external assets. */
+
+/* Canvas, spacing, legibility */
+html,html body {background-color:#edf2f8!important;color:#142b47!important;font-family:"Segoe UI",Arial,sans-serif!important}
+html body {padding:9px!important;font-size:12px!important;line-height:1.46!important}
+body .card,body .v77-card,body .v86-box,body .v85-prep,body .v818-box,
+body .v837-logo-panel,body #v838DirectGroups,body #v832Safety,body #v836LayoutBox,
+body .v834-footer,body .v821-bulk-box {
+  background-color:#ffffff!important;color:#172c46!important;
+  border:1px solid #cad7e6!important;border-radius:9px!important;
+  padding:10px!important;margin-bottom:10px!important;
+  box-shadow:0 2px 8px rgba(16,40,76,.07)!important;
+}
+body .v818-box,body .v834-footer,body .v85-prep,body #v836LayoutBox {
+  background-color:#f8fbff!important;border-color:#d6e0ec!important;
+  box-shadow:none!important;
+}
+body #v838DirectGroups {
+  border:2px solid #2877d7!important;background-color:#f5f9ff!important;
+  box-shadow:0 2px 9px rgba(28,100,190,.12)!important;
+}
+body #v837ManualPanel,body #v837ExcelPanel {
+  border-left:4px solid #27816c!important;
+}
+
+/* Top identity bar; keep within 380px-wide Corel dock. */
+body .top{padding:3px 0 9px!important;margin:0 0 6px!important;border-bottom:1px solid #d9e4ef!important}
+body .title{font-size:15px!important;letter-spacing:.15px!important;color:#133a66!important;font-weight:800!important}
+body .ver{
+  display:inline-block!important;margin-left:5px!important;
+  color:#2365ae!important;font-size:10px!important;font-weight:800!important;
+  padding:2px 5px!important;background-color:#e6f1ff!important;
+  border:1px solid #b8d5fb!important;border-radius:5px!important;
+}
+body .topactions{vertical-align:middle!important}
+body .langwrap{border:1px solid #b0c5db!important;border-radius:5px!important}
+body .langbtn{min-width:26px!important;font-size:10px!important;padding:5px 3px!important;border:0!important;color:#365373!important;background-color:#f5f8fc!important}
+body .langbtn.active{background-color:#ddeaff!important;color:#134d95!important;text-decoration:none!important}
+
+/* Tabs: active is unmistakable without relying on font weight alone. */
+body .v82-tabs{
+  background-color:#eaf1f9!important;border:1px solid #c1d2e7!important;
+  border-radius:8px!important;margin:8px 0 10px!important;
+}
+body .v82-tabs>div{border-right:1px solid #cbd9e8!important}
+body .v82-tabbtn{
+  color:#38526e!important;background-color:#f1f5fa!important;
+  border:0!important;border-radius:0!important;
+  font-size:11px!important;font-weight:800!important;
+  padding:11px 2px 10px!important;line-height:1.15!important;
+  box-shadow:none!important;
+}
+body .v82-tabbtn:hover{background-color:#dbeaff!important;color:#14579f!important}
+body .v82-tabbtn.selected{
+  background-color:#dceafe!important;color:#0f4fa3!important;
+  font-weight:900!important;box-shadow:inset 0 -4px 0 #1768d2!important;
+}
+
+/* Sections and process headers. */
+body .sectionbar{background-color:#eff5fd!important;border:1px solid #d4e1f0!important;border-radius:7px!important;margin-bottom:9px!important}
+body .sectionbar>div{background-color:#eff5fd!important;padding:8px!important}
+body .sectionname,body .v77-title,body .v86-title,body .v85-prep-title,
+body #v838DirectGroups .v838-title,body .v837-logo-title{
+  font-weight:800!important;color:#123e70!important;
+  line-height:1.35!important;
+}
+body .sectionname{font-size:13px!important}
+body .v77-title{font-size:14px!important;border-left:4px solid #2478d2!important;padding-left:7px!important}
+body #v838DirectGroups .v838-title{
+  color:#10549e!important;font-size:13px!important;border-bottom:1px solid #c5dcf5!important;
+  padding-bottom:6px!important;margin-bottom:7px!important;
+}
+body .v810-step{border-top:1px solid #dce5ef!important;margin-top:10px!important;padding-top:10px!important}
+body .v810-step-title{color:#183f70!important;font-size:11px!important;font-weight:800!important}
+body .v810-step-state{padding:4px 6px!important;background-color:#eff3f9!important;color:#4b637d!important;border:1px solid #c3cedb!important}
+body .v810-step-state.ok{color:#0c6944!important;background-color:#e9f7ef!important;border-color:#90ccac!important}
+body .v810-step-state.wait{color:#965800!important;background-color:#fff4dc!important;border-color:#e6ba65!important}
+body .v810-step-state.lock{color:#5c6b7c!important;background-color:#edf0f4!important;border-color:#c8cfd9!important}
+body .v810-guide{border-left:4px solid #2478d2!important;border-color:#cbdced!important;background-color:#eff6ff!important;color:#23415f!important}
+
+/* Main interactive controls — no more pale/low-contrast placeholder-style text. */
+body input[type=text],body input[type=number],body input[type=file],body select,body textarea,
+body #v838DirectGroups select,body #v838DirectGroups input,
+body .v837-logo-panel select,body .v837-logo-panel input[type=number] {
+  background-color:#fff!important;color:#112e4a!important;
+  border:1px solid #8fa8c3!important;border-radius:6px!important;
+  opacity:1!important;-webkit-text-fill-color:#112e4a!important;
+  min-height:33px!important;padding:5px 7px!important;
+  font-size:12px!important;font-weight:700!important;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.035)!important;
+}
+body input[type=text]:focus,body input[type=number]:focus,body input[type=file]:focus,
+body select:focus,body textarea:focus{
+  border:2px solid #1769ce!important;background-color:#fff!important;
+  outline:none!important;box-shadow:0 0 0 2px #e0edff!important;
+}
+body input[disabled],body select[disabled],body textarea[disabled]{
+  background-color:#ecf1f7!important;color:#38546e!important;
+  border-color:#c0cad8!important;-webkit-text-fill-color:#38546e!important;
+  opacity:1!important;
+}
+body label,body .label,body .mini,body .v77-mini,body .v86-mini,
+body .v85-mini,body .v837-mini,body .v838-line label {
+  color:#314962!important;font-weight:700!important;line-height:1.35!important;
+}
+body .mini,body .v77-mini,body .v86-mini,body .v85-mini{font-size:10.5px!important}
+body .muted,body .v77-hint,body .v86-hint,body .v810-subnote,body .v837-note,
+body .v838-desc,body .v836-layout-hint{color:#526a83!important;font-size:10.5px!important;line-height:1.5!important}
+body input[type=checkbox],body input[type=radio]{vertical-align:middle!important}
+
+/* Buttons: elevated secondary controls are visually distinct from inputs. */
+html body button {
+  color:#19466f!important;background-color:#eaf2fc!important;
+  border:1px solid #aac4e3!important;border-radius:6px!important;
+  box-shadow:0 2px 0 #d0dce9!important;
+  font-weight:800!important;font-size:11px!important;
+  min-height:34px!important;line-height:1.25!important;
+  padding:7px 6px!important;cursor:pointer!important;
+}
+html body button:hover{
+  background-color:#d6e8fd!important;color:#0f4e93!important;
+  border-color:#5c95d6!important;
+}
+html body button:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.1)!important}
+html body button[disabled]{background-color:#e5eaf1!important;color:#6d7b89!important;border-color:#ccd4de!important;box-shadow:none!important;cursor:default!important}
+
+/* Solid primary call-to-action buttons. */
+body #run,body #excelRun,body #v77NestBtn,body #v77OutlineBtn,
+body #v86MakeGroups,body #v838Run,body #v837ManualApply,
+body #v85Create,body #v821SetHeight,body #v821SetWidth {
+  color:#fff!important;background-color:#1769d0!important;
+  border:1px solid #1058b5!important;font-weight:900!important;
+  box-shadow:0 3px 0 #0e4b9c!important;
+}
+body #run:hover,body #excelRun:hover,body #v77NestBtn:hover,body #v77OutlineBtn:hover,
+body #v86MakeGroups:hover,body #v838Run:hover,body #v837ManualApply:hover {
+  color:#fff!important;background-color:#0756b8!important;border-color:#054892!important;
+}
+body #run[disabled],body #excelRun[disabled],body #v77NestBtn[disabled],
+body #v77OutlineBtn[disabled],body #v86MakeGroups[disabled],body #v838Run[disabled]{
+  color:#576c83!important;background-color:#d9e2ec!important;border-color:#b9c7d6!important;
+  box-shadow:none!important;
+}
+
+/* Update button is a separate, prominent green action. */
+body #reloadGit{
+  color:#fff!important;background-color:#08795b!important;border:1px solid #086247!important;
+  border-radius:6px!important;font-weight:900!important;
+  box-shadow:0 2px 0 #09523e!important;
+  font-size:10px!important;min-height:29px!important;
+  padding:6px 8px!important;white-space:nowrap!important;
+}
+body #reloadGit:hover{background-color:#086749!important;color:#fff!important}
+body #reloadGit[disabled]{background-color:#c2d9d3!important;color:#526b64!important;box-shadow:none!important}
+
+/* Undo is visually subordinate with a clear warning color. */
+body #undo,body #v77UndoNest{
+  color:#a33d3d!important;background-color:#fff5f4!important;border:1px solid #e2b9b5!important;
+  box-shadow:0 2px 0 #f0d4d0!important;
+}
+body #undo:hover,body #v77UndoNest:hover{color:#862828!important;background-color:#ffe8e6!important}
+
+/* Active material/preset buttons. */
+body .v77-preset.selected,body .v80-modebtn.selected,body .quickbtn.active,
+body .v85-modebtn.selected {
+  color:#0b57a4!important;background-color:#dcecff!important;
+  border:2px solid #2476d2!important;box-shadow:inset 0 0 0 1px #fff!important;
+}
+body .v77-quick button{font-size:11px!important;padding:7px 4px!important}
+body .v838-line select,body #v838Mode,body #v838Rotate,body #v838Order,body #v838Mirror{
+  font-size:11px!important;min-height:33px!important;
+}
+body #v838Run{font-size:12px!important;min-height:41px!important;letter-spacing:.2px!important}
+body .v837-actions button{font-size:11px!important}
+
+/* Distinct success, error, hint and result messages. */
+body .status,body .note,body .v77-note,body .v86-note,body #v84ExcelPreview,
+body #v838DirectMsg,body .v837-msg {
+  border-radius:6px!important;border:1px solid #c8d8e9!important;
+  border-left:4px solid #397bbf!important;
+  color:#294865!important;background-color:#f1f7ff!important;
+  padding:8px!important;font-size:11px!important;line-height:1.45!important;
+  overflow-wrap:break-word!important;word-wrap:break-word!important;
+}
+body #v838DirectMsg:empty,body .v837-msg:empty{display:none!important}
+body .v86-note.ok,body #v84ExcelPreview.ok,body #v838DirectMsg.ok,body .v837-msg.ok,
+body #v86Status.v88-font-ok{
+  background-color:#ebf8f0!important;border-left-color:#168451!important;
+  border-color:#b4dbc8!important;color:#0f6341!important;
+}
+body .v86-note.bad,body #v84ExcelPreview.bad,body #v838DirectMsg.bad,
+body .v837-msg.error,body #v86Status.v88-font-bad{
+  background-color:#fff0ed!important;border-left-color:#c94b40!important;
+  border-color:#efc3bd!important;color:#9c2d25!important;
+}
+body #v77NestResult,body #v77OutlineResult{
+  font-size:11px!important;line-height:1.5!important;min-height:24px!important;
+}
+body .footer{color:#698099!important;font-size:10px!important;padding:7px!important}
+</style>
 </body>
 </html>
