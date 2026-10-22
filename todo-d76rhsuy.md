@@ -30,3 +30,8 @@
 - [x] Xác định nguyên nhân: các URL `/manus-storage/...` của 8 ảnh trả HTTP 502.
 - [x] Tải lại toàn bộ 8 ảnh lên CDN public và cập nhật `image/gallery` sản phẩm trong database.
 - [x] Xác minh CDN trả HTTP 200 và browser tải ảnh cover thành công với naturalWidth/naturalHeight thực tế.
+
+## Quản trị ảnh đại diện và nhóm sản phẩm theo danh mục — 2026-10-22
+- [x] Bổ sung khu vực đổi ảnh đại diện rõ ràng trong form sửa sản phẩm, hỗ trợ upload ảnh và dán URL.
+- [x] Thêm bộ lọc danh mục trong danh sách sản phẩm quản trị, hiển thị tên danh mục trên từng dòng.
+- [x] Viết hồi quy, kiểm tra admin responsive, full test/build, checkpoint và commit/push main.
