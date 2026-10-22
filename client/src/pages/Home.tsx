@@ -12,6 +12,16 @@ import { clearRecentProducts, getRecentProductIds } from "@/lib/customer-tools";
 import { isRenderableImageUrl } from "@/lib/image";
 import { formatLocalizedPrice } from "@/lib/pricing";
 
+const CATEGORY_RAIL_FALLBACKS = [
+  { slug: "quan-ao-bong-da", name: "Quần Áo Bóng Đá", nameEn: "Football kits", iconKey: "Shirt" },
+  { slug: "patch-tay", name: "Patch Tay", nameEn: "Hand patches", iconKey: "BadgeCheck" },
+  { slug: "nameset-chong-nhiem", name: "Nameset Chống Nhiễm", nameEn: "Anti-dye namesets", iconKey: "Tags" },
+  { slug: "shop-ao-in", name: "Shop áo in", nameEn: "Printed shirts", iconKey: "Shirt" },
+  { slug: "quan-ao-bong-da-hd", name: "Quần Áo Bóng Đá HD", nameEn: "HD football kits", iconKey: "Shirt" },
+  { slug: "ao-player-doi-tuyen-quoc-gia", name: "Áo Player Đội Tuyển Quốc Gia", nameEn: "National team player kits", iconKey: "Shirt" },
+  { slug: "ao-player-clb", name: "Áo Player CLB", nameEn: "Club player kits", iconKey: "Shirt" },
+] as const;
+
 export default function Home() {
   const [lang, setLang] = useState<Language>(getClientLanguage());
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,6 +32,11 @@ export default function Home() {
   const allProducts = productsQuery.data || [];
   const [hoverPreview, setHoverPreview] = useState<{ productId: number; index: number } | null>(null);
   const categories = categoriesQuery.data || [];
+  const physicalCategories = categories.filter(category => category.type === "physical");
+  const categoryRail = CATEGORY_RAIL_FALLBACKS.map(fallback => {
+    const live = physicalCategories.find(category => category.slug === fallback.slug);
+    return live ? { ...fallback, ...live } : fallback;
+  });
   const productImages = (product: (typeof allProducts)[number]) => Array.from(new Set([product.image, ...(product.gallery || [])].filter(isRenderableImageUrl)));
   const newestFirst = (a: (typeof allProducts)[number], b: (typeof allProducts)[number]) => {
     const createdDiff = new Date(String(b.createdAt)).getTime() - new Date(String(a.createdAt)).getTime();
@@ -80,10 +95,10 @@ export default function Home() {
         </div>
       <nav aria-label={lang === "vi" ? "Danh mục sản phẩm" : "Product categories"} className="mx-auto mt-5 max-w-[1600px] px-4 pb-4 sm:px-6 lg:px-8">
         <div className="rounded-2xl border border-white/20 bg-slate-950/20 p-2 shadow-inner backdrop-blur-sm">
-        <div className="mb-2 flex items-center justify-between gap-3 px-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/75"><span>{lang === "vi" ? "Chọn nhanh danh mục" : "Shop by category"}</span><span className="hidden sm:inline">{lang === "vi" ? "Vuốt ngang để xem thêm" : "Swipe to explore"}</span></div>
-        <div className="grid grid-cols-1 gap-2 px-1 pb-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mb-2 flex items-center justify-between gap-3 px-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/75"><span>{lang === "vi" ? "Chọn nhanh danh mục" : "Shop by category"}</span><span className="hidden sm:inline">{lang === "vi" ? "Hiển thị đầy đủ danh mục" : "All categories shown"}</span></div>
+        <div className="grid grid-cols-2 gap-2 px-1 pb-1 sm:grid-cols-3 lg:grid-cols-4">
           <Link href="/products?type=physical" className="group flex min-h-[58px] min-w-0 items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-[#0759b8] shadow-md transition hover:-translate-y-0.5 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sky-100 text-[#0875e1]"><PackageCheck className="h-5 w-5" /></span><span className="min-w-0 whitespace-normal leading-tight">{lang === "vi" ? "Tất cả hàng vật lý" : "All physical products"}</span></Link>
-          {categories.filter(category => category.type === "physical").map(category => { const Icon = getCategoryIcon(category.iconKey); return <Link key={category.id} href={`/products?type=physical&categoryId=${category.id}`} className="group flex min-h-[58px] min-w-0 items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/15 text-sky-100 transition group-hover:bg-white group-hover:text-[#0875e1]"><Icon className="h-5 w-5" /></span><span className="min-w-0 whitespace-normal leading-tight">{catalogName(category, lang)}</span></Link>; })}
+          {categoryRail.map(category => { const Icon = getCategoryIcon(category.iconKey); const live = physicalCategories.find(item => item.slug === category.slug); const href = live ? `/products?type=physical&categoryId=${live.id}` : `/products?type=physical&search=${encodeURIComponent(category.name)}`; return <Link key={category.slug} href={href} className="group flex min-h-[58px] min-w-0 items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/15 text-sky-100 transition group-hover:bg-white group-hover:text-[#0875e1]"><Icon className="h-5 w-5" /></span><span className="min-w-0 whitespace-normal leading-tight">{lang === "vi" ? category.name : category.nameEn}</span></Link>; })}
           <Link href="/products?type=digital" className="group flex min-h-[58px] min-w-0 items-center gap-2 rounded-xl border border-sky-200/60 bg-sky-300/20 px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-300/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-[#0759b8]"><Download className="h-5 w-5" /></span><span className="min-w-0 whitespace-normal leading-tight">{lang === "vi" ? "Tài nguyên số" : "Digital resources"}</span></Link>
         </div>
         </div>
