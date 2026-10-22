@@ -13,6 +13,10 @@ describe("homepage category tabs", () => {
     expect(homeSource).toContain('categoryId=${live.id}');
     expect(homeSource).toContain('search=${encodeURIComponent(category.name)}');
     expect(homeSource).toContain('grid-cols-2 gap-2');
+    expect(homeSource).toContain('const [selectedCategoryKey, setSelectedCategoryKey] = useState("all")');
+    expect(homeSource).toContain('setSelectedCategoryKey(category.slug)');
+    expect(homeSource).toContain('aria-current={active ? "page" : undefined}');
+    expect(homeSource).toContain('line-clamp-2 whitespace-normal');
     expect(homeSource).toContain('href="/products?type=digital"');
     expect(homeSource).toContain("<PackageCheck className=\"h-5 w-5\" />");
     expect(homeSource).not.toContain('className="border-b border-slate-200 bg-white shadow-sm"');
