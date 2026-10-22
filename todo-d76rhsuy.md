@@ -39,4 +39,6 @@
 ## Chọn ảnh trong gallery làm ảnh đại diện — 2026-10-22
 - [x] Hiển thị các ảnh gallery trong form sửa sản phẩm dưới dạng nút chọn.
 - [x] Cho phép chọn một ảnh gallery làm ảnh đại diện, giữ nguyên gallery và cập nhật trường image khi lưu.
-- [ ] Thêm hồi quy, kiểm thử build/browser, checkpoint và tự động đồng bộ Git.
+- [x] Thêm test tự động cho việc chọn ảnh khác làm cover, giữ nguyên gallery, loại ảnh placeholder/trùng; test 4/4, TypeScript và production build đạt.
+- [x] Đồng bộ thay đổi test lên GitHub main.
+- [ ] Xác minh click trên sản phẩm thật trong admin browser sau khi owner đăng nhập; phiên hiện tại chỉ thấy màn hình bảo vệ quản trị.
