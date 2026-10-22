@@ -11,7 +11,9 @@ export function internationalVnd(value: number): number {
 export function localizedPriceUsd(valueVnd: number, language: Language, fixedUsd?: number | string | null): number {
   if (language !== "en") return valueVnd;
   const baseUsd = Number(fixedUsd);
-  return (Number.isFinite(baseUsd) && baseUsd > 0 ? baseUsd : valueVnd / VND_PER_USD) * INTERNATIONAL_PRICE_MULTIPLIER;
+  // A manually entered USD price is already the final international selling price.
+  // Products without one continue to use the storefront's 2x VND conversion.
+  return Number.isFinite(baseUsd) && baseUsd > 0 ? baseUsd : (valueVnd / VND_PER_USD) * INTERNATIONAL_PRICE_MULTIPLIER;
 }
 
 export function formatLocalizedPrice(valueVnd: number, language: Language, fixedUsd?: number | string | null): string {

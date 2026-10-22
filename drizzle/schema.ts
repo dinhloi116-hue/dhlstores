@@ -268,6 +268,7 @@ export const products = mysqlTable("products", {
   description: text("description"),
   descriptionEn: text("descriptionEn"),
   price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  priceUsd: decimal("priceUsd", { precision: 12, scale: 2 }), // Giá hiển thị riêng cho khách quốc tế
   type: mysqlEnum("type", ["physical", "digital"]).notNull(),
   categoryId: int("categoryId").notNull(),
   image: text("image").notNull(),

@@ -7,8 +7,8 @@ describe("international storefront pricing", () => {
     expect(formatLocalizedPrice(329_000, "en")).toBe("$26.32");
   });
 
-  it("doubles a fixed digital USD price in English but keeps Vietnam price unchanged", () => {
-    expect(localizedPriceUsd(25_000, "en", 1)).toBe(2);
+  it("uses a fixed digital USD selling price in English and keeps Vietnam price unchanged", () => {
+    expect(localizedPriceUsd(25_000, "en", 1)).toBe(1);
     expect(formatLocalizedPrice(25_000, "vi", 1)).toBe("25.000 ₫");
   });
 });

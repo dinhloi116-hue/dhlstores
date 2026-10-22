@@ -19,3 +19,9 @@
 - [x] Mở form nhắn tin nội bộ với product context (tên/slug), không chuyển sang Zalo; khách chưa đăng nhập được yêu cầu đăng nhập rõ ràng.
 - [x] Gửi qua procedure chat hiện có, trạng thái loading/thành công/lỗi và reset form an toàn.
 - [x] Thêm hồi quy quyền/auth và UI, kiểm tra desktop/mobile, test/build, checkpoint và commit/push main.
+
+## Đăng sản phẩm digital Barcelona UEFA Home 2026/27 — 2026-10-22
+- [x] Đọc nguồn Google Drive, lấy SEO VIE/EN, ZIP tải xuống và toàn bộ ảnh preview.
+- [x] Đăng sản phẩm với giá Việt Nam 50.000đ, giá EN 4 USD, link tải Drive, 8 ảnh gallery và link YouTube để trống.
+- [x] Bổ sung form quản trị digital: tên/mô tả/thông số VIE + EN, giá VND/USD, gallery, upload ảnh, link tải và YouTube.
+- [x] Thêm trường priceUsd vào schema/database, hồi quy 217 passed/2 skipped, TypeScript/build và kiểm tra storefront VI/EN đạt.

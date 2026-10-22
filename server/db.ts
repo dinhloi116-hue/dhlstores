@@ -31,7 +31,7 @@ export interface ProductType {
   description: string;
   descriptionEn?: string;
   price: string;
-  /** Giá USD cố định cho một số tài nguyên số; bỏ trống thì giao diện dùng quy đổi mặc định. */
+  /** Giá USD riêng cho sản phẩm digital; bỏ trống thì giao diện dùng quy đổi mặc định. */
   priceUsd?: string;
   type: 'digital' | 'physical';
   categoryId: number;
@@ -510,6 +510,7 @@ async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<t
       slug: product.slug,
       description: product.description,
       price: product.price,
+      priceUsd: product.priceUsd ?? null,
       type: product.type,
       categoryId: idBySlug.get(categorySlugByLegacyId.get(product.categoryId) ?? "") ?? 1,
       image: product.image,
@@ -531,6 +532,7 @@ async function ensureDefaultCatalog(connection: NonNullable<Awaited<ReturnType<t
     description: "BST 01 — HALLOWEEN CUTE gồm 20 thiết kế Halloween phong cách cute/kawaii, phù hợp in DTF/DTG, áo thun, sticker, túi vải, cốc, thiệp và đồ handmade. Đây là sản phẩm DIGITAL DOWNLOAD, không kèm sản phẩm vật lý.",
     descriptionEn: "BST 01 — HALLOWEEN CUTE is a collection of 20 cute/kawaii Halloween designs for DTF/DTG, T-shirts, stickers, tote bags, mugs, cards and crafts. DIGITAL DOWNLOAD only; no physical item is included.",
     price: "50000",
+    priceUsd: "3",
     type: "digital" as const,
     categoryId: idBySlug.get("combo-design-bundle") ?? 1,
     image: "/products/halloween-cute-cover.svg",
@@ -567,11 +569,6 @@ function toCategoryType(category: typeof categories.$inferSelect): CategoryType 
   };
 }
 
-const fixedDigitalPricesUsd: Record<string, string> = {
-  "halloween-cute-png-bundle-20-mau": "3",
-  "file-huy-hieu-copa-america-2024-campeon-svg-png-cdr": "4",
-};
-
 function toProductType(product: typeof products.$inferSelect): ProductType {
   const gallery = (() => { try { const parsed = product.gallery ? JSON.parse(product.gallery) : []; return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string" && value.length > 0) : []; } catch { return []; } })();
   return {
@@ -582,7 +579,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     description: product.description ?? "",
     descriptionEn: product.descriptionEn ?? undefined,
     price: String(product.price),
-    priceUsd: fixedDigitalPricesUsd[product.slug],
+    priceUsd: product.priceUsd ?? undefined,
     type: product.type,
     categoryId: product.categoryId,
     image: product.image,
@@ -1651,6 +1648,7 @@ export type CatalogProductInput = {
   description?: string;
   descriptionEn?: string;
   price: string;
+  priceUsd?: string;
   categoryId: number;
   image: string;
   gallery?: string[];
@@ -1747,6 +1745,7 @@ export async function createProduct(input: CatalogProductInput) {
       description: input.description ?? null,
       descriptionEn: input.descriptionEn ?? null,
       price: input.price,
+      priceUsd: input.priceUsd ?? null,
       type: productType,
       categoryId: input.categoryId,
       image: input.image,
@@ -1777,6 +1776,7 @@ export async function createProduct(input: CatalogProductInput) {
     description: input.description ?? "",
     descriptionEn: input.descriptionEn,
     price: input.price,
+    priceUsd: input.priceUsd,
     type: productType,
     categoryId: input.categoryId,
     image: input.image,
@@ -1811,6 +1811,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       description: input.description ?? null,
       descriptionEn: input.descriptionEn ?? null,
       price: input.price,
+      priceUsd: input.priceUsd ?? null,
       type: productType,
       categoryId: input.categoryId,
       image: input.image,

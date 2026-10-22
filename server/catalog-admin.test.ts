@@ -55,9 +55,12 @@ describe("catalogAdmin", () => {
 
     const product = await caller.catalogAdmin.createProduct({
       name: `Tài nguyên ${suffix}`,
+      nameEn: `Digital resource ${suffix}`,
       slug: `tai-nguyen-${suffix}`,
       description: "Sản phẩm quản trị thử nghiệm",
+      descriptionEn: "Digital admin test resource",
       price: 123000,
+      priceUsd: 4,
       categoryId: category!.id,
       image: "/manus-storage/catalog/test-cover.png",
       fileUrl: "/manus-storage/catalog/test-resource.zip",
@@ -67,7 +70,7 @@ describe("catalogAdmin", () => {
       isActive: true,
     });
 
-    expect(product?.fileUrl).toContain("test-resource.zip");
+    expect(product).toMatchObject({ fileUrl: expect.stringContaining("test-resource.zip"), nameEn: `Digital resource ${suffix}`, priceUsd: "4" });
     await caller.catalogAdmin.updateProduct({
       productId: product!.id,
       data: {
