@@ -35,3 +35,8 @@
 - [x] Bổ sung khu vực đổi ảnh đại diện rõ ràng trong form sửa sản phẩm, hỗ trợ upload ảnh và dán URL.
 - [x] Thêm bộ lọc danh mục trong danh sách sản phẩm quản trị, hiển thị tên danh mục trên từng dòng.
 - [x] Viết hồi quy, kiểm tra admin responsive, full test/build, checkpoint và commit/push main.
+
+## Chọn ảnh trong gallery làm ảnh đại diện — 2026-10-22
+- [x] Hiển thị các ảnh gallery trong form sửa sản phẩm dưới dạng nút chọn.
+- [x] Cho phép chọn một ảnh gallery làm ảnh đại diện, giữ nguyên gallery và cập nhật trường image khi lưu.
+- [ ] Thêm hồi quy, kiểm thử build/browser, checkpoint và tự động đồng bộ Git.

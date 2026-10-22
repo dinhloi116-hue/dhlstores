@@ -19,4 +19,14 @@ describe("admin product image and category controls", () => {
     expect(source).toContain("product.categoryId !== catalogCategoryFilter");
     expect(source).toContain("selectedCategoryName(product.categoryId)");
   });
+
+  it("lets the owner choose one existing gallery image as the cover", () => {
+    expect(source).toContain("galleryImageUrls");
+    expect(source).toContain("Chọn ảnh trong gallery/SKU làm ảnh đại diện");
+    expect(source).toContain("Dùng ảnh này làm ảnh đại diện");
+    expect(source).toContain("setProductDraft(prev => ({ ...prev, image: url }))");
+    expect(source).toContain("Ảnh đại diện hiện tại");
+    expect(source).toContain("variants.map(variant => variant.image || \"\")");
+    expect(source).toContain("Đã chọn ảnh đại diện mới");
+  });
 });
