@@ -25,3 +25,8 @@
 - [x] Đăng sản phẩm với giá Việt Nam 50.000đ, giá EN 4 USD, link tải Drive, 8 ảnh gallery và link YouTube để trống.
 - [x] Bổ sung form quản trị digital: tên/mô tả/thông số VIE + EN, giá VND/USD, gallery, upload ảnh, link tải và YouTube.
 - [x] Thêm trường priceUsd vào schema/database, hồi quy 217 passed/2 skipped, TypeScript/build và kiểm tra storefront VI/EN đạt.
+
+## Sửa ảnh vỡ listing Barcelona trên mobile — 2026-10-22
+- [x] Xác định nguyên nhân: các URL `/manus-storage/...` của 8 ảnh trả HTTP 502.
+- [x] Tải lại toàn bộ 8 ảnh lên CDN public và cập nhật `image/gallery` sản phẩm trong database.
+- [x] Xác minh CDN trả HTTP 200 và browser tải ảnh cover thành công với naturalWidth/naturalHeight thực tế.
