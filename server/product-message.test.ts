@@ -10,6 +10,8 @@ describe("product messaging CTA", () => {
     expect(detailSource).toContain("dhlstores-open-product-chat");
     expect(detailSource).toContain("productName: catalogName(product, lang)");
     expect(detailSource).toContain("productSlug: product.slug");
+    expect(detailSource).toContain('https://wa.me/84963898871');
+    expect(detailSource).toContain('Message on WhatsApp');
   });
 
   it("opens the existing internal conversation with product context", () => {
@@ -24,5 +26,13 @@ describe("product messaging CTA", () => {
     expect(detailSource).toContain('lang === "vi" ? "Phương thức thanh toán" : "Payment method"');
     expect(detailSource).toContain('lang === "vi" ? "Thanh toán bằng số dư ví" : "Pay with wallet balance"');
     expect(detailSource).toContain('lang === "vi" ? "HIỆN QR THANH TOÁN" : "SHOW PAYMENT QR"');
+  });
+
+  it("localizes storefront actions and supporting labels for English visitors", () => {
+    expect(detailSource).toContain("lang === 'vi' ? 'Yêu thích' : 'Favorite'");
+    expect(detailSource).toContain("lang === 'vi' ? 'So sánh' : 'Compare'");
+    expect(detailSource).toContain("lang === 'vi' ? 'Sản phẩm thường được mua kèm' : 'Frequently bought together'");
+    expect(detailSource).toContain("lang === 'vi' ? 'Dung lượng tệp' : 'File size'");
+    expect(detailSource).not.toMatch(/>Yêu thích<|>So sánh<|>Sản phẩm thường được mua kèm<|>Đánh giá sản phẩm</);
   });
 });

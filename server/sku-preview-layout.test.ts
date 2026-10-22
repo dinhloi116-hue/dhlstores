@@ -368,7 +368,7 @@ describe("public SKU inventory presentation", () => {
   it("keeps the product gallery usable and warns admins about missing Excel images", () => {
     const productSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
     const adminSource = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
-    expect(productSource).toContain('aria-label="Thư viện ảnh sản phẩm"');
+    expect(productSource).toContain("aria-label={lang === 'vi' ? 'Thư viện ảnh sản phẩm' : 'Product image gallery'}");
     expect(productSource).toContain("galleryImages.map");
     expect(productSource).toContain("setGalleryIndex(index)");
     expect(productSource).toMatch(/overflow-x-auto|grid-cols-4/);

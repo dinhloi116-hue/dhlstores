@@ -7,6 +7,8 @@ describe("CustomerHelpCard internal chat entry point", () => {
     const source = readFileSync(resolve(process.cwd(), "client/src/components/CustomerHelpCard.tsx"), "utf8");
     expect(source).toContain('dhlstores-open-chat');
     expect(source).toContain('Nhắn cửa hàng');
+    expect(source).toContain('https://wa.me/84963898871');
+    expect(source).toContain('Message on WhatsApp');
     expect(source).not.toContain('zalo.me');
   });
 

@@ -590,9 +590,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </ul>
           </div>
           <div>
-            <h4 className="font-display mb-4 text-xl font-black uppercase tracking-wider text-white">LIÊN HỆ</h4>
+            <h4 className="font-display mb-4 text-xl font-black uppercase tracking-wider text-white">{lang === 'vi' ? 'LIÊN HỆ' : 'CONTACT'}</h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li><a href="https://zalo.me/0963898871" target="_blank" rel="noreferrer" className="font-semibold text-sky-300 hover:text-sky-200 hover:underline">{lang === 'vi' ? 'Nhắn Zalo hỗ trợ: 0963.898.871' : 'Message Zalo support: 0963.898.871'}</a></li>
+              <li><a href={lang === 'vi' ? 'https://zalo.me/0963898871' : 'https://wa.me/84963898871'} target="_blank" rel="noreferrer" className="font-semibold text-sky-300 hover:text-sky-200 hover:underline">{lang === 'vi' ? 'Nhắn Zalo hỗ trợ: 0963.898.871' : 'Message on WhatsApp: +84 963 898 871'}</a></li>
               <li>{lang === 'vi' ? 'Liên hệ để được hỗ trợ về tài nguyên, đơn hàng và quyền tải tệp.' : 'Contact us for help with resources, orders and download access.'}</li>
             </ul>
           </div>
