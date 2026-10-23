@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {join,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=dirname(dirname(fileURLToPath(import.meta.url)));
+const read=(p)=>readFile(join(root,p),'utf8');
+test('native messaging permission, stable identity and explicit one click button',async()=>{
+ const m=JSON.parse(await read('manifest.json'));
+ assert.equal(m.version,'0.9.0');assert.ok(m.permissions.includes('nativeMessaging'));
+ assert.ok(!m.permissions.includes('tabs'));assert.ok(!m.permissions.includes('sidePanel'));
+ const html=await read('panel.html');
+ assert.match(html,/id="updateNow"/);assert.match(html,/Cập nhật ngay từ GitHub/);
+ const ui=await read('panel.js');
+ assert.match(ui,/type:'local-updater-ping'/);assert.match(ui,/type:'local-updater-update'/);
+ assert.match(ui,/chrome\.runtime\.reload\(\)/);
+ const bg=await read('background.js');
+ assert.match(bg,/chrome\.runtime\.sendNativeMessage\('vn\.dhl\.product_factory_updater'/);
+});
+test('native host allows exact Chrome origin and no arbitrary shell input',async()=>{
+ const host=await read('native-updater/Host.cs');
+ assert.match(host,/chrome-extension:\/\/ojbejkjaalblfimeojmobicanhbipkel/);
+ assert.match(host,/\{\\"command\\":\\"update\\"\}/);
+ assert.match(host,/\{\\"command\\":\\"ping\\"\}/);
+ assert.match(host,/size > 4096/);
+ assert.match(host,/Path\.Combine\(root, "cap-nhat-tu-git\.ps1"\)/);
+ assert.doesNotMatch(host,/ProcessStartInfo\.Arguments\s*=\s*body/);
+ const install=await read('cai-dat-nut-cap-nhat.ps1');
+ assert.match(install,/Add-Type -Path \$Src -OutputAssembly \$Exe -OutputType ConsoleApplication/);
+ assert.match(install,/Registry\]::CurrentUser\.CreateSubKey/);
+ assert.match(install,/allowed_origins/);
+});
+test('updater fetches only allowlisted files and preserves Google OAuth',async()=>{
+ const ps=await read('cap-nhat-tu-git.ps1');
+ assert.match(ps,/native-updater\/Host\.cs/);
+ assert.match(ps,/cai-dat-nut-cap-nhat\.ps1/);
+ assert.match(ps,/\$Remote\.oauth2\.client_id=\$Local\.oauth2\.client_id/);
+ assert.match(ps,/\$Sha\/\$Folder\/\$Relative/);
+ assert.match(ps,/\$Backup/);
+ assert.ok(!(await read('manifest.json')).includes('CLIENT_SECRET'));
+});
