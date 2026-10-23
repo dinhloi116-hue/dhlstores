@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DHL AI Video Studio</title>
+<link rel="stylesheet" href="studio.css">
+</head>
+<body>
+<header class="topbar">
+  <div><span class="eyebrow">DHL TOOLS / VIDEO PRODUCTION</span><h1>AI Video Studio</h1><p class="sub">Phân tích video · Tạo storyboard · Lưu Google Drive</p></div>
+  <div class="header-actions"><span class="pill" id="saveStatus">Chưa có bản nháp</span><button id="localSave" class="secondary">Lưu nháp</button><button id="driveSave">Lưu lên Drive</button></div>
+</header>
+<main class="layout">
+<section class="setup">
+  <article class="panel">
+    <h2><span class="step">1</span> Thông tin dự án</h2>
+    <label for="projectName">Tên dự án</label><input id="projectName" placeholder="Ví dụ: Video giới thiệu sản phẩm" value="Dự án video mới">
+    <label for="brief">Nội dung cần tạo / điểm muốn thay đổi so với video mẫu</label><textarea id="brief" rows="3" placeholder="Ví dụ: Giữ nhịp dựng và góc máy, đổi nhân vật, thay sản phẩm..."></textarea>
+    <div class="two"><div><label for="aspect">Khung hình</label><select id="aspect"><option value="9:16">9:16 — Reels / Shorts</option><option value="16:9">16:9 — YouTube</option><option value="1:1">1:1 — Vuông</option></select></div><div><label for="language">Ngôn ngữ</label><select id="language"><option value="vi">Tiếng Việt</option><option value="en">English</option></select></div></div>
+  </article>
+  <article class="panel">
+    <h2><span class="step">2</span> Video tham chiếu</h2>
+    <label for="videoFile" class="file-zone"><strong>Chọn MP4 / MOV từ máy tính</strong><small>Có thể chọn video lớn; video được tải lên Gemini theo từng phần.</small><input id="videoFile" type="file" accept="video/*"></label>
+    <video id="preview" controls playsinline hidden></video>
+    <p class="muted" id="videoInfo">Chưa chọn video. Công cụ không tự tải nội dung từ đường dẫn Drive.</p>
+    <label for="sourceUrl">Link video Drive gốc (để lưu tham chiếu, không tự tải)</label><input id="sourceUrl" placeholder="https://drive.google.com/file/d/...">
+    <button class="secondary full" id="driveUploadVideo">Tải video đã chọn lên Drive</button>
+  </article>
+  <article class="panel">
+    <h2><span class="step">3</span> Phân tích bằng Gemini</h2>
+    <label for="apiKey">Gemini API key của bạn (chỉ giữ trong phiên Chrome)</label>
+    <input id="apiKey" type="password" autocomplete="off" placeholder="Dán Gemini API key, không đưa lên GitHub">
+    <p class="muted">Dùng Gemini File API + Gemini 2.5 Flash. Chi phí và hạn mức theo tài khoản Google AI Studio.</p>
+    <button class="full" id="analyzeBtn">Phân tích video và tạo phân cảnh</button>
+    <div id="progress" class="progress" hidden><div id="progressFill"></div></div>
+    <p id="message" class="message" role="status" aria-live="polite">Chọn video và nhập API key để bắt đầu.</p>
+  </article>
+  <article class="panel">
+    <h2><span class="step">4</span> Đồng bộ Google Drive</h2>
+    <p class="muted">Mỗi dự án có một thư mục riêng chứa project.json và video nếu bạn chọn tải lên. Không tạo thêm tầng thư mục phụ.</p>
+    <button class="secondary full" id="connectDrive">Kết nối tài khoản Google Drive</button>
+    <p class="message" id="driveStatus">Chưa kết nối Drive. Cần cấu hình OAuth Client ID một lần trong manifest.</p>
+    <div class="two"><button class="secondary" id="refreshProjects">Tải danh sách dự án</button><button class="secondary" id="loadProject">Mở dự án</button></div>
+    <label for="projects">Dự án trên Drive</label><select id="projects"><option value="">Chưa có danh sách</option></select>
+  </article>
+</section>
+<section class="workspace">
+  <div class="workspace-header">
+    <div><h2>Storyboard / Bảng phân cảnh</h2><p class="muted" id="sceneCount">0 cảnh · Có thể nhập thủ công hoặc phân tích AI</p></div>
+    <div class="actions"><button class="secondary" id="addScene">+ Thêm cảnh</button><button class="secondary" id="exportJson">Xuất JSON</button><button class="secondary" id="exportCsv">Xuất CSV</button></div>
+  </div>
+  <div class="empty" id="emptyState"><div class="empty-icon">▦</div><h3>Chưa có phân cảnh</h3><p>Chọn video và bấm Phân tích, hoặc thêm cảnh thủ công. Mỗi cảnh sẽ có prompt ảnh, prompt Google Flow và lời thoại riêng.</p></div>
+  <div id="scenes" class="scene-list"></div>
+  <footer>Phiên bản MVP · Dữ liệu bản nháp lưu trong Chrome của máy tính này · Không lưu video gốc trong bộ nhớ bản nháp</footer>
+</section>
+</main>
+<script src="studio.js"></script>
+</body></html>
