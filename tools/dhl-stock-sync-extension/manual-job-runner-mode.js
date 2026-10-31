@@ -95,11 +95,13 @@
     try{
       const [tabs,stored]=await Promise.all([
         chrome.tabs.query({}),
-        chrome.storage.local.get(PROFILE_KEY)
+        chrome.storage.local.get([PROFILE_KEY,JOB_KEY])
       ]);
       const profiles=Array.isArray(stored[PROFILE_KEY])?stored[PROFILE_KEY]:[];
+      const job=stored[JOB_KEY]&&typeof stored[JOB_KEY]==='object'?stored[JOB_KEY]:null;
       sourceTabs=(Array.isArray(tabs)?tabs:[])
-        .filter(tab=>tab&&tab.id&&isSourceCategoryUrl(tab.url))
+        .filter(tab=>tab&&tab.id&&isSourceCategoryUrl(tab.url)
+          &&!(job&&job.ownsTab===true&&Number(job.tabId)===Number(tab.id)))
         .map(tab=>{
           const key=sourceKey(tab.url);
           const profile=profiles.find(p=>text(p&&p.sourceKey)===key||sourceKey(p&&p.lastSourceUrl)===key)||null;
@@ -243,7 +245,7 @@
         selectedIds:ids
       });
       if(!response.ok)throw new Error(response.error||'Không khởi động được lượt quét.');
-      setStatus(`Đã chạy nền: ${text(tab.title)||text(tab.profileName)||'tab nguồn'}.`,'ok');
+      setStatus(`Đã mở tab quét riêng: ${text(tab.title)||text(tab.profileName)||'tab nguồn'}. Có thể chuyển tab và làm việc khác.`,'ok');
       await refreshJob();
     }catch(error){
       setStatus(error.message||String(error),'bad');
@@ -335,7 +337,7 @@
     else if(job.status==='output-error')setStatus(`LỖI ĐẦU RA: ${text(job.lastError)}`,'bad');
     else if(job.status==='cancelled')setStatus(`ĐÃ HỦY tại ${index}/${total}. Có thể đổi tab và chạy lại ngay.`,'ok');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
-    else if(running)setStatus(`Đang quét ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • mở popup để đọc đủ màu / size / tồn.`);
+    else if(running)setStatus(`Đang quét nền ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • có thể làm việc trên tab khác.`);
   }
 
   async function refreshJob(){
@@ -438,6 +440,7 @@
         </div>
 
         <button id="manualStartBtn" type="button" class="primary" disabled>ĐỒNG BỘ TAB NÀY</button>
+        <small style="display:block;margin:5px 0 8px;color:#64748b;font-size:10px">Quét trên tab bản sao chạy nền. Có thể chuyển tab hoặc đóng Side Panel. Giữ Chrome mở đến khi quét xong.</small>
 
         <div class="manual-secondary-actions">
           <button id="manualStopBtn" type="button" class="report" hidden>DỪNG SAU SP NÀY</button>
