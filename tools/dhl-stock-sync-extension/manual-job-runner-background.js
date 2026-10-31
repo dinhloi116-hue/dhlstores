@@ -158,34 +158,28 @@
   }
 
   async function ensureJobTab(job){
-    // Ưu tiên dùng chính tab nguồn người dùng đã mở. Không reload/clone nếu không cần.
-    const preferredId=Number(job&&job.sourceTabId)||0;
-    if(preferredId){
+    // Quét trên tab bản sao riêng để không chặn điều hướng của tab nguồn.
+    if(job.ownsTab===true&&Number(job.tabId)>0){
       try{
-        const tab=await chrome.tabs.get(preferredId);
-        if(tab&&isCategoryUrl(tab.url)&&sourceKey(tab.url)===sourceKey(job.sourceUrl)){
-          job.tabId=preferredId;
-          job.ownsTab=false;
-          return tab;
-        }
+        const existing=await chrome.tabs.get(Number(job.tabId));
+        if(existing&&isCategoryUrl(existing.url)&&sourceKey(existing.url)===sourceKey(job.sourceUrl))return existing;
       }catch{}
     }
-
-    if(job.tabId){
-      try{
-        const tab=await chrome.tabs.get(job.tabId);
-        if(tab&&isCategoryUrl(tab.url)&&sourceKey(tab.url)===sourceKey(job.sourceUrl))return tab;
-      }catch{}
-    }
-
-    // Chỉ tạo tab nền dự phòng nếu tab gốc đã bị đóng/đổi URL.
     const tab=await chrome.tabs.create({url:job.sourceUrl,active:false});
-    await waitTabComplete(tab.id);
-    await sleep(120);
-    job.tabId=tab.id;
-    job.ownsTab=true;
-    await saveJob(job);
-    return tab;
+    try{
+      await waitTabComplete(tab.id);
+      const latest=await readJob();
+      if(!latest||latest.id!==job.id||latest.running!==true||latest.status==='cancelled'){
+        throw new Error('Lượt quét đã hủy trong lúc mở tab nền.');
+      }
+      job.tabId=tab.id;
+      job.ownsTab=true;
+      await saveJob(job);
+      return tab;
+    }catch(error){
+      try{await chrome.tabs.remove(tab.id);}catch{}
+      throw error;
+    }
   }
 
   async function closeJobTab(job){
@@ -201,7 +195,7 @@
     for(const file of ['stock-core.js','dom-stock-parser.js','match-core.js','content.js']){
       await chrome.scripting.executeScript({target:{tabId},files:[file]});
     }
-    await sleep(180);
+    await sleep(80);
   }
 
   function noReceiver(error){
@@ -272,8 +266,10 @@
     return stored[JOB_KEY]&&typeof stored[JOB_KEY]==='object'?stored[JOB_KEY]:null;
   }
 
+  // Chrome alarms tối thiểu ~30 giây: timer chạy nhanh; alarm chỉ dự phòng.
   function scheduleNext(delay=250){
-    chrome.alarms.create(ALARM,{when:Date.now()+Math.max(100,Number(delay||0))});
+    chrome.alarms.create(ALARM,{when:Date.now()+30000});
+    setTimeout(()=>processStep().catch(()=>{}),Math.max(0,Number(delay||0)));
   }
 
   async function checkpoint(job){
@@ -561,7 +557,15 @@
     return job;
   }
 
+  let stepInFlight=false;
   async function processStep(){
+    if(stepInFlight)return;
+    stepInFlight=true;
+    try{await runStep();}
+    finally{stepInFlight=false;}
+  }
+
+  async function runStep(){
     let job=await readJob();
     if(!job||!job.running)return;
 
@@ -644,7 +648,7 @@
         return;
       }
 
-      // Nhường worker sau một chunk; tốc độ cũ trước khi thử nghiệm slow-scan.
+      // Tiếp tục ngay nhóm kế tiếp, không đợi Chrome alarm.
       scheduleNext(80);
     }catch(error){
       if(job){
@@ -690,7 +694,7 @@
       stopAfterCurrent:false,
       createdAt:Date.now(),startedAt:Date.now(),
       sourceTabId:Number(message.sourceTabId)||0,
-      tabId:Number(message.sourceTabId)||0,
+      tabId:0,
       ownsTab:false
     };
     await saveJob(job);
