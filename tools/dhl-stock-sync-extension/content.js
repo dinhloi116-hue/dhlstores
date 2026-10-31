@@ -261,7 +261,7 @@
     while (Date.now() - started < timeout) {
       const root = findStockRoot();
       if (root) return root;
-      await sleep(100);
+      await sleep(70);
     }
     return null;
   }
@@ -308,7 +308,7 @@
     const started = Date.now();
     while (Date.now() - started < timeout) {
       assertPopupScanActive(cancelVersion);
-      await sleep(90);
+      await sleep(70);
       assertPopupScanActive(cancelVersion);
       const currentRoot = findStockRoot() || root;
       const rows = readTargetRows(currentRoot, targetSizes);
@@ -490,7 +490,7 @@
     let seenSelected = alreadySelected;
     while (Date.now() - started < 6500) {
       assertPopupScanActive(cancelVersion);
-      await sleep(110);
+      await sleep(75);
       assertPopupScanActive(cancelVersion);
       currentRoot = findStockRoot() || currentRoot;
       if (isSelectedColor(name, currentRoot)) seenSelected = true;
@@ -501,7 +501,7 @@
 
       if (seenSelected && hasAllTargetRows(rows, targetSizes)) {
         if (alreadySelected || signature !== previousSignature || elapsed >= 650) {
-          await sleep(120);
+          await sleep(75);
           return stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion);
         }
       }
@@ -590,7 +590,10 @@
       .sort((a, b) => b.score - a.score);
     if (candidates[0]) await clickElement(candidates[0].el);
     else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
-    await sleep(260);
+    for(let attempt=0;attempt<8;attempt+=1){
+      if(!findStockRoot())return true;
+      await sleep(55);
+    }
     return !findStockRoot();
   }
 
@@ -624,14 +627,14 @@
     const started = Date.now();
     while (Date.now() - started < timeout) {
       assertPopupScanActive(cancelVersion);
-      await sleep(90);
+      await sleep(70);
       assertPopupScanActive(cancelVersion);
       if (expectedPath && location.pathname !== expectedPath) throw new Error('Trang nguồn đã rời danh mục đang quét; dừng để tránh sai dữ liệu.');
       const root = findStockRoot();
       if (!root) continue;
       const fp = popupFingerprint(root);
       if (!beforeFingerprint || (fp && fp !== beforeFingerprint)) {
-        await sleep(220);
+        await sleep(75);
         return findStockRoot() || root;
       }
     }
@@ -646,11 +649,11 @@
     const before = popupFingerprint(existing);
     const card = cardForDescriptor(descriptor);
     const candidates = quickCandidates(descriptor, card).filter((item) => !inertActionHref(item.el));
-    for (const candidate of candidates) {
+    for (let index=0;index<candidates.length;index+=1) {
       assertPopupScanActive(cancelVersion);
-      await clickQuickCandidate(candidate.el);
+      await clickQuickCandidate(candidates[index].el);
       assertPopupScanActive(cancelVersion);
-      const root = await waitForPopupRefresh(before, expectedPath, 8000, cancelVersion);
+      const root = await waitForPopupRefresh(before, expectedPath, index===0?4600:2400, cancelVersion);
       if (root) return { root, cardFound: !!card, candidateCount: candidates.length, reusedPopup: !!existing };
     }
     const error = new Error(`Không bật được popup tồn cho ${descriptor.title} ngay trên trang danh mục.`);
@@ -834,12 +837,12 @@
     const hint = hintForTitle(parentName, hints);
     const hintedSizes = targetSizesForHint(hint);
     const neededSizes = hintedSizes.length ? hintedSizes : expectedSizesFromRoot(root);
-    const first = await firstVariant(parentId, parentName);
-    assertPopupScanActive(cancelVersion);
-    const fallbackColor = first && first.color ? first.color : '';
-
     const allControls = colorControls(root);
     const targetSelection = selectTargetControls(allControls, hint);
+    // Bỏ fetch fallback khi popup đã có đủ control màu; tiết kiệm 1 request/SP.
+    const first = targetSelection.controls.length ? null : await firstVariant(parentId, parentName);
+    assertPopupScanActive(cancelVersion);
+    const fallbackColor = first && first.color ? first.color : '';
     let controls = targetSelection.controls;
     const fallbackWanted = expectedColorHints(hint);
     // single-color-fallback
@@ -970,7 +973,7 @@
         try{
           const current=findStockRoot();
           if(current)await closeStockPopup(current);
-          await sleep(350);
+          await sleep(100);
           assertPopupScanActive(cancelVersion);
           const retryOpen=await openStockPopup(descriptor, cancelVersion);
           const retry=await readOpenedPopup(descriptor,hints,progress,retryOpen,cancelVersion);
@@ -1189,7 +1192,7 @@
         const stale=findStockRoot();
         if(stale){
           await closeStockPopup(stale);
-          await sleep(220);
+          if(findStockRoot())throw new Error('Không thể đóng popup cũ trước lượt quét mới.');
         }
 
         progress({
@@ -1203,10 +1206,8 @@
         assertPopupScanActive(cancelVersion);
         const visiblePopup=findStockRoot();
         if(visiblePopup){
-          // Giữ popup nhìn thấy rõ một nhịp ngắn sau khi đọc xong rồi mới đóng.
-          await sleep(260);
           await closeStockPopup(visiblePopup);
-          await sleep(180);
+          if(findStockRoot())throw new Error('Popup chưa đóng, dừng để tránh đọc nhầm sản phẩm.');
         }
 
         progress({
