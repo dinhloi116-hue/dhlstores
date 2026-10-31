@@ -1,6 +1,17 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản ổn định hiện tại: **v0.14.1**.
+Phiên bản mã nguồn hiện tại: **v0.23.4**.
+
+## Quét nhanh trên tab nền riêng (v0.23.4)
+
+Mở một danh mục trên `si.aobongda.net`, bật Side Panel và bấm **ĐỒNG BỘ TAB NÀY**.
+Tool tạo tab bản sao không kích hoạt để quét popup màu/size/tồn. Có thể chuyển tab, duyệt web, làm công việc khác hoặc đóng Side Panel; **giữ Chrome mở** và không đóng tab nền do tool tạo.
+
+Worker chuyển ngay giữa các nhóm 4 sản phẩm thay vì phụ thuộc vào mức giới hạn ~30 giây của `chrome.alarms`. Popup được kiểm tra theo trạng thái thay vì đợi cố định, giảm timeout cho quick-action không phản hồi và chỉ dùng API fallback nếu không tìm được màu trong DOM.
+
+Vẫn bắt buộc đọc đủ màu/size, xác nhận dữ liệu ổn định và thử lại khi thiếu size. Không đọc được nguồn không được coi là tồn 0. Chỉ xuất hoặc đẩy dòng khớp an toàn.
+
+
 
 Tool có 2 việc tách riêng:
 
