@@ -46,10 +46,12 @@ assert.ok(background.includes('autoPushSapo: false'));
 const runnerBg=read('manual-job-runner-background.js');
 assert.ok(runnerBg.includes("type:'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY'"),'Quét tồn phải popup-only để đủ size');
 assert.ok(!runnerBg.includes("type:'DHL_SCAN_ONE_DESCRIPTOR',descriptor"),'Không được API-first cho tồn kho');
-assert.ok(runnerBg.includes('sourceTabId:Number(message.sourceTabId)||0'),'Phải tái sử dụng tab nguồn đang mở');
+assert.ok(runnerBg.includes('sourceTabId:Number(message.sourceTabId)||0'),'Giữ tham chiếu tab gốc');
+assert.ok(runnerBg.includes('chrome.tabs.create({url:job.sourceUrl,active:false})'),'Phải quét trong tab nền riêng');
 assert.ok(runnerBg.includes('if(job.ownsTab===true)'),'Chỉ được đóng tab do tool tự tạo');
 assert.ok(runnerBg.includes('const CHUNK_SIZE=4'),'Phải dùng lại tốc độ quét gốc');
-assert.ok(runnerBg.includes('scheduleNext(80)'),'Nhịp worker phải về 80ms như trước slow-scan');
+assert.ok(runnerBg.includes('scheduleNext(80)'),'Giữ nhịp 80ms cho timer');
+assert.ok(runnerBg.includes('setTimeout(()=>processStep().catch(()=>{})'),'Không chờ alarm 30 giây sau mỗi nhóm');
 assert.ok(runnerBg.includes('await checkpoint(job)'),'Phải checkpoint sau từng sản phẩm');
 assert.ok(runnerBg.includes("dhlCatalogSkuMode:'manual-background-popup-full'"));
 
