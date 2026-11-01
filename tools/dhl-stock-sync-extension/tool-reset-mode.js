@@ -73,8 +73,9 @@
 
   // Kết nối còn sống trong suốt thời gian Side Panel mở.
   // Đóng Side Panel tự báo service worker dọn cache nếu không có tác vụ chạy.
+  let panelCleanupPort=null;
   function enableAutomaticCleanupOnClose(){
-    try{chrome.runtime.connect({name:'dhl-stock-sync-panel'});}catch(_){}
+    try{panelCleanupPort=chrome.runtime.connect({name:'dhl-stock-sync-panel'});}catch(_){}
     window.addEventListener('pagehide',()=>{
       try{
         const pending=chrome.runtime.sendMessage({type:'DHL_PANEL_CLOSE_AUTO_CLEANUP'});
