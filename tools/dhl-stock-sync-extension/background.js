@@ -128,6 +128,69 @@ async function enableSidePanel() {
   }
 }
 
+// Tự dọn cache khi đóng Side Panel, không làm gián đoạn công việc đang chạy.
+const PANEL_AUTO_CLEANUP_PORT = 'dhl-stock-sync-panel';
+const PANEL_AUTO_CLEANUP_KEYS = [
+  'dhlManualScanJobV2',
+  'dhlManualPendingStockBatchV1',
+  'dhlManualPendingStockV1',
+  'dhlManualPendingStockBatchV2',
+  'dhlManualScanUiV2',
+  'dhlManualStockReportV1',
+  'dhlSapoPushQueueV1',
+  'dhlCatalogResults',
+  'dhlCatalogAt',
+  'dhlCatalogPageTitle',
+  'dhlCatalogPageUrl',
+  'dhlCatalogSkuMode',
+  'dhlSapoProductCreateQueueV1',
+  'dhlSapoProductCreateReportV1'
+];
+
+// Không xóa dhlSavedStockProfilesV1, dhlStockScanHistoryV1,
+// dhlStockHistoryV1, dhlSapoInventoryMapV1 hoặc dhlAutoSyncConfigV1.
+async function cleanupPanelCloseCache(){
+  const state=await chrome.storage.local.get([
+    'dhlManualScanJobV2',
+    'dhlSapoPushQueueV1',
+    'dhlSapoProductCreateQueueV1'
+  ]);
+  const scan=state.dhlManualScanJobV2;
+  const push=state.dhlSapoPushQueueV1;
+  const product=state.dhlSapoProductCreateQueueV1;
+  if(scan&&(scan.running===true||['queued','running','stopping','paused'].includes(scan.status))){
+    return {cleared:false,reason:'scan-active'};
+  }
+  if(push&&(push.status==='running'||push.manualPaused===true)){
+    return {cleared:false,reason:'sapo-push-active'};
+  }
+  if(product&&['running','paused'].includes(product.status)){
+    return {cleared:false,reason:'product-create-active'};
+  }
+  await chrome.storage.local.remove(PANEL_AUTO_CLEANUP_KEYS);
+  return {cleared:true};
+}
+
+function requestPanelCloseCleanup(){
+  return cleanupPanelCloseCache().catch(error=>{
+    console.warn('Không thể tự dọn cache khi đóng DHL Stock Sync:',error);
+    return {cleared:false,error:String(error&&error.message||error)};
+  });
+}
+
+// Port tự ngắt khi bảng Side Panel thực sự đóng, kể cả khi pagehide không kịp gửi message.
+chrome.runtime.onConnect.addListener(port=>{
+  if(!port||port.name!==PANEL_AUTO_CLEANUP_PORT)return;
+  port.onDisconnect.addListener(()=>{requestPanelCloseCleanup();});
+});
+
+// Dự phòng cho trình duyệt không gửi sự kiện ngắt Port đúng lúc.
+chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
+  if(!message||message.type!=='DHL_PANEL_CLOSE_AUTO_CLEANUP')return;
+  requestPanelCloseCleanup().then(sendResponse);
+  return true;
+});
+
 chrome.runtime.onInstalled.addListener(enableSidePanel);
 chrome.runtime.onStartup.addListener(enableSidePanel);
 enableSidePanel();
