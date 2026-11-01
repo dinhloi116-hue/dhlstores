@@ -11,7 +11,13 @@ assert.ok(bg.includes('when:Date.now()+30000'));
 assert.ok(bg.includes('let stepInFlight=false'));
 assert.ok(bg.includes('if(stepInFlight)return'));
 // Quét trên tab độc lập, không chiếm tab người dùng.
-assert.ok(bg.includes('chrome.tabs.create({url:job.sourceUrl,active:false})'));
+assert.ok(bg.includes('chrome.windows.create({'));
+assert.ok(bg.includes("type:'normal'"));
+assert.ok(bg.includes('focused:false'));
+assert.ok(bg.includes('chrome.windows.remove(job.scanWindowId)'));
+assert.ok(bg.includes('job.ownsWindow=true'));
+assert.ok(bg.includes('if(job.index<=3&&job.consecutiveEmpty>=3)'));
+assert.ok(bg.includes('job.lastPopupError'));
 assert.ok(bg.includes('if(job.ownsTab===true'));
 assert.ok(bg.includes('tabId:0,'));
 assert.ok(!bg.includes('job.tabId=preferredId'));
@@ -28,4 +34,4 @@ assert.ok(content.includes('targetSelection.controls.length ? null : await first
 assert.ok(content.includes("if(findStockRoot())throw new Error('Popup chưa đóng"));
 assert.ok(catalog.includes('await sleep(180)'));
 assert.ok(catalog.includes('await sleep(120)'));
-console.log('SCAN PACING PASS: immediate chunks, background tab, stable stock validation');
+console.log('SCAN PACING PASS: unfocused active scan window, early abort, stable stock validation');
