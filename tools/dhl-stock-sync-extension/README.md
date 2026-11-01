@@ -1,6 +1,14 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản mã nguồn hiện tại: **v0.23.4**.
+Phiên bản mã nguồn hiện tại: **v0.23.5**.
+
+### Khắc phục lỗi quét 24/24 nhưng không đọc được popup (v0.23.5)
+
+Bản v0.23.4 mở tab `active:false`; website nguồn có thể không kích hoạt popup đầy đủ trên tab không hoạt động. v0.23.5 chuyển sang **cửa sổ Chrome riêng, focused:false**: tab trong cửa sổ quét được kích hoạt, cửa sổ chính vẫn dùng để làm việc. Khi quét xong, tool tự đóng cửa sổ do chính nó tạo. Không đóng cửa sổ quét thủ công khi đang chạy.
+
+Nếu cả 3 sản phẩm đầu liên tiếp không trả biến thể, tool dừng sớm và hiển thị lỗi chi tiết. Không tự xóa kết quả quét trước đó, không coi thiếu dữ liệu là tồn 0, không tự đẩy tồn lên Sapo.
+
+
 
 ## Quét nhanh trên tab nền riêng (v0.23.4)
 
