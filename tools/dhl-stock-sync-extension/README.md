@@ -1,6 +1,16 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản mã nguồn hiện tại: **v0.23.5**.
+Phiên bản mã nguồn hiện tại: **v0.23.6**.
+
+### Tự dọn cache khi đóng Side Panel (v0.23.6)
+
+Khi đóng bảng **DHL Stock Sync**, extension tự dọn cache tạm của các lượt đã hoàn tất (kết quả quét, Excel chưa xuất, báo cáo lỗi tạm, job cũ và queue đã hoàn tất). Không cần bấm **LÀM MỚI TOOL** để bắt đầu một phiên làm việc mới.
+
+**Giữ lại:** kết nối Sapo, mapping SKU, hồ sơ danh mục đã lưu, lịch sử so sánh biến động tồn. **Không tự dọn** nếu đang quét, đang tạm dừng chờ tiếp tục, đang đẩy Sapo hoặc đang tạo sản phẩm. Đóng Side Panel trong lúc quét không hủy công việc: có thể mở lại để xem tiến độ/kết quả.
+
+**Chú ý:** Nếu đã quét xong nhưng chưa xuất Excel hoặc đẩy lên Sapo, việc đóng Side Panel sẽ xóa kết quả chờ xuất; hãy xuất/đẩy trước khi đóng nếu muốn sử dụng dữ liệu đó. Nút **LÀM MỚI TOOL** vẫn dùng được khi cần reset thủ công toàn bộ dữ liệu tạm.
+
+
 
 ### Khắc phục lỗi quét 24/24 nhưng không đọc được popup (v0.23.5)
 
