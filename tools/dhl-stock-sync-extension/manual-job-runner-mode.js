@@ -245,7 +245,7 @@
         selectedIds:ids
       });
       if(!response.ok)throw new Error(response.error||'Không khởi động được lượt quét.');
-      setStatus(`Đã mở tab quét riêng: ${text(tab.title)||text(tab.profileName)||'tab nguồn'}. Có thể chuyển tab và làm việc khác.`,'ok');
+      setStatus(`Đã mở cửa sổ quét riêng: ${text(tab.title)||text(tab.profileName)||'tab nguồn'}. Có thể chuyển tab và làm việc khác.`,'ok');
       await refreshJob();
     }catch(error){
       setStatus(error.message||String(error),'bad');
@@ -337,7 +337,7 @@
     else if(job.status==='output-error')setStatus(`LỖI ĐẦU RA: ${text(job.lastError)}`,'bad');
     else if(job.status==='cancelled')setStatus(`ĐÃ HỦY tại ${index}/${total}. Có thể đổi tab và chạy lại ngay.`,'ok');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
-    else if(running)setStatus(`Đang quét nền ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • có thể làm việc trên tab khác.`);
+    else if(running)setStatus(`Đang quét cửa sổ riêng ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • có thể làm việc trên tab khác.`);
   }
 
   async function refreshJob(){
@@ -440,7 +440,7 @@
         </div>
 
         <button id="manualStartBtn" type="button" class="primary" disabled>ĐỒNG BỘ TAB NÀY</button>
-        <small style="display:block;margin:5px 0 8px;color:#64748b;font-size:10px">Quét trên tab bản sao chạy nền. Có thể chuyển tab hoặc đóng Side Panel. Giữ Chrome mở đến khi quét xong.</small>
+        <small style="display:block;margin:5px 0 8px;color:#64748b;font-size:10px">Quét trong cửa sổ Chrome riêng, không giành focus. Bạn có thể làm việc trong cửa sổ chính hoặc đóng Side Panel. Giữ Chrome mở đến khi xong.</small>
 
         <div class="manual-secondary-actions">
           <button id="manualStopBtn" type="button" class="report" hidden>DỪNG SAU SP NÀY</button>
