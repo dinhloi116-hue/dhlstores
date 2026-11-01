@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.23.5",
+  "version": "0.23.6",
   "minimum_chrome_version": "116",
-  "description": "Khôi phục tốc độ quét gốc; giữ fix stale SKU cache, clean SKU hiện tại, LÀM MỚI TOOL, HỦY NGAY và báo cáo.",
+  "description": "Đồng bộ tồn kho thủ công; quét cửa sổ riêng, tự xóa cache tạm khi đóng bảng, giữ kết nối Sapo và dữ liệu đang chạy.",
   "permissions": [
     "storage",
     "unlimitedStorage",
