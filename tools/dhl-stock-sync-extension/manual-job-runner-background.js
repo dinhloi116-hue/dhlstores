@@ -158,37 +158,54 @@
   }
 
   async function ensureJobTab(job){
-    // Quét trên tab bản sao riêng để không chặn điều hướng của tab nguồn.
-    if(job.ownsTab===true&&Number(job.tabId)>0){
+    // Cửa sổ riêng không giành focus, tab ACTIVE nên popup có thể hiển thị đầy đủ.
+    if(job.ownsWindow===true&&Number(job.scanWindowId)>0&&Number(job.tabId)>0){
       try{
-        const existing=await chrome.tabs.get(Number(job.tabId));
-        if(existing&&isCategoryUrl(existing.url)&&sourceKey(existing.url)===sourceKey(job.sourceUrl))return existing;
+        const tab=await chrome.tabs.get(Number(job.tabId));
+        if(tab&&tab.windowId===Number(job.scanWindowId)
+          &&isCategoryUrl(tab.url)&&sourceKey(tab.url)===sourceKey(job.sourceUrl))return tab;
       }catch{}
     }
-    const tab=await chrome.tabs.create({url:job.sourceUrl,active:false});
+
+    const win=await chrome.windows.create({
+      url:job.sourceUrl,
+      type:'normal',
+      focused:false
+    });
+    const tab=win&&Array.isArray(win.tabs)?win.tabs[0]:null;
+    if(!tab||!tab.id){
+      if(win&&win.id)try{await chrome.windows.remove(win.id);}catch{}
+      throw new Error('Chrome không tạo được cửa sổ quét riêng.');
+    }
     try{
       await waitTabComplete(tab.id);
       const latest=await readJob();
       if(!latest||latest.id!==job.id||latest.running!==true||latest.status==='cancelled'){
-        throw new Error('Lượt quét đã hủy trong lúc mở tab nền.');
+        throw new Error('Lượt quét đã bị hủy trong lúc mở cửa sổ riêng.');
       }
       job.tabId=tab.id;
       job.ownsTab=true;
+      job.ownsWindow=true;
+      job.scanWindowId=win.id;
       await saveJob(job);
       return tab;
     }catch(error){
-      try{await chrome.tabs.remove(tab.id);}catch{}
+      try{await chrome.windows.remove(win.id);}catch{}
       throw error;
     }
   }
 
   async function closeJobTab(job){
-    if(!job||!job.tabId)return;
-    if(job.ownsTab===true){
+    if(!job)return;
+    if(job.ownsWindow===true&&Number(job.scanWindowId)>0){
+      try{await chrome.windows.remove(job.scanWindowId);}catch{}
+    }else if(job.ownsTab===true&&Number(job.tabId)>0){
       try{await chrome.tabs.remove(job.tabId);}catch{}
     }
     job.tabId=0;
     job.ownsTab=false;
+    job.scanWindowId=0;
+    job.ownsWindow=false;
   }
 
   async function injectScanner(tabId){
@@ -633,8 +650,34 @@
         job.progress=`${job.index}/${job.total}`;
         job.lastCompletedProduct=text(descriptor&&descriptor.title);
         job.lastProductMs=Math.max(0,Date.now()-Number(job.currentStartedAt||Date.now()));
+        const variants=Array.isArray(result&&result.variants)?result.variants:[];
+        if(!variants.length){
+          job.consecutiveEmpty=Number(job.consecutiveEmpty||0)+1;
+          const firstError=result&&Array.isArray(result.errors)&&result.errors[0]
+            ? text(result.errors[0].message||result.errors[0].error):'';
+          job.lastPopupError=text(scanError&&scanError.message)
+            ||firstError
+            ||text(result&&result.scanError)
+            ||text(result&&result.stopReason)
+            ||'Popup không trả biến thể';
+        }else{
+          job.consecutiveEmpty=0;
+          job.lastPopupError='';
+        }
+
         const saved=await checkpoint(job);
         if(saved===false)return;
+
+        // Dừng sớm nếu ba popup đầu liên tục thất bại, không đẩy tồn kho sai.
+        if(job.index<=3&&job.consecutiveEmpty>=3){
+          job.running=false;
+          job.status='error';
+          job.failedAt=Date.now();
+          job.lastError=`Ba sản phẩm đầu đều không đọc được popup. ${text(job.lastPopupError).slice(0,260)}. Đã dừng sớm; không cập nhật tồn.`;
+          await closeJobTab(job);
+          await saveJob(job);
+          return;
+        }
 
         if(job.stopAfterCurrent&&job.index<job.total){
           job.pausedAt=Date.now();
@@ -695,7 +738,10 @@
       createdAt:Date.now(),startedAt:Date.now(),
       sourceTabId:Number(message.sourceTabId)||0,
       tabId:0,
-      ownsTab:false
+      ownsTab:false,
+      scanWindowId:0,
+      ownsWindow:false,
+      consecutiveEmpty:0
     };
     await saveJob(job);
     await saveProfileCheckpoint(profile.id,{lastSourceUrl:sourceUrl,lastManualScope:scope,lastScanJobId:job.id});
