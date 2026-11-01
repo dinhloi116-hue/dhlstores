@@ -50,7 +50,8 @@ assert.ok(runnerBg.includes('sourceTabId:Number(message.sourceTabId)||0'),'Giữ
 assert.ok(runnerBg.includes('chrome.windows.create({'),'Phải quét trong cửa sổ Chrome riêng');
 assert.ok(runnerBg.includes('focused:false'),'Không chiếm focus cửa sổ người dùng');
 assert.ok(runnerBg.includes('if(job.index<=3&&job.consecutiveEmpty>=3)'),'Phải dừng sớm nếu liên tục không đọc được popup');
-assert.ok(runnerBg.includes('if(job.ownsTab===true)'),'Chỉ được đóng tab do tool tự tạo');
+assert.ok(runnerBg.includes('if(job.ownsWindow===true&&Number(job.scanWindowId)>0)'),'Chỉ đóng cửa sổ do tool tự tạo');
+assert.ok(runnerBg.includes('else if(job.ownsTab===true&&Number(job.tabId)>0)'),'Chỉ đóng tab dự phòng do tool tự tạo');
 assert.ok(runnerBg.includes('const CHUNK_SIZE=4'),'Phải dùng lại tốc độ quét gốc');
 assert.ok(runnerBg.includes('scheduleNext(80)'),'Giữ nhịp 80ms cho timer');
 assert.ok(runnerBg.includes('setTimeout(()=>processStep().catch(()=>{})'),'Không chờ alarm 30 giây sau mỗi nhóm');
