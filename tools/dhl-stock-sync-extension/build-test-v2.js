@@ -87,6 +87,13 @@ const resetUi=read('tool-reset-mode.js');
 assert.ok(resetUi.includes('LÀM MỚI TOOL'));
 assert.ok(!/RESET_KEYS=[\\s\\S]*dhlAutoSyncConfigV1[\\s\\S]*\\];/.test(resetUi),'Reset không được xóa config Sapo');
 assert.ok(resetUi.includes('location.reload()'));
+assert.ok(resetUi.includes("panelCleanupPort=chrome.runtime.connect({name:'dhl-stock-sync-panel'})"),'Panel phải giữ kết nối tự dọn trên vòng đời Side Panel');
+const cleanupBg=background;
+assert.ok(cleanupBg.includes('PANEL_AUTO_CLEANUP_KEYS'),'Phải có whitelist cache tạm');
+assert.ok(cleanupBg.includes('chrome.runtime.onConnect.addListener'),'Phải theo dõi Side Panel đóng');
+assert.ok(cleanupBg.includes("['queued','running','stopping','paused'].includes(scan.status)"),'Không dọn giữa lượt quét');
+assert.ok(cleanupBg.includes("['running','paused'].includes(product.status)"),'Không dọn tác vụ tạo sản phẩm');
+assert.ok(!cleanupBg.slice(cleanupBg.indexOf('const PANEL_AUTO_CLEANUP_KEYS'),cleanupBg.indexOf('async function cleanupPanelCloseCache')).includes("'dhlSavedStockProfilesV1'"),'Không được xóa hồ sơ nguồn');
 
 const runnerUi=read('manual-job-runner-mode.js');
 assert.ok(runnerUi.includes('ĐỒNG BỘ TAB NÀY'));
