@@ -71,5 +71,18 @@
     header.appendChild(btn);
   }
 
+  // Kết nối còn sống trong suốt thời gian Side Panel mở.
+  // Đóng Side Panel tự báo service worker dọn cache nếu không có tác vụ chạy.
+  function enableAutomaticCleanupOnClose(){
+    try{chrome.runtime.connect({name:'dhl-stock-sync-panel'});}catch(_){}
+    window.addEventListener('pagehide',()=>{
+      try{
+        const pending=chrome.runtime.sendMessage({type:'DHL_PANEL_CLOSE_AUTO_CLEANUP'});
+        if(pending&&typeof pending.catch==='function')pending.catch(()=>{});
+      }catch(_){}
+    },{once:true});
+  }
+
+  enableAutomaticCleanupOnClose();
   mount();
 })();
