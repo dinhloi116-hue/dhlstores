@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.23.4",
+  "version": "0.23.5",
   "minimum_chrome_version": "116",
   "description": "Khôi phục tốc độ quét gốc; giữ fix stale SKU cache, clean SKU hiện tại, LÀM MỚI TOOL, HỦY NGAY và báo cáo.",
   "permissions": [
