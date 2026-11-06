@@ -474,6 +474,9 @@
     if(history)history.insertAdjacentElement('beforebegin',panel);
     else host.appendChild(panel);
 
+    // The fully featured job runner supersedes the safe primary fallback.
+    const rescue=$('stockSyncRescue');
+    if(rescue){rescue.hidden=true;rescue.style.display='none';}
     bind();
 
     const stored=await chrome.storage.local.get(UI_KEY);
