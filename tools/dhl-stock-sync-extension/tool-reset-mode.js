@@ -4,11 +4,7 @@
   const RESET_KEYS=[
     'dhlManualScanJobV2',
     'dhlManualPendingStockBatchV1',
-    'dhlSavedStockProfilesV1',
-    'dhlSelectedStockProfileId',
     'dhlManualScanUiV2',
-    'dhlStockScanHistoryV1',
-    'dhlManualStockReportV1',
     'dhlSapoPushQueueV1',
     'dhlCatalogResults',
     'dhlCatalogAt',
@@ -17,7 +13,6 @@
     'dhlCatalogSkuMode',
     'dhlSapoProductCreateQueueV1',
     'dhlSapoProductCreateReportV1',
-    'dhlStockHistoryV1',
     'dhlManualPendingStockV1',
     'dhlManualPendingStockBatchV2'
   ];
@@ -63,10 +58,10 @@
     btn.id='resetToolBtn';
     btn.type='button';
     btn.textContent='LÀM MỚI TOOL';
-    btn.title='Xóa toàn bộ cache công việc và đưa giao diện về như mới. Giữ kết nối Sapo.';
+    btn.title='Xóa cache tạm và đưa giao diện về như mới. Giữ hồ sơ, lịch sử tồn kho và kết nối Sapo.';
     btn.style.cssText='margin-left:auto;min-height:30px;padding:5px 8px;border:1px solid #fca5a5;border-radius:8px;background:#fff1f2;color:#be123c;font-size:9px;font-weight:900;white-space:nowrap';
     btn.addEventListener('click',()=>{
-      if(confirm('Xóa toàn bộ cache, hồ sơ, kết quả quét và queue đang có? Kết nối Sapo vẫn được giữ.'))resetTool();
+      if(confirm('Dừng tác vụ đang chạy và xóa cache tạm? Hồ sơ, lịch sử tồn kho, báo cáo cũ và kết nối Sapo vẫn được giữ.'))resetTool();
     });
     header.appendChild(btn);
   }
