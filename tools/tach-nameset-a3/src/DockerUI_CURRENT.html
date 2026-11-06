@@ -1467,6 +1467,21 @@ function leaves(s,out,depth){var kids=null,c=0,i;if(depth>10){out.push(s);return
 function addPtBox(bb,p){if(p.x<bb.l)bb.l=p.x;if(p.x>bb.r)bb.r=p.x;if(p.y<bb.t)bb.t=p.y;if(p.y>bb.b)bb.b=p.y;}
 function loopBox(pts){var bb={l:1e30,r:-1e30,t:1e30,b:-1e30},i;for(i=0;i<pts.length;i++)addPtBox(bb,pts[i]);bb.w=bb.r-bb.l;bb.h=bb.b-bb.t;return bb;}
 function rectLoop(lb,root){var l=lb.l-root.l,r=lb.r-root.l,t=root.t-lb.t,b=root.t-lb.b;return{closed:true,pts:[{x:l,y:t},{x:r,y:t},{x:r,y:b},{x:l,y:b}],bb:{l:l,r:r,t:t,b:b,w:r-l,h:b-t}};}
+function compactContourNodes(pts,closed){
+ // Remove nearly collinear samples without moving any retained Corel curve vertex.
+ // 0.04 mm threshold: retain fine arcs but skip redundant straight-edge segments.
+ if(!closed||pts.length<7)return pts;
+ var out=pts.slice(0),change=true,pass=0,i,n,a,b;
+ while(change&&pass++<16){
+  change=false;
+  for(i=out.length-1;i>=0;i--){
+   n=out.length;if(n<=3)break;
+   a=out[(i+n-1)%n];b=out[(i+1)%n];
+   if(ptSegD2(out[i],a,b)<.0016){out.splice(i,1);change=true;}
+  }
+ }
+ return out;
+}
 function sampleLeaf(s,root){
  var crv=null,sps=null,loops=[],i,sp,len,n,k,t,p,pts,closed,bb,lb;
  try{crv=s.DisplayCurve;sps=crv?crv.SubPaths:null;}catch(e){sps=null;}
@@ -1481,7 +1496,7 @@ function sampleLeaf(s,root){
      try{p=sp.GetPointPositionAt(t);}catch(sampleE){p=null;}if(!p||!isFinite(Number(p.x))||!isFinite(Number(p.y))){try{p=sp.GetPointAt(t);}catch(pointE){p=null;}}
      if(p&&isFinite(Number(p.x))&&isFinite(Number(p.y)))pts.push({x:Number(p.x)-root.l,y:root.t-Number(p.y)});
     }
-    if(pts.length>=(closed?3:2)){bb=loopBox(pts);loops.push({closed:closed,pts:pts,bb:bb});}
+    if(pts.length>=(closed?3:2)){pts=compactContourNodes(pts,closed);bb=loopBox(pts);loops.push({closed:closed,pts:pts,bb:bb});}
    }catch(one){}
   }
  }
