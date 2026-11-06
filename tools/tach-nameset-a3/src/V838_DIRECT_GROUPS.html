@@ -262,7 +262,7 @@ function form(){
  +'<div><label>'+T('Lật gương bản in','Mirror output')+'</label><select id="v838Mirror"><option value="no">'+T('Không','No')+'</option><option value="yes">'+T('Có','Yes')+'</option></select></div></div>'
  +'<div class="v843-open-gap"><label><input id="v838Contour" type="checkbox" checked="checked" /> '+T('Xếp sâu vào khe mở, không vào lỗ kín 0 / 6 / 8 / 9','Pack open pockets; never inside closed 0/6/8/9 holes')+'</label></div>'
  +'<button id="v838Run" type="button">'+T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS')+'</button>'
- +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Dàn chung khổ: kiểm tra va chạm theo bounding box an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Roll mode packs using safe bounding boxes; page mode centers each intact group.')+'</div>'
+ +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Bật xếp sâu để dùng đường bao thực và khe mở; bỏ chọn để dùng khung chữ nhật an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Enable contour nesting to use open notches (closed counters blocked); uncheck for safe rectangular layout. Page mode centers each group.')+'</div>'
  +'<div id="v838DirectMsg"></div>';
  var anchor=E('v77NestBtn'),row=anchor;
  // insertBefore requires the reference node to be an IMMEDIATE child of card.
