@@ -26,7 +26,7 @@
       #catalogMode #catalogQuickTest{display:none!important}
       #catalogMode #toggleCatalogMaintenance,#catalogMode #catalogMaintenanceBody,
       #maintenancePopupStandardizeBox,#catalogScanDiagnostics{display:none!important}
-      #uiV3Dashboard,#autoSyncPanel,#sapoPushReportPanel,#stockHistoryPanel,#uiV2Panel,#uiV2Manual{display:none!important}
+      #uiV3Dashboard,#autoSyncPanel,#sapoPushReportPanel,#uiV2Panel,#uiV2Manual{display:none!important}
       #activeProfileCard,#profileManageToggle,#profileManageBody,#profileQuickTabs{display:none!important}
       #singleProductAddBox{margin-top:10px!important}
       footer{display:none!important}
@@ -46,7 +46,7 @@
     hide(document.getElementById('uiV3Dashboard'));
     hide(document.getElementById('autoSyncPanel'));
     hide(document.getElementById('sapoPushReportPanel'));
-    hide(document.getElementById('stockHistoryPanel'));
+    show(document.getElementById('stockHistoryPanel'));
     hide(document.getElementById('uiV2Panel'));
     hide(document.getElementById('uiV2Manual'));
     hide(document.getElementById('activeProfileCard'));
