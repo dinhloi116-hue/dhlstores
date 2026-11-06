@@ -36,6 +36,53 @@
       </div>`).join('');
   }
 
+  // Recovery control: the primary scan must remain usable even if the optional
+  // manual-job-runner-mode.js module is missing from an unpacked installation.
+  function categoryUrl(value){
+    try{
+      const u=new URL(String(value||''));
+      return u.protocol==='https:'&&u.hostname==='si.aobongda.net'
+        &&!/-p\\d+(?:\\.html)?$/i.test(u.pathname);
+    }catch{return false;}
+  }
+
+  async function fallbackSync(){
+    const btn=$('stockSyncRescueBtn');
+    const status=$('stockSyncRescueStatus');
+    if(!btn||btn.disabled)return;
+    btn.disabled=true;
+    btn.textContent='ĐANG KHỞI ĐỘNG...';
+    try{
+      const tabs=await chrome.tabs.query({});
+      const source=(tabs||[]).filter(t=>t&&t.id&&categoryUrl(t.url));
+      const tab=source.find(t=>t.active)||source[0];
+      if(!tab)throw new Error('Hãy mở tab danh mục nguồn trên si.aobongda.net trước.');
+      const response=await new Promise((resolve,reject)=>{
+        chrome.runtime.sendMessage({
+          type:'DHL_MANUAL_JOB_START',
+          sourceUrl:tab.url,
+          sourceTabId:tab.id,
+          pageTitle:tab.title||'',
+          productCount:0,
+          scope:'all',
+          selectedIds:[]
+        },result=>{
+          if(chrome.runtime.lastError){reject(new Error(chrome.runtime.lastError.message));return;}
+          resolve(result);
+        });
+      });
+      if(!response||!response.ok)throw new Error(response&&response.error||'Không bắt đầu được lượt quét.');
+      status.textContent='Đã khởi động quét trong cửa sổ riêng. Đợi kết quả ở mục ĐẦU RA.';
+      status.style.color='#166534';
+    }catch(error){
+      status.textContent='Không thể đồng bộ: '+String(error&&error.message||error);
+      status.style.color='#b91c1c';
+    }finally{
+      btn.disabled=false;
+      btn.textContent='ĐỒNG BỘ TAB NÀY';
+    }
+  }
+
   function mount(){
     if($('savedProfilesMode'))return true;
     const main=document.querySelector('main');
@@ -49,6 +96,10 @@
     section.innerHTML=`
       <b>1. ĐỒNG BỘ TỒN KHO</b>
       <small style="display:block;margin-top:4px;color:#475569">Đứng ở tab nguồn cần làm rồi bấm ĐỒNG BỘ TAB NÀY. Tab mới tự tạo hồ sơ.</small>
+      <div id="stockSyncRescue" style="margin-top:10px">
+        <button id="stockSyncRescueBtn" type="button" class="primary" style="width:100%;min-height:48px;font-weight:900">ĐỒNG BỘ TAB NÀY</button>
+        <small id="stockSyncRescueStatus" style="display:block;margin-top:5px;color:#64748b">Có thể chạy quét ngay cả khi bảng điều khiển nâng cao chưa tải.</small>
+      </div>
       <details id="profileHistory" style="margin-top:9px">
         <summary style="cursor:pointer;font-size:9px;font-weight:800;color:#64748b">LỊCH SỬ HỒ SƠ</summary>
         <div id="profileHistoryList" style="margin-top:6px"></div>
@@ -56,6 +107,7 @@
       <small id="profileStatus" style="display:none"></small>`;
 
     main.appendChild(section);
+    $('stockSyncRescueBtn').addEventListener('click',fallbackSync);
 
     loadStore().then(render).catch(()=>{});
     chrome.storage.onChanged.addListener((changes,area)=>{
