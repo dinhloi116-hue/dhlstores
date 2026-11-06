@@ -188,7 +188,7 @@ function packGroups(a,ss,c){
   try{a.Optimization=false;}catch(y){}opt=false;
   doc.EndCommandGroup();cmd=false;doc.Unit=old;
   try{a.ActiveWindow.Refresh();}catch(e){}
-  output(T('✓ Đã dàn '+ss.length+' Group trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên nội dung Group. Chế độ khung bao an toàn.','✓ Packed '+ss.length+' groups in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Group contents unchanged. Safe rectangular geometry.'),true);
+  output(T('✓ Đã dàn '+ss.length+' Group trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên nội dung Group. '+(plan.contourImproved?'Đã tận dụng khe mở; lỗ kín bị chặn.':'Chế độ khung bao an toàn.'),'✓ Packed '+ss.length+' groups in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Group contents unchanged. '+(plan.contourImproved?'Open pockets used; closed counters blocked.':'Safe rectangular geometry.')),true);
   return true;
  }catch(e){
   try{if(opt)a.Optimization=false;}catch(x2){}
