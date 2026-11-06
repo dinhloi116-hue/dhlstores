@@ -39,7 +39,7 @@ function config(){
  var rotate=E('v838Rotate')&&E('v838Rotate').value==='auto',order=E('v838Order')?E('v838Order').value:'visual';
  var mode=E('v838Mode')?E('v838Mode').value:'pack',mirror=!!(E('v838Mirror')&&E('v838Mirror').value==='yes');
  if(!(W>0&&H>0&&gap>=0&&mt>=0&&mb>=0&&ml>=0&&mr>=0&&W>ml+mr&&H>mt+mb))throw new Error(T('Khổ, lề hoặc khoảng cách không hợp lệ.','Invalid material size, margins or gap.'));
- return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,frameGap:N('v77FrameGapInput',0)};
+ return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,contour:!!(E('v838Contour')&&E('v838Contour').checked),frameGap:N('v77FrameGapInput',0)};
 }
 function shapeSize(s){return{w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
 function canFit(s,c){var d=shapeSize(s);return(d.w<=c.usableW+.001&&d.h<=c.usableH+.001)||(c.rotate&&d.h<=c.usableW+.001&&d.w<=c.usableH+.001);}
@@ -115,6 +115,51 @@ function frame(layer,l,b,w,h,i){
  try{s.Name='DHL_GROUP_NEST_FRAME_'+i;}catch(e3){}
  try{s.OrderToBack();}catch(e4){}
 }
+function refineGroupContour(plan,c){
+ var G=window.DHLContourGeometry,oldOrder=window.DHL_ORDER,oldDeadline=window.DHL_SEARCH_DEADLINE,deadline=(new Date()).getTime()+7000;
+ if(!G||!G.pack||!G.footprintAt)return plan;
+ var b,i,j,p,all=[],best,attempt,changed=0;
+ function run(places,order){
+  if((new Date()).getTime()>deadline)return null;
+  var fp=[],s,k,packed,out=[],depth;
+  for(k=0;k<places.length;k++){
+   p=places[k];s=G.footprintAt(p.item.shape,p.angle||0);
+   if(s.w>c.usableW+.001||s.h>c.usableH+.001)return null;
+   s._x=p.x;s._y=p.y;s._ord=p.item.index;fp.push(s);
+  }
+  window.DHL_ORDER=order;window.DHL_SEARCH_DEADLINE=deadline;
+  packed=G.pack(fp,c.usableW,c.usableH,c.gap);
+  if(!packed||packed.length!==places.length)return null;
+  for(k=0;k<packed.length;k++){
+   p=packed[k];s=p.item;
+   out.push({item:{shape:s.shape,index:s._ord},x:p.x,y:p.y,w:s.w,h:s.h,angle:s.ang||0});
+  }
+  depth=G.planDepth(packed);
+  return{places:out,depth:depth,free:[],contour:true};
+ }
+ try{
+  // True contour can combine bins when the smaller objects fit into open notches.
+  if(plan.bins.length>1){
+   for(i=0;i<plan.bins.length;i++)for(j=0;j<plan.bins[i].places.length;j++)all.push(plan.bins[i].places[j]);
+   if(all.length<=24){
+    attempt=run(all,'area');
+    if(attempt){plan.bins=[attempt];plan.total=attempt.depth;plan.contourImproved=1;return plan;}
+   }
+  }
+  for(i=0;i<plan.bins.length;i++){
+   b=plan.bins[i];best=b;
+   for(j=0;j<3;j++){
+    attempt=run(b.places,['area','height','width'][j]);
+    if(attempt&&attempt.depth<best.depth-.1)best=attempt;
+   }
+   if(best!==b){plan.bins[i]=best;changed++;}
+  }
+  plan.total=0;
+  for(i=0;i<plan.bins.length;i++)plan.total+=plan.bins[i].depth;
+  plan.contourImproved=changed;
+  return plan;
+ }finally{window.DHL_ORDER=oldOrder;window.DHL_SEARCH_DEADLINE=oldDeadline;}
+}
 function packGroups(a,ss,c){
  var doc=a.ActiveDocument,ord=ordered(ss,c.order),items=[],old=doc.Unit,i,d,plan,page,baseLeft,baseBottom,left,top,bi,place,sh,cmd=false,opt=false;
  try{
@@ -125,6 +170,7 @@ function packGroups(a,ss,c){
    items.push({shape:ord[i],index:i,w:d.w,h:d.h,area:d.w*d.h});
   }
   plan=choose(items,c);if(!plan||!plan.bins.length)throw new Error(T('Không tìm được cách dàn hợp lệ.','No valid group arrangement.'));
+   if(c.contour)plan=refineGroupContour(plan,c);
   page=a.ActivePage;baseLeft=Number(page.CenterX)-c.W/2;baseBottom=Number(page.CenterY)-c.H/2;
   doc.BeginCommandGroup('DHL Pack Selected Groups V8.38');cmd=true;
   try{a.Optimization=true;opt=true;}catch(x){}
@@ -214,6 +260,7 @@ function form(){
  +'<div><label>'+T('Xoay','Rotate')+'</label><select id="v838Rotate"><option value="none">'+T('Giữ hướng hiện tại','Keep orientation')+'</option><option value="auto">'+T('Cho phép xoay 90°','Allow 90° rotation')+'</option></select></div></div>'
  +'<div class="v838-line"><div><label>'+T('Thứ tự','Order')+'</label><select id="v838Order"><option value="visual">'+T('Trái → phải, trên → dưới','Visual order')+'</option><option value="select">'+T('Theo vùng chọn','Selection order')+'</option></select></div>'
  +'<div><label>'+T('Lật gương bản in','Mirror output')+'</label><select id="v838Mirror"><option value="no">'+T('Không','No')+'</option><option value="yes">'+T('Có','Yes')+'</option></select></div></div>'
+ +'<div class="v843-open-gap"><label><input id="v838Contour" type="checkbox" checked="checked" /> '+T('Xếp sâu vào khe mở, không vào lỗ kín 0 / 6 / 8 / 9','Pack open pockets; never inside closed 0/6/8/9 holes')+'</label></div>'
  +'<button id="v838Run" type="button">'+T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS')+'</button>'
  +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Dàn chung khổ: kiểm tra va chạm theo bounding box an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Roll mode packs using safe bounding boxes; page mode centers each intact group.')+'</div>'
  +'<div id="v838DirectMsg"></div>';
