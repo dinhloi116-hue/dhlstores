@@ -81,7 +81,7 @@ function segInter(a,b,c,d){
 function ptSegD2(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=vx*wx+vy*wy,c2=vx*vx+vy*vy,t,dx,dy;if(c2<=1e-12){dx=p.x-a.x;dy=p.y-a.y;return dx*dx+dy*dy;}t=c1/c2;if(t<0)t=0;else if(t>1)t=1;dx=p.x-(a.x+t*vx);dy=p.y-(a.y+t*vy);return dx*dx+dy*dy;}
 function segD2(a,b,c,d){if(segInter(a,b,c,d))return 0;return Math.min(ptSegD2(a,c,d),ptSegD2(b,c,d),ptSegD2(c,a,b),ptSegD2(d,a,b));}
 function pointInLoop(p,loop,ox,oy){var pts=loop.pts,inside=false,i,j,xi,yi,xj,yj,hit;for(i=0,j=pts.length-1;i<pts.length;j=i++){xi=ox+pts[i].x;yi=oy+pts[i].y;xj=ox+pts[j].x;yj=oy+pts[j].y;hit=((yi>p.y)!==(yj>p.y))&&(p.x<(xj-xi)*(p.y-yi)/((yj-yi)||1e-20)+xi);if(hit)inside=!inside;}return inside;}
-function pointInLeaf(p,leaf,ox,oy){var inside=false,i;for(i=0;i<leaf.loops.length;i++)if(leaf.loops[i].closed&&pointInLoop(p,leaf.loops[i],ox,oy))inside=!inside;return inside;}
+function pointInLeaf(p,leaf,ox,oy){var i;/* Closed internal counters are SOLID; open concavities remain empty. */for(i=0;i<leaf.loops.length;i++)if(leaf.loops[i].closed&&pointInLoop(p,leaf.loops[i],ox,oy))return true;return false;}
 function boundariesNear(la,ax,ay,lb,bx,by,g){
  var i,j,k,m,A,B,a1,a2,b1,b2,g2=g*g;
  for(i=0;i<la.loops.length;i++){A=la.loops[i];for(j=0;j<lb.loops.length;j++){B=lb.loops[j];if(!bbNear(A.bb,ax,ay,B.bb,bx,by,g))continue;
@@ -113,7 +113,7 @@ function xCandidates(it,placed,W,g,currentX){
  gridStep=Math.max(1.25,Math.min(4,Math.min(it.w,it.h)/8));if(max/gridStep>220)gridStep=max/220;
  for(q=0;q<=max+.001;q+=gridStep)addX(xs,seen,q,max);
  xs.sort(function(a,b){return a-b;});
- if(xs.length>260){cut=[];step=xs.length/260;for(q=0;q<260;q++)cut.push(xs[Math.floor(q*step)]);xs=cut;}
+ if(xs.length>300){cut=[];step=xs.length/300;for(q=0;q<300;q++)cut.push(xs[Math.floor(q*step)]);xs=cut;}
  return xs;
 }
 function firstYAtX(x,it,placed,H,g,limit){
@@ -157,7 +157,7 @@ function makePrimaryFrame(page,left,bottom,W,H){
  return f;
 }
 function contourPrimaryCopies(){
- var a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=selected(a),W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,uw=W-ml-mr,uh=H-mt-mb,page,baseLeft,baseBottom,top,patterns=[[0],[90],[0,180],[90,270],[0,90,180,270]],names=['0°','90°','0°/180°','90°/270°','0°/90°/180°/270°'],best=null,i,items,plan,depth,j,p,sh,cmd=false,opt=false,range,res=E('v77NestResult');
+ var a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=selected(a),W=N('v77NestW',580),H=N('v77NestH',2000),g=N('v77NestGap',5),mt=N('v77MarginT',0),mb=N('v77MarginB',0),ml=N('v77MarginL',0),mr=N('v77MarginR',0),uw=W-ml-mr,uh=H-mt-mb,page,baseLeft,baseBottom,top,patterns=[[0],[90],[0,180],[90,270],[0,90,180,270]],names=['0°','90°','0°/180°','90°/270°','0°/90°/180°/270°'],best=null,i,items,plan,depth,j,p,sh,cmd=false,opt=false,range,res=E('v77NestResult');
  if(ss.length<2||uw<=0||uh<=0)return false;
  try{
   doc.Unit=3;
@@ -187,10 +187,11 @@ function contourPrimaryCopies(){
  }
 }
 window.DHLContourPrimaryCopies=contourPrimaryCopies;
+window.DHLContourGeometry={footprintAt:footprintAt,pack:pack,planDepth:planDepth,pointInLeaf:pointInLeaf,valid:valid,anchors:anchors};
 function contourCompact(sourceShapes){
  var appx=app(),doc=appx.ActiveDocument,old=doc.Unit,ss=(sourceShapes&&sourceShapes.length)?sourceShapes:selected(appx),
- W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,g=N('v77NestGap',.5)*10,fg=N('v77FrameGapInput',0)*10,
- mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10,
+ W=N('v77NestW',580),H=N('v77NestH',2000),g=N('v77NestGap',5),fg=N('v77FrameGapInput',0),
+ mt=N('v77MarginT',0),mb=N('v77MarginB',0),ml=N('v77MarginL',0),mr=N('v77MarginR',0),
  usableW=W-ml-mr,usableH=H-mt-mb,baseLeft,baseBottom,top,left,page,binDepth={},baseline=0,patterns=[[0],[90],[0,90],[90,0]],
  best=null,depth,trial,items,sh,it,p,idx,i,j,k,cmd=false,opt=false,oldOrder,oldDeadline,oldFallback,moved=0;
  if(ss.length<2||usableW<=0||usableH<=0)return false;
