@@ -13,7 +13,7 @@ assert.ok(legacyAllows(updater),'V8.22 launcher accepts current direct-latest up
 assert.ok(updater.includes('DockerUI_CURRENT.html?fresh='),'still downloads one latest UI snapshot');
 assert.ok(updater.includes('[IO.File]::Replace('),'uses backed-up replacement');
 assert.ok(updater.includes('Get-FileHash'),'skips unchanged installs');
-assert.ok(ui.includes('DHL_UI_VERSION=8.42'));
+assert.ok(ui.includes('DHL_UI_VERSION=8.43'));
 assert.ok(ui.includes('id="dhl-v840-fast-update"'),'current handler retained');
 assert.ok(!ui.includes('id="dhl-v822-update-recovery"'),'no code-91 loader registered');
 assert.ok(!ui.includes('window.reloadFromGit=reloadV77'),'older handler cannot regain ownership');
