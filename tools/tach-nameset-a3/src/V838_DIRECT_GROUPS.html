@@ -39,7 +39,7 @@ function config(){
  var rotate=E('v838Rotate')&&E('v838Rotate').value==='auto',order=E('v838Order')?E('v838Order').value:'visual';
  var mode=E('v838Mode')?E('v838Mode').value:'pack',mirror=!!(E('v838Mirror')&&E('v838Mirror').value==='yes');
  if(!(W>0&&H>0&&gap>=0&&mt>=0&&mb>=0&&ml>=0&&mr>=0&&W>ml+mr&&H>mt+mb))throw new Error(T('Khổ, lề hoặc khoảng cách không hợp lệ.','Invalid material size, margins or gap.'));
- return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,contour:!!(E('v838Contour')&&E('v838Contour').checked),frameGap:N('v77FrameGapInput',0)};
+ return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,contour:!!(E('v838Contour')&&E('v838Contour').checked),deepMode:(E('v845Effort')?E('v845Effort').value:'balanced'),frameGap:N('v77FrameGapInput',0)};
 }
 function shapeSize(s){return{w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
 function canFit(s,c){var d=shapeSize(s);return(d.w<=c.usableW+.001&&d.h<=c.usableH+.001)||(c.rotate&&d.h<=c.usableW+.001&&d.w<=c.usableH+.001);}
@@ -170,7 +170,11 @@ function packGroups(a,ss,c){
    items.push({shape:ord[i],index:i,w:d.w,h:d.h,area:d.w*d.h});
   }
   plan=choose(items,c);if(!plan||!plan.bins.length)throw new Error(T('Không tìm được cách dàn hợp lệ.','No valid group arrangement.'));
-   if(c.contour)plan=refineGroupContour(plan,c);
+   if(c.contour){
+    if(window.DHLDeepContourSearch&&typeof window.DHLDeepContourSearch.optimize==='function')
+      plan=window.DHLDeepContourSearch.optimize(items,c,plan);
+    else plan=refineGroupContour(plan,c);
+   }
   page=a.ActivePage;baseLeft=Number(page.CenterX)-c.W/2;baseBottom=Number(page.CenterY)-c.H/2;
   doc.BeginCommandGroup('DHL Pack Selected Groups V8.38');cmd=true;
   try{a.Optimization=true;opt=true;}catch(x){}
@@ -188,7 +192,7 @@ function packGroups(a,ss,c){
   try{a.Optimization=false;}catch(y){}opt=false;
   doc.EndCommandGroup();cmd=false;doc.Unit=old;
   try{a.ActiveWindow.Refresh();}catch(e){}
-  output(T('✓ Đã dàn '+ss.length+' Group trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên nội dung Group. '+(plan.contourImproved?'Đã tận dụng khe mở; lỗ kín bị chặn.':'Chế độ khung bao an toàn.'),'✓ Packed '+ss.length+' groups in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Group contents unchanged. '+(plan.contourImproved?'Open pockets used; closed counters blocked.':'Safe rectangular geometry.')),true);
+  output(T('✓ Đã dàn '+ss.length+' Group trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên nội dung Group. '+(plan.contourImproved?'Đã tận dụng khe mở; lỗ kín bị chặn.':'Chế độ khung bao an toàn.'),'✓ Packed '+ss.length+' groups in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Group contents unchanged. '+(plan.contourImproved?'Open pockets used; closed counters blocked.':'Safe rectangular geometry.'))+(plan.deepInfo?(' | '+T('Tối ưu ','Effort ')+plan.deepInfo.mode+' · '+plan.deepInfo.trials+T(' lượt thử',' trials')+' · '+T('Tiết kiệm ','Saved ')+(Math.round(plan.deepInfo.saved*10)/10)+' mm'+(plan.deepInfo.framesAfter<plan.deepInfo.framesBefore?T(' · giảm khổ',' · fewer frames'):'')+(plan.deepInfo.status!=='complete'?' · '+plan.deepInfo.status:'')):''),true);
   return true;
  }catch(e){
   try{if(opt)a.Optimization=false;}catch(x2){}
@@ -257,10 +261,11 @@ function form(){
  b.innerHTML='<div class="v838-title">'+T('DÀN GROUP ĐÃ CHỌN — KHÔNG CẦN EXCEL','PACK SELECTED GROUPS — NO EXCEL')+'</div>'
  +'<div class="v838-desc">'+T('Ctrl+G từng bộ hoàn chỉnh → chọn tất cả Group → chọn cách dàn. Không phân tích lại tên, số hay logo.','Group each complete print set, select all groups and choose the layout. No text/number parsing.')+'</div>'
  +'<div class="v838-line"><div><label>'+T('Cách dàn','Layout')+'</label><select id="v838Mode"><option value="pack">'+T('Dàn chung khổ / cuộn','Pack on material / roll')+'</option><option value="pages">'+T('Mỗi Group = 1 trang','One group per page')+'</option></select></div>'
- +'<div><label>'+T('Xoay','Rotate')+'</label><select id="v838Rotate"><option value="none">'+T('Giữ hướng hiện tại','Keep orientation')+'</option><option value="auto">'+T('Cho phép xoay 90°','Allow 90° rotation')+'</option></select></div></div>'
+ +'<div><label>'+T('Xoay','Rotate')+'</label><select id="v838Rotate"><option value="none">'+T('Giữ hướng hiện tại','Keep orientation')+'</option><option value="auto">'+T('Tự xoay 0° / 90° / 180° / 270°','Auto rotate 0° / 90° / 180° / 270°')+'</option></select></div></div>'
  +'<div class="v838-line"><div><label>'+T('Thứ tự','Order')+'</label><select id="v838Order"><option value="visual">'+T('Trái → phải, trên → dưới','Visual order')+'</option><option value="select">'+T('Theo vùng chọn','Selection order')+'</option></select></div>'
  +'<div><label>'+T('Lật gương bản in','Mirror output')+'</label><select id="v838Mirror"><option value="no">'+T('Không','No')+'</option><option value="yes">'+T('Có','Yes')+'</option></select></div></div>'
- +'<div class="v843-open-gap"><label><input id="v838Contour" type="checkbox" checked="checked" /> '+T('Xếp sâu vào khe mở, không vào lỗ kín 0 / 6 / 8 / 9','Pack open pockets; never inside closed 0/6/8/9 holes')+'</label></div>'
+ +'<div class="v843-open-gap"><label><input id="v838Contour" type="checkbox" checked="checked" /> '+T('Xếp sâu theo contour; cấm lỗ kín 0 / 6 / 8 / 9','Deep contour packing; block closed counters 0 / 6 / 8 / 9')+'</label></div>'
+ +'<div class="v838-line"><div><label>'+T('Mức tối ưu contour','Contour optimization effort')+'</label><select id="v845Effort"><option value="quick">'+T('Nhanh · tối đa 1,8 giây','Quick · up to 1.8s')+'</option><option value="balanced" selected="selected">'+T('Cân bằng · tối đa 6,5 giây','Balanced · up to 6.5s')+'</option><option value="deep">'+T('Chuyên sâu · tối đa 18 giây','Deep · up to 18s')+'</option></select></div></div>'
  +'<button id="v838Run" type="button">'+T('DÀN CÁC GROUP ĐÃ CHỌN','PACK SELECTED GROUPS')+'</button>'
  +'<div class="v838-desc">'+T('Dùng khổ, cách vật và lề đang đặt phía trên. Bật xếp sâu để dùng đường bao thực và khe mở; bỏ chọn để dùng khung chữ nhật an toàn. Mỗi trang: căn giữa, không thu nhỏ Group.','Uses width, spacing and margins above. Enable contour nesting to use open notches (closed counters blocked); uncheck for safe rectangular layout. Page mode centers each group.')+'</div>'
  +'<div id="v838DirectMsg"></div>';
