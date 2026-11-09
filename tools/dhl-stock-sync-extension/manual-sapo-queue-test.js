@@ -70,6 +70,7 @@ async function main(){
   context.globalThis=context;
   context.DHLAutoSyncCore={normalizeConfig:(x)=>x||{}};
   context.DHLBatchStockCore={};
+  context.DHLScanQualityCore=require('./scan-quality-core.js');
   context.DHLSapoInventoryResolver={
     normSku:(v)=>String(v||'').trim().toUpperCase(),
     inventoryCandidates:(data)=>Array.isArray(data&&data.inventory_items)?data.inventory_items:[],
