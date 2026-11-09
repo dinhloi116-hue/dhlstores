@@ -691,12 +691,20 @@
     const before = popupFingerprint(existing);
     const card = cardForDescriptor(descriptor);
     const candidates = quickCandidates(descriptor, card).filter((item) => !inertActionHref(item.el));
+    // Quick probes prevent a non-working button from consuming 4.6 seconds.
+    // Any delayed popup is still accepted by the final passive wait below.
     for (let index=0;index<candidates.length;index+=1) {
       assertPopupScanActive(cancelVersion);
       await clickQuickCandidate(candidates[index].el);
       assertPopupScanActive(cancelVersion);
-      const root = await waitForPopupRefresh(before, expectedPath, index===0?4600:2400, cancelVersion);
+      const root = await waitForPopupRefresh(before, expectedPath, index===0?2200:1200, cancelVersion);
       if (root) return { root, cardFound: !!card, candidateCount: candidates.length, reusedPopup: !!existing };
+    }
+    // Retain a slow-network recovery window without further clicks. Do not
+    // mistake a late popup for an empty product or zero stock.
+    if (candidates.length) {
+      const lateRoot=await waitForPopupRefresh(before,expectedPath,2600,cancelVersion);
+      if(lateRoot)return {root:lateRoot,cardFound:!!card,candidateCount:candidates.length,reusedPopup:!!existing};
     }
     const error = new Error(`Không bật được popup tồn cho ${descriptor.title} ngay trên trang danh mục.`);
     error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length, categoryOnly: true };
