@@ -525,7 +525,10 @@
       // A real inventory-row transition is also evidence of the color changing,
       // even if the supplier's custom control has no reliable "checked" attribute.
       const changedRows = Boolean(previousSignature && signature && signature !== previousSignature);
-      const selectionConfirmed = seenSelected || changedRows;
+      // A selected radio alone is NOT evidence that the stock table refreshed.
+      // On later colors we must observe changed stock/size rows to avoid
+      // assigning the previous color's inventory to the next color.
+      const selectionConfirmed = alreadySelected || !previousSignature || changedRows;
       if (selectionConfirmed && hasAllTargetRows(rows, targetSizes)) {
         if (alreadySelected || changedRows || elapsed >= 650) {
           await sleep(60);
@@ -542,7 +545,8 @@
     }
     // An unconfirmed color switch must never be assigned the previous color's
     // stock. Return only a verified partial read, otherwise mark it missing.
-    return seenSelected || (previousSignature && rowsSignature(best) !== previousSignature) ? best : [];
+    return alreadySelected || !previousSignature || (rowsSignature(best) && rowsSignature(best)!==previousSignature)
+      ? best : [];
   }
 
   function productAnchors(descriptor) {
@@ -966,7 +970,7 @@
         rows = await stableTargetRows(currentRoot, neededSizes, 4000, cancelVersion);
       }
       assertPopupScanActive(cancelVersion);
-      previousSignature = rowsSignature(rows);
+      if(rows.length)previousSignature = rowsSignature(rows);
       currentRoot=findStockRoot()||currentRoot;
       const colorExpectedSizes=neededSizes.length
         ? neededSizes
