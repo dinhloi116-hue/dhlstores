@@ -10,6 +10,7 @@
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const REPORT_KEY='dhlManualStockReportV1';
   const QUEUE_KEY='dhlSapoPushQueueV1';
+  const branchCore=globalThis.DHLStockBranchCore;
   const quality=globalThis.DHLScanQualityCore;
   const text=(v)=>String(v==null?'':v).trim();
   const esc=(v)=>text(v).replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
@@ -68,8 +69,9 @@
       }
       const stored=await chrome.storage.local.get(CONFIG_KEY);
       const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
-      const branch=text(config&&config.sapo&&config.sapo.locationName);
-      const combined=batch.combineEntries(list.map(entry=>({...entry,branch:text(entry&&entry.branch)||branch})));
+      if(!branchCore)throw new Error('Thiếu bộ xác định kho Sapo. Hãy cập nhật lại extension.');
+      const normalized=list.map(entry=>({...entry,branch:branchCore.resolve(entry,config)}));
+      const combined=batch.combineEntries(normalized);
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,combined.rows,combined.branch);
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
