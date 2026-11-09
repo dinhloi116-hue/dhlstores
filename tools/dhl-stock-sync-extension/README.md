@@ -1,6 +1,14 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.3**.
+Phiên bản: **v0.24.4**.
+
+## Hết hàng nghĩa là tồn kho 0 (v0.24.4)
+
+- Khi cột `Tình trạng tồn` của một size ghi đúng **Hết hàng**, lưu giá trị `stock=0`; đây là một kết quả hợp lệ, không phải thiếu dữ liệu.
+- Màu Đỏ, Kem, Trắng Hoa có thể có **cùng** bộ S/M/L/XL/XXL đều hết hàng. Sau khi đổi màu, radio đã được xác nhận và các dòng `Hết hàng` ổn định ít nhất 1,5 giây, kết quả 0 hợp lệ **ngay cả khi chữ ký số tồn không đổi**.
+- Chỉ dùng cơ chế này khi size của màu đã đọc đủ và tất cả dòng đều ghi rõ `Hết hàng`. Nếu bảng chưa tải, chưa chọn được màu hoặc tồn không xác định, vẫn báo thiếu và quét lại, tuyệt đối không tự chuyển thiếu dữ liệu thành 0.
+- Có unit test cho 5 size hết hàng, hai màu cùng tồn 0, màu chưa được chọn và bảng tồn dương chưa chuyển; test thêm quy tắc SKU với stock 0 và quality gate.
+- Khi đã quét xác minh đủ, biến thể tồn 0 vẫn có thể xuất/đẩy Sapo theo thao tác thủ công.
 
 ## Tự quét lại sản phẩm chưa đủ dữ liệu (v0.24.3)
 
