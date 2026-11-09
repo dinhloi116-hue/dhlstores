@@ -65,5 +65,12 @@ const api=ctx.previewAndPush;
   assert.strictEqual(state.dhlSapoPushQueueV1.total,2);
   assert.strictEqual(state.dhlSapoManualPreviewV1,undefined,'Token must be single-use');
   assert.strictEqual(alarms,1,'Only approved preview can start the push queue');
-  console.log('SAPO PREVIEW TOKEN PASS: no token, wrong token, changed stock, expired token all block writes');
+  state.dhlSapoPushQueueV1={
+    ...state.dhlSapoPushQueueV1,
+    source:'manual',status:'running',manualPaused:true,index:1,
+    rows:[{sku:'GER-TRANG-S',stock:0},{sku:'GER-TRANG-DO-S',stock:99}]
+  };
+  await assert.rejects(api.prepareManualPreview(['hd']),/hàng đợi Sapo đã tạm dừng khác số tồn/i);
+  assert.strictEqual(alarms,1,'A stale paused queue cannot start writes');
+  console.log('SAPO PREVIEW TOKEN PASS: no token, wrong token, changed stock, expired token and stale paused queue block writes');
 })().catch(e=>{console.error(e);process.exitCode=1;});
