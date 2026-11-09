@@ -82,10 +82,12 @@
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       download(out.bytes,`SAPO_NHAP_TON_KHO_GOP_${stamp}.xlsx`);
-      await chrome.storage.local.set({[BATCH_KEY]:{}});
+      // A download *request* does not confirm that the browser saved a file,
+      // and exporting is not proof that Sapo imported the workbook.
+      // Keep the verified scan for retries and re-download.
       const status=document.getElementById('profileStatus');
       if(status){
-        status.textContent=`Đã tạo Excel ${out.rows} dòng và dọn cache quét.`;
+        status.textContent=`Đã yêu cầu tải Excel ${out.rows} dòng. Dữ liệu quét vẫn được giữ để tải lại.`;
         status.style.color='#166534';
       }
     }catch(error){
@@ -100,6 +102,7 @@
   }
 
   async function clearBatch(){
+    if(!confirm('Xóa dữ liệu tồn kho đã quét? File Excel đã tải sẽ không được khôi phục từ cache này.'))return;
     await chrome.storage.local.set({[BATCH_KEY]:{}});
     await renderBatchUi();
   }
