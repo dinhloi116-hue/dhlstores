@@ -85,6 +85,26 @@
     return out;
   }
 
+  // Expected sizes must be established independently for EACH selected color.
+  // A numeric size such as 70 in the first color does not mean other colors
+  // must offer 70. Collect visible size LABELS, including rows whose stock
+  // cell has not loaded yet, rather than using only successfully read stock.
+  function sizeLabelsFromVisibleRows(root){
+    const found=[],seen=new Set();
+    if(!root)return found;
+    for(const tr of root.querySelectorAll('tr,[role="row"]')){
+      if(!visible(tr))continue;
+      const cell=tr.querySelector('td:first-child,[role="cell"]:first-child');
+      if(!cell)continue;
+      const label=text(cell);
+      if(!label||label.length>32)continue;
+      const size=dom.extractSize(label);
+      if(!size||!/^\s*(?:size\s*[:\-]?\s*)?(?:[0-9]{1,3}|[a-z]{1,7})\s*$/i.test(label))continue;
+      if(!seen.has(size)){seen.add(size);found.push(size);}
+    }
+    return found;
+  }
+
   function expectedSizesFromRoot(root){
     const detected=detectedSizesFromRoot(root);
     const standard=new Set(TARGET_SIZES.map(dom.normalizeSize));
@@ -886,7 +906,11 @@
     const parentName = core.normalizeText(descriptor.title || productTitleFromDocument() || `#${parentId}`);
     const hint = hintForTitle(parentName, hints);
     const hintedSizes = targetSizesForHint(hint);
-    const neededSizes = hintedSizes.length ? hintedSizes : expectedSizesFromRoot(root);
+    const inferredSizes=expectedSizesFromRoot(root);
+    const adultSize=Boolean(inferredSizes.some(size=>TARGET_SIZES.includes(size)));
+    // Adult sizes follow the fixed 5-size schema. Numeric sizes are discovered
+    // from the selected color, never copied from the first color.
+    const neededSizes = hintedSizes.length ? hintedSizes : (adultSize ? inferredSizes : []);
     const allControls = colorControls(root);
     const targetSelection = selectTargetControls(allControls, hint);
     // Bỏ fetch fallback khi popup đã có đủ control màu; tiết kiệm 1 request/SP.
@@ -926,9 +950,17 @@
       assertPopupScanActive(cancelVersion);
       previousSignature = rowsSignature(rows);
       currentRoot=findStockRoot()||currentRoot;
+      const colorExpectedSizes=neededSizes.length
+        ? neededSizes
+        : sizeLabelsFromVisibleRows(currentRoot);
       const imageUrl=colorImageUrl(target.name,currentRoot,target.el,target.imageUrl||descriptor.imageUrl||'');
 
-      snapshots.push({ color: target.name, hint: target.hint || '', hintScore: target.hintScore || 0, imageUrl, rows });
+      snapshots.push({
+        color:target.name,hint:target.hint||'',hintScore:target.hintScore||0,
+        imageUrl,rows,expectedSizes:colorExpectedSizes,
+        verified:Boolean(rows.length&&colorExpectedSizes.length
+          &&colorExpectedSizes.every(size=>rows.some(row=>row.size===size)))
+      });
       progress({
         stage: 'dom-color',
         descriptor,
@@ -936,8 +968,8 @@
         colorIndex: index + 1,
         colorTotal: controls.length,
         rows: rows.length,
-        targetRows: neededSizes.length,
-        targetSizes: neededSizes,
+        targetRows: colorExpectedSizes.length,
+        targetSizes: colorExpectedSizes,
         imageUrl
       });
       rows.forEach((row) => {
@@ -955,17 +987,31 @@
     const imageUrls=[...new Set(list.map(v=>normalizeImageUrl(v&&v.image)).filter(Boolean))];
     const colorKeys = [...new Set(list.map((variant) => dom.colorKey(variant.color)).filter(Boolean))];
     const missing = [];
-    for (const color of colorKeys) {
-      for (const size of neededSizes) {
-        if (!list.some((variant) => dom.colorKey(variant.color) === color && variant.size === size)) missing.push(`${color}/${size}`);
+    const unverifiedColors=[];
+    for(const snapshot of snapshots){
+      const color=dom.colorKey(snapshot.color);
+      if(!snapshot.rows.length||!snapshot.expectedSizes.length){
+        unverifiedColors.push(snapshot.color);
+        continue;
+      }
+      for(const size of snapshot.expectedSizes){
+        if(!list.some(variant=>dom.colorKey(variant.color)===color&&variant.size===size)){
+          missing.push(`${color}/${size}`);
+        }
       }
     }
 
     const missingSourceSku=[];
     const expectedHints = expectedColorHints(hint);
-    const uiComplete = expectedHints.length
-      ? targetSelection.missingHints.length === 0 && colorKeys.length === expectedHints.length && missing.length === 0
-      : Boolean(list.length) && missing.length === 0;
+    const allColorsVerified=Boolean(snapshots.length)
+      &&snapshots.length===controls.length
+      &&snapshots.every(snapshot=>snapshot.verified);
+    const uiComplete = allColorsVerified
+      &&missing.length===0
+      &&unverifiedColors.length===0
+      &&(expectedHints.length
+        ? targetSelection.missingHints.length===0&&colorKeys.length===expectedHints.length
+        : colorKeys.length===controls.length);
     const complete=uiComplete;
 
     const result = {
@@ -992,7 +1038,11 @@
         missingColorHints: targetSelection.missingHints,
         colorsRead: colorKeys.length,
         expectedColorCount: expectedHints.length,
-        expectedSizes: neededSizes,
+        expectedSizes: neededSizes.length?neededSizes:[],
+        expectedSizesByColor:snapshots.map(snapshot=>({
+          color:snapshot.color,sizes:snapshot.expectedSizes,verified:snapshot.verified
+        })),
+        unverifiedColors,
         ignoredSizes: [],
         missingSizes: missing,
         imagesRead:imageUrls.length,
