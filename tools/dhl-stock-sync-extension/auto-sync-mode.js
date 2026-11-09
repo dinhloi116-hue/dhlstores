@@ -131,6 +131,8 @@
       <details class="auto-details sapo-box">
         <summary>3. Đầu ra / Ứng dụng riêng Sapo ${verified?'✓':''}</summary>
         <small class="auto-note">Có thể tải Excel để kiểm tra hoặc tự ghi tồn thật lên Sapo. API Key/Secret chỉ lưu trong Chrome trên máy này.</small>
+        <label><span>Kho xuất Excel (dùng cho tất cả hồ sơ)</span><input id="sapoExcelLocation" type="text" value="${esc(sapo.excelLocationName||globalThis.DHLStockBranchCore&&globalThis.DHLStockBranchCore.DEFAULT_WAREHOUSE_NAME||'dhl sport')}" placeholder="dhl sport" /></label>
+        <small class="auto-note">Áp dụng cho HD, S trẻ em và các tab khác. Tạo Excel không cần API; đẩy trực tiếp vẫn cần kết nối Sapo.</small>
         <label><span>Shop Sapo</span><input id="sapoHost" type="text" value="${esc(sapo.storeHost||'')}" placeholder="ten-shop.mysapo.net" /></label>
         <div class="auto-grid">
           <label><span>API Key</span><input id="sapoKey" type="password" placeholder="${sapo.apiKey?'Đã lưu — để trống nếu giữ nguyên':'API Key'}" autocomplete="off" /></label>
@@ -183,6 +185,7 @@
       autoPushSapo:Boolean(document.getElementById('autoPushSapo')?.checked),
       sapo:{
         ...oldSapo,
+        excelLocationName:text(document.getElementById('sapoExcelLocation')?.value)||'dhl sport',
         storeHost:text(document.getElementById('sapoHost')?.value)||text(oldSapo.storeHost),
         apiKey:typedKey||text(oldSapo.apiKey),
         apiSecret:typedSecret||text(oldSapo.apiSecret)
@@ -263,6 +266,14 @@
         }finally{enabled.disabled=false;}
       });
     }
+
+    const excelWarehouse=document.getElementById('sapoExcelLocation');
+    bindImmediate(excelWarehouse,'change',()=>{
+      const name=text(excelWarehouse.value)||'dhl sport';
+      const existing=state.config&&state.config.sapo||{};
+      persistPatch({sapo:{...existing,excelLocationName:name}},'Đã lưu kho xuất Excel cho tất cả hồ sơ.')
+        .catch(error=>setStatus(error.message||String(error),'bad',2600));
+    });
 
     const interval=document.getElementById('autoInterval');
     bindImmediate(interval,'change',()=>persistPatch({intervalHours:Number(interval.value||2)},'Đã lưu chu kỳ tự động.').catch(e=>setStatus(e.message||String(e),'bad',2600)));

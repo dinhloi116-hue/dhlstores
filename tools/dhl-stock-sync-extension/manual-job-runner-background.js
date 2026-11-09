@@ -422,19 +422,23 @@
 
   async function prepareRows(profile,sourceResults){
     const legacy=await parseLegacyProfile(profile);
-    if(legacy){
-      return{
-        prepared:autoCore.prepareRows(legacy.warehouseData,legacy.catalogData,sourceResults,matcher,rules),
-        branch:text(legacy.warehouseData.warehouseBranchName||profile.branchName)
-      };
-    }
     const stored=await chrome.storage.local.get(CONFIG_KEY);
     const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
+    const profileBranch=legacy
+      ?text(legacy.warehouseData.warehouseBranchName||profile&&profile.branchName)
+      :text(profile&&profile.branchName);
     const branch=branchCore.resolve({
       profileName:profile&&profile.name,
       sourceUrl:profile&&profile.lastSourceUrl,
-      branch:profile&&profile.branchName
+      branch:profileBranch,
+      branchSource:legacy&&legacy.warehouseData.warehouseBranchName?'legacy-file':''
     },config);
+    if(legacy){
+      return{
+        prepared:autoCore.prepareRows(legacy.warehouseData,legacy.catalogData,sourceResults,matcher,rules),
+        branch
+      };
+    }
     return{
       prepared:autoCore.prepareRows({}, {variants:[]}, sourceResults, matcher, rules),
       branch
@@ -936,6 +940,12 @@
     const built=await prepareRows(profile,sourceResults);
     const prepared=built.prepared;
     if(!prepared.rows.length)throw new Error('Lượt quét gần nhất chưa tạo được dòng tồn kho.');
+    const recoveredIssues=collectScanIssues(job,sourceResults,prepared);
+    const recoveredQuality=quality.evaluate(job,sourceResults,prepared,recoveredIssues,
+      job.status==='done'?'':job.status);
+    if(!recoveredQuality.ok){
+      throw new Error('Lượt quét đã lưu chưa đạt kiểm tra chất lượng: '+recoveredQuality.reasons.join(' '));
+    }
 
     const stored=await chrome.storage.local.get(BATCH_KEY);
     const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
@@ -956,7 +966,8 @@
       auto:false,
       partial:job.scope!=='all'||Number(job.index||0)<Number(job.total||0),
       jobId:job.id,
-      qualityValidated:false,
+      qualityValidated:true,
+      report:{quality:recoveredQuality,issueCount:recoveredIssues.length},
       recovered:true
     };
     await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});

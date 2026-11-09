@@ -196,7 +196,7 @@
     }else if(verified||hasCredentials){
       setState(`${count} hồ sơ • ${rows} dòng sẵn sàng. Đẩy Sapo chỉ chạy khi anh bấm nút.`,'ok');
     }else{
-      setState('Đã có dữ liệu quét nhưng chưa có thông tin kết nối Sapo đã lưu.','bad');
+      setState('Đã có dữ liệu quét. Có thể tải Excel ngay; đẩy trực tiếp cần kết nối Sapo.','ok');
     }
   }
 
