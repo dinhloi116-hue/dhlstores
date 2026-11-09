@@ -1,6 +1,14 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.8**.
+Phiên bản: **v0.24.9**.
+
+## Khắc phục cảnh báo runtime.lastError của Side Panel (v0.24.9)
+
+- Side Panel khởi tạo kết nối background qua port `dhl-stock-sync-panel`. Nếu Chrome/extension bị Reload hoặc service worker chưa có listener, `port.onDisconnect` có thể báo `Could not establish connection. Receiving end does not exist.`
+- Đọc `chrome.runtime.lastError` ngay trong callback onDisconnect, tránh `Unchecked runtime.lastError` khi mất receiver.
+- Chỉ thử nối lại tối đa 2 lần nếu lỗi tạm thời, ngừng khi Side Panel đóng. Không tự quét lại, không tạo lệnh đẩy Sapo hay xóa cache chỉ vì lỗi kết nối.
+- Script ở `popup.html:38` chỉ là vị trí nạp script; không phải chứng cứ trực tiếp lỗi nằm trong file đó. Test mô phỏng thiếu receiving end và kiểm tra xử lý lỗi.
+- Những mục lỗi cũ của Chrome vẫn tồn tại trong trang quản lý cho đến khi người dùng xóa lịch sử lỗi; không cần xóa cache dữ liệu tool.
 
 ## Excel khớp đúng SKU, không ghép tên/màu gần giống (v0.24.8)
 
