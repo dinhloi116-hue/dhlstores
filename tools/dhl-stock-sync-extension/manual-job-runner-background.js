@@ -628,11 +628,6 @@
         job.currentStartedAt=Date.now();
         job.status=retrying?'retrying':'running';
         job.progress=`${job.index}/${job.total}`;
-        if(retrying){
-          job.retryAttempts=job.retryAttempts&&typeof job.retryAttempts==='object'?job.retryAttempts:{};
-          job.retryAttempts[resultIndex]=Number(job.retryAttempts[resultIndex]||0)+1;
-        }
-
         let result=null,scanError=null;
         try{
           const response=await sendFullPopupScan(tab.id,descriptor);
@@ -649,6 +644,10 @@
           return;
         }
         job=latest;
+        if(retrying){
+          job.retryAttempts=job.retryAttempts&&typeof job.retryAttempts==='object'?job.retryAttempts:{};
+          job.retryAttempts[resultIndex]=Number(job.retryAttempts[resultIndex]||0)+1;
+        }
 
         job.errors=Array.isArray(job.errors)?job.errors:[];
         // Only unresolved errors belong to the final report. Clear the
