@@ -66,12 +66,36 @@
     header.appendChild(btn);
   }
 
-  // Kết nối còn sống trong suốt thời gian Side Panel mở.
-  // Đóng Side Panel tự báo service worker dọn cache nếu không có tác vụ chạy.
+  // A Side Panel port may fail during an extension/service worker reload.
+  // Chrome reports that via runtime.lastError INSIDE onDisconnect. Always
+  // consume it, otherwise Chrome logs "Unchecked runtime.lastError".
   let panelCleanupPort=null;
+  let panelClosing=false;
+  let reconnectTimer=null;
+  let connectAttempts=0;
+  function connectPanelCleanupPort(){
+    if(panelClosing)return;
+    try{
+      panelCleanupPort=chrome.runtime.connect({name:'dhl-stock-sync-panel'});
+      const port=panelCleanupPort;
+      port.onDisconnect.addListener(()=>{
+        const disconnectError=chrome.runtime.lastError; // Must read before leaving callback.
+        if(panelCleanupPort===port)panelCleanupPort=null;
+        if(!panelClosing&&disconnectError&&connectAttempts<2){
+          connectAttempts++;
+          reconnectTimer=setTimeout(connectPanelCleanupPort,600*connectAttempts);
+        }
+      });
+    }catch(_){
+      // An invalidated extension context cannot be repaired in-place.
+      // User can Reload the extension; never clear stored scan data here.
+    }
+  }
   function enableAutomaticCleanupOnClose(){
-    try{panelCleanupPort=chrome.runtime.connect({name:'dhl-stock-sync-panel'});}catch(_){}
+    connectPanelCleanupPort();
     window.addEventListener('pagehide',()=>{
+      panelClosing=true;
+      if(reconnectTimer!==null){clearTimeout(reconnectTimer);reconnectTimer=null;}
       try{
         const pending=chrome.runtime.sendMessage({type:'DHL_PANEL_CLOSE_AUTO_CLEANUP'});
         if(pending&&typeof pending.catch==='function')pending.catch(()=>{});
