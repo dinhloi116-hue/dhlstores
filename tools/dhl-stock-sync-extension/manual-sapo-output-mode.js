@@ -5,6 +5,7 @@
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const QUEUE_KEY='dhlSapoPushQueueV1';
   const JOB_KEY='dhlManualScanJobV2';
+  const quality=globalThis.DHLScanQualityCore;
   let recovering=false;
 
   const text=(v)=>String(v==null?'':v).trim();
@@ -45,6 +46,9 @@
       const s=await readState();
       const profileIds=s.manualEntries.map(x=>String(x.profileId||'')).filter(Boolean);
       if(!profileIds.length)throw new Error('Chưa có kết quả quét để đẩy lên Sapo.');
+      if(!quality||s.manualEntries.some(entry=>!quality.trustedEntry(entry))){
+        throw new Error('Lượt quét còn lỗi hoặc chưa được xác minh đủ. Không được đẩy tồn lên Sapo.');
+      }
       const response=await send({type:'DHL_SAPO_PUSH_MANUAL',profileIds});
       if(!response.ok)throw new Error(response.error||'Không bắt đầu được lượt đẩy Sapo.');
       setState('Đã bắt đầu đẩy tồn lên Sapo theo nhịp nhỏ. Có thể bấm DỪNG bất kỳ lúc nào.','ok');
@@ -153,12 +157,13 @@
     const rows=s.manualEntries.reduce((sum,x)=>sum+Number(x.rowCount||(x.rows||[]).length||0),0);
     const queue=s.queue&&s.queue.source==='manual'?s.queue:null;
     const busy=Boolean(queue&&queue.status==='running'&&queue.manualPaused!==true);
+    const allVerified=Boolean(count&&quality&&s.manualEntries.every(entry=>quality.trustedEntry(entry)));
 
     if(excel)setText(excel,count?`TẢI FILE EXCEL (${count})`:'TẢI FILE EXCEL');
 
     if(push){
       setText(push,rows?`ĐẨY LÊN SAPO (${rows} DÒNG)`:'ĐẨY LÊN SAPO');
-      push.disabled=!count||busy||(!verified&&!hasCredentials);
+      push.disabled=!allVerified||busy||(!verified&&!hasCredentials);
     }
     if(cancel){
       cancel.hidden=!busy;
@@ -186,6 +191,8 @@
       setState('Đã dừng đẩy Sapo. Cache vẫn còn để tải Excel hoặc đẩy lại.','ok');
     }else if(!count){
       setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
+    }else if(!allVerified){
+      setState('Đang khóa đầu ra: có sản phẩm thiếu size/màu/SKU hoặc chưa được xác minh. Quét lại các sản phẩm lỗi trước khi xuất hoặc đẩy Sapo.','bad');
     }else if(verified||hasCredentials){
       setState(`${count} hồ sơ • ${rows} dòng sẵn sàng. Đẩy Sapo chỉ chạy khi anh bấm nút.`,'ok');
     }else{
