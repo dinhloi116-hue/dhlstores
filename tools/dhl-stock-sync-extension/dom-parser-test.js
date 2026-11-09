@@ -16,3 +16,8 @@ assert.deepStrictEqual(p.dedupeColorNames(['Xanh Đen',' xanh đen ','Xanh Ngọ
 const rows=p.parseRowTexts(['S Còn hàng (7)','M Còn hàng (11)','L Còn hàng (50)','XL Còn hàng (32)','XXL Còn hàng (11)','XXXL Hết hàng']);
 assert.deepStrictEqual(rows.map(x=>[x.size,x.stock]),[['S',7],['M',11],['L',50],['XL',32],['XXL',11],['XXXL',0]]);
 console.log('DOM PARSER PASS',{rows:rows.length,colors:true,outOfStock:true});
+
+assert.strictEqual(p.strictSizeLabel('26-27'),'');
+assert.strictEqual(p.strictSizeLabel('70,000đ'),'');
+assert.strictEqual(p.strictSizeLabel('S'),'S');
+assert.strictEqual(p.inventoryRowFromCells(['S','Còn hàng (6)','0'],p.inventoryColumns(['Tên size','Tình trạng tồn','Số lượng muốn đặt'])).stock,6);

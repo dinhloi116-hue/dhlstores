@@ -33,7 +33,7 @@ assert.ok(content.includes('await sleep(70)'));
 assert.ok(content.includes('stable >= 1'));
 assert.ok(content.includes('stable >= 3'));
 assert.ok(content.includes('elapsed >= 650'));
-assert.ok(content.includes('stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion)'));
+assert.ok(content.includes('stableTargetRows(currentRoot, effectiveSizes, 1800, cancelVersion)'));
 assert.ok(content.includes('targetSelection.controls.length ? null : await firstVariant'));
 assert.ok(content.includes("if(findStockRoot())throw new Error('Popup chưa đóng"));
 assert.ok(catalog.includes('await sleep(180)'));

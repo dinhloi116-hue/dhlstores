@@ -35,6 +35,29 @@
     const size=extractSize(v),stock=extractStock(v);
     return size&&stock!==null?{size,stock}:null;
   }
+  // Verified inventory tables have explicit size and stock columns.
+  // This deliberately rejects prices (70,000đ), seasons (26-27) and
+  // product titles (2026/27), even if those numbers appear in the modal.
+  function strictSizeLabel(v){
+    const raw=text(v);
+    const match=raw.match(/^(?:size\s*[:：\-]?\s*)?(XXXXXL|XXXXL|XXXL|XXL|XL|5XL|4XL|3XL|2XL|XXS|XS|L|M|S|FREE|FREESIZE|[1-9]\d{0,2})$/i);
+    return match?normalizeSize(match[1]):'';
+  }
+  function inventoryColumns(headerTexts){
+    const names=(headerTexts||[]).map(plain);
+    const size=names.findIndex(s=>/^(?:ten size|size|kich co|co ao)$/.test(s));
+    const stock=names.findIndex(s=>/^(?:tinh trang ton|ton kho|so luong ton|trang thai ton|stock|available)$/.test(s));
+    return size>=0&&stock>=0&&size!==stock?{size,stock}:null;
+  }
+  function inventoryRowFromCells(cells,columns){
+    if(!columns||!Array.isArray(cells)||cells.length<=Math.max(columns.size,columns.stock))return null;
+    const size=strictSizeLabel(cells[columns.size]);
+    if(!size)return null;
+    const stock=extractStock(cells[columns.stock]);
+    if(!Number.isSafeInteger(stock)||stock<0)return{size,stock:null};
+    return{size,stock};
+  }
+
   function looksLikeColorName(v){
     const raw=text(v);if(!raw||raw.length>36)return false;
     const p=plain(raw);
@@ -62,5 +85,5 @@
     return dedupeRows((values||[]).map(v=>{const hit=extractSizeStock(v);return hit?{...hit,raw:text(v)}:null;}).filter(Boolean));
   }
 
-  return {text,plain,normalizeSize,extractSize,extractStock,extractSizeStock,looksLikeColorName,colorKey,dedupeColorNames,dedupeRows,parseRowTexts};
+  return {text,plain,normalizeSize,extractSize,extractStock,extractSizeStock,strictSizeLabel,inventoryColumns,inventoryRowFromCells,looksLikeColorName,colorKey,dedupeColorNames,dedupeRows,parseRowTexts};
 });
