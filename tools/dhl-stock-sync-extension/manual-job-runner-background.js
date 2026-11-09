@@ -8,7 +8,8 @@
   const historyCore=globalThis.DHLStockHistoryCore;
   const quality=globalThis.DHLScanQualityCore;
   const retryCore=globalThis.DHLManualScanRetryCore;
-  if(!xlsx||!matcher||!autoCore||!rules||!historyCore||!quality||!retryCore)return;
+  const branchCore=globalThis.DHLStockBranchCore;
+  if(!xlsx||!matcher||!autoCore||!rules||!historyCore||!quality||!retryCore||!branchCore)return;
 
   const PROFILE_KEY='dhlSavedStockProfilesV1';
   const SELECTED_KEY='dhlSelectedStockProfileId';
@@ -429,7 +430,11 @@
     }
     const stored=await chrome.storage.local.get(CONFIG_KEY);
     const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
-    const branch=text(config&&config.sapo&&config.sapo.locationName)||text(profile&&profile.branchName);
+    const branch=branchCore.resolve({
+      profileName:profile&&profile.name,
+      sourceUrl:profile&&profile.lastSourceUrl,
+      branch:profile&&profile.branchName
+    },config);
     return{
       prepared:autoCore.prepareRows({}, {variants:[]}, sourceResults, matcher, rules),
       branch

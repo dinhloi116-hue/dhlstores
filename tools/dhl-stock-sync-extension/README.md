@@ -1,6 +1,15 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.5**.
+Phiên bản: **v0.24.6**.
+
+## Sửa tên kho khi xuất Excel Sapo HD (v0.24.6)
+
+- Hồ sơ **HD** được phép xuất Excel theo kho **dhl sport** đúng như ảnh người dùng gửi trong Sapo (Thông tin kho → Lưu kho tại). Không bắt buộc API Key/Secret chỉ để tải Excel.
+- Ưu tiên tên kho đã xác minh qua kết nối API Sapo; kế đến tên chi nhánh đã lưu trong hồ sơ hoặc file kho cũ. Chỉ khi chưa có tên nào mới dùng `dhl sport` **riêng hồ sơ HD**, tuyệt đối không áp dụng sang cửa hàng/hồ sơ khác.
+- Nếu tên chi nhánh từ dữ liệu quét và tên chi nhánh đã xác minh khác nhau, báo lỗi để tránh xuất/ghi tồn sai kho.
+- Không thay đổi dữ liệu scan, SKU, số lượng tồn, hoặc xóa cache khi export lỗi; chỉ dọn cache sau khi Excel thực sự tạo thành công.
+- Tên `dhl sport` dùng để điền ô F3 trong template nhập tồn; **không tự xác minh hoặc tự kết nối API**. Muốn đẩy trực tiếp vẫn cần kiểm tra kết nối Sapo và locationId hợp lệ.
+- Có regression test đọc file .xlsx, xác minh F3 và số tồn 0.
 
 ## Chỉ quét sản phẩm thuộc lưới trang danh mục đang hiển thị (v0.24.5)
 

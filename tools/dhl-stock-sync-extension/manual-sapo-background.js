@@ -5,7 +5,8 @@
   const batch=globalThis.DHLBatchStockCore;
   const resolver=globalThis.DHLSapoInventoryResolver;
   const quality=globalThis.DHLScanQualityCore;
-  if(!autoCore||!batch||!resolver||!quality)return;
+  const branchCore=globalThis.DHLStockBranchCore;
+  if(!autoCore||!batch||!resolver||!quality||!branchCore)return;
 
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const STATUS_KEY='dhlAutoSyncStatusV1';
@@ -330,8 +331,9 @@
     if(entries.some(entry=>!quality.trustedEntry(entry))){
       throw new Error('Kết quả quét còn thiếu màu/size/SKU hoặc chưa xác minh. Không đẩy Sapo; hãy quét lại sản phẩm lỗi.');
     }
-    const branch=text(config.sapo.locationName);
-    const normalizedEntries=entries.map(entry=>({...entry,branch:text(entry&&entry.branch)||branch}));
+    // Sapo writes still require a verified location ID from its API.
+    // Do not treat the HTML warehouse label used by Excel as API permission.
+    const normalizedEntries=entries.map(entry=>({...entry,branch:branchCore.resolve(entry,config)}));
     const combined=batch.combineEntries(normalizedEntries);
     if(!combined.rows.length)throw new Error('Kết quả quét chưa có dòng tồn kho hợp lệ.');
 
