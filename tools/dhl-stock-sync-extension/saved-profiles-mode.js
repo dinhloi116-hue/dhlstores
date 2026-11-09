@@ -72,7 +72,7 @@
         });
       });
       if(!response||!response.ok)throw new Error(response&&response.error||'Không bắt đầu được lượt quét.');
-      status.textContent='Đã khởi động quét trong cửa sổ riêng. Đợi kết quả ở mục ĐẦU RA.';
+      status.textContent='Đã bắt đầu quét trực tiếp trên tab nguồn. Giữ tab này mở đến khi hoàn thành.';
       status.style.color='#166534';
     }catch(error){
       status.textContent='Không thể đồng bộ: '+String(error&&error.message||error);
