@@ -1,6 +1,13 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.1**.
+Phiên bản: **v0.24.2**.
+
+## Chỉ đọc đúng bảng size/tồn trong popup (v0.24.2)
+
+- Bảng tồn chuẩn có cột **Tên size** và **Tình trạng tồn**. Không dò số từ toàn bộ nội dung modal, nên giá `70.000đ` và mùa áo `26-27` không thể bị nhận nhầm thành size `70`/`26`.
+- Nhận diện size của từng dòng đúng cột; chỉ coi tồn 0 khi cột tồn ghi rõ **Hết hàng** hoặc tồn 0.
+- Quét màu Đỏ/Trắng trong cùng popup; xác minh đủ các size hiện diện trong bảng từng màu. Nếu bảng chưa tải hoặc màu không xác minh được, chặn đầu ra như v0.24.1.
+- Bổ sung kiểm thử tái hiện popup: S=6, M=17, L=22, XL=25, XXL=10. Vẫn phải kiểm tra bằng popup thực tế trước khi dùng đẩy Sapo.
 
 ## Kiểm tra chất lượng tồn kho trước khi xuất (v0.24.1)
 
