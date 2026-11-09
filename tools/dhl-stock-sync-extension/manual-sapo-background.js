@@ -6,13 +6,17 @@
   const resolver=globalThis.DHLSapoInventoryResolver;
   const quality=globalThis.DHLScanQualityCore;
   const branchCore=globalThis.DHLStockBranchCore;
-  if(!autoCore||!batch||!resolver||!quality||!branchCore)return;
+  const previewCore=globalThis.DHLStockPushPreviewCore;
+  const excelSku=globalThis.DHLExcelSkuCore;
+  if(!autoCore||!batch||!resolver||!quality||!branchCore||!previewCore||!excelSku)return;
 
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const STATUS_KEY='dhlAutoSyncStatusV1';
   const CYCLE_KEY='dhlAutoSyncCycleV1';
   const BATCH_KEY='dhlManualPendingStockBatchV1';
   const SAPO_QUEUE_KEY='dhlSapoPushQueueV1';
+  const PREVIEW_KEY='dhlSapoManualPreviewV1';
+  const PREVIEW_TTL_MS=10*60*1000;
   const SAPO_MAP_KEY='dhlSapoInventoryMapV1';
   const MANUAL_ALARM='dhl-sapo-manual-push-queue';
   const AUTO_PUSH_ALARM='dhl-sapo-push-queue';
@@ -291,11 +295,38 @@
     return{method:`${resolved.method}:variant-fallback-403`,variantId};
   }
 
-  async function enqueueOrResume(profileIds){
+  function selectedPendingEntries(pending,profileIds){
+    const ids=Array.isArray(profileIds)?profileIds.map(String).filter(Boolean):[];
+    return (ids.length?ids.map(id=>pending[id]):Object.values(pending)).filter(Boolean);
+  }
+
+  function buildPreviewSnapshot(entries,config,priorQueue){
+    return previewCore.build(entries,config,priorQueue,{quality,batch,branchCore,excelSku});
+  }
+
+  async function prepareManualPreview(profileIds){
+    let config=await ensureVerifiedSapo(await readConfig());
+    const state=await chrome.storage.local.get([BATCH_KEY,SAPO_QUEUE_KEY,CYCLE_KEY]);
+    if(state[CYCLE_KEY]&&state[CYCLE_KEY].running)throw new Error('Đang quét tự động; không thể xem trước tồn Sapo.');
+    const current=state[SAPO_QUEUE_KEY];
+    if(current&&['running','queued'].includes(current.status)&&current.manualPaused!==true)
+      throw new Error('Đang có lượt đẩy Sapo. Chờ kết thúc trước khi chuẩn bị lượt khác.');
+    const pending=state[BATCH_KEY]&&typeof state[BATCH_KEY]==='object'?state[BATCH_KEY]:{};
+    const selected=selectedPendingEntries(pending,profileIds);
+    const preview=buildPreviewSnapshot(selected,config,current);
+    const token=String(Date.now())+'-'+Math.random().toString(36).slice(2);
+    await chrome.storage.local.set({[PREVIEW_KEY]:{
+      token,signature:preview.signature,at:Date.now()
+    }});
+    const {signature,...publicPreview}=preview;
+    return{...publicPreview,token,expiresInMinutes:10};
+  }
+
+  async function enqueueOrResume(profileIds,previewToken){
     let config=await readConfig();
     config=await ensureVerifiedSapo(config);
 
-    const state=await chrome.storage.local.get([SAPO_QUEUE_KEY,CYCLE_KEY,BATCH_KEY]);
+    const state=await chrome.storage.local.get([SAPO_QUEUE_KEY,CYCLE_KEY,BATCH_KEY,PREVIEW_KEY]);
     let existing=state[SAPO_QUEUE_KEY];
     const cycle=state[CYCLE_KEY];
     if(staleLegacy403Queue(existing)){
@@ -305,6 +336,17 @@
       existing=null;
     }
     if(cycle&&cycle.running)throw new Error('Đang có lượt quét tự động chạy. Chờ quét xong rồi đẩy Sapo thủ công.');
+    const pending=state[BATCH_KEY]&&typeof state[BATCH_KEY]==='object'?state[BATCH_KEY]:{};
+    const selected=selectedPendingEntries(pending,profileIds);
+    const proposed=buildPreviewSnapshot(selected,config,existing);
+    const approved=state[PREVIEW_KEY];
+    if(!approved||!previewToken||String(approved.token)!==String(previewToken)
+       ||Date.now()-Number(approved.at||0)>PREVIEW_TTL_MS
+       ||approved.signature!==proposed.signature){
+      throw new Error('Dữ liệu hoặc cấu hình kho đã thay đổi, hoặc bản xem trước đã hết hạn. Bấm XEM TRƯỚC SAPO rồi xác nhận lại.');
+    }
+    // One-time preflight token; prevents accidental reuse of an old preview.
+    await chrome.storage.local.remove(PREVIEW_KEY);
 
     if(existing&&existing.source==='manual'&&existing.status==='running'&&existing.manualPaused===true){
       // Do not resume a queue created before scan-quality validation existed.
@@ -324,9 +366,8 @@
     }
     if(existing&&['running','queued'].includes(existing.status))throw new Error('Đang có một lượt ghi Sapo khác chạy. Chờ lượt hiện tại hoàn tất.');
 
-    const pending=state[BATCH_KEY]&&typeof state[BATCH_KEY]==='object'?state[BATCH_KEY]:{};
     const ids=Array.isArray(profileIds)?profileIds.map(String).filter(Boolean):[];
-    const entries=(ids.length?ids.map(id=>pending[id]):Object.values(pending)).filter(Boolean);
+    const entries=selected;
     if(!entries.length)throw new Error('Chưa có kết quả quét thủ công để đẩy lên Sapo.');
     if(entries.some(entry=>!quality.trustedEntry(entry))){
       throw new Error('Kết quả quét còn thiếu màu/size/SKU hoặc chưa xác minh. Không đẩy Sapo; hãy quét lại sản phẩm lỗi.');
@@ -335,6 +376,7 @@
     // Do not treat the HTML warehouse label used by Excel as API permission.
     const normalizedEntries=entries.map(entry=>({...entry,branch:branchCore.resolve(entry,config)}));
     const combined=batch.combineEntries(normalizedEntries);
+    excelSku.validate(combined.rows);
     if(!combined.rows.length)throw new Error('Kết quả quét chưa có dòng tồn kho hợp lệ.');
 
     const startedAt=Date.now();
@@ -477,8 +519,12 @@
 
   chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
     if(!message)return;
+    if(message.type==='DHL_SAPO_PREVIEW_MANUAL'){
+      prepareManualPreview(message.profileIds||[]).then(preview=>sendResponse({ok:true,preview})).catch(err=>sendResponse({ok:false,error:err&&err.message||String(err)}));
+      return true;
+    }
     if(message.type==='DHL_SAPO_PUSH_MANUAL'){
-      enqueueOrResume(message.profileIds||[]).then(result=>sendResponse({ok:true,result})).catch(err=>sendResponse({ok:false,error:err&&err.message||String(err)}));
+      enqueueOrResume(message.profileIds||[],message.previewToken).then(result=>sendResponse({ok:true,result})).catch(err=>sendResponse({ok:false,error:err&&err.message||String(err)}));
       return true;
     }
     if(message.type==='DHL_SAPO_PUSH_CANCEL'){
