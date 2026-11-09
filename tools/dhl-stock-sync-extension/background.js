@@ -13,6 +13,8 @@ importScripts(
   'scan-quality-core.js',
   'scan-retry-core.js',
   'stock-branch-core.js',
+  'excel-sku-core.js',
+  'stock-push-preview-core.js',
   'sapo-inventory-resolver-core.js',
   'sapo-inventory-set-compat.js',
   'sapo-product-create-background.js',
