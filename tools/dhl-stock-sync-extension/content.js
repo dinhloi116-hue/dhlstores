@@ -63,46 +63,50 @@
     return requested;
   }
 
-  function detectedSizesFromRoot(root){
-    const out=[],seen=new Set();
-    if(!root)return out;
-    for(const tr of root.querySelectorAll('tr,[role="row"]')){
-      if(!visible(tr))continue;
-      const hit=dom.extractSizeStock(text(tr));
-      if(!hit)continue;
-      const size=dom.normalizeSize(hit.size);
-      if(size&&!seen.has(size)){seen.add(size);out.push(size);}
+
+  function verifiedInventoryTable(root){
+    if(!root||typeof root.querySelectorAll!=='function')return null;
+    const tables=[
+      ...(root.matches&&root.matches('table,[role="table"]')?[root]:[]),
+      ...root.querySelectorAll('table,[role="table"]')
+    ];
+    for(const table of tables){
+      if(!visible(table))continue;
+      const head=table.querySelector('thead tr')||table.querySelector('tr,[role="row"]');
+      if(!head)continue;
+      const columns=dom.inventoryColumns(
+        [...head.querySelectorAll('th,[role="columnheader"]')].map(text)
+      );
+      if(columns)return{table,columns};
     }
-    if(!out.length){
-      for(const el of root.querySelectorAll('li,div,p,span')){
-        if(!visible(el)||el.childElementCount>10)continue;
-        const hit=dom.extractSizeStock(text(el));
-        if(!hit)continue;
-        const size=dom.normalizeSize(hit.size);
-        if(size&&!seen.has(size)){seen.add(size);out.push(size);}
-      }
-    }
-    return out;
+    return null;
   }
 
-  // Expected sizes must be established independently for EACH selected color.
-  // A numeric size such as 70 in the first color does not mean other colors
-  // must offer 70. Collect visible size LABELS, including rows whose stock
-  // cell has not loaded yet, rather than using only successfully read stock.
-  function sizeLabelsFromVisibleRows(root){
-    const found=[],seen=new Set();
-    if(!root)return found;
-    for(const tr of root.querySelectorAll('tr,[role="row"]')){
+  function inventoryTableSnapshot(root){
+    const found=verifiedInventoryTable(root);
+    if(!found)return{tableFound:false,labels:[],rows:[]};
+    const labels=[],rows=[],seen=new Set();
+    const trs=found.table.querySelectorAll('tbody tr,[role="row"]');
+    const candidates=trs.length?trs:found.table.querySelectorAll('tr,[role="row"]');
+    for(const tr of candidates){
       if(!visible(tr))continue;
-      const cell=tr.querySelector('td:first-child,[role="cell"]:first-child');
-      if(!cell)continue;
-      const label=text(cell);
-      if(!label||label.length>32)continue;
-      const size=dom.extractSize(label);
-      if(!size||!/^\s*(?:size\s*[:\-]?\s*)?(?:[0-9]{1,3}|[a-z]{1,7})\s*$/i.test(label))continue;
-      if(!seen.has(size)){seen.add(size);found.push(size);}
+      const cells=[...tr.children].filter(el=>el.matches&&el.matches('td,[role="cell"]')).map(text);
+      const parsed=dom.inventoryRowFromCells(cells,found.columns);
+      if(!parsed)continue;
+      if(!seen.has(parsed.size)){
+        seen.add(parsed.size);labels.push(parsed.size);
+        if(parsed.stock!=null)rows.push({size:parsed.size,stock:parsed.stock,raw:cells.join(' | ')});
+      }
     }
-    return found;
+    return{tableFound:true,labels,rows};
+  }
+
+  function detectedSizesFromRoot(root){
+    return inventoryTableSnapshot(root).labels;
+  }
+
+  function sizeLabelsFromVisibleRows(root){
+    return inventoryTableSnapshot(root).labels;
   }
 
   function expectedSizesFromRoot(root){
@@ -246,7 +250,7 @@
 
   function findStockRoot() {
     const tables = [...document.querySelectorAll('table,[role="table"]')]
-      .filter((table) => visible(table) && /ten size|tinh trang ton|con hang|het hang/.test(plain(text(table))));
+      .filter(table=>visible(table)&&Boolean(verifiedInventoryTable(table)));
 
     for (const table of tables) {
       let best = table;
@@ -286,39 +290,22 @@
     return null;
   }
 
+
   function readTargetRows(root,targetSizes){
-    if(!root)return[];
-    const order=(targetSizes&&targetSizes.length?targetSizes:detectedSizesFromRoot(root)).map(dom.normalizeSize).filter(Boolean);
-    const wanted=new Set(order),rows=[];
-    for(const tr of root.querySelectorAll('tr,[role="row"]')){
-      if(!visible(tr))continue;
-      const hit=dom.extractSizeStock(text(tr));if(!hit)continue;
-      const size=dom.normalizeSize(hit.size);
-      if(!wanted.size||wanted.has(size))rows.push({size,stock:Number(hit.stock),raw:text(tr)});
-    }
-    if(!rows.length){
-      const values=[];
-      for(const el of root.querySelectorAll('li,div,p,span')){
-        if(!visible(el)||el.childElementCount>10)continue;
-        const value=text(el);if(value&&value.length<=220&&dom.extractSizeStock(value))values.push(value);
-      }
-      for(const row of dom.parseRowTexts(values)){
-        const size=dom.normalizeSize(row.size);
-        if(!wanted.size||wanted.has(size))rows.push({...row,size});
-      }
-    }
-    const unique=new Map();for(const row of rows)if(!unique.has(row.size))unique.set(row.size,row);
-    const finalOrder=order.length?order:[...unique.keys()];
-    return finalOrder.filter(size=>unique.has(size)).map(size=>unique.get(size));
+    const snapshot=inventoryTableSnapshot(root);
+    if(!snapshot.tableFound)return[];
+    const order=(targetSizes&&targetSizes.length?targetSizes:snapshot.labels).map(dom.normalizeSize).filter(Boolean);
+    const bySize=new Map(snapshot.rows.map(row=>[row.size,row]));
+    return order.filter(size=>bySize.has(size)).map(size=>bySize.get(size));
   }
 
-    function rowsSignature(rows) {
+  function rowsSignature(rows) {
     return JSON.stringify((rows || []).map((row) => [row.size, Number(row.stock)]));
   }
 
   function hasAllTargetRows(rows, targetSizes) {
-    const wanted = new Set((targetSizes || TARGET_SIZES).map(dom.normalizeSize));
-    return rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size));
+    const wanted = new Set((targetSizes || []).map(dom.normalizeSize));
+    return wanted.size>0 && rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size));
   }
 
   async function stableTargetRows(root, targetSizes, timeout = 4000, cancelVersion = null) {
@@ -331,7 +318,8 @@
       await sleep(70);
       assertPopupScanActive(cancelVersion);
       const currentRoot = findStockRoot() || root;
-      const rows = readTargetRows(currentRoot, targetSizes);
+      const effectiveSizes=targetSizes&&targetSizes.length?targetSizes:sizeLabelsFromVisibleRows(currentRoot);
+      const rows = readTargetRows(currentRoot, effectiveSizes);
       const signature = rowsSignature(rows);
       if (rows.length > best.length) best = rows;
       if (signature && signature === previous) stable += 1;
@@ -529,10 +517,10 @@
       // On later colors we must observe changed stock/size rows to avoid
       // assigning the previous color's inventory to the next color.
       const selectionConfirmed = alreadySelected || !previousSignature || changedRows;
-      if (selectionConfirmed && hasAllTargetRows(rows, targetSizes)) {
+      if (selectionConfirmed && hasAllTargetRows(rows, effectiveSizes)) {
         if (alreadySelected || changedRows || elapsed >= 650) {
           await sleep(60);
-          return stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion);
+          return stableTargetRows(currentRoot, effectiveSizes, 1800, cancelVersion);
         }
       }
 
