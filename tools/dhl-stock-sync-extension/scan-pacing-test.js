@@ -26,7 +26,9 @@ assert.ok(bg.includes('job.lastPopupError'));
 assert.ok(ui.includes('Giữ tab nguồn được chọn'));
 assert.ok(ui.includes('Popup sản phẩm sẽ mở lần lượt ngay trên tab danh mục đang xem'));
 // Tăng tốc nhưng vẫn đợi dữ liệu ổn định và giữ retry khi thiếu size.
-assert.ok(content.includes('index===0?4600:2400'));
+assert.ok(content.includes('index===0?2200:1200'));
+assert.ok(content.includes('waitForPopupRefresh(before,expectedPath,2600,cancelVersion)'));
+assert.ok(content.includes('stableReads >= 4 && elapsed >= 850'));
 assert.ok(content.includes('await sleep(70)'));
 assert.ok(content.includes('stable >= 1'));
 assert.ok(content.includes('stable >= 3'));
