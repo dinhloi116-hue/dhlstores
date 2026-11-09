@@ -308,7 +308,10 @@
     const resume=$('manualResumeBtn');
     const running=Boolean(job&&job.running);
     const stopping=Boolean(job&&job.status==='stopping');
-    const paused=Boolean(job&&['paused','retry-paused'].includes(job.status));
+    const unfinished=Boolean(job&&Number(job.index||0)>=Number(job.total||0)
+      &&Array.isArray(job.results)&&job.results.some(result=>!result||result.complete!==true));
+    const paused=Boolean(job&&(['paused','retry-paused'].includes(job.status)
+      ||(['done','output-error'].includes(job.status)&&unfinished)));
 
     if(start){
       if(running||stopping){start.disabled=true;start.textContent='ĐANG ĐỒNG BỘ...';}
@@ -318,7 +321,8 @@
     if(cancel)cancel.hidden=!(running||stopping);
     if(resume){
       resume.hidden=!paused;
-      resume.textContent=job&&job.status==='retry-paused'?'TIẾP TỤC QUÉT LỖI':'TIẾP TỤC';
+      resume.textContent=job&&['retry-paused','done','output-error'].includes(job.status)
+        ?'QUÉT LẠI MẪU LỖI':'TIẾP TỤC';
     }
 
     if(!job){
@@ -345,7 +349,8 @@
     if(Number(job.rowCount||0))parts.push(`${Number(job.rowCount)} dòng`);
     if(progress)progress.textContent=parts.join(' • ');
 
-    if(job.status==='done')setStatus(`ĐÃ XONG ${job.profileName}: ${index}/${total} sản phẩm.`,'ok');
+    if(job.status==='done'&&unfinished)setStatus(`Đã quét ${index}/${total} nhưng còn mẫu thiếu dữ liệu. Bấm QUÉT LẠI MẪU LỖI để giữ kết quả đã đạt và chỉ mở lại popup mẫu lỗi.`,'bad');
+    else if(job.status==='done')setStatus(`ĐÃ XONG ${job.profileName}: ${index}/${total} sản phẩm.`,'ok');
     else if(job.status==='paused')setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau.`,'ok');
     else if(job.status==='retry-paused')setStatus(`Còn ${(job.retryQueue||[]).length} mẫu chưa đủ tồn sau nhiều lượt. Không xuất/đẩy Sapo. Bấm TIẾP TỤC QUÉT LỖI để chỉ quét lại các mẫu đó.`,'bad');
     else if(job.status==='error')setStatus(`LỖI: ${text(job.lastError)}`,'bad');
