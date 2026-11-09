@@ -897,6 +897,24 @@
     };
   }
 
+  function auditColorSnapshots(snapshots){
+    const missing=[],unverifiedColors=[];
+    for(const snapshot of snapshots){
+      const rows=Array.isArray(snapshot&&snapshot.rows)?snapshot.rows:[];
+      const expected=Array.isArray(snapshot&&snapshot.expectedSizes)?snapshot.expectedSizes:[];
+      const color=dom.colorKey(snapshot&&snapshot.color||'');
+      if(!rows.length||!expected.length){
+        unverifiedColors.push(snapshot&&snapshot.color||'Chưa rõ');
+        continue;
+      }
+      for(const size of expected){
+        if(!rows.some(row=>dom.normalizeSize(row.size)===dom.normalizeSize(size)))
+          missing.push(`${color}/${size}`);
+      }
+    }
+    return {missing,unverifiedColors};
+  }
+
   async function readOpenedPopup(descriptor, hints, progress, openInfo = null, cancelVersion = null) {
     assertPopupScanActive(cancelVersion);
     const root = (openInfo && openInfo.root) || findStockRoot();
@@ -986,20 +1004,7 @@
     const list = [...unique.values()];
     const imageUrls=[...new Set(list.map(v=>normalizeImageUrl(v&&v.image)).filter(Boolean))];
     const colorKeys = [...new Set(list.map((variant) => dom.colorKey(variant.color)).filter(Boolean))];
-    const missing = [];
-    const unverifiedColors=[];
-    for(const snapshot of snapshots){
-      const color=dom.colorKey(snapshot.color);
-      if(!snapshot.rows.length||!snapshot.expectedSizes.length){
-        unverifiedColors.push(snapshot.color);
-        continue;
-      }
-      for(const size of snapshot.expectedSizes){
-        if(!list.some(variant=>dom.colorKey(variant.color)===color&&variant.size===size)){
-          missing.push(`${color}/${size}`);
-        }
-      }
-    }
+    const {missing,unverifiedColors}=auditColorSnapshots(snapshots);
 
     const missingSourceSku=[];
     const expectedHints = expectedColorHints(hint);
@@ -1069,7 +1074,7 @@
       // Tránh trường hợp mạng/UI lag làm mất một size như ARS-M.
       const missing = result&&result.domDiagnostics&&Array.isArray(result.domDiagnostics.missingSizes)
         ? result.domDiagnostics.missingSizes : [];
-      if(result&&result.variants&&result.variants.length&&missing.length){
+      if(result&&result.variants&&result.variants.length&&result.complete!==true){
         try{
           const current=findStockRoot();
           if(current)await closeStockPopup(current);
@@ -1083,7 +1088,13 @@
           const oldMissing=missing.length;
           const newMissing=retry&&retry.domDiagnostics&&Array.isArray(retry.domDiagnostics.missingSizes)
             ? retry.domDiagnostics.missingSizes.length : 999;
-          if(newCount>oldCount||(newCount===oldCount&&newMissing<oldMissing))result=retry;
+          const oldUnverified=Array.isArray(result.domDiagnostics&&result.domDiagnostics.unverifiedColors)
+            ?result.domDiagnostics.unverifiedColors.length:999;
+          const newUnverified=Array.isArray(retry&&retry.domDiagnostics&&retry.domDiagnostics.unverifiedColors)
+            ?retry.domDiagnostics.unverifiedColors.length:999;
+          if(retry&&retry.complete===true
+            ||(newCount>=oldCount&&newMissing+newUnverified<oldMissing+oldUnverified)
+            ||(newMissing+newUnverified===oldMissing+oldUnverified&&newCount>oldCount))result=retry;
         }catch(_){}
       }
       return result;
