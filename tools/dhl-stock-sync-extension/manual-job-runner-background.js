@@ -888,13 +888,22 @@
 
   async function resumeJob(){
     const job=await readJob();
-    if(!job||!['paused','retry-paused'].includes(job.status))throw new Error('Không có lượt quét đang tạm dừng.');
-    if(job.status==='retry-paused'){
-      const remaining=retryCore.incompleteIndexes(job.results,job.total);
-      if(!remaining.length)throw new Error('Không còn sản phẩm lỗi để quét lại.');
+    if(!job||!['paused','retry-paused','done','output-error'].includes(job.status))
+      throw new Error('Không có lượt quét đã lưu để tiếp tục.');
+    const remaining=retryCore.incompleteIndexes(job.results,job.total);
+    const needsRepair=['done','output-error','retry-paused'].includes(job.status);
+    if(needsRepair){
+      if(!Array.isArray(job.descriptors)||job.descriptors.length!==Number(job.total||0))
+        throw new Error('Không còn danh sách sản phẩm gốc để quét lại. Hãy chạy một lượt quét mới.');
+      if(!remaining.length)throw new Error('Không còn sản phẩm popup lỗi để quét lại.');
       job.retryQueue=remaining;
       job.retryCursor=0;
       job.retryPass=1; // New bounded retry batch after explicit user action.
+      job.lastError='';
+    }else if(job.index>=job.total&&remaining.length&&!(Array.isArray(job.retryQueue)&&job.retryQueue.length)){
+      job.retryQueue=remaining;
+      job.retryCursor=0;
+      job.retryPass=1;
     }
     job.running=true;job.status='queued';job.stopAfterCurrent=false;job.resumedAt=Date.now();
     await saveJob(job);scheduleNext(150);return job;
