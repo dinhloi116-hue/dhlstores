@@ -35,3 +35,17 @@ const pkg=JSON.parse(read('package.json'));
 assert.strictEqual(pkg.version,manifest.version,'Extension version mismatch');
 assert.ok(html.includes('v'+pkg.version),'Visible version is stale');
 console.log('UI CONTROLS REGRESSION PASS: main scan available, history mounted, profiles protected');
+
+const iconSizes=[16,32,48,128];
+const pngSignature=Buffer.from([137,80,78,71,13,10,26,10]);
+for(const size of iconSizes){
+  const expected='icons/icon-'+size+'.png';
+  assert.strictEqual(manifest.icons[String(size)],expected,'Missing extension icon '+size);
+  assert.strictEqual(manifest.action.default_icon[String(size)],expected,'Missing toolbar icon '+size);
+  const png=fs.readFileSync(path.join(dir,expected));
+  assert.ok(png.subarray(0,8).equals(pngSignature),'Invalid PNG icon '+size);
+  assert.strictEqual(png.readUInt32BE(16),size,'Unexpected PNG width '+size);
+  assert.strictEqual(png.readUInt32BE(20),size,'Unexpected PNG height '+size);
+}
+assert.ok(html.includes('src="icons/icon-32.png"'),'Side panel logo missing');
+console.log('BRANDED ICON PASS: 16 / 32 / 48 / 128 PNGs referenced by manifest and panel');
