@@ -940,6 +940,12 @@
     const built=await prepareRows(profile,sourceResults);
     const prepared=built.prepared;
     if(!prepared.rows.length)throw new Error('Lượt quét gần nhất chưa tạo được dòng tồn kho.');
+    const recoveredIssues=collectScanIssues(job,sourceResults,prepared);
+    const recoveredQuality=quality.evaluate(job,sourceResults,prepared,recoveredIssues,
+      job.status==='done'?'':job.status);
+    if(!recoveredQuality.ok){
+      throw new Error('Lượt quét đã lưu chưa đạt kiểm tra chất lượng: '+recoveredQuality.reasons.join(' '));
+    }
 
     const stored=await chrome.storage.local.get(BATCH_KEY);
     const pending=stored[BATCH_KEY]&&typeof stored[BATCH_KEY]==='object'?stored[BATCH_KEY]:{};
@@ -960,7 +966,8 @@
       auto:false,
       partial:job.scope!=='all'||Number(job.index||0)<Number(job.total||0),
       jobId:job.id,
-      qualityValidated:false,
+      qualityValidated:true,
+      report:{quality:recoveredQuality,issueCount:recoveredIssues.length},
       recovered:true
     };
     await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});
