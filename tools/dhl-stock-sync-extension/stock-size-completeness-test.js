@@ -8,7 +8,7 @@ assert.ok(src.includes('const neededSizes = hintedSizes.length ? hintedSizes : (
 assert.ok(src.includes('sizeLabelsFromVisibleRows(currentRoot)'));
 assert.ok(src.includes('auditColorSnapshots(snapshots)'));
 assert.ok(src.includes('while (Date.now() - started < 6500)'));
-assert.ok(src.includes('stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion)'));
+assert.ok(src.includes('stableTargetRows(currentRoot, effectiveSizes, 1800, cancelVersion)'));
 assert.ok(src.includes('Nếu popup đã đọc được nhưng còn thiếu size'));
 assert.ok(src.includes('const retryOpen=await openStockPopup(descriptor, cancelVersion)'));
 assert.ok(src.includes('if(retry&&retry.complete===true'));
