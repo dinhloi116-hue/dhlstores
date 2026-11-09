@@ -48,7 +48,7 @@
    for(k=0;k<places.length;k++){
     p=places[k];selected=p.item;
     if(!selected||!selected.shape)return null;
-    angle=pattern==='baseline'?(p.angle||0):pattern==='uniform'?seed:
+    angle=pattern==='baseline'?(p.angle||0):pattern==='uniform'?angles[seed%angles.length]:
       pattern==='alternate'?angles[(k+seed)%angles.length]:
       pattern==='reverse'?angles[(angles.length-1-(k+seed)%angles.length)]:
       pattern==='wide'?((selected.w>selected.h)?angles[(seed+1)%angles.length]:angles[seed%angles.length]):
