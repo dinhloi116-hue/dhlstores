@@ -1,15 +1,15 @@
 // Run: node tools/tach-nameset-a3/tests/ui_redesign_v841.test.js
-// Static regressions for CorelDRAW MSHTML-compatible UI V8.41.
+// Static regressions for CorelDRAW MSHTML-compatible UI V8.45.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const html=fs.readFileSync(path.join(__dirname,'../src/DockerUI_CURRENT.html'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'../src/V841_UI_REDESIGN.html'),'utf8');
-assert.ok(html.includes('DHL_UI_VERSION=8.41'));
+assert.ok(html.includes('DHL_UI_VERSION=8.45'));
 assert.equal((html.match(/id="dhl-v841-ui-redesign-style"/g)||[]).length,1,'no duplicate theme');
 assert.ok(html.includes('id="dhl-v840-fast-update"'),'fast updater retained');
 assert.ok(html.includes('id="dhl-v838-direct-groups"'),'direct-group tool retained');
 assert.ok(html.includes('id="dhl-v837-digit-logo"'),'digit-logo tool retained');
-assert.ok(html.includes('<span class="ver">v8.41</span>'),'visible version at first paint');
-assert.ok(html.includes("v8.41 · outline + UI"),'deferred version update matches release');
+assert.ok(html.includes('<span class="ver">v8.45</span>'),'visible version at first paint');
+assert.ok(html.includes("v8.45 · outline + UI"),'deferred version update matches release');
 const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
 scripts.forEach((m,i)=>assert.doesNotThrow(()=>new Function(m[1]),'JS script '+i));
 const source=css.replace(/\/\*[\s\S]*?\*\//g,'');
@@ -32,4 +32,4 @@ for(const [name,fg,bg] of [
  ['field text','#112e4a','#ffffff'],
  ['selected tab','#0f4fa3','#dceafe']
 ]) assert.ok(contrast(fg,bg)>=4.5,name+' text contrast below AA');
-console.log('PASS: V8.41 UI visible version, highlighted actions, MSHTML-safe CSS, 35 JS scripts, WCAG contrast');
+console.log('PASS: V8.45 UI visible version, highlighted actions, MSHTML-safe CSS, 35 JS scripts, WCAG contrast');
