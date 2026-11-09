@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.24.3",
+  "version": "0.24.4",
   "minimum_chrome_version": "116",
-  "description": "Quét popup tại tab nguồn; tự mở lại các sản phẩm thiếu màu/size/tồn theo nhiều lượt và chặn dữ liệu chưa xác minh.",
+  "description": "Quét popup theo màu và size; nhận Hết hàng là tồn kho 0 hợp lệ; tự quét lại sản phẩm thiếu dữ liệu thực.",
   "permissions": [
     "storage",
     "unlimitedStorage",
