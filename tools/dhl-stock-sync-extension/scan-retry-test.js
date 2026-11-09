@@ -42,7 +42,7 @@ for(const fragment of [
   'job.retryCursor=Number(job.retryCursor||0)+1',
   'job.retryPass=next.pass',
   "await finalize(job,'retry-paused')",
-  "if(!job||!['paused','retry-paused'].includes(job.status))",
+  "if(!job||!['paused','retry-paused','done','output-error'].includes(job.status))",
   "job.errors=job.errors.filter(err=>Number(err&&err.id)!==Number(descriptor&&descriptor.id))",
   'if(!retrying&&job.index<=3&&job.consecutiveEmpty>=3)',
   'scheduleNext(RETRY_COOLDOWN_MS)',
@@ -50,7 +50,9 @@ for(const fragment of [
 ]){
   assert.ok(src.includes(fragment),'Missing retry protection: '+fragment);
 }
-assert.ok(ui.includes('TIẾP TỤC QUÉT LỖI'),'Retry button missing');
+assert.ok(ui.includes('QUÉT LẠI MẪU LỖI'),'Retry button missing');
+assert.ok(ui.includes("['done','output-error'].includes(job.status)&&unfinished"),'Old incomplete completed jobs must be resumable');
+assert.ok(src.includes('job.retryQueue=remaining'),'Must resume only failed product indices');
 assert.ok(ui.includes("job.status==='retrying'"),'Retry progress missing');
 assert.ok(bg.includes("'scan-retry-core.js'"),'Background must preload retry core');
 assert.strictEqual(manifest.version,'0.24.3');
