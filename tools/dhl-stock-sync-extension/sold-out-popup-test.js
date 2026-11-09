@@ -2,6 +2,8 @@ const fs=require('fs');
 const assert=require('assert');
 const vm=require('vm');
 const parser=require('./dom-stock-parser.js');
+const quality=require('./scan-quality-core.js');
+const retry=require('./scan-retry-core.js');
 const source=fs.readFileSync(__dirname+'/content.js','utf8');
 const start=source.indexOf('  function hasAllTargetRows(rows, targetSizes) {');
 const end=source.indexOf('  async function stableTargetRows(',start);
@@ -16,6 +18,14 @@ assert.ok(zero.every(row=>Number.isSafeInteger(row.stock)));
 assert.strictEqual(parser.inventoryRowFromCells(['S','Còn hàng (0)','0'],columns).stock,0);
 assert.strictEqual(parser.inventoryRowFromCells(['S','Đang tải...','0'],columns).stock,null);
 assert.strictEqual(parser.extractStock('Hết hàng'),0);
+assert.strictEqual(quality.rowValid({sku:'KEM-S',stock:0}),true,'SKU with 0 stock is valid');
+assert.strictEqual(quality.rowValid({sku:'KEM-S',stock:null}),false,'Unknown stock must not be treated as zero');
+assert.strictEqual(retry.verified({
+  complete:true,
+  variants:sizes.map(size=>({size,available:0})),
+  domDiagnostics:{missingSizes:[],unverifiedColors:[],missingColorHints:[]},
+  errors:[]
+}),true,'A fully verified sold-out color must not enter retry queue');
 
 async function scenario({rows,selects=true,already=false,previous,expect,slowThreshold=6500}){
   let now=0,selected=already,clicks=0,stableCalls=0;
