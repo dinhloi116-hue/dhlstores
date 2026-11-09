@@ -40,8 +40,10 @@ assert.deepStrictEqual(out.rows.map(r=>r.sku),[
   'dt-mexico-2026-hd-reu-XL',
   'dt-mexico-2026-hd-reu-XXL'
 ]);
-assert.ok(out.rows.every(r=>r.matchedBy==='legacy-name-size-id-only'));
-assert.deepStrictEqual(out.rows.map(r=>r.variantId),[7000,7001,7002,7003,7004]);
+assert.ok(out.rows.every(r=>r.matchedBy==='clean-alias-size-new'));
+// Old Sapo rows have a different SKU and therefore must NOT provide IDs.
+// Matching only the name + size could attach the wrong product on direct push.
+assert.deepStrictEqual(out.rows.map(r=>r.variantId),[0,0,0,0,0]);
 
 console.log('STALE SKU CACHE PASS',{
   old:'Mexico xanh 26 HD-S',
