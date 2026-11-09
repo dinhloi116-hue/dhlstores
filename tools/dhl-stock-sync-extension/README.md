@@ -1,11 +1,20 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.6**.
+Phiên bản: **v0.24.7**.
+
+## Kho xuất Excel chung cho toàn bộ DHL STOCK SYNC (v0.24.7)
+
+- **Mọi hồ sơ của tool**, gồm HD, S trẻ em, M trẻ em và các tab nguồn khác, sử dụng cùng một kho xuất Excel mặc định **dhl sport**, theo tên kho người dùng đã cung cấp. Không cần API để tải Excel.
+- Có ô **Kho xuất Excel (dùng cho tất cả hồ sơ)** tại TÙY CHỌN NÂNG CAO → Đầu ra / Ứng dụng riêng Sapo. Đổi tên kho một lần, extension tự lưu vào Chrome; toàn bộ cache và lượt quét mới dùng chung.
+- Nếu hồ sơ có tên chi nhánh rõ ràng từ file Sapo cũ, không tự ghi đè khi khác tên kho chung; hiển thị xung đột để tránh nhập sai.
+- Nếu đã xác minh chi nhánh bằng API, tên kho Excel phải khớp chi nhánh đó. Việc nhập tên kho để xuất Excel **không cấp quyền ghi Sapo**; đẩy trực tiếp vẫn cần xác minh locationId.
+- Các lượt quét đã hoàn tất được phép khôi phục từ checkpoint nếu kiểm tra lại đầy đủ sản phẩm, SKU, size/tồn và 0 lỗi. Không thể phục hồi một bản quét lỗi thành bản xuất hợp lệ.
+- Kiểm thử mô phỏng 244 biến thể S trẻ em (bao gồm tồn 0), các hồ sơ HD + trẻ em trong một file, ô F3 của mẫu Sapo, cache cũ và các trường hợp xung đột kho.
 
 ## Sửa tên kho khi xuất Excel Sapo HD (v0.24.6)
 
-- Hồ sơ **HD** được phép xuất Excel theo kho **dhl sport** đúng như ảnh người dùng gửi trong Sapo (Thông tin kho → Lưu kho tại). Không bắt buộc API Key/Secret chỉ để tải Excel.
-- Ưu tiên tên kho đã xác minh qua kết nối API Sapo; kế đến tên chi nhánh đã lưu trong hồ sơ hoặc file kho cũ. Chỉ khi chưa có tên nào mới dùng `dhl sport` **riêng hồ sơ HD**, tuyệt đối không áp dụng sang cửa hàng/hồ sơ khác.
+- Bản v0.24.6 ban đầu chỉ áp dụng mặc định **dhl sport** cho HD; bản v0.24.7 đã sửa để áp dụng cho toàn bộ tool.
+- Ưu tiên tên kho đã xác minh qua API, tiếp đến kho xuất Excel đã chọn; hồ sơ có tên chi nhánh riêng được kiểm tra xung đột. Nếu chưa cấu hình, dùng `dhl sport` cho tất cả hồ sơ trong extension.
 - Nếu tên chi nhánh từ dữ liệu quét và tên chi nhánh đã xác minh khác nhau, báo lỗi để tránh xuất/ghi tồn sai kho.
 - Không thay đổi dữ liệu scan, SKU, số lượng tồn, hoặc xóa cache khi export lỗi; chỉ dọn cache sau khi Excel thực sự tạo thành công.
 - Tên `dhl sport` dùng để điền ô F3 trong template nhập tồn; **không tự xác minh hoặc tự kết nối API**. Muốn đẩy trực tiếp vẫn cần kiểm tra kết nối Sapo và locationId hợp lệ.
