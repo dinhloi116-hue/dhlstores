@@ -10,19 +10,21 @@ assert.ok(bg.includes('setTimeout(()=>processStep().catch(()=>{})'));
 assert.ok(bg.includes('when:Date.now()+30000'));
 assert.ok(bg.includes('let stepInFlight=false'));
 assert.ok(bg.includes('if(stepInFlight)return'));
-// Quét trên tab độc lập, không chiếm tab người dùng.
-assert.ok(bg.includes('chrome.windows.create({'));
-assert.ok(bg.includes("type:'normal'"));
-assert.ok(bg.includes('focused:false'));
-assert.ok(bg.includes('chrome.windows.remove(job.scanWindowId)'));
-assert.ok(bg.includes('job.ownsWindow=true'));
+// Quét popup trực tiếp trên tab nguồn hiện tại, không tạo/đóng tab hoặc cửa sổ.
+assert.ok(bg.includes('const sourceTabId=Number(job&&job.sourceTabId)||0;'));
+assert.ok(bg.includes('await chrome.tabs.get(sourceTabId)'));
+assert.ok(bg.includes('sameCategoryPage(tab.url,job.sourceUrl)'));
+assert.ok(bg.includes('if(!tab.active)'));
+assert.ok(!bg.includes('chrome.windows.create('));
+assert.ok(!bg.includes('chrome.windows.remove('));
+assert.ok(!bg.includes('chrome.tabs.create('));
+assert.ok(!bg.includes('chrome.tabs.remove('));
+assert.ok(bg.includes('job.tabId=sourceTabId'));
+assert.ok(bg.includes('job.ownsTab=false'));
 assert.ok(bg.includes('if(job.index<=3&&job.consecutiveEmpty>=3)'));
 assert.ok(bg.includes('job.lastPopupError'));
-assert.ok(bg.includes('if(job.ownsTab===true'));
-assert.ok(bg.includes('tabId:0,'));
-assert.ok(!bg.includes('job.tabId=preferredId'));
-assert.ok(ui.includes('job.ownsTab===true&&Number(job.tabId)===Number(tab.id)'));
-assert.ok(ui.includes('Có thể chuyển tab'));
+assert.ok(ui.includes('Giữ tab nguồn được chọn'));
+assert.ok(ui.includes('Popup sản phẩm sẽ mở lần lượt ngay trên tab danh mục đang xem'));
 // Tăng tốc nhưng vẫn đợi dữ liệu ổn định và giữ retry khi thiếu size.
 assert.ok(content.includes('index===0?4600:2400'));
 assert.ok(content.includes('await sleep(70)'));
@@ -34,4 +36,4 @@ assert.ok(content.includes('targetSelection.controls.length ? null : await first
 assert.ok(content.includes("if(findStockRoot())throw new Error('Popup chưa đóng"));
 assert.ok(catalog.includes('await sleep(180)'));
 assert.ok(catalog.includes('await sleep(120)'));
-console.log('SCAN PACING PASS: unfocused active scan window, early abort, stable stock validation');
+console.log('SCAN PACING PASS: original active tab, early abort, stable stock validation');

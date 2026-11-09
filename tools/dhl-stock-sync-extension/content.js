@@ -574,25 +574,51 @@
   }
 
   async function closeStockPopup(root) {
-    const container = modalContainer(root);
-    if (!container) return true;
-    const candidates = [...container.querySelectorAll('button,a,[role="button"],[aria-label],[title],[class*="close"],[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close')]
-      .filter(visible)
-      .map((el) => {
-        const p = plain(`${text(el)} ${el.getAttribute('aria-label') || ''} ${el.getAttribute('title') || ''} ${el.className || ''}`);
-        let score = 0;
-        if (el.matches('[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close')) score += 180;
-        if (/dong|close/.test(p)) score += 120;
-        if (/^[x×]$/.test(text(el).trim().toLowerCase())) score += 150;
-        return { el, score };
-      })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score);
-    if (candidates[0]) await clickElement(candidates[0].el);
-    else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
-    for(let attempt=0;attempt<8;attempt+=1){
+    const container=modalContainer(root);
+    if(!container)return true;
+    const selector='button,a,[role="button"],[onclick],[aria-label],[title],[class*="close"],[class*="Close"],[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close';
+    const scopes=[container];
+    let ancestor=container.parentElement;
+    for(let i=0;i<3&&ancestor&&ancestor!==document.body;i+=1,ancestor=ancestor.parentElement){
+      scopes.push(ancestor);
+    }
+    const candidates=new Map();
+    for(let depth=0;depth<scopes.length;depth+=1){
+      for(const el of scopes[depth].querySelectorAll(selector)){
+        if(!visible(el))continue;
+        const clickable=el.closest('button,[role="button"],[onclick],a')||el;
+        if(!visible(clickable))continue;
+        const label=plain(`${text(el)} ${el.getAttribute('aria-label')||''} ${el.getAttribute('title')||''} ${el.className||''}`);
+        let score=0;
+        if(el.matches('[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close'))score+=180;
+        if(/dong|close|modal-close|popup-close/.test(label))score+=130;
+        if(/^[x×]$/.test(text(el).trim().toLowerCase()))score+=160;
+        if(score<=0)continue;
+        score-=depth*15;
+        const previous=candidates.get(clickable);
+        if(!previous||score>previous.score)candidates.set(clickable,{el:clickable,score});
+      }
+    }
+    const sorted=[...candidates.values()].sort((a,b)=>b.score-a.score);
+    for(const item of sorted.slice(0,5)){
+      await clickElement(item.el);
+      for(let attempt=0;attempt<8;attempt+=1){
+        if(!findStockRoot())return true;
+        await sleep(55);
+      }
+    }
+    // Một số popup bắt phím Escape ở cửa sổ hoặc ở chính phần tử modal.
+    for(const target of [document.activeElement,container,document,window]){
+      if(!target||typeof target.dispatchEvent!=='function')continue;
+      for(const type of ['keydown','keyup']){
+        target.dispatchEvent(new KeyboardEvent(type,{
+          key:'Escape',code:'Escape',keyCode:27,which:27,bubbles:true,cancelable:true
+        }));
+      }
+    }
+    for(let attempt=0;attempt<10;attempt+=1){
       if(!findStockRoot())return true;
-      await sleep(55);
+      await sleep(60);
     }
     return !findStockRoot();
   }

@@ -93,8 +93,9 @@
 
   async function loadTabs({preferActive=true,preferTabId=0}={}){
     try{
-      const [tabs,stored]=await Promise.all([
+      const [tabs,currentWindowActive,stored]=await Promise.all([
         chrome.tabs.query({}),
+        chrome.tabs.query({active:true,currentWindow:true}),
         chrome.storage.local.get([PROFILE_KEY,JOB_KEY])
       ]);
       const profiles=Array.isArray(stored[PROFILE_KEY])?stored[PROFILE_KEY]:[];
@@ -121,7 +122,8 @@
       let next=0;
       if(preferTabId&&sourceTabs.some(tab=>Number(tab.tabId)===Number(preferTabId)))next=Number(preferTabId);
       else if(preferActive){
-        const active=sourceTabs.find(tab=>tab.active);
+        const currentId=Number(currentWindowActive&&currentWindowActive[0]&&currentWindowActive[0].id)||0;
+        const active=sourceTabs.find(tab=>Number(tab.tabId)===currentId);
         if(active)next=Number(active.tabId);
       }
       if(!next&&selectedTabId&&sourceTabs.some(tab=>Number(tab.tabId)===Number(selectedTabId)))next=Number(selectedTabId);
@@ -226,6 +228,10 @@
       await loadTabs({preferActive:false});
       const tab=selectedTab();
       if(!tab)throw new Error('Chưa có tab danh mục nguồn để đồng bộ.');
+      const activeTabs=await chrome.tabs.query({active:true,currentWindow:true});
+      if(Number(activeTabs&&activeTabs[0]&&activeTabs[0].id)!==Number(tab.tabId)){
+        throw new Error('Hãy chuyển sang đúng tab nguồn đang xem rồi bấm ĐỒNG BỘ TAB NÀY.');
+      }
 
       const scope=currentScope();
       let ids=[];
@@ -245,7 +251,7 @@
         selectedIds:ids
       });
       if(!response.ok)throw new Error(response.error||'Không khởi động được lượt quét.');
-      setStatus(`Đã mở cửa sổ quét riêng: ${text(tab.title)||text(tab.profileName)||'tab nguồn'}. Có thể chuyển tab và làm việc khác.`,'ok');
+      setStatus(`Đã bắt đầu quét ngay trên tab nguồn: ${text(tab.title)||text(tab.profileName)||'tab nguồn'}. Popup sản phẩm sẽ mở lần lượt tại tab này.`,'ok');
       await refreshJob();
     }catch(error){
       setStatus(error.message||String(error),'bad');
@@ -337,7 +343,7 @@
     else if(job.status==='output-error')setStatus(`LỖI ĐẦU RA: ${text(job.lastError)}`,'bad');
     else if(job.status==='cancelled')setStatus(`ĐÃ HỦY tại ${index}/${total}. Có thể đổi tab và chạy lại ngay.`,'ok');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
-    else if(running)setStatus(`Đang quét cửa sổ riêng ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''} • có thể làm việc trên tab khác.`);
+    else if(running)setStatus(`Đang quét trực tiếp trên tab nguồn ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''}. Giữ nguyên tab đến khi xong.`);
   }
 
   async function refreshJob(){
@@ -440,7 +446,7 @@
         </div>
 
         <button id="manualStartBtn" type="button" class="primary" disabled>ĐỒNG BỘ TAB NÀY</button>
-        <small style="display:block;margin:5px 0 8px;color:#64748b;font-size:10px">Quét trong cửa sổ Chrome riêng, không giành focus. Bạn có thể làm việc trong cửa sổ chính hoặc đóng Side Panel. Giữ Chrome mở đến khi xong.</small>
+        <small style="display:block;margin:5px 0 8px;color:#64748b;font-size:10px">Popup sản phẩm sẽ mở lần lượt ngay trên tab danh mục đang xem. Giữ tab nguồn được chọn, không chuyển trang đến khi hoàn thành.</small>
 
         <div class="manual-secondary-actions">
           <button id="manualStopBtn" type="button" class="report" hidden>DỪNG SAU SP NÀY</button>

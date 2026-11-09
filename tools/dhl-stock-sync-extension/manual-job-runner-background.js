@@ -157,51 +157,54 @@
     });
   }
 
-  async function ensureJobTab(job){
-    // Cửa sổ riêng không giành focus, tab ACTIVE nên popup có thể hiển thị đầy đủ.
-    if(job.ownsWindow===true&&Number(job.scanWindowId)>0&&Number(job.tabId)>0){
-      try{
-        const tab=await chrome.tabs.get(Number(job.tabId));
-        if(tab&&tab.windowId===Number(job.scanWindowId)
-          &&isCategoryUrl(tab.url)&&sourceKey(tab.url)===sourceKey(job.sourceUrl))return tab;
-      }catch{}
-    }
-
-    const win=await chrome.windows.create({
-      url:job.sourceUrl,
-      type:'normal',
-      focused:false
-    });
-    const tab=win&&Array.isArray(win.tabs)?win.tabs[0]:null;
-    if(!tab||!tab.id){
-      if(win&&win.id)try{await chrome.windows.remove(win.id);}catch{}
-      throw new Error('Chrome không tạo được cửa sổ quét riêng.');
-    }
+  function sameCategoryPage(currentUrl,originalUrl){
     try{
-      await waitTabComplete(tab.id);
-      const latest=await readJob();
-      if(!latest||latest.id!==job.id||latest.running!==true||latest.status==='cancelled'){
-        throw new Error('Lượt quét đã bị hủy trong lúc mở cửa sổ riêng.');
-      }
-      job.tabId=tab.id;
-      job.ownsTab=true;
-      job.ownsWindow=true;
-      job.scanWindowId=win.id;
-      await saveJob(job);
-      return tab;
-    }catch(error){
-      try{await chrome.windows.remove(win.id);}catch{}
-      throw error;
+      const current=new URL(String(currentUrl||''));
+      const original=new URL(String(originalUrl||''));
+      return isCategoryUrl(current.href)
+        &&current.origin===original.origin
+        &&current.pathname===original.pathname
+        &&current.search===original.search;
+    }catch{return false;}
+  }
+
+  async function ensureJobTab(job){
+    // Quét trên ĐÚNG tab nguồn do người dùng chọn. Không tạo tab/cửa sổ sao chép.
+    const sourceTabId=Number(job&&job.sourceTabId)||0;
+    if(!sourceTabId)throw new Error('Không tìm thấy tab nguồn. Hãy mở danh mục và bấm ĐỒNG BỘ TAB NÀY lại.');
+    let tab;
+    try{tab=await chrome.tabs.get(sourceTabId);}
+    catch(_){throw new Error('Tab nguồn đã bị đóng. Tool dừng để tránh quét nhầm trang.');}
+    if(!tab||!sameCategoryPage(tab.url,job.sourceUrl)){
+      throw new Error('Tab nguồn đã chuyển trang hoặc đổi danh mục. Tool dừng để tránh ghi tồn sai.');
     }
+    if(!tab.active){
+      throw new Error('Tab nguồn không còn được chọn. Hãy giữ tab nguồn đang mở trong suốt lượt quét.');
+    }
+    if(tab.status!=='complete'){
+      await waitTabComplete(sourceTabId);
+      tab=await chrome.tabs.get(sourceTabId);
+      if(!sameCategoryPage(tab.url,job.sourceUrl)||!tab.active){
+        throw new Error('Tab nguồn đã thay đổi trong lúc tải trang. Tool dừng an toàn.');
+      }
+    }
+    const latest=await readJob();
+    if(!latest||latest.id!==job.id||latest.running!==true||latest.status==='cancelled'){
+      throw new Error('Lượt quét đã bị hủy trước khi mở popup.');
+    }
+    if(job.tabId!==sourceTabId||job.ownsTab||job.ownsWindow||job.scanWindowId){
+      job.tabId=sourceTabId;
+      job.ownsTab=false;
+      job.ownsWindow=false;
+      job.scanWindowId=0;
+      await saveJob(job);
+    }
+    return tab;
   }
 
   async function closeJobTab(job){
+    // Tab nguồn là của người dùng: hoàn thành/hủy quét KHÔNG được đóng tab.
     if(!job)return;
-    if(job.ownsWindow===true&&Number(job.scanWindowId)>0){
-      try{await chrome.windows.remove(job.scanWindowId);}catch{}
-    }else if(job.ownsTab===true&&Number(job.tabId)>0){
-      try{await chrome.tabs.remove(job.tabId);}catch{}
-    }
     job.tabId=0;
     job.ownsTab=false;
     job.scanWindowId=0;
@@ -714,6 +717,14 @@
 
     const sourceUrl=text(message.sourceUrl);
     if(!isCategoryUrl(sourceUrl))throw new Error('Hãy mở đúng trang danh mục trên si.aobongda.net trước.');
+    const sourceTabId=Number(message.sourceTabId)||0;
+    if(!sourceTabId)throw new Error('Chưa xác định được tab nguồn để quét.');
+    let sourceTab;
+    try{sourceTab=await chrome.tabs.get(sourceTabId);}
+    catch(_){throw new Error('Tab nguồn đã bị đóng. Mở lại danh mục rồi thử lại.');}
+    if(!sourceTab||!sameCategoryPage(sourceTab.url,sourceUrl)||!sourceTab.active){
+      throw new Error('Hãy chọn đúng tab danh mục nguồn đang mở trước khi đồng bộ.');
+    }
 
     const profile=await ensureSourceProfile({
       profileId:text(message.profileId),
@@ -736,7 +747,7 @@
       index:0,total:0,progress:'0/0',
       stopAfterCurrent:false,
       createdAt:Date.now(),startedAt:Date.now(),
-      sourceTabId:Number(message.sourceTabId)||0,
+      sourceTabId,
       tabId:0,
       ownsTab:false,
       scanWindowId:0,
