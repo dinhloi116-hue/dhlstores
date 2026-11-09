@@ -1,6 +1,14 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.7**.
+Phiên bản: **v0.24.8**.
+
+## Excel khớp đúng SKU, không ghép tên/màu gần giống (v0.24.8)
+
+- Bảng tồn Excel dùng **toàn bộ SKU** để xác định biến thể; `dt-duc-2026-hd-trang-XXL` và `dt-duc-2026-hd-trang-do-XXL` là hai khóa riêng biệt.
+- Bỏ fallback liên kết `Sapo variantId/productId` theo tên sản phẩm + size khi SKU không trùng; metadata chỉ được liên kết khi **SKU hoàn toàn khớp**.
+- Trước xuất Excel, kiểm tra từng dòng từ cache có `SKU = alias + size` và tên biến thể khớp alias; chặn trùng SKU, SKU sai và tồn không hợp lệ. Cache giữ nguyên nếu kiểm tra lỗi.
+- Kiểm thử tái hiện ĐT Đức 2026 HD: màu Trắng S/M/L/XL/XXL tồn 0; màu Trắng Đỏ lần lượt 4/8/38/19/10; đối chiếu trực tiếp dữ liệu trong file Excel tạo ra.
+- Không thay đổi cách mở popup/quét trực tiếp; không tự đẩy lên Sapo. Nếu popup đọc sai số tồn cho màu, chỉ sửa SKU ở Excel **không thể tự xác minh** số liệu đó — cần đối chiếu popup nguồn.
 
 ## Kho xuất Excel chung cho toàn bộ DHL STOCK SYNC (v0.24.7)
 
