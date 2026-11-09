@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.24.6",
+  "version": "0.24.7",
   "minimum_chrome_version": "116",
-  "description": "Quét tồn kho HD theo popup và xuất Excel Sapo đúng tên kho dhl sport đã cung cấp, kể cả khi chưa cấu hình API.",
+  "description": "Đồng bộ tồn kho popup cho tất cả danh mục; xuất Excel Sapo dùng chung kho dhl sport, giữ checkpoint và kiểm tra đủ SKU/size.",
   "permissions": [
     "storage",
     "unlimitedStorage",
