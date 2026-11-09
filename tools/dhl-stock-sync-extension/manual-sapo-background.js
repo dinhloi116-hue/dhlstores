@@ -354,6 +354,17 @@
     const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]);
     const queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
     if(!queue||queue.source!=='manual'||queue.status!=='running'||queue.manualPaused===true)return;
+    // Safe migration: never continue uploading a queue prepared by a version
+    // that did not validate every source product, color, size and output SKU.
+    if(queue.qualityValidated!==true){
+      queue.manualPaused=true;
+      queue.status='blocked-quality';
+      queue.errors=Array.isArray(queue.errors)?queue.errors:[];
+      queue.errors.push({at:Date.now(),index:queue.index,error:'Queue cũ không có xác minh chất lượng dữ liệu nguồn. Dừng để tránh cập nhật tồn sai.'});
+      await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+      await writePushStatus({status:'manual-error',source:'manual',error:queue.errors[queue.errors.length-1].error});
+      return;
+    }
 
     queue.successRows=Array.isArray(queue.successRows)?queue.successRows:[];
     queue.errors=Array.isArray(queue.errors)?queue.errors:[];
