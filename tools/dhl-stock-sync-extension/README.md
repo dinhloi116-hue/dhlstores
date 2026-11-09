@@ -1,6 +1,17 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.25.0**.
+Phiên bản: **v0.25.1**.
+
+## Báo cáo ảnh biến động tồn kho ở tab Chrome lớn (v0.25.1)
+
+- Trong ĐẦU RA, sau khi quét có nút **XEM BÁO CÁO ẢNH CHI TIẾT ↗**. Chỉ mở tab mới khi người dùng bấm; không mở tab khi đang quét popup.
+- Tab báo cáo riêng `stock-report.html` có ảnh đúng màu/biến thể lấy từ popup nguồn, tên sản phẩm, SKU đầy đủ, màu, size, tồn trước/sau, chênh lệch, liên kết nguồn; lọc theo danh mục, trạng thái, tìm kiếm, phóng to ảnh và in/lưu PDF.
+- Nhóm hiển thị: **Đang hết hàng** (tồn hiện tại bằng 0), **Vừa hết hàng** (có → 0), **Có hàng trở lại** (0 → có), **Tăng tồn**, **Giảm tồn**, **Không còn thấy** và toàn bộ SKU.
+- Chỉ phân loại chuyển trạng thái khi có **hai lượt quét toàn bộ đủ điều kiện so sánh** trong lịch sử; lần quét đầu vẫn xem được SKU có tồn 0 nhưng không tự báo "có lại". Lượt quét một phần chưa đủ chất lượng không được suy ra tăng/giảm.
+- Ảnh từng màu lấy từ `variant.image` do popup đọc. Chỉ dùng ảnh đại diện sản phẩm khi sản phẩm có một màu; mẫu nhiều màu mà thiếu ảnh chính xác sẽ hiển thị chỗ trống để tránh ảnh sai SKU.
+- SKU hiển thị được nối bằng mã ID biến thể nguồn + parent ID + size với các dòng Excel đã xác minh, **không ghép tên màu gần giống**. Giữ nguyên khóa nhận diện snapshot đời cũ để tránh báo sai tăng/giảm khi nâng cấp.
+- Snapshot ảnh/SKU được giữ trong `dhlManualStockReportV1` sau khi quét, chỉ lưu URL ảnh (không lưu ảnh gốc); dữ liệu tiếp tục ở Chrome local. Không ghi lên Sapo từ tab báo cáo.
+- Báo cáo cũ trước v0.25.1 có thể chưa có ảnh/SKU; quét mới để có metadata ảnh. Ảnh nguồn bên ngoài có thể không tải được nếu máy chủ chặn hotlink.
 
 ## Nâng cấp an toàn dữ liệu và xem trước Sapo (v0.25.0)
 

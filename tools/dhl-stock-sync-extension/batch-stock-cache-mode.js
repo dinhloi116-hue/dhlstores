@@ -107,10 +107,29 @@
     await renderBatchUi();
   }
 
+  function openVisualStockReport(){
+    // Open only from an explicit user click; never create a tab while scanning.
+    const url=chrome.runtime.getURL('stock-report.html');
+    chrome.tabs.create({url,active:true}).catch(error=>{
+      const status=document.getElementById('profileStatus');
+      if(status){
+        status.textContent='Không mở được tab báo cáo: '+String(error&&error.message||error);
+        status.style.color='#b91c1c';
+      }
+    });
+  }
+
   async function renderQuickReports(){
     const box=document.getElementById('stockQuickReports');
     if(!box)return;
     const {latest,queue}=await reportState();
+    const visualButton=document.getElementById('openVisualStockReportBtn');
+    if(visualButton){
+      const hasStock=Boolean(latest&&(latest.visualSnapshot&&Array.isArray(latest.visualSnapshot.items)
+        ?latest.visualSnapshot.items.length:Number(latest.rowCount||0)));
+      visualButton.disabled=!hasStock;
+      visualButton.title=hasStock?'Mở báo cáo ảnh toàn màn hình với SKU và biến động tồn kho':'Quét xong một tab để mở báo cáo ảnh';
+    }
 
     if(!latest){
       box.innerHTML='<small>Chưa có báo cáo. Quét xong một tab sẽ tự tạo báo cáo lỗi và biến động.</small>';
@@ -238,11 +257,13 @@
         </div>
         <div id="batchPendingList" style="margin-top:5px;font-size:11px"></div>
         <div id="stockQuickReports" style="margin-top:8px"></div>
+        <button id="openVisualStockReportBtn" type="button" class="secondary" style="width:100%;margin-top:9px;min-height:42px;font-size:12px;font-weight:800" disabled>XEM BÁO CÁO ẢNH CHI TIẾT ↗</button>
         <button id="batchExportBtn" type="button" class="success" style="width:100%;margin-top:9px;min-height:44px;font-size:12px;font-weight:800" disabled>TẢI FILE EXCEL</button>`;
       const status=document.getElementById('profileStatus');
       if(status)status.insertAdjacentElement('beforebegin',box);else host.appendChild(box);
       document.getElementById('batchClearBtn')?.addEventListener('click',clearBatch);
       document.getElementById('batchExportBtn')?.addEventListener('click',exportBatch);
+      document.getElementById('openVisualStockReportBtn')?.addEventListener('click',openVisualStockReport);
     }
     renderBatchUi().catch(()=>{});
     return true;

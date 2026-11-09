@@ -8,6 +8,12 @@
   const text=(v)=>String(v==null?'':v).trim();
   const plain=(v)=>text(v).toLowerCase().replace(/đ/g,'d').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
   const number=(v)=>{const n=Number(v);return Number.isFinite(n)?n:null;};
+  function safeUrl(value){
+    try{
+      const url=new URL(text(value));
+      return /^https?:$/.test(url.protocol)?url.href:'';
+    }catch{return'';}
+  }
 
   function normalizeSize(v){
     const p=plain(v).replace(/\s+/g,'').toUpperCase();
@@ -19,14 +25,53 @@
     return`src:${plain(item&&item.name)}|${plain(item&&item.color)}|${normalizeSize(item&&item.size)}`;
   }
 
-  function snapshotFromSource(sourceResults,{profileId='',profileName='',sourceUrl='',at=Date.now(),matcher=null}={}){
+  function snapshotFromSource(sourceResults,{profileId='',profileName='',sourceUrl='',at=Date.now(),matcher=null,skuRows=[]}={}){
     const items=[];
+    const products=new Map();
+    for(const product of sourceResults||[]){
+      const parentId=Number(product&&product.parentId)||0;
+      if(parentId&&!products.has(parentId))products.set(parentId,product);
+    }
+    const skuByVariant=new Map(),collisions=new Set();
+    for(const row of Array.isArray(skuRows)?skuRows:[]){
+      const parentId=Number(row&&row.sourceParentId)||0;
+      const variantId=Number(row&&row.sourceVariantId)||0;
+      const size=normalizeSize(row&&row.size);
+      if(!parentId||!variantId||!size||!text(row&&row.sku))continue;
+      const key=`${parentId}|${variantId}|${size}`;
+      if(skuByVariant.has(key))collisions.add(key);
+      else skuByVariant.set(key,text(row.sku));
+    }
+    for(const key of collisions)skuByVariant.delete(key);
+    const imageFor=(variant,parent)=>{
+      const direct=safeUrl(variant&&variant.image)||safeUrl(variant&&variant.imageUrl);
+      if(direct)return{imageUrl:direct,imageScope:'variant'};
+      // Product hero image is only an accurate SKU fallback for one-color products.
+      const colors=new Set((parent&&parent.variants||[]).map(v=>plain(v&&v.color)).filter(Boolean));
+      const hero=colors.size<=1?(safeUrl(parent&&parent.imageUrl)||safeUrl(parent&&parent.image)):'';
+      return{imageUrl:hero,imageScope:hero?'product':''};
+    };
+    const enrich=(item,variant,parent)=>{
+      const originalKey=itemKey(item); // Preserve legacy snapshot identity when supplier SKU is empty.
+      const parentId=Number(parent&&parent.parentId||variant&&variant.parentId)||0;
+      const variantId=Number(variant&&variant.id)||0;
+      const mapped=skuByVariant.get(`${parentId}|${variantId}|${item.size}`)||'';
+      const media=imageFor(variant,parent);
+      return{
+        ...item,key:originalKey,
+        sku:mapped||item.sku,
+        sourceParentId:parentId,sourceVariantId:variantId,
+        productUrl:safeUrl(variant&&variant.sourceUrl)||safeUrl(parent&&parent.sourceUrl)||'',
+        imageUrl:media.imageUrl,imageScope:media.imageScope
+      };
+    };
     if(matcher&&typeof matcher.groupSourceVariants==='function'){
       for(const group of matcher.groupSourceVariants(sourceResults||[])){
         for(const variant of group.variants||[]){
           const stock=number(variant&&variant.available!=null?variant.available:variant&&variant.stock);
           if(stock==null||stock<0)continue;
-          items.push({
+          const parent=products.get(Number(group.parentId||variant.parentId)||0)||null;
+          items.push(enrich({
             key:'',
             name:text(group.parentName||variant.parentName||variant.name),
             color:text(group.color||variant.color),
@@ -34,7 +79,7 @@
             stock,
             sku:text(variant.sku),
             sourceName:text(variant.name)
-          });
+          },variant,parent));
         }
       }
     }else{
@@ -42,14 +87,13 @@
         for(const variant of product.variants||[]){
           const stock=number(variant&&variant.available!=null?variant.available:variant&&variant.stock);
           if(stock==null||stock<0)continue;
-          items.push({
+          items.push(enrich({
             key:'',name:text(product.parentName||variant.parentName||variant.name),color:text(variant.color),
             size:normalizeSize(variant.size),stock,sku:text(variant.sku),sourceName:text(variant.name)
-          });
+          },variant,product));
         }
       }
     }
-    for(const item of items)item.key=itemKey(item);
     const unique=new Map();
     for(const item of items){
       const existing=unique.get(item.key);

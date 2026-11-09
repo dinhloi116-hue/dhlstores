@@ -367,7 +367,8 @@
       profileName:text(profile.name)||'Hồ sơ',
       sourceUrl:job.sourceUrl,
       at:Date.now(),
-      matcher
+      matcher,
+      skuRows:prepared&&prepared.rows||[]
     });
     const previous=list.length?list[list.length-1]:null;
     const issues=collectScanIssues(job,sourceResults,prepared);
@@ -395,6 +396,11 @@
       at:Date.now(),
       snapshotAt:Number(snapshot.at||0),
       previousAt:Number(previous&&previous.at||0),
+      previousSnapshotId:text(previous&&previous.id),
+      // Full current snapshot for large-tab report, including exact SKU, per-color
+      // supplier image URL, stock and product link. Keep it for partial scans too,
+      // but never compare partial scans with historical stock.
+      visualSnapshot:snapshot,
       firstSnapshot:fullComparable&&!previous,
       comparable:fullComparable,
       diff:diff?{
