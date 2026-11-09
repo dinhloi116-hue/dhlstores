@@ -1,6 +1,15 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.4**.
+Phiên bản: **v0.24.5**.
+
+## Chỉ quét sản phẩm thuộc lưới trang danh mục đang hiển thị (v0.24.5)
+
+- **ĐỒNG BỘ TAB NÀY** chỉ nhận những thẻ sản phẩm có ảnh, giá, nút thêm vào giỏ và liên kết chi tiết trong lưới sản phẩm chính của trang hiện tại; không quét từ mọi liên kết HTML như trước.
+- Ví dụ trang HD có 24 thẻ trong ảnh, nhưng lượt quét cũ phát hiện 25 sản phẩm (có thể lẫn ĐT Đức trẻ em). Sau sửa, sản phẩm nằm ngoài lưới chính sẽ bị loại.
+- **Không tự chuyển sang trang 2/3/4** hoặc lấy các trang phân trang khác. Muốn quét những trang đó cần mở đúng trang tương ứng và chạy lượt khác.
+- Khi chọn **QUÉT LẠI MẪU LỖI**, checkpoint cũ được đối chiếu theo ID với danh sách đang hiển thị: bỏ mục ngoài trang, giữ kết quả đã xác minh của sản phẩm trùng ID và tiếp tục mẫu thực sự thiếu.
+- Trước mỗi popup, công cụ xác minh ID thuộc lưới đang hiển thị; dừng sản phẩm ngoài trang thay vì quét nhầm.
+- Có regression test mô phỏng 24 thẻ HD và một liên kết ĐT Đức trẻ em nằm ngoài lưới. CI không thay thế được thử nghiệm trên DOM thực của website.
 
 ## Hết hàng nghĩa là tồn kho 0 (v0.24.4)
 
