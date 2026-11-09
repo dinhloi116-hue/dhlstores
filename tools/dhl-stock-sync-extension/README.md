@@ -1,6 +1,16 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.10**.
+Phiên bản: **v0.25.0**.
+
+## Nâng cấp an toàn dữ liệu và xem trước Sapo (v0.25.0)
+
+- **Không tự xóa kết quả quét sau khi bấm tải Excel**. Chrome mới chỉ bắt đầu tải xuống, chưa chứng minh file đã được lưu hay Sapo đã nhập; dữ liệu được giữ cho tải lại. Nút **XÓA CACHE** hỏi xác nhận trước khi dọn.
+- **Đóng Side Panel không còn xóa cache quét**. Chỉ khi chọn nút XÓA CACHE hoặc LÀM MỚI TOOL mới xóa kết quả tạm; hồ sơ cấu hình Sapo và lịch sử vẫn được giữ.
+- **Đẩy Sapo hai bước:** bấm XEM TRƯỚC SAPO, kiểm tra tất cả SKU và tồn sẽ ghi (có tô rõ SKU tồn 0), sau đó mới bấm XÁC NHẬN ĐẨY. Preview chỉ có hiệu lực 10 phút và bị vô hiệu nếu dữ liệu quét/kho/cấu hình xác minh thay đổi; backend tự đối chiếu chữ ký toàn bộ SKU trước khi chấp nhận.
+- **Mốc trước** trong bản xem trước là **giá trị ghi nhận lần đẩy thành công gần nhất bởi extension**, **không phải tồn thực tế đang đọc live từ Sapo**. Mục chưa có mốc hiển thị dấu —. Việc xác minh tồn thực tế trên Sapo vẫn cần thực hiện riêng.
+- **Chọn màu khớp chính xác:** tên màu chuẩn hóa phải bằng nhau hoàn toàn. Không dùng ghép gần đúng `Trắng` với `Trắng Đỏ` hoặc `Xanh` với `Xanh Đen`; nếu không xác minh được thì báo thiếu màu và chặn xuất/đẩy.
+- Không bật tự động đẩy tồn Sapo. Giữ chốt kiểm tra quality, toàn bộ SKU và đúng chi nhánh khi bắt đầu đẩy.
+- Bổ sung regression test kiểm tra cache giữ qua Side Panel/Excel, hai màu Đức, token xem trước hết hạn/đổi kho và danh sách SKU.
 
 ## Xử lý thông điệp Sapo mất receiver (v0.24.10)
 
@@ -116,7 +126,7 @@ Phiên bản: **v0.24.10**.
 ## Giữ hồ sơ và kết nối
 
 - Hồ sơ danh mục đã lưu, mapping SKU, lịch sử biến động tồn và cấu hình Sapo vẫn được giữ qua cập nhật.
-- Side Panel đóng có thể dọn **cache tác vụ tạm đã hoàn tất**, nhưng không xóa hồ sơ/cấu hình.
+- Side Panel đóng **không tự xóa dữ liệu quét**. Chỉ xóa cache khi người dùng thao tác rõ ràng.
 - Khi tác vụ đang chạy hoặc tạm dừng, không dọn cache quét.
 
 ## Thêm sản phẩm mới
