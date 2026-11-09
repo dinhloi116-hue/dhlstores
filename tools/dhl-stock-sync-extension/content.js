@@ -486,27 +486,43 @@
     if (!alreadySelected) await clickElement(control.el);
 
     const started = Date.now();
-    let best = [];
+    let best = [], previousRowsSignature = '', stableReads = 0;
     let seenSelected = alreadySelected;
     while (Date.now() - started < 6500) {
       assertPopupScanActive(cancelVersion);
-      await sleep(75);
+      await sleep(60);
       assertPopupScanActive(cancelVersion);
       currentRoot = findStockRoot() || currentRoot;
       if (isSelectedColor(name, currentRoot)) seenSelected = true;
       const rows = readTargetRows(currentRoot, targetSizes);
-      if (rows.length > best.length) best = rows;
       const signature = rowsSignature(rows);
+      if (rows.length > best.length) best = rows;
+      if (signature && signature === previousRowsSignature) stableReads += 1;
+      else stableReads = 0;
+      previousRowsSignature = signature;
       const elapsed = Date.now() - started;
 
-      if (seenSelected && hasAllTargetRows(rows, targetSizes)) {
-        if (alreadySelected || signature !== previousSignature || elapsed >= 650) {
-          await sleep(75);
+      // A real inventory-row transition is also evidence of the color changing,
+      // even if the supplier's custom control has no reliable "checked" attribute.
+      const changedRows = Boolean(previousSignature && signature && signature !== previousSignature);
+      const selectionConfirmed = seenSelected || changedRows;
+      if (selectionConfirmed && hasAllTargetRows(rows, targetSizes)) {
+        if (alreadySelected || changedRows || elapsed >= 650) {
+          await sleep(60);
           return stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion);
         }
       }
+
+      // If the supplier has fewer sizes than expected, do NOT wait 6.5s on
+      // each color just to confirm a stable partial result. The caller will
+      // report missing sizes and retry the product once with a new popup.
+      if (selectionConfirmed && rows.length > 0 && stableReads >= 4 && elapsed >= 850) {
+        return rows;
+      }
     }
-    return best;
+    // An unconfirmed color switch must never be assigned the previous color's
+    // stock. Return only a verified partial read, otherwise mark it missing.
+    return seenSelected || (previousSignature && rowsSignature(best) !== previousSignature) ? best : [];
   }
 
   function productAnchors(descriptor) {
@@ -675,12 +691,20 @@
     const before = popupFingerprint(existing);
     const card = cardForDescriptor(descriptor);
     const candidates = quickCandidates(descriptor, card).filter((item) => !inertActionHref(item.el));
+    // Quick probes prevent a non-working button from consuming 4.6 seconds.
+    // Any delayed popup is still accepted by the final passive wait below.
     for (let index=0;index<candidates.length;index+=1) {
       assertPopupScanActive(cancelVersion);
       await clickQuickCandidate(candidates[index].el);
       assertPopupScanActive(cancelVersion);
-      const root = await waitForPopupRefresh(before, expectedPath, index===0?4600:2400, cancelVersion);
+      const root = await waitForPopupRefresh(before, expectedPath, index===0?2200:1200, cancelVersion);
       if (root) return { root, cardFound: !!card, candidateCount: candidates.length, reusedPopup: !!existing };
+    }
+    // Retain a slow-network recovery window without further clicks. Do not
+    // mistake a late popup for an empty product or zero stock.
+    if (candidates.length) {
+      const lateRoot=await waitForPopupRefresh(before,expectedPath,2600,cancelVersion);
+      if(lateRoot)return {root:lateRoot,cardFound:!!card,candidateCount:candidates.length,reusedPopup:!!existing};
     }
     const error = new Error(`Không bật được popup tồn cho ${descriptor.title} ngay trên trang danh mục.`);
     error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length, categoryOnly: true };
