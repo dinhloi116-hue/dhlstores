@@ -11,7 +11,7 @@ function jsonResponse(status,data){
 async function main(){
   const state={
     dhlSapoPushQueueV1:{
-      id:'test',source:'manual',manualPaused:false,status:'running',
+      id:'test',source:'manual',manualPaused:false,status:'running',qualityValidated:true,
       host:'demo.mysapo.net',locationId:1,locationName:'Kho',
       rows:[
         {sku:'SKU-S',variantId:1,productId:11,stock:5},
