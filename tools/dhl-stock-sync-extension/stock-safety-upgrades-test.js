@@ -81,8 +81,10 @@ assert.throws(()=>preview.build([{...entry,qualityValidated:false}],config,lates
 assert.throws(()=>preview.build([entry],{sapo:{...config.sapo,verifiedAt:0}},latestQueue,dependencies),/Chưa xác minh/);
 assert.ok(background.includes("const PANEL_AUTO_CLEANUP_KEYS = [];"));
 assert.ok(background.includes("reason:'preserved-until-user-action'"));
-assert.ok(!excelUi.includes('await chrome.storage.local.set({[BATCH_KEY]:{}});'),
- 'Excel download must NOT clear the verified scan');
+const exportBody=excelUi.slice(excelUi.indexOf('  async function exportBatch(){'),
+ excelUi.indexOf('  async function clearBatch(){'));
+assert.ok(!exportBody.includes('await chrome.storage.local.set({[BATCH_KEY]:{}});'),
+ 'Excel download must NOT clear the verified scan (explicit XÓA CACHE may clear it)');
 assert.ok(excelUi.includes("if(!confirm('Xóa dữ liệu tồn kho đã quét?"));
 assert.ok(sapoBg.includes("DHL_SAPO_PREVIEW_MANUAL"));
 assert.ok(sapoBg.includes("approved.signature!==proposed.signature"));
