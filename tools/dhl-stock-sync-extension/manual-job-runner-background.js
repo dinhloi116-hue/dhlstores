@@ -215,7 +215,7 @@
   }
 
   async function injectScanner(tabId){
-    for(const file of ['stock-core.js','dom-stock-parser.js','match-core.js','content.js']){
+    for(const file of ['stock-core.js','dom-stock-parser.js','match-core.js','visible-category-grid-core.js','content.js']){
       await chrome.scripting.executeScript({target:{tabId},files:[file]});
     }
     await sleep(80);
@@ -238,45 +238,26 @@
   }
 
   async function discoverProducts(tabId){
-    const out=await chrome.scripting.executeScript({
-      target:{tabId},
-      func:()=>{
-        const clean=(v)=>String(v==null?'':v).replace(/\s+/g,' ').trim();
-        const pid=(v)=>{
-          const s=String(v||'');
-          const m=s.match(/-p(\d+)(?:\.html)?(?:[?#]|$)/i)||s.match(/[?&](?:psId|productId|id)=(\d+)/i);
-          return m?Number(m[1]):0;
-        };
-        const imageUrl=(node)=>{
-          if(!node)return'';
-          const img=node.matches&&node.matches('img')?node:node.querySelector&&node.querySelector('img');
-          if(!img)return'';
-          return String(img.currentSrc||img.src||img.getAttribute('data-src')||img.getAttribute('data-original')||'').trim();
-        };
-        const seen=new Map();
-        for(const a of document.querySelectorAll('a[href]')){
-          let url;
-          try{url=new URL(a.getAttribute('href'),location.href);}catch{continue;}
-          if(url.host!==location.host)continue;
-          const id=pid(url.href);if(!id)continue;
-          let title=clean(a.textContent);
-          const img=a.querySelector('img');
-          if((!title||title.length<3)&&img)title=clean(img.alt||img.title);
-          let card=a;
-          for(let depth=0;depth<5&&card&&card!==document.body;depth+=1,card=card.parentElement){
-            const t=clean(card.textContent);
-            if((!title||title.length<3)&&t&&t.length<260)title=t;
-            if(imageUrl(card))break;
-          }
-          if(!title||title.length>220)continue;
-          const item={id,title,url:url.href,imageUrl:imageUrl(card||a)};
-          const old=seen.get(id);
-          if(!old||item.title.length>old.title.length)seen.set(id,item);
-        }
-        return{items:[...seen.values()],pageTitle:document.title,pageUrl:location.href};
-      }
-    });
-    return(out&&out[0]&&out[0].result)||{items:[],pageTitle:'',pageUrl:''};
+    // The old page-wide anchor search silently picked up navigation and
+    // unrelated links. Request the DOM-verified visible product grid instead.
+    let response;
+    try{response=await chrome.tabs.sendMessage(tabId,{type:'DHL_DISCOVER_VISIBLE_CATEGORY'});}
+    catch(error){
+      if(!noReceiver(error))throw error;
+      await injectScanner(tabId);
+      response=await chrome.tabs.sendMessage(tabId,{type:'DHL_DISCOVER_VISIBLE_CATEGORY'});
+    }
+    if(!response||response.ok!==true){
+      throw new Error(response&&response.error
+        ||'Chưa nạp bộ lọc lưới sản phẩm. Hãy F5 trang danh mục rồi thử lại.');
+    }
+    const found=response.result||{};
+    if(found.discoveryMode!=='visible-category-grid'){
+      throw new Error('Trang nguồn chưa dùng bộ lọc sản phẩm mới. Hãy F5 tab nguồn.');
+    }
+    const items=Array.isArray(found.items)?found.items:[];
+    if(!items.length)throw new Error('Không thấy thẻ sản phẩm hợp lệ trên trang hiện tại.');
+    return{...found,items};
   }
 
   async function saveJob(job){
