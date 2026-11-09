@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.24.4",
+  "version": "0.24.5",
   "minimum_chrome_version": "116",
-  "description": "Quét popup theo màu và size; nhận Hết hàng là tồn kho 0 hợp lệ; tự quét lại sản phẩm thiếu dữ liệu thực.",
+  "description": "Quét tồn kho đúng các thẻ trong lưới sản phẩm đang hiển thị, không lấy nhầm sản phẩm từ menu hoặc ngoài danh mục.",
   "permissions": [
     "storage",
     "unlimitedStorage",
@@ -42,6 +42,7 @@
         "stock-core.js",
         "dom-stock-parser.js",
         "match-core.js",
+        "visible-category-grid-core.js",
         "content.js"
       ],
       "run_at": "document_idle"
