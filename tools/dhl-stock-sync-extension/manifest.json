@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.24.7",
+  "version": "0.24.8",
   "minimum_chrome_version": "116",
-  "description": "Đồng bộ tồn kho popup cho tất cả danh mục; xuất Excel Sapo dùng chung kho dhl sport, giữ checkpoint và kiểm tra đủ SKU/size.",
+  "description": "Xuất Excel tồn kho đối chiếu chính xác toàn bộ SKU, tách các màu gần tên như Trắng và Trắng Đỏ.",
   "permissions": [
     "storage",
     "unlimitedStorage",
