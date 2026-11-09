@@ -93,8 +93,9 @@
 
   async function loadTabs({preferActive=true,preferTabId=0}={}){
     try{
-      const [tabs,stored]=await Promise.all([
+      const [tabs,currentWindowActive,stored]=await Promise.all([
         chrome.tabs.query({}),
+        chrome.tabs.query({active:true,currentWindow:true}),
         chrome.storage.local.get([PROFILE_KEY,JOB_KEY])
       ]);
       const profiles=Array.isArray(stored[PROFILE_KEY])?stored[PROFILE_KEY]:[];
@@ -121,7 +122,8 @@
       let next=0;
       if(preferTabId&&sourceTabs.some(tab=>Number(tab.tabId)===Number(preferTabId)))next=Number(preferTabId);
       else if(preferActive){
-        const active=sourceTabs.find(tab=>tab.active);
+        const currentId=Number(currentWindowActive&&currentWindowActive[0]&&currentWindowActive[0].id)||0;
+        const active=sourceTabs.find(tab=>Number(tab.tabId)===currentId);
         if(active)next=Number(active.tabId);
       }
       if(!next&&selectedTabId&&sourceTabs.some(tab=>Number(tab.tabId)===Number(selectedTabId)))next=Number(selectedTabId);
@@ -226,6 +228,10 @@
       await loadTabs({preferActive:false});
       const tab=selectedTab();
       if(!tab)throw new Error('Chưa có tab danh mục nguồn để đồng bộ.');
+      const activeTabs=await chrome.tabs.query({active:true,currentWindow:true});
+      if(Number(activeTabs&&activeTabs[0]&&activeTabs[0].id)!==Number(tab.tabId)){
+        throw new Error('Hãy chuyển sang đúng tab nguồn đang xem rồi bấm ĐỒNG BỘ TAB NÀY.');
+      }
 
       const scope=currentScope();
       let ids=[];
