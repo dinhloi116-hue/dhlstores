@@ -1,6 +1,13 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.23.9**.
+Phiên bản: **v0.24.0**.
+
+## Quét thích ứng nhanh hơn (v0.24.0)
+
+- Popup được thử mở theo nhịp ngắn hơn, không chờ lâu ở từng nút không phản hồi. Có thêm khoảng chờ dự phòng nếu popup đến chậm.
+- Khi một màu chỉ trả một phần size nhưng dữ liệu đã ổn định, chuyển bước sớm hơn; **vẫn báo thiếu size và quét lại sản phẩm** trước khi xuất.
+- Khi popup hiện đủ size, giữ xác nhận dữ liệu ổn định. Nếu không xác nhận được màu/size, không gán nhầm tồn kho của màu trước.
+- Hiệu quả tăng tốc phụ thuộc số màu/size thực tế và tốc độ của website. Chưa đo thời gian thực tế trên cửa hàng nguồn.
 
 ## Đồng bộ tồn kho trực tiếp trên tab đang xem (v0.23.9)
 
