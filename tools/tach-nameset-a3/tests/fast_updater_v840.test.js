@@ -28,6 +28,8 @@ function exercise(exitCode){
  const ok=button.onclick();
  assert.equal(state.launches,1);
  assert.ok(state.lastScript.includes('UPDATE_DHL_NAMESET.ps1?fresh='));
+ assert.ok(state.lastScript.includes("C:\\Program Files\\Corel\\Addons\\DHL_A3_Nameset"),'pass exact active Corel path');
+ assert.ok(state.lastScript.includes('-CurrentAddonDir'),'updater receives active Docker directory');
  assert.ok(!state.lastScript.includes('CAI_TOOL_TACH_NAMESET_A3.bat'));
  assert.ok(!state.lastScript.includes('CAI_DHL_NAMESET_COREL_2021.ps1'));
  assert.ok(state.lastCommand.includes('powershell.exe'));
@@ -41,6 +43,7 @@ assert.ok(ps.includes('DockerUI_CURRENT.html?fresh='));
 assert.ok(ps.includes('[IO.File]::Replace('));
 assert.ok(ps.includes('Get-FileHash'));
 assert.ok(ps.includes('UP TO DATE (skip)'));
+assert.ok(ps.includes('ACTIVE VERIFY OK:'),'must verify current Corel Docker bytes');
 assert.ok(!ps.includes('Get-ChildItem -LiteralPath $root -Directory -Filter'));
 assert.ok(!ps.includes(' -Recurse'));
 assert.ok(!ps.includes("DHL_UI_VERSION=8.39"),'must not pin prior version');
