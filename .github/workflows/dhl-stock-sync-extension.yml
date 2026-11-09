@@ -53,7 +53,6 @@ jobs:
           mkdir -p dist/dhl-stock-sync-extension
           files=(
             manifest.json background.js popup.html popup.css
-            icons/icon-16.png icons/icon-32.png icons/icon-48.png icons/icon-128.png
             safe-category-guard.js stock-core.js dom-stock-parser.js content.js
             match-core.js shop-rules.js generic-shop-rules.js xlsx-lite.js
             warehouse-core.js generic-warehouse-mode.js kids-product-size-mode.js warehouse-sku-link-mode.js
@@ -69,6 +68,8 @@ jobs:
             sapo-product-create-mode.js sapo-product-create-report-mode.js single-product-add-mode.js marketplace-sku-mode.js
           )
           cp "${files[@]}" dist/dhl-stock-sync-extension/
+          mkdir -p dist/dhl-stock-sync-extension/icons
+          cp icons/icon-16.png icons/icon-32.png icons/icon-48.png icons/icon-128.png dist/dhl-stock-sync-extension/icons/
           cd dist
           zip -r dhl-stock-sync-extension.zip dhl-stock-sync-extension
 
