@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.24.1",
+  "version": "0.24.2",
   "minimum_chrome_version": "116",
-  "description": "Quét popup theo từng màu/size, chặn xuất Excel và đẩy Sapo nếu chưa xác minh đủ dữ liệu tồn.",
+  "description": "Đọc tồn kho từ đúng cột Tên size/Tình trạng tồn trong popup, không nhận nhầm năm áo hay giá bán thành size.",
   "permissions": [
     "storage",
     "unlimitedStorage",
