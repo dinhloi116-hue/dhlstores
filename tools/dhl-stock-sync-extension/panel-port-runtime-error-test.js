@@ -53,6 +53,7 @@ disconnectHandlers[2]();
 assert.strictEqual(timeouts.length,2,'Reconnect must be bounded; never loop forever');
 pageHide();
 assert.strictEqual(sent,1,'A closing panel still reports closure once');
-assert.strictEqual(timeouts.filter(t=>!t.cancelled).length,2,'No additional timers on close');
+assert.strictEqual(timeouts.length,2,'Page close must not schedule new reconnects');
+assert.strictEqual(timeouts[1].cancelled,true,'The outstanding reconnect timer must be canceled on close');
 assert.strictEqual(typeof elements.resetToolBtn,'undefined');
 console.log('PANEL CONNECTION PASS: lastError consumed; bounded reconnect; no cache reset.');
