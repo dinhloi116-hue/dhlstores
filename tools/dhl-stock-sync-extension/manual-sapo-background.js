@@ -304,6 +304,22 @@
     return previewCore.build(entries,config,priorQueue,{quality,batch,branchCore,excelSku});
   }
 
+  function validatePausedQueue(queue,preview,config){
+    if(!queue||queue.source!=='manual'||queue.manualPaused!==true)return;
+    if(Number(queue.locationId)!==Number(config.sapo.locationId)
+      ||text(queue.host).toLowerCase()!==storeHost(config.sapo.storeHost)){
+      throw new Error('Hàng đợi Sapo cũ thuộc kho hoặc shop khác; không được tiếp tục.');
+    }
+    const intended=new Map((preview.rows||[]).map(row=>[previewCore.normSku(row.sku),Number(row.stock)]));
+    const remaining=(queue.rows||[]).slice(Number(queue.index||0));
+    for(const row of remaining){
+      const sku=previewCore.normSku(row&&row.sku);
+      if(!sku||!intended.has(sku)||intended.get(sku)!==Number(row.stock)){
+        throw new Error('Hàng đợi Sapo đã tạm dừng khác số tồn quét hiện tại tại SKU '+text(row&&row.sku)+'. Hãy hủy hàng đợi cũ trước khi đẩy dữ liệu mới.');
+      }
+    }
+  }
+
   async function prepareManualPreview(profileIds){
     let config=await ensureVerifiedSapo(await readConfig());
     const state=await chrome.storage.local.get([BATCH_KEY,SAPO_QUEUE_KEY,CYCLE_KEY]);
@@ -314,6 +330,7 @@
     const pending=state[BATCH_KEY]&&typeof state[BATCH_KEY]==='object'?state[BATCH_KEY]:{};
     const selected=selectedPendingEntries(pending,profileIds);
     const preview=buildPreviewSnapshot(selected,config,current);
+    validatePausedQueue(current,preview,config);
     const token=String(Date.now())+'-'+Math.random().toString(36).slice(2);
     await chrome.storage.local.set({[PREVIEW_KEY]:{
       token,signature:preview.signature,at:Date.now()
@@ -339,6 +356,7 @@
     const pending=state[BATCH_KEY]&&typeof state[BATCH_KEY]==='object'?state[BATCH_KEY]:{};
     const selected=selectedPendingEntries(pending,profileIds);
     const proposed=buildPreviewSnapshot(selected,config,existing);
+    validatePausedQueue(existing,proposed,config);
     const approved=state[PREVIEW_KEY];
     if(!approved||!previewToken||String(approved.token)!==String(previewToken)
        ||Date.now()-Number(approved.at||0)>PREVIEW_TTL_MS
