@@ -72,6 +72,8 @@ async function main(){
   context.DHLBatchStockCore={};
   context.DHLScanQualityCore=require('./scan-quality-core.js');
   context.DHLStockBranchCore=require('./stock-branch-core.js');
+  context.DHLExcelSkuCore=require('./excel-sku-core.js');
+  context.DHLStockPushPreviewCore=require('./stock-push-preview-core.js');
   context.DHLSapoInventoryResolver={
     normSku:(v)=>String(v||'').trim().toUpperCase(),
     inventoryCandidates:(data)=>Array.isArray(data&&data.inventory_items)?data.inventory_items:[],
