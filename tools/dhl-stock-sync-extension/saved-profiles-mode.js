@@ -53,10 +53,9 @@
     btn.disabled=true;
     btn.textContent='ĐANG KHỞI ĐỘNG...';
     try{
-      const tabs=await chrome.tabs.query({});
-      const source=(tabs||[]).filter(t=>t&&t.id&&categoryUrl(t.url));
-      const tab=source.find(t=>t.active)||source[0];
-      if(!tab)throw new Error('Hãy mở tab danh mục nguồn trên si.aobongda.net trước.');
+      const tabs=await chrome.tabs.query({active:true,currentWindow:true});
+      const tab=(tabs||[]).find(t=>t&&t.id&&categoryUrl(t.url));
+      if(!tab)throw new Error('Hãy mở đúng tab danh mục nguồn trên si.aobongda.net trong cửa sổ này.');
       const response=await new Promise((resolve,reject)=>{
         chrome.runtime.sendMessage({
           type:'DHL_MANUAL_JOB_START',
