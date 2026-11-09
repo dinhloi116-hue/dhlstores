@@ -1,6 +1,14 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.9**.
+Phiên bản: **v0.24.10**.
+
+## Xử lý thông điệp Sapo mất receiver (v0.24.10)
+
+- `popup.html:38` nạp module `manual-sapo-output-mode.js`. Trong module này, lệnh khôi phục Excel `DHL_MANUAL_JOB_REBUILD_OUTPUT` từng dùng callback `chrome.runtime.sendMessage`.
+- Dùng hoàn toàn API Promise `await chrome.runtime.sendMessage(...)` với xử lý lỗi rõ ràng khi service worker hoặc receiving end không khả dụng; tránh thông báo `Unchecked runtime.lastError` từ nhánh callback này.
+- Chỉ thử tự khôi phục dữ liệu một lần cho mỗi trạng thái đầu ra trống trong phiên Side Panel. Khi kết nối lỗi, hiện thông báo thay vì gửi lại liên tục; không xóa cache, không sửa SKU hay số tồn.
+- Việc tạo/đẩy tồn lên Sapo vẫn yêu cầu bấm nút, giữ nguyên các chốt kiểm tra chất lượng và kho.
+- Chrome có thể giữ lỗi cũ trong trang `chrome://extensions` cho đến khi xóa danh sách lỗi; kiểm tra lỗi **mới phát sinh sau Reload** để xác nhận tác động.
 
 ## Khắc phục cảnh báo runtime.lastError của Side Panel (v0.24.9)
 
