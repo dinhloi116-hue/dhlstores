@@ -1,0 +1,155 @@
+<script id="dhl-v845-deep-contour" type="text/javascript">
+(function(){
+ // CorelDRAW 2021 MSHTML: ES5 only, no browser networking or workers.
+ function now(){return (new Date()).getTime();}
+ function timeBudget(mode){return mode==='deep'?18000:mode==='quick'?1800:6500;}
+ function number(v){return typeof v==='number'&&isFinite(v);}
+ function better(a,b){
+  if(!a)return false;if(!b)return true;
+  if(a.bins.length!==b.bins.length)return a.bins.length<b.bins.length;
+  return a.total<b.total-.1;
+ }
+ function configOrDefault(c){
+  var x=c.deepMode;
+  return x==='quick'||x==='deep'?x:'balanced';
+ }
+ function optimize(items,c,baseline){
+  var G=window.DHLContourGeometry,mode=configOrDefault(c),maxMs=timeBudget(mode),
+      started=now(),deadline=started+maxMs,priorOrder=window.DHL_ORDER,priorDeadline=window.DHL_SEARCH_DEADLINE,
+      tries=0,improvements=0,error='',cache={},original=baseline, best=baseline,angles=c.rotate?[0,90,180,270]:[0],
+      kinds=mode==='quick'?['area']:['area','height','width'],raw=items.slice(0),i,j,k;
+  if(!G||typeof G.pack!=='function'||typeof G.footprintAt!=='function'||!raw.length){
+   original.deepInfo={mode:mode,trials:0,elapsed:0,saved:0,status:'missing contour engine'};
+   return original;
+  }
+  function clonePlace(p){return{item:p.item,x:p.x,y:p.y,w:p.w,h:p.h,angle:p.angle||0};}
+  function cloneBins(source){
+   var out=[],n,m,b,p;
+   for(n=0;n<source.bins.length;n++){b=source.bins[n];p=[];for(m=0;m<b.places.length;m++)p.push(clonePlace(b.places[m]));out.push({places:p,depth:b.depth,free:[]});}
+   return{bins:out,total:source.total};
+  }
+  // Memoizing real contours is vital: this also prevents repeated temporary
+  // Corel duplication of the same Group on every search trial.
+  function rotated(originalItem,angle){
+   var key=String(originalItem.index)+'_'+angle,fp,source;
+   if(!cache[key]){
+    source=G.footprintAt(originalItem.shape,angle);
+    if(!source||!number(source.w)||!number(source.h)||source.w<=0||source.h<=0)throw new Error('Invalid vector footprint for Group '+originalItem.index);
+    cache[key]={shape:originalItem.shape,w:source.w,h:source.h,area:source.area||source.w*source.h,
+       leaves:source.leaves,anchors:source.anchors,ang:angle};
+   }
+   fp=cache[key];
+   return{shape:fp.shape,w:fp.w,h:fp.h,area:fp.area,leaves:fp.leaves,anchors:fp.anchors,
+          ang:angle,_ord:originalItem.index,_x:0,_y:0};
+  }
+  function trial(places,pattern,order,seed){
+   var fp=[],p,angle,k,out=[],result,dep,selected;
+   if(now()>deadline)return null;
+   for(k=0;k<places.length;k++){
+    p=places[k];selected=p.item;
+    if(!selected||!selected.shape)return null;
+    angle=pattern==='baseline'?(p.angle||0):pattern==='uniform'?seed:
+      pattern==='alternate'?angles[(k+seed)%angles.length]:
+      pattern==='reverse'?angles[(angles.length-1-(k+seed)%angles.length)]:
+      pattern==='wide'?((selected.w>selected.h)?angles[(seed+1)%angles.length]:angles[seed%angles.length]):
+      angles[(seed+k*3)%angles.length];
+    if(!c.rotate)angle=0;
+    var f=rotated(selected,angle);
+    if(f.w>c.usableW+.001||f.h>c.usableH+.001)return null;
+    f._x=number(p.x)?p.x:0;
+    f._y=number(p.y)?p.y:0;
+    fp.push(f);
+   }
+   window.DHL_ORDER=order;
+   window.DHL_SEARCH_DEADLINE=deadline;
+   tries++;
+   result=G.pack(fp,c.usableW,c.usableH,c.gap);
+   if(!result||result.length!==fp.length)return null;
+   dep=G.planDepth(result);
+   if(!number(dep)||dep>c.usableH+.001)return null;
+   // Verify every pair against the exact same true-contour collision engine,
+   // including the closed-counter exclusion and user-defined object gap.
+   for(k=0;k<result.length;k++){
+    p=result[k];
+    if(!G.valid(p.x,p.y,p.item,result.slice(0,k),c.usableW,c.usableH,c.gap))return null;
+    out.push({item:{shape:p.item.shape,index:p.item._ord},x:p.x,y:p.y,
+              w:p.item.w,h:p.item.h,angle:p.item.ang});
+   }
+   return{places:out,depth:dep,free:[],contour:true};
+  }
+  function variants(places,bestLocal,limit){
+   var v,pattern,seed,order,proposal,one,k,sets=mode==='quick'?
+     ['baseline','uniform','alternate']:
+     mode==='deep'?['baseline','uniform','alternate','reverse','wide','mixed']:
+       ['baseline','uniform','alternate','reverse','wide'];
+   for(v=0;v<sets.length;v++){
+    pattern=sets[v];
+    for(seed=0;seed<(pattern==='baseline'?1:angles.length);seed++){
+     for(k=0;k<kinds.length;k++){
+      if(now()>deadline||tries>=limit)return bestLocal;
+      order=kinds[k];
+      proposal=trial(places,pattern,order,seed);
+      if(proposal&&proposal.depth<bestLocal.depth-.1){bestLocal=proposal;improvements++;}
+     }
+    }
+   }
+   // Deep local angle sweep: replace a single angle at a time around
+   // the best variant; budget-limited and never alters live Corel objects.
+   if(mode==='deep'&&bestLocal.contour){
+    var n,z,adjusted,t;
+    for(n=0;n<places.length;n++){
+     for(z=0;z<angles.length;z++){
+      if(now()>deadline||tries>=limit)return bestLocal;
+      adjusted=[];for(t=0;t<bestLocal.places.length;t++)adjusted.push(clonePlace(bestLocal.places[t]));
+      if(adjusted[n].angle===angles[z])continue;
+      adjusted[n].angle=angles[z];
+      proposal=trial(adjusted,'baseline','area',0);
+      if(proposal&&proposal.depth<bestLocal.depth-.1){bestLocal=proposal;improvements++;}
+     }
+    }
+   }
+   return bestLocal;
+  }
+  try{
+   if(!number(baseline.total)||!baseline.bins||!baseline.bins.length)throw new Error('Invalid baseline layout');
+   var maxTrials=mode==='quick'?15:mode==='deep'?140:45,all=[],b,one,updated=[],candidate,total;
+   for(i=0;i<baseline.bins.length;i++)
+    for(j=0;j<baseline.bins[i].places.length;j++)all.push(baseline.bins[i].places[j]);
+   // Attempt a single true-contour bin even where rectangular nesting
+   // needs two or more bins.  Limit batch size for Corel COM responsiveness.
+   if(baseline.bins.length>1&&all.length<=32){
+    one=variants(all,{depth:1e30,places:[],contour:false},maxTrials);
+    if(one.contour&&better({bins:[one],total:one.depth},best)){
+     best={bins:[one],total:one.depth};improvements++;
+    }
+   }
+   if(!better(best,baseline)){
+    for(i=0;i<baseline.bins.length;i++){
+     b=baseline.bins[i];candidate=variants(b.places,{depth:b.depth,places:b.places,contour:false},maxTrials);
+     updated.push(candidate);
+     if(now()>deadline||tries>=maxTrials){
+      for(j=i+1;j<baseline.bins.length;j++)updated.push(baseline.bins[j]);
+      break;
+     }
+    }
+    total=0;for(i=0;i<updated.length;i++)total+=updated[i].depth;
+    if(better({bins:updated,total:total},best))best={bins:updated,total:total};
+   }
+   // Reject layouts not strictly better than the safe rectangular baseline.
+   if(!better(best,baseline))best=baseline;
+  }catch(e){error=String(e.message||e);best=baseline;}
+  finally{
+   window.DHL_ORDER=priorOrder;window.DHL_SEARCH_DEADLINE=priorDeadline;
+  }
+  var saved=baseline.total-best.total;
+  if(best.bins.length<baseline.bins.length)saved=baseline.total-best.total;
+  best.deepInfo={mode:mode,trials:tries,elapsed:now()-started,
+                 saved:Math.max(0,saved),baseline:baseline.total,
+                 framesBefore:baseline.bins.length,framesAfter:best.bins.length,
+                 status:error||'complete',improvements:improvements};
+  best.contourImproved=best!==baseline?improvements:0;
+  return best;
+ }
+ window.DHLDeepContourSearch={optimize:optimize,timeBudget:timeBudget,better:better};
+})();
+</script>
