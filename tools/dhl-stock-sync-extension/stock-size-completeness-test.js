@@ -4,15 +4,19 @@ const src=fs.readFileSync(__dirname+'/content.js','utf8');
 
 assert.ok(src.includes("const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL']"));
 assert.ok(src.includes('function expectedSizesFromRoot(root)'));
-assert.ok(src.includes('const neededSizes = hintedSizes.length ? hintedSizes : expectedSizesFromRoot(root)'));
+assert.ok(src.includes('const neededSizes = hintedSizes.length ? hintedSizes : (adultSize ? inferredSizes : [])'));
+assert.ok(src.includes('sizeLabelsFromVisibleRows(currentRoot)'));
+assert.ok(src.includes('auditColorSnapshots(snapshots)'));
 assert.ok(src.includes('while (Date.now() - started < 6500)'));
 assert.ok(src.includes('stableTargetRows(currentRoot, targetSizes, 1800, cancelVersion)'));
 assert.ok(src.includes('Nếu popup đã đọc được nhưng còn thiếu size'));
 assert.ok(src.includes('const retryOpen=await openStockPopup(descriptor, cancelVersion)'));
-assert.ok(src.includes('if(newCount>oldCount||(newCount===oldCount&&newMissing<oldMissing))result=retry'));
+assert.ok(src.includes('if(retry&&retry.complete===true'));
+assert.ok(src.includes('newMissing+newUnverified<oldMissing+oldUnverified'));
 
 console.log('STOCK SIZE COMPLETENESS PASS', {
   adultExpectedSizes:['S','M','L','XL','XXL'],
-  perColorWaitMs:6500,
+  perColorWaitMaxMs:6500,
+  numericSizes:'per-color',
   partialProductRetry:true
 });
