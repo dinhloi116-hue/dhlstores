@@ -27,7 +27,7 @@ assert.strictEqual(retry.verified({
   errors:[]
 }),true,'A fully verified sold-out color must not enter retry queue');
 
-async function scenario({rows,selects=true,already=false,previous,expect,slowThreshold=6500}){
+async function scenario({rows,selects=true,already=false,previous,expect,slowThreshold=6600}){
   let now=0,selected=already,clicks=0,stableCalls=0;
   const fullRows=rows.map(row=>({...row,raw:row.size+' | '+(row.stock===0?'Hết hàng':'Còn hàng ('+row.stock+')')+' | 0'}));
   const context={
