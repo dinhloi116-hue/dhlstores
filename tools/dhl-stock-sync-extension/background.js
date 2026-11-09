@@ -13,6 +13,8 @@ importScripts(
   'scan-quality-core.js',
   'scan-retry-core.js',
   'stock-branch-core.js',
+  'excel-sku-core.js',
+  'stock-push-preview-core.js',
   'sapo-inventory-resolver-core.js',
   'sapo-inventory-set-compat.js',
   'sapo-product-create-background.js',
@@ -133,45 +135,12 @@ async function enableSidePanel() {
 
 // Tự dọn cache khi đóng Side Panel, không làm gián đoạn công việc đang chạy.
 const PANEL_AUTO_CLEANUP_PORT = 'dhl-stock-sync-panel';
-const PANEL_AUTO_CLEANUP_KEYS = [
-  'dhlManualScanJobV2',
-  'dhlManualPendingStockBatchV1',
-  'dhlManualPendingStockV1',
-  'dhlManualPendingStockBatchV2',
-  'dhlManualScanUiV2',
-  'dhlManualStockReportV1',
-  'dhlSapoPushQueueV1',
-  'dhlCatalogResults',
-  'dhlCatalogAt',
-  'dhlCatalogPageTitle',
-  'dhlCatalogPageUrl',
-  'dhlCatalogSkuMode',
-  'dhlSapoProductCreateQueueV1',
-  'dhlSapoProductCreateReportV1'
-];
-
-// Không xóa dhlSavedStockProfilesV1, dhlStockScanHistoryV1,
-// dhlStockHistoryV1, dhlSapoInventoryMapV1 hoặc dhlAutoSyncConfigV1.
+// From v0.25.0, stock checkpoints and valid export data are preserved
+// across panel close. The user explicitly clears cache with XÓA CACHE /
+// LÀM MỚI TOOL. Silent cleanup caused loss of completed scans.
+const PANEL_AUTO_CLEANUP_KEYS = [];
 async function cleanupPanelCloseCache(){
-  const state=await chrome.storage.local.get([
-    'dhlManualScanJobV2',
-    'dhlSapoPushQueueV1',
-    'dhlSapoProductCreateQueueV1'
-  ]);
-  const scan=state.dhlManualScanJobV2;
-  const push=state.dhlSapoPushQueueV1;
-  const product=state.dhlSapoProductCreateQueueV1;
-  if(scan&&(scan.running===true||['queued','running','stopping','paused'].includes(scan.status))){
-    return {cleared:false,reason:'scan-active'};
-  }
-  if(push&&(push.status==='running'||push.manualPaused===true)){
-    return {cleared:false,reason:'sapo-push-active'};
-  }
-  if(product&&['running','paused'].includes(product.status)){
-    return {cleared:false,reason:'product-create-active'};
-  }
-  await chrome.storage.local.remove(PANEL_AUTO_CLEANUP_KEYS);
-  return {cleared:true};
+  return {cleared:false,reason:'preserved-until-user-action'};
 }
 
 function requestPanelCloseCleanup(){

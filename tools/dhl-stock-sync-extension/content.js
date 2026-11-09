@@ -520,31 +520,30 @@
     return [...new Set(((hint && hint.colors) || []).map((value) => core.normalizeText(value)).filter(Boolean))];
   }
 
+  // Only exact normalized color names may select a source inventory table.
+  // "Trắng" != "Trắng Đỏ", "Xanh" != "Xanh Đen": a fuzzy color match
+  // can silently overwrite inventory of the wrong SKU.
+  function exactColor(name,expected){
+    const a=dom.colorKey(name),b=dom.colorKey(expected);
+    return Boolean(a&&b&&a===b);
+  }
+
   function selectTargetControls(allControls, hint) {
     const wanted = expectedColorHints(hint);
     if (!wanted.length) return { controls: allControls, missingHints: [] };
-
-    const pairs = [];
-    for (let hi = 0; hi < wanted.length; hi += 1) {
-      for (let ci = 0; ci < allControls.length; ci += 1) {
-        const score = matcher.scoreColorHint(wanted[hi], allControls[ci].name);
-        if (score > 0) pairs.push({ hi, ci, score });
+    const selected=[],missingHints=[],used=new Set();
+    for(const color of wanted){
+      const exact=allControls
+        .map((control,index)=>({control,index}))
+        .filter(x=>!used.has(x.index)&&exactColor(x.control.name,color));
+      if(exact.length!==1){
+        missingHints.push(color);
+        continue;
       }
+      used.add(exact[0].index);
+      selected.push({...exact[0].control,hint:color,hintScore:1});
     }
-    pairs.sort((a, b) => b.score - a.score);
-
-    const usedHints = new Set();
-    const usedControls = new Set();
-    const selected = [];
-    for (const pair of pairs) {
-      if (pair.score < 0.5 || usedHints.has(pair.hi) || usedControls.has(pair.ci)) continue;
-      usedHints.add(pair.hi);
-      usedControls.add(pair.ci);
-      selected.push({ ...allControls[pair.ci], hint: wanted[pair.hi], hintScore: pair.score });
-    }
-
-    const missingHints = wanted.filter((_, index) => !usedHints.has(index));
-    return { controls: selected, missingHints };
+    return{controls:selected,missingHints};
   }
 
   async function clickElement(el) {
@@ -949,13 +948,8 @@
     const normalizedSize=dom.normalizeSize(size);
     const candidates=(sourceVariants||[]).filter(v=>dom.normalizeSize(v&&v.size)===normalizedSize&&v&&v.sku);
     if(!candidates.length)return null;
-    if(candidates.length===1)return candidates[0];
-    const exact=candidates.find(v=>dom.colorKey(v.color)===dom.colorKey(color));
-    if(exact)return exact;
-    const ranked=candidates
-      .map(v=>({v,score:matcher.scoreColorHint(color,v.color)}))
-      .sort((a,b)=>b.score-a.score);
-    return ranked[0]&&ranked[0].score>=0.5?ranked[0].v:null;
+    const exact=candidates.filter(v=>exactColor(v.color,color));
+    return exact.length===1?exact[0]:null;
   }
 
   function makeVariant(parentId, parentName, color, row, index, sourceVariant=null, imageUrl='') {
@@ -1024,11 +1018,10 @@
       if (!fallbackWanted.length) {
         controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
       } else {
-        const ranked = fallbackWanted.map((wanted) => ({ hint: wanted, score: matcher.scoreColorHint(wanted, fallbackColor) })).sort((a, b) => b.score - a.score);
-        const best = ranked[0];
-        if (best && best.score >= 0.5) {
-          controls = [{ name: fallbackColor, el: null, hint: best.hint, hintScore: best.score }];
-          targetSelection.missingHints = (targetSelection.missingHints || []).filter((value) => value !== best.hint);
+        const exact = fallbackWanted.filter(wanted=>exactColor(wanted,fallbackColor));
+        if(exact.length===1){
+          controls=[{name:fallbackColor,el:null,hint:exact[0],hintScore:1}];
+          targetSelection.missingHints=(targetSelection.missingHints||[]).filter(value=>value!==exact[0]);
         }
       }
     }

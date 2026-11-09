@@ -11,7 +11,7 @@ assert.ok(!snippet.includes('new Promise'),'Use native MV3 Promise messaging');
 assert.ok(src.includes('!rebuildAttempted'),'Only one automatic recovery per Side Panel cache-missing state');
 assert.ok(src.includes("rebuildAttempted=true;"),'Rebuild must record that it was attempted');
 assert.ok(src.includes("}else if(!count&&rebuildReceiverError){"),'Connection failure must be visible');
-assert.ok(src.includes("s.manualEntries.length){\n      rebuildAttempted=false;"),'Successful output must allow subsequent state recovery');
+assert.ok(src.includes("s.exportEntries.length){\n      rebuildAttempted=false;"),'Successful output must allow subsequent state recovery');
 let calls=0;
 const context=vm.createContext({
   chrome:{runtime:{sendMessage:async(message,...args)=>{

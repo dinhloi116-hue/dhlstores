@@ -19,7 +19,7 @@ const runtimeFiles=[
   'safe-category-guard.js','stock-core.js','dom-stock-parser.js','visible-category-grid-core.js','content.js',
   'match-core.js','shop-rules.js','generic-shop-rules.js','xlsx-lite.js',
   'warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','warehouse-sku-link-mode.js',
-  'stock-history-core.js','batch-stock-core.js','scan-quality-core.js','stock-branch-core.js','excel-sku-core.js','stock-import-core.js','auto-sync-core.js',
+  'stock-history-core.js','batch-stock-core.js','scan-quality-core.js','stock-branch-core.js','excel-sku-core.js','stock-push-preview-core.js','stock-import-core.js','auto-sync-core.js',
   'sapo-inventory-resolver-core.js','sapo-inventory-set-compat.js',
   'manual-job-runner-background.js','manual-job-runner-mode.js',
   'manual-sapo-background.js','manual-sapo-output-mode.js',
@@ -96,8 +96,8 @@ assert.ok(resetUi.includes("panelCleanupPort=chrome.runtime.connect({name:'dhl-s
 const cleanupBg=background;
 assert.ok(cleanupBg.includes('PANEL_AUTO_CLEANUP_KEYS'),'Phải có whitelist cache tạm');
 assert.ok(cleanupBg.includes('chrome.runtime.onConnect.addListener'),'Phải theo dõi Side Panel đóng');
-assert.ok(cleanupBg.includes("['queued','running','stopping','paused'].includes(scan.status)"),'Không dọn giữa lượt quét');
-assert.ok(cleanupBg.includes("['running','paused'].includes(product.status)"),'Không dọn tác vụ tạo sản phẩm');
+assert.ok(cleanupBg.includes("reason:'preserved-until-user-action'"),'Đóng Side Panel không được xóa kết quả quét');
+assert.ok(cleanupBg.includes('const PANEL_AUTO_CLEANUP_KEYS = []'),'Chỉ dọn cache khi người dùng yêu cầu');
 assert.ok(!cleanupBg.slice(cleanupBg.indexOf('const PANEL_AUTO_CLEANUP_KEYS'),cleanupBg.indexOf('async function cleanupPanelCloseCache')).includes("'dhlSavedStockProfilesV1'"),'Không được xóa hồ sơ nguồn');
 
 const runnerUi=read('manual-job-runner-mode.js');
