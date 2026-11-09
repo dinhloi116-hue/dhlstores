@@ -325,7 +325,7 @@
       if (signature && signature === previous) stable += 1;
       else stable = 0;
       previous = signature;
-      if (hasAllTargetRows(rows, targetSizes) && stable >= 1) return rows;
+      if (hasAllTargetRows(rows, effectiveSizes) && stable >= 1) return rows;
       if (rows.length > 0 && stable >= 3) return rows;
     }
     return best;
@@ -502,7 +502,8 @@
       assertPopupScanActive(cancelVersion);
       currentRoot = findStockRoot() || currentRoot;
       if (isSelectedColor(name, currentRoot)) seenSelected = true;
-      const rows = readTargetRows(currentRoot, targetSizes);
+      const effectiveSizes=targetSizes&&targetSizes.length?targetSizes:sizeLabelsFromVisibleRows(currentRoot);
+      const rows = readTargetRows(currentRoot, effectiveSizes);
       const signature = rowsSignature(rows);
       if (rows.length > best.length) best = rows;
       if (signature && signature === previousRowsSignature) stableReads += 1;
