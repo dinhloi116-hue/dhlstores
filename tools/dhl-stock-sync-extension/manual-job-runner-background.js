@@ -422,19 +422,23 @@
 
   async function prepareRows(profile,sourceResults){
     const legacy=await parseLegacyProfile(profile);
-    if(legacy){
-      return{
-        prepared:autoCore.prepareRows(legacy.warehouseData,legacy.catalogData,sourceResults,matcher,rules),
-        branch:text(legacy.warehouseData.warehouseBranchName||profile.branchName)
-      };
-    }
     const stored=await chrome.storage.local.get(CONFIG_KEY);
     const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
+    const profileBranch=legacy
+      ?text(legacy.warehouseData.warehouseBranchName||profile&&profile.branchName)
+      :text(profile&&profile.branchName);
     const branch=branchCore.resolve({
       profileName:profile&&profile.name,
       sourceUrl:profile&&profile.lastSourceUrl,
-      branch:profile&&profile.branchName
+      branch:profileBranch,
+      branchSource:legacy&&legacy.warehouseData.warehouseBranchName?'legacy-file':''
     },config);
+    if(legacy){
+      return{
+        prepared:autoCore.prepareRows(legacy.warehouseData,legacy.catalogData,sourceResults,matcher,rules),
+        branch
+      };
+    }
     return{
       prepared:autoCore.prepareRows({}, {variants:[]}, sourceResults, matcher, rules),
       branch
