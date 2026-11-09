@@ -10,6 +10,7 @@
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const REPORT_KEY='dhlManualStockReportV1';
   const QUEUE_KEY='dhlSapoPushQueueV1';
+  const quality=globalThis.DHLScanQualityCore;
   const text=(v)=>String(v==null?'':v).trim();
   const esc=(v)=>text(v).replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 
@@ -62,6 +63,9 @@
     try{
       const list=await entries();
       if(!list.length)throw new Error('Chưa có kết quả quét để tạo Excel.');
+      if(!quality||list.some(entry=>!quality.trustedEntry(entry))){
+        throw new Error('Kết quả quét chưa đầy đủ hoặc còn lỗi. Không xuất file nhập tồn Sapo sai; quét lại các sản phẩm lỗi.');
+      }
       const stored=await chrome.storage.local.get(CONFIG_KEY);
       const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
       const branch=text(config&&config.sapo&&config.sapo.locationName);
@@ -183,7 +187,7 @@
       :'<small>Quét xong một tab thì kết quả sẽ xuất hiện ở đây.</small>';
     if(btn){
       btn.textContent=list.length?`TẢI FILE EXCEL (${list.length})`:'TẢI FILE EXCEL';
-      btn.disabled=!list.length;
+      btn.disabled=!list.length||!quality||list.some(entry=>!quality.trustedEntry(entry));
     }
     await renderQuickReports();
   }
