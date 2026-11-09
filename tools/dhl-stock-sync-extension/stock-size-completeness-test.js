@@ -4,6 +4,9 @@ const src=fs.readFileSync(__dirname+'/content.js','utf8');
 
 assert.ok(src.includes("const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL']"));
 assert.ok(src.includes('function expectedSizesFromRoot(root)'));
+assert.ok(src.includes('function verifiedInventoryTable(root)'));
+assert.ok(src.includes('dom.inventoryRowFromCells(cells,found.columns)'));
+assert.ok(src.includes('inventoryTableSnapshot(root)'));
 assert.ok(src.includes('const neededSizes = hintedSizes.length ? hintedSizes : (adultSize ? inferredSizes : [])'));
 assert.ok(src.includes('sizeLabelsFromVisibleRows(currentRoot)'));
 assert.ok(src.includes('auditColorSnapshots(snapshots)'));
