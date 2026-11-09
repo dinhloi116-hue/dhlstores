@@ -308,6 +308,14 @@
     return wanted.size>0 && rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size));
   }
 
+  // Explicit "Hết hàng" in the inventory column means stock 0, not a
+  // missing value. When two colors are both fully sold out their size/stock
+  // signatures are identical, so row changes cannot prove a color switch.
+  function explicitSoldOutRows(rows,targetSizes){
+    return hasAllTargetRows(rows,targetSizes)
+      &&rows.every(row=>row.stock===0&&/\b(?:hết\s*hàng|het\s*hang|sold\s*out|không\s*còn\s*hàng)\b/i.test(String(row.raw||'')));
+  }
+
   async function stableTargetRows(root, targetSizes, timeout = 4000, cancelVersion = null) {
     let best = [];
     let previous = '';
@@ -517,9 +525,16 @@
       // A selected radio alone is NOT evidence that the stock table refreshed.
       // On later colors we must observe changed stock/size rows to avoid
       // assigning the previous color's inventory to the next color.
-      const selectionConfirmed = alreadySelected || !previousSignature || changedRows;
+      // Both colors can legitimately have exactly the same stock signature:
+      // S/M/L/XL/XXL = "Hết hàng" (0). In this case a changed row signature
+      // is impossible. Use the selected radio + explicit zero labels + stable
+      // reads after a settling interval, rather than marking stock as missing.
+      const sameZeroStock=Boolean(previousSignature&&signature===previousSignature
+        &&seenSelected&&explicitSoldOutRows(rows,effectiveSizes)
+        &&stableReads>=5&&elapsed>=1500);
+      const selectionConfirmed = alreadySelected || !previousSignature || changedRows || sameZeroStock;
       if (selectionConfirmed && hasAllTargetRows(rows, effectiveSizes)) {
-        if (alreadySelected || changedRows || elapsed >= 650) {
+        if (alreadySelected || changedRows || sameZeroStock || elapsed >= 650) {
           await sleep(60);
           return stableTargetRows(currentRoot, effectiveSizes, 1800, cancelVersion);
         }
@@ -534,7 +549,10 @@
     }
     // An unconfirmed color switch must never be assigned the previous color's
     // stock. Return only a verified partial read, otherwise mark it missing.
-    return alreadySelected || !previousSignature || (rowsSignature(best) && rowsSignature(best)!==previousSignature)
+    const fullZeroConfirmed=seenSelected&&explicitSoldOutRows(best,targetSizes)
+      &&rowsSignature(best)===previousSignature&&stableReads>=5;
+    return alreadySelected || !previousSignature || fullZeroConfirmed
+      ||(rowsSignature(best) && rowsSignature(best)!==previousSignature)
       ? best : [];
   }
 
