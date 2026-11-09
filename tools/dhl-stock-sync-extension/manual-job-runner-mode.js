@@ -308,7 +308,7 @@
     const resume=$('manualResumeBtn');
     const running=Boolean(job&&job.running);
     const stopping=Boolean(job&&job.status==='stopping');
-    const paused=Boolean(job&&job.status==='paused');
+    const paused=Boolean(job&&['paused','retry-paused'].includes(job.status));
 
     if(start){
       if(running||stopping){start.disabled=true;start.textContent='ĐANG ĐỒNG BỘ...';}
@@ -316,7 +316,10 @@
     }
     if(stop)stop.hidden=!(running||stopping);
     if(cancel)cancel.hidden=!(running||stopping);
-    if(resume)resume.hidden=!paused;
+    if(resume){
+      resume.hidden=!paused;
+      resume.textContent=job&&job.status==='retry-paused'?'TIẾP TỤC QUÉT LỖI':'TIẾP TỤC';
+    }
 
     if(!job){
       if(progress)progress.textContent='Sẵn sàng.';
@@ -331,6 +334,11 @@
     if(fill)fill.style.width=`${percent}%`;
     const errors=Array.isArray(job.errors)?job.errors.length:0;
     const parts=[`${scopeLabel(job.scope)} • ${index}/${total||'?'}`];
+    const retryQueue=Array.isArray(job.retryQueue)?job.retryQueue:[];
+    if(retryQueue.length){
+      const remaining=retryQueue.filter(i=>!(job.results&&job.results[i]&&job.results[i].complete===true)).length;
+      parts.push(`quét lại ${Math.min(Number(job.retryCursor||0),retryQueue.length)}/${retryQueue.length} • lượt ${Number(job.retryPass||0)}/4 • còn ${remaining} mẫu`);
+    }
     if(job.currentProduct&&(running||stopping))parts.push(job.currentProduct);
     if(Number(job.lastProductMs||0)>0&&!running)parts.push(`${(Number(job.lastProductMs)/1000).toFixed(1)}s/SP`);
     if(errors)parts.push(`${errors} lỗi`);
@@ -339,10 +347,12 @@
 
     if(job.status==='done')setStatus(`ĐÃ XONG ${job.profileName}: ${index}/${total} sản phẩm.`,'ok');
     else if(job.status==='paused')setStatus(`ĐÃ DỪNG tại ${index}/${total}. Có thể tiếp tục sau.`,'ok');
+    else if(job.status==='retry-paused')setStatus(`Còn ${(job.retryQueue||[]).length} mẫu chưa đủ tồn sau nhiều lượt. Không xuất/đẩy Sapo. Bấm TIẾP TỤC QUÉT LỖI để chỉ quét lại các mẫu đó.`,'bad');
     else if(job.status==='error')setStatus(`LỖI: ${text(job.lastError)}`,'bad');
     else if(job.status==='output-error')setStatus(`LỖI ĐẦU RA: ${text(job.lastError)}`,'bad');
     else if(job.status==='cancelled')setStatus(`ĐÃ HỦY tại ${index}/${total}. Có thể đổi tab và chạy lại ngay.`,'ok');
     else if(job.status==='stopping')setStatus(`Đang hoàn tất sản phẩm hiện tại rồi dừng • ${index}/${total}.`);
+    else if(job.status==='retrying'&&running)setStatus(`Đang tự mở lại popup các mẫu thiếu màu/size/tồn • lượt ${Number(job.retryPass||0)}/4. Giữ nguyên tab nguồn.`);
     else if(running)setStatus(`Đang quét trực tiếp trên tab nguồn ${index}/${total}${job.currentProduct?` • ${job.currentProduct}`:''}. Giữ nguyên tab đến khi xong.`);
   }
 
