@@ -58,17 +58,20 @@ assert.strictEqual(prepared.master,'clean_alias_output_stale_cache_safe');
 assert.strictEqual(prepared.sourceProductCount,2);
 assert.strictEqual(prepared.sourceVariantCount,10);
 assert.strictEqual(prepared.rows.length,10);
-assert.strictEqual(prepared.matchedSkuCount,5);
-assert.strictEqual(prepared.sourceOnlySkuCount,5);
+assert.strictEqual(prepared.matchedSkuCount,0);
+assert.strictEqual(prepared.sourceOnlySkuCount,10);
 assert.strictEqual(prepared.generatedSkuCount,0);
 
 const pink=prepared.rows.filter(x=>x.standardName==='CLB Real 26-27 HD - Hồng');
 const white=prepared.rows.filter(x=>x.standardName==='CLB Real 26-27 HD - Trắng');
 assert.strictEqual(pink[0].sku,'clb-real-26-27-hd-hong-S');
-assert.strictEqual(pink[0].variantId,228274684);
+assert.strictEqual(pink[0].variantId,0,'Stale hashed SKU must not link by similar name');
 const whiteAlias='clb-real-26-27-hd-trang';
 assert.strictEqual(white[0].sku,`${whiteAlias}-S`);
 assert.ok(white.every(x=>x.variantId===0));
+const exactCatalog={variants:[{sku:'clb-real-26-27-hd-hong-S',name,variantId:88,productId:91959154,size:'S'}]};
+const exact=core.prepareRows(warehouse,exactCatalog,source,matcher,rules);
+assert.strictEqual(exact.rows.find(r=>r.sku==='clb-real-26-27-hd-hong-S').variantId,88);
 
 console.log('AUTO SYNC CORE PASS',{
   master:'clean_alias_output_stale_cache_safe',
