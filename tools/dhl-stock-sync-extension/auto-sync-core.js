@@ -79,7 +79,6 @@
     // SKU phiên bản luôn = Alias + "-" + Size.
     // Không cần đọc code/SKU ẩn từ website và không ghép tên để quyết định SKU.
     const sapoBySku=new Map();
-    const sapoByNameSize=catalogSkuIndex(catalogData).map;
     for(const v of (catalogData&&catalogData.variants)||[]){
       const key=normalizeSku(v&&v.sku);
       if(key&&!sapoBySku.has(key))sapoBySku.set(key,v);
@@ -109,13 +108,18 @@
       for(const {source,size,stock} of bySize.values()){
         const cleanSku=`${alias}-${size}`;
         const sourceKey=normalizeSku(cleanSku);
-        const byNameSize=sapoByNameSize.get(rowKey(standardName,size))||null;
-        const existing=sapoBySku.get(sourceKey)||byNameSize||null;
+        // Only an identical full SKU may link a scanned row to Sapo metadata.
+        // A similarly named color (Trắng vs Trắng Đỏ) must never supply an
+        // unrelated Sapo variantId or productId.
+        const existing=sapoBySku.get(sourceKey)||null;
         // SKU đầu ra LUÔN là clean SKU hiện tại. Catalog/profile cũ chỉ được dùng
         // để tham khảo variantId/productId, tuyệt đối không được ghi đè SKU.
         const sku=cleanSku;
         const uniq=`${normalizeSku(sku)}|${size}`;
-        if(seen.has(uniq))continue;
+        if(seen.has(uniq)){
+          missingSku.push(`Trùng SKU chuẩn hóa ${cleanSku} giữa các biến thể nguồn; không gộp tồn.`);
+          continue;
+        }
         seen.add(uniq);
 
         if(existing)matchedSkuCount+=1;else sourceOnlySkuCount+=1;
@@ -132,7 +136,7 @@
           sourceParentId:Number(group.parentId)||0,
           sourceVariantId:Number(source&&source.id)||0,
           sourceUrl:text(source&&source.sourceUrl||''),
-          matchedBy:sapoBySku.get(sourceKey)?'clean-sku-exact':(byNameSize?'legacy-name-size-id-only':'clean-alias-size-new')
+          matchedBy:existing?'clean-sku-exact':'clean-alias-size-new'
         });
       }
     }
