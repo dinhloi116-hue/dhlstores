@@ -31,3 +31,14 @@ Sau khi xác nhận V8.40, các lần sau dùng trực tiếp nút ↻ CẬP NH�
 - Khi Corel khóa file addon không cho thay thế, updater báo lỗi và **giữ file cũ**; đóng CorelDRAW rồi chạy lại PowerShell updater.
 - Kết quả kiểm thử dựa trên giả lập launcher/DOM và rà soát cú pháp; chưa kiểm thử cập nhật file trong CorelDRAW 2021/2025 thực tế.
 - Log: `%TEMP%\DHL_NAMESET_UPDATE_LOG.txt`.
+
+
+## Sửa lỗi mở Docker lại hiện V8.24 (bản V8.44)
+
+V8.24 có mã `mark()` chạy lặp trong ~13 giây và tự ghi đè nhãn phiên bản sau khi tải giao diện mới. V8.44 đồng bộ mọi cập nhật nhãn trong snapshot để không có timer nào đặt phiên bản thấp hơn nhãn release.
+
+Bộ cập nhật mới nhận thêm `-CurrentAddonDir`, lấy từ `file:///.../DHL_A3_Nameset/DockerUI.html` đang hiển thị trong Corel. Nó ghi đúng file hiện hành, so SHA-256 với snapshot GitHub và **báo lỗi nếu file đang mở vẫn khác**, thay vì nhầm thư mục add-on khác. Nhật ký ghi `ACTIVE COREL DOCKER`, `ACTIVE VERIFY OK` hoặc `ACTIVE VERIFY FAILED`.
+
+Với máy đang có giao diện cũ: cập nhật V8.44 **một lần**, đóng và mở lại Corel. Sau đó giao diện phải nạp trực tiếp V8.44 từ đĩa, không cần bấm cập nhật mỗi lần khởi động. Nếu vẫn hiện nhãn cũ, xem `%TEMP%\DHL_NAMESET_UPDATE_LOG.txt` để đối chiếu đường dẫn Docker thực tế. Không reset Workspace, không xóa hoặc di chuyển file thiết kế.
+
+Kiểm thử: `node tools/tach-nameset-a3/tests/startup_version_v844.test.js`, `node tools/tach-nameset-a3/tests/fast_updater_v840.test.js`. Không thể xác minh Corel thực tế chỉ bằng kiểm thử mô phỏng.
