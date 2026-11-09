@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.23.9",
+  "version": "0.24.0",
   "minimum_chrome_version": "116",
-  "description": "Đồng bộ tồn kho thủ công; quét popup trực tiếp trên tab nguồn đang mở, tự xóa cache tạm khi đóng bảng, giữ kết nối Sapo và dữ liệu đang chạy.",
+  "description": "Đồng bộ tồn kho qua popup trực tiếp trên tab nguồn, quét thích ứng theo tốc độ phản hồi và kiểm tra đủ màu/size trước khi xuất.",
   "permissions": [
     "storage",
     "unlimitedStorage",
