@@ -1,6 +1,14 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.2**.
+Phiên bản: **v0.24.3**.
+
+## Tự quét lại sản phẩm chưa đủ dữ liệu (v0.24.3)
+
+- Sau khi quét một lượt, tự động xác định các sản phẩm còn thiếu màu/size/tồn hoặc popup lỗi và **chỉ mở lại các mẫu đó trên đúng tab gốc**.
+- Giữ nguyên kết quả sản phẩm đạt; kết quả quét lại thay thế đúng sản phẩm cũ, không cộng dồn/trùng SKU. Không gộp tồn từ hai popup lỗi ở hai thời điểm khác nhau.
+- Tự động quét lại tối đa 4 lượt cho các mẫu chưa đạt (mỗi lượt có cơ chế thử lại popup nội bộ). Nếu vẫn lỗi, tạm dừng với nút **TIẾP TỤC QUÉT LỖI**; không quét vô hạn gây nghẽn website.
+- Khi tiếp tục, giữ checkpoint và chỉ quét lại số mẫu còn lỗi. Nếu hủy, không mở thêm popup.
+- Không tự xuất Excel hoặc đẩy tồn Sapo khi vẫn có mẫu chưa được xác minh. Kết quả quét lỗi được giữ để xem báo cáo.
 
 ## Chỉ đọc đúng bảng size/tồn trong popup (v0.24.2)
 

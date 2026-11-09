@@ -55,7 +55,8 @@ assert.ok(!runnerBg.includes('chrome.windows.create('),'Không được mở c�
 assert.ok(!runnerBg.includes('chrome.windows.remove('),'Không được đóng cửa sổ người dùng');
 assert.ok(!runnerBg.includes('chrome.tabs.create('),'Không được mở tab quét');
 assert.ok(!runnerBg.includes('chrome.tabs.remove('),'Không được đóng tab người dùng');
-assert.ok(runnerBg.includes('if(job.index<=3&&job.consecutiveEmpty>=3)'),'Phải dừng sớm nếu liên tục không đọc được popup');
+assert.ok(runnerBg.includes('if(!retrying&&job.index<=3&&job.consecutiveEmpty>=3)'),'Ba popup đầu lỗi phải chuyển vào hàng đợi quét lại');
+assert.ok(runnerBg.includes("await finalize(job,'retry-paused')"),'Phải tạm dừng an toàn khi hết số lượt quét lại');
 assert.ok(runnerBg.includes('const CHUNK_SIZE=4'),'Phải dùng lại tốc độ quét gốc');
 assert.ok(runnerBg.includes('scheduleNext(80)'),'Giữ nhịp 80ms cho timer');
 assert.ok(runnerBg.includes('setTimeout(()=>processStep().catch(()=>{})'),'Không chờ alarm 30 giây sau mỗi nhóm');

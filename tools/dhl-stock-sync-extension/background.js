@@ -11,6 +11,7 @@ importScripts(
   'batch-stock-core.js',
   'auto-sync-core.js',
   'scan-quality-core.js',
+  'scan-retry-core.js',
   'sapo-inventory-resolver-core.js',
   'sapo-inventory-set-compat.js',
   'sapo-product-create-background.js',

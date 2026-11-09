@@ -21,7 +21,8 @@ assert.ok(!bg.includes('chrome.tabs.create('));
 assert.ok(!bg.includes('chrome.tabs.remove('));
 assert.ok(bg.includes('job.tabId=sourceTabId'));
 assert.ok(bg.includes('job.ownsTab=false'));
-assert.ok(bg.includes('if(job.index<=3&&job.consecutiveEmpty>=3)'));
+assert.ok(bg.includes('if(!retrying&&job.index<=3&&job.consecutiveEmpty>=3)'));
+assert.ok(bg.includes('retryCore.incompleteIndexes(job.results,job.total)'));
 assert.ok(bg.includes('job.lastPopupError'));
 assert.ok(ui.includes('Giữ tab nguồn được chọn'));
 assert.ok(ui.includes('Popup sản phẩm sẽ mở lần lượt ngay trên tab danh mục đang xem'));
@@ -38,4 +39,4 @@ assert.ok(content.includes('targetSelection.controls.length ? null : await first
 assert.ok(content.includes("if(findStockRoot())throw new Error('Popup chưa đóng"));
 assert.ok(catalog.includes('await sleep(180)'));
 assert.ok(catalog.includes('await sleep(120)'));
-console.log('SCAN PACING PASS: original active tab, early abort, stable stock validation');
+console.log('SCAN PACING PASS: original active tab, bounded retry, stable stock validation');
