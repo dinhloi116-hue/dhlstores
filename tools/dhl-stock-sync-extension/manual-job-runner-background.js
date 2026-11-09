@@ -6,7 +6,8 @@
   const autoCore=globalThis.DHLAutoSyncCore;
   const rules=globalThis.DHLShopRules;
   const historyCore=globalThis.DHLStockHistoryCore;
-  if(!xlsx||!matcher||!autoCore||!rules||!historyCore)return;
+  const quality=globalThis.DHLScanQualityCore;
+  if(!xlsx||!matcher||!autoCore||!rules||!historyCore||!quality)return;
 
   const PROFILE_KEY='dhlSavedStockProfilesV1';
   const SELECTED_KEY='dhlSelectedStockProfileId';
@@ -352,7 +353,10 @@
       }
       const diag=item&&item.domDiagnostics||{};
       for(const missing of (Array.isArray(diag.missingSizes)?diag.missingSizes:[])){
-        push('missing-size',`Thiếu size ${missing}`,{product});
+        push('missing-size',`Không đọc được tồn size ${missing}`,{product});
+      }
+      for(const color of (Array.isArray(diag.unverifiedColors)?diag.unverifiedColors:[])){
+        push('unverified-color',`Chưa xác minh được màu ${color}`,{product});
       }
       for(const color of (Array.isArray(diag.missingColorHints)?diag.missingColorHints:[])){
         push('missing-color',`Thiếu màu ${color}`,{product});
@@ -368,7 +372,7 @@
     return issues;
   }
 
-  async function buildQuickReport(profile,job,sourceResults,prepared){
+  async function buildQuickReport(profile,job,sourceResults,prepared,forcedStatus=''){
     const stored=await chrome.storage.local.get([HISTORY_KEY,REPORT_KEY]);
     const history=stored[HISTORY_KEY]&&typeof stored[HISTORY_KEY]==='object'?stored[HISTORY_KEY]:{};
     const reports=stored[REPORT_KEY]&&typeof stored[REPORT_KEY]==='object'?stored[REPORT_KEY]:{};
@@ -382,14 +386,16 @@
       matcher
     });
     const previous=list.length?list[list.length-1]:null;
+    const issues=collectScanIssues(job,sourceResults,prepared);
+    const scanQuality=quality.evaluate(job,sourceResults,prepared,issues,forcedStatus);
     const fullComparable=Boolean(
+      scanQuality.ok &&
       snapshot.items.length &&
       job.scope==='all' &&
       Number(job.index||0)>=Number(job.total||0) &&
       job.stopAfterCurrent!==true
     );
     const diff=fullComparable&&previous?historyCore.compareSnapshots(previous,snapshot):null;
-    const issues=collectScanIssues(job,sourceResults,prepared);
 
     if(fullComparable){
       list.push(snapshot);
@@ -422,6 +428,7 @@
       }:null,
       issues,
       issueCount:issues.length,
+      quality:scanQuality,
       rowCount:Number(prepared&&prepared.rows&&prepared.rows.length||0)
     };
     reports[profile.id]=report;
@@ -488,7 +495,7 @@
       return;
     }
 
-    const report=await buildQuickReport(profile,job,sourceResults,prepared);
+    const report=await buildQuickReport(profile,job,sourceResults,prepared,forcedStatus);
 
     if(prepared.rows.length){
       const stored=await chrome.storage.local.get(BATCH_KEY);
@@ -507,6 +514,7 @@
         rowCount:prepared.rows.length,
         missingSkuCount:prepared.missingSku.length,
         rows:prepared.rows,
+        qualityValidated:report.quality&&report.quality.ok===true,
         auto:false,
         partial:job.scope!=='all'||Number(job.index||0)<Number(job.total||0),
         jobId:job.id,
@@ -868,6 +876,7 @@
       auto:false,
       partial:job.scope!=='all'||Number(job.index||0)<Number(job.total||0),
       jobId:job.id,
+      qualityValidated:false,
       recovered:true
     };
     await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});
