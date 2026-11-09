@@ -7,19 +7,28 @@
   const JOB_KEY='dhlManualScanJobV2';
   const quality=globalThis.DHLScanQualityCore;
   let recovering=false;
+  let rebuildAttempted=false;
+  let rebuildReceiverError='';
 
   const text=(v)=>String(v==null?'':v).trim();
   const setText=(el,value)=>{if(el&&el.textContent!==value)el.textContent=value;};
 
-  function send(message){
-    return new Promise((resolve,reject)=>{
-      chrome.runtime.sendMessage(message,response=>{
-        const err=chrome.runtime.lastError;
-        if(err){reject(err);return;}
-        if(!response){reject(new Error('Không nhận được phản hồi từ background.'));return;}
-        resolve(response);
-      });
-    });
+  async function send(message){
+    // Use Chrome's Promise-only messaging API. Promise rejection is explicitly
+    // awaited/caught by the caller, avoiding unchecked callback lastError when
+    // the MV3 worker is unavailable or the extension was just reloaded.
+    let response;
+    try{
+      response=await chrome.runtime.sendMessage(message);
+    }catch(error){
+      const detail=String(error&&error.message||error);
+      if(/Receiving end does not exist|Could not establish connection|Extension context invalidated/i.test(detail)){
+        throw new Error('Không kết nối được tiến trình nền DHL STOCK SYNC. Đóng/mở lại Side Panel hoặc Reload extension; dữ liệu quét chưa bị xóa.');
+      }
+      throw error;
+    }
+    if(!response)throw new Error('Background chưa phản hồi lệnh '+String(message&&message.type||'')+'.');
+    return response;
   }
 
   async function readState(){
@@ -136,13 +145,26 @@
     if(!mount())return;
     let s=await readState();
 
-    if(!s.manualEntries.length&&!recovering&&s.job&&['done','paused'].includes(s.job.status)&&Array.isArray(s.job.results)&&s.job.results.length){
+    if(!s.manualEntries.length&&!recovering&&!rebuildAttempted&&s.job
+      &&['done','paused'].includes(s.job.status)
+      &&Array.isArray(s.job.results)&&s.job.results.length){
       recovering=true;
+      rebuildAttempted=true;
       try{
         const rebuilt=await send({type:'DHL_MANUAL_JOB_REBUILD_OUTPUT'});
-        if(rebuilt&&rebuilt.ok)s=await readState();
-      }catch(_){}
-      finally{recovering=false;}
+        if(rebuilt&&rebuilt.ok){
+          s=await readState();
+          rebuildReceiverError='';
+        }else{
+          rebuildReceiverError=String(rebuilt&&rebuilt.error||'Background chưa thể khôi phục kết quả quét.');
+        }
+      }catch(error){
+        rebuildReceiverError=String(error&&error.message||error);
+      }finally{recovering=false;}
+    }
+    if(s.manualEntries.length){
+      rebuildAttempted=false;
+      rebuildReceiverError='';
     }
 
     const excel=document.getElementById('batchExportBtn');
@@ -189,6 +211,8 @@
       setState(`Đã đẩy xong ${total}/${total} dòng lên Sapo.`,'ok');
     }else if(queue&&queue.status==='cancelled'){
       setState('Đã dừng đẩy Sapo. Cache vẫn còn để tải Excel hoặc đẩy lại.','ok');
+    }else if(!count&&rebuildReceiverError){
+      setState(rebuildReceiverError,'bad');
     }else if(!count){
       setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
     }else if(!allVerified){
