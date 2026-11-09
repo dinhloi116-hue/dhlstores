@@ -13,6 +13,8 @@
       sku:text(row&&row.sku),
       stock:Number(row&&row.stock),
       standardName:text(row&&row.standardName),
+      alias:text(row&&row.alias),
+      matchedBy:text(row&&row.matchedBy),
       size:text(row&&row.size),
       variantId:row&&row.variantId,
       productId:row&&row.productId

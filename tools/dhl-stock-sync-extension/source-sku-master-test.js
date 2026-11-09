@@ -46,7 +46,8 @@ assert.deepStrictEqual(cleanPrepared.rows.map(r=>r.sku),[
 assert.deepStrictEqual(cleanPrepared.rows.map(r=>r.variantId),[901,902,903]);
 assert.strictEqual(cleanPrepared.matchedSkuCount,3);
 
-// Cache/catalog cũ có SKU hash/hậu tố: chỉ dùng ID tham khảo, đầu ra vẫn phải là clean SKU hiện tại.
+// Cache/catalog cũ có SKU hash/hậu tố: KHÔNG dùng ID để tránh ghép nhầm;
+// đầu ra vẫn phải là clean SKU hiện tại.
 const legacyAlias=rules.generatedAliasForStandardName(standard);
 assert.notStrictEqual(legacyAlias,cleanAlias);
 const legacyCatalog={
@@ -61,9 +62,10 @@ assert.deepStrictEqual(legacyPrepared.rows.map(r=>r.sku),[
   `${cleanAlias}-S`,`${cleanAlias}-M`,`${cleanAlias}-L`
 ]);
 assert.deepStrictEqual(legacyPrepared.rows.map(r=>r.matchedBy),[
-  'legacy-name-size-id-only','legacy-name-size-id-only','legacy-name-size-id-only'
+  'clean-alias-size-new','clean-alias-size-new','clean-alias-size-new'
 ]);
-assert.strictEqual(legacyPrepared.matchedSkuCount,3);
+assert.strictEqual(legacyPrepared.matchedSkuCount,0);
+assert.deepStrictEqual(legacyPrepared.rows.map(r=>r.variantId),[0,0,0]);
 
 const wikaStandard='Áo Thi Đấu Wika CLB Đông Á Thanh Hoá (Bản Fan) - Vàng';
 const wikaCleanAlias='ao-thi-dau-wika-clb-dong-a-thanh-hoa-ban-fan-vang';

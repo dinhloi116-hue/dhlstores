@@ -156,12 +156,16 @@
 
   function buildOfficialInventoryWorkbook(xlsx,rows,branchName){
     const clean=[];
+    const usedSku=new Set();
     let zeroCount=0;
     for(const row of rows||[]){
       const sku=String(row&&row.sku||'').trim();
       const stock=Number(row&&row.stock);
       if(!sku)throw new Error('Thiếu SKU* ở một biến thể. Sapo bắt buộc SKU để nhập tồn kho.');
-      if(!Number.isFinite(stock)||stock<0)throw new Error(`Tồn kho không hợp lệ cho SKU ${sku}`);
+      const exactSku=sku.normalize('NFC').toUpperCase();
+      if(usedSku.has(exactSku))throw new Error(`SKU trùng trong Excel: ${sku}`);
+      usedSku.add(exactSku);
+      if(!Number.isSafeInteger(stock)||stock<0||row.stock==null||row.stock==='')throw new Error(`Tồn kho không hợp lệ cho SKU ${sku}`);
       clean.push({...row,sku,stock});
       if(stock===0)zeroCount++;
     }
