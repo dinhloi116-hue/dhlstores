@@ -152,7 +152,9 @@
     for(const [profileId,scannedAt] of Object.entries(scans)){
       const entry=pending[profileId];
       if(entry&&Number(entry.scannedAt||0)===Number(scannedAt||0)){
-        delete pending[profileId];
+        // Preserve the exported snapshot for re-download. Mark it as already
+        // pushed so an old scan cannot be sent again by accident.
+        pending[profileId]={...entry,lastSapoPushedAt:Number(queue.finishedAt||Date.now()),lastSapoPushQueueId:String(queue.id||'')};
         changed=true;
       }
     }
@@ -297,7 +299,11 @@
 
   function selectedPendingEntries(pending,profileIds){
     const ids=Array.isArray(profileIds)?profileIds.map(String).filter(Boolean):[];
-    return (ids.length?ids.map(id=>pending[id]):Object.values(pending)).filter(Boolean);
+    const selected=(ids.length?ids.map(id=>pending[id]):Object.values(pending)).filter(Boolean);
+    const available=selected.filter(entry=>!entry.lastSapoPushQueueId
+      ||Number(entry.lastSapoPushedAt||0)<Number(entry.scannedAt||0));
+    if(!available.length)throw new Error('Tất cả hồ sơ đã được đẩy lên Sapo. Hãy quét lại dữ liệu mới trước khi đẩy tiếp.');
+    return available;
   }
 
   function buildPreviewSnapshot(entries,config,priorQueue){
