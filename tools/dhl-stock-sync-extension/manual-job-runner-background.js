@@ -7,7 +7,8 @@
   const rules=globalThis.DHLShopRules;
   const historyCore=globalThis.DHLStockHistoryCore;
   const quality=globalThis.DHLScanQualityCore;
-  if(!xlsx||!matcher||!autoCore||!rules||!historyCore||!quality)return;
+  const retryCore=globalThis.DHLManualScanRetryCore;
+  if(!xlsx||!matcher||!autoCore||!rules||!historyCore||!quality||!retryCore)return;
 
   const PROFILE_KEY='dhlSavedStockProfilesV1';
   const SELECTED_KEY='dhlSelectedStockProfileId';
@@ -18,6 +19,7 @@
   const REPORT_KEY='dhlManualStockReportV1';
   const ALARM='dhl-manual-scan-step';
   const MAX_ERRORS=100;
+  const RETRY_COOLDOWN_MS=1400;
 
   const text=(v)=>String(v==null?'':v).trim();
   const sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -573,6 +575,10 @@
     job.pageTitle=text(discovered.pageTitle);
     job.profileName=profileName(job.pageTitle,job.sourceUrl);
     job.status='running';
+    job.retryQueue=[];
+    job.retryCursor=0;
+    job.retryPass=0;
+    job.retryAttempts={};
     job.progress=`0/${job.total}`;
     await saveProfileCheckpoint(job.profileId,{
       name:job.profileName,
@@ -609,14 +615,23 @@
       if(!afterInit||afterInit.id!==job.id||afterInit.running!==true||afterInit.status==='cancelled')return;
       job=afterInit;
 
-      while(job.running&&Number(job.index||0)<Number(job.total||0)&&processed<CHUNK_SIZE){
+      while(job.running&&processed<CHUNK_SIZE){
+        const retrying=Number(job.index||0)>=Number(job.total||0);
+        const retryQueue=Array.isArray(job.retryQueue)?job.retryQueue:[];
+        if(retrying&&Number(job.retryCursor||0)>=retryQueue.length)break;
+        const resultIndex=retrying?Number(retryQueue[Number(job.retryCursor||0)]):Number(job.index||0);
+        const descriptor=job.descriptors[resultIndex];
+        if(!descriptor)throw new Error('Không tìm thấy sản phẩm cần quét lại tại vị trí '+resultIndex);
         const tab=await ensureJobTab(job);
-        const descriptor=job.descriptors[job.index];
 
-        job.currentProduct=text(descriptor&&descriptor.title)||`Sản phẩm ${job.index+1}`;
+        job.currentProduct=text(descriptor&&descriptor.title)||`Sản phẩm ${resultIndex+1}`;
         job.currentStartedAt=Date.now();
-        job.status='running';
+        job.status=retrying?'retrying':'running';
         job.progress=`${job.index}/${job.total}`;
+        if(retrying){
+          job.retryAttempts=job.retryAttempts&&typeof job.retryAttempts==='object'?job.retryAttempts:{};
+          job.retryAttempts[resultIndex]=Number(job.retryAttempts[resultIndex]||0)+1;
+        }
 
         let result=null,scanError=null;
         try{
@@ -635,8 +650,11 @@
         }
         job=latest;
 
+        job.errors=Array.isArray(job.errors)?job.errors:[];
+        // Only unresolved errors belong to the final report. Clear the
+        // previous attempt's error if that product is being scanned again.
+        job.errors=job.errors.filter(err=>Number(err&&err.id)!==Number(descriptor&&descriptor.id));
         if(scanError){
-          job.errors=Array.isArray(job.errors)?job.errors:[];
           job.errors.push({
             id:descriptor&&descriptor.id,
             title:descriptor&&descriptor.title,
@@ -655,15 +673,20 @@
         }
 
         job.results=Array.isArray(job.results)?job.results:[];
-        job.results.push(result);
-        job.index+=1;
+        if(retrying){
+          job.results[resultIndex]=retryCore.preferResult(job.results[resultIndex],result);
+          job.retryCursor=Number(job.retryCursor||0)+1;
+        }else{
+          job.results[resultIndex]=result;
+          job.index+=1;
+        }
         processed+=1;
         job.progress=`${job.index}/${job.total}`;
         job.lastCompletedProduct=text(descriptor&&descriptor.title);
         job.lastProductMs=Math.max(0,Date.now()-Number(job.currentStartedAt||Date.now()));
         const variants=Array.isArray(result&&result.variants)?result.variants:[];
         if(!variants.length){
-          job.consecutiveEmpty=Number(job.consecutiveEmpty||0)+1;
+          if(!retrying)job.consecutiveEmpty=Number(job.consecutiveEmpty||0)+1;
           const firstError=result&&Array.isArray(result.errors)&&result.errors[0]
             ? text(result.errors[0].message||result.errors[0].error):'';
           job.lastPopupError=text(scanError&&scanError.message)
@@ -680,7 +703,7 @@
         if(saved===false)return;
 
         // Dừng sớm nếu ba popup đầu liên tục thất bại, không đẩy tồn kho sai.
-        if(job.index<=3&&job.consecutiveEmpty>=3){
+        if(!retrying&&job.index<=3&&job.consecutiveEmpty>=3){
           job.running=false;
           job.status='error';
           job.failedAt=Date.now();
@@ -690,7 +713,7 @@
           return;
         }
 
-        if(job.stopAfterCurrent&&job.index<job.total){
+        if(job.stopAfterCurrent){
           job.pausedAt=Date.now();
           await finalize(job,'paused');
           return;
@@ -698,6 +721,34 @@
       }
 
       if(Number(job.index||0)>=Number(job.total||0)){
+        const remaining=retryCore.incompleteIndexes(job.results,job.total);
+        if(remaining.length){
+          const existingQueue=Array.isArray(job.retryQueue)?job.retryQueue:[];
+          const cursor=Number(job.retryCursor||0);
+          // Complete the ongoing retry pass before planning another pass.
+          if(existingQueue.length&&cursor<existingQueue.length){
+            scheduleNext(80);
+            return;
+          }
+          const next=retryCore.planNextPass(job);
+          job.retryQueue=next.remaining;
+          job.retryCursor=0;
+          if(next.status==='paused'){
+            job.currentProduct='';
+            job.lastError=`Còn ${next.remaining.length} sản phẩm chưa đủ màu/size/tồn sau ${job.retryPass} lượt quét lại. Đã tạm dừng để tránh quét vô hạn; bấm TIẾP TỤC QUÉT LỖI để thử lại.`;
+            await finalize(job,'retry-paused');
+            return;
+          }
+          job.retryPass=next.pass;
+          job.status='retrying';
+          job.currentProduct='';
+          await checkpoint(job);
+          scheduleNext(RETRY_COOLDOWN_MS);
+          return;
+        }
+        job.retryQueue=[];
+        job.retryCursor=0;
+        job.currentProduct='';
         await finalize(job);
         return;
       }
@@ -753,6 +804,7 @@
       sourceUrl,scope,selectedIds,
       descriptors:[],results:[],errors:[],
       index:0,total:0,progress:'0/0',
+      retryQueue:[],retryCursor:0,retryPass:0,retryAttempts:{},
       stopAfterCurrent:false,
       createdAt:Date.now(),startedAt:Date.now(),
       sourceTabId,
@@ -840,7 +892,14 @@
 
   async function resumeJob(){
     const job=await readJob();
-    if(!job||job.status!=='paused')throw new Error('Không có lượt quét đang tạm dừng.');
+    if(!job||!['paused','retry-paused'].includes(job.status))throw new Error('Không có lượt quét đang tạm dừng.');
+    if(job.status==='retry-paused'){
+      const remaining=retryCore.incompleteIndexes(job.results,job.total);
+      if(!remaining.length)throw new Error('Không còn sản phẩm lỗi để quét lại.');
+      job.retryQueue=remaining;
+      job.retryCursor=0;
+      job.retryPass=1; // New bounded retry batch after explicit user action.
+    }
     job.running=true;job.status='queued';job.stopAfterCurrent=false;job.resumedAt=Date.now();
     await saveJob(job);scheduleNext(150);return job;
   }
