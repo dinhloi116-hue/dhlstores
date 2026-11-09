@@ -702,15 +702,11 @@
         const saved=await checkpoint(job);
         if(saved===false)return;
 
-        // Dừng sớm nếu ba popup đầu liên tục thất bại, không đẩy tồn kho sai.
+        // Do not abort on three early popup failures: they may be transient.
+        // Continue collecting the category; every incomplete product enters
+        // the bounded retry queue before any stock export is permitted.
         if(!retrying&&job.index<=3&&job.consecutiveEmpty>=3){
-          job.running=false;
-          job.status='error';
-          job.failedAt=Date.now();
-          job.lastError=`Ba sản phẩm đầu đều không đọc được popup. ${text(job.lastPopupError).slice(0,260)}. Đã dừng sớm; không cập nhật tồn.`;
-          await closeJobTab(job);
-          await saveJob(job);
-          return;
+          job.lastError=`Các popup đầu chưa đọc được; tự quét lại sản phẩm lỗi sau lượt đầu. ${text(job.lastPopupError).slice(0,180)}`;
         }
 
         if(job.stopAfterCurrent){
