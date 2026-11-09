@@ -13,6 +13,8 @@ assert.ok(bg.includes("job.status='cancelled'"));
 assert.ok(bg.includes("job.running=false"));
 assert.ok(bg.includes("chrome.alarms.clear(ALARM)"));
 assert.ok(bg.includes("type:'DHL_CANCEL_POPUP_SCAN'"));
+assert.ok(!bg.includes('chrome.tabs.remove('),'Hủy quét không được đóng tab nguồn');
+assert.ok(!bg.includes('chrome.windows.remove('),'Hủy quét không được đóng cửa sổ người dùng');
 assert.ok(bg.includes("latest.id!==job.id||latest.running!==true||latest.status==='cancelled'"),
   'Response scan cũ phải bị loại trước khi ghi kết quả');
 assert.ok(bg.includes("if(current.id!==job.id)return false;"),
