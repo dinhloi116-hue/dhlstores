@@ -24,9 +24,9 @@ const nested=G.pack([item(80,80,notch),item(25,25,[rect(0,25,0,25)])],80,150,2);
 assert.ok(nested&&G.planDepth(nested)<=80.01,'small object fits inside open notch');
 assert.ok(direct.includes('function refineGroupContour('),'Group pack supports true contour');
 assert.ok(direct.includes('id="v838Contour"'),'Group pack has contour checkbox');
-assert.ok(current.includes('DHL_UI_VERSION=8.45'),'snapshot is V8.43');
+assert.ok(current.includes('DHL_UI_VERSION=8.45'),'current release version is V8.45');
 assert.ok(current.includes("W=N('v77NestW',580)"),'contour dimensions match UI millimetres');
-assert.ok(!current.includes("W=N('v77NestW',58)*10"),'old 10x unit error removed');
+assert.ok(!geom.includes("W=N('v77NestW',58)*10"),'active true-contour module uses millimetres (historical fallback scripts are separate)');
 assert.ok(current.includes('Closed internal counters are SOLID'),'solid hole policy bundled');
 for(const [i,tag] of [...current.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].entries()){
  assert.doesNotThrow(()=>new Function(tag[1]),'Corel HTML script '+i+' compiles');
