@@ -40,8 +40,10 @@
     const config=s[CONFIG_KEY]&&typeof s[CONFIG_KEY]==='object'?s[CONFIG_KEY]:{};
     const queue=s[QUEUE_KEY]&&typeof s[QUEUE_KEY]==='object'?s[QUEUE_KEY]:null;
     const job=s[JOB_KEY]&&typeof s[JOB_KEY]==='object'?s[JOB_KEY]:null;
-    const manualEntries=Object.values(pending).filter(x=>x&&x.auto!==true&&Array.isArray(x.rows)&&x.rows.length);
-    return{config,queue,job,manualEntries};
+    const exportEntries=Object.values(pending).filter(x=>x&&x.auto!==true&&Array.isArray(x.rows)&&x.rows.length);
+    const manualEntries=exportEntries.filter(entry=>!entry.lastSapoPushQueueId
+      ||Number(entry.lastSapoPushedAt||0)<Number(entry.scannedAt||0));
+    return{config,queue,job,manualEntries,exportEntries};
   }
 
   function setState(message,kind=''){
@@ -207,7 +209,7 @@
     if(!mount())return;
     let s=await readState();
 
-    if(!s.manualEntries.length&&!recovering&&!rebuildAttempted&&s.job
+    if(!s.exportEntries.length&&!recovering&&!rebuildAttempted&&s.job
       &&['done','paused'].includes(s.job.status)
       &&Array.isArray(s.job.results)&&s.job.results.length){
       recovering=true;
@@ -224,7 +226,7 @@
         rebuildReceiverError=String(error&&error.message||error);
       }finally{recovering=false;}
     }
-    if(s.manualEntries.length){
+    if(s.exportEntries.length){
       rebuildAttempted=false;
       rebuildReceiverError='';
     }
@@ -244,7 +246,7 @@
     const allVerified=Boolean(count&&quality&&s.manualEntries.every(entry=>quality.trustedEntry(entry)));
     if(pendingPreview&&Date.now()-pendingPreviewAt>10*60*1000)clearPreview();
 
-    if(excel)setText(excel,count?`TẢI FILE EXCEL (${count})`:'TẢI FILE EXCEL');
+    if(excel)setText(excel,s.exportEntries.length?`TẢI FILE EXCEL (${s.exportEntries.length})`:'TẢI FILE EXCEL');
 
     if(push){
       setText(push,pendingPreview
@@ -268,6 +270,8 @@
     if(busy){
       const total=Number(queue.total||0),done=Number(queue.index||0),success=Number(queue.success||0),failed=Number(queue.failed||0);
       setState(`Đang đẩy nhanh ${done}/${total} • thành công ${success}${failed?` • lỗi ${failed}`:''}.`,'ok');
+    }else if(pendingPreview){
+      setState('Đang xem trước. Chỉ ghi Sapo sau khi bạn bấm XÁC NHẬN ĐẨY.','bad');
     }else if(queue&&queue.status==='done-with-errors'){
       const total=Number(queue.total||0),success=Number(queue.success||0),failed=Number(queue.failed||0);
       setState(`Đã chạy hết ${total} dòng • thành công ${success} • lỗi ${failed}. Cache vẫn giữ để có thể đẩy lại hoặc tải Excel.`,'bad');
@@ -282,8 +286,6 @@
       setState('Quét xong một tab thì có thể tải Excel hoặc đẩy lên Sapo.');
     }else if(!allVerified){
       setState('Đang khóa đầu ra: có sản phẩm thiếu size/màu/SKU hoặc chưa được xác minh. Quét lại các sản phẩm lỗi trước khi xuất hoặc đẩy Sapo.','bad');
-    }else if(pendingPreview){
-      setState('Đang xem trước. Chỉ ghi Sapo sau khi bạn bấm XÁC NHẬN ĐẨY.','bad');
     }else if(verified||hasCredentials){
       setState(`${count} hồ sơ • ${rows} dòng sẵn sàng. Xem trước và xác nhận trước khi đẩy Sapo.`,'ok');
     }else{
