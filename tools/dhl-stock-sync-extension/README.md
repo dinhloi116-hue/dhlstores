@@ -1,6 +1,15 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.24.0**.
+Phiên bản: **v0.24.1**.
+
+## Kiểm tra chất lượng tồn kho trước khi xuất (v0.24.1)
+
+- Quét và xác minh **size độc lập cho từng màu**. Size số của màu đầu (ví dụ 70) không được suy diễn sang màu khác (ví dụ 26/28).
+- Nếu bảng chưa xác nhận một màu hoặc chưa đọc được một size, cảnh báo trạng thái chưa xác minh; không coi như đã hết hàng.
+- Trường hợp thiếu dữ liệu sẽ quét thử lại popup sản phẩm. Nếu vẫn chưa đầy đủ, kết quả được lưu để xem lỗi nhưng **không tạo Excel nhập tồn hoặc đẩy Sapo**.
+- Chặn đẩy ngay trong background, không chỉ vô hiệu hóa nút giao diện. Dữ liệu đệm phiên bản cũ cũng không được tự mặc định là an toàn.
+- Không lấy lịch sử tồn thiếu dữ liệu làm mốc so sánh hàng đã bán/hết.
+- Bản này có thêm kiểm thử logic so khớp size theo từng màu và bộ kiểm tra an toàn. Cần kiểm nghiệm với popup nguồn thực tế để kết luận mức chính xác.
 
 ## Quét thích ứng nhanh hơn (v0.24.0)
 
