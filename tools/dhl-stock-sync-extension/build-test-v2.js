@@ -19,7 +19,7 @@ const runtimeFiles=[
   'safe-category-guard.js','stock-core.js','dom-stock-parser.js','content.js',
   'match-core.js','shop-rules.js','generic-shop-rules.js','xlsx-lite.js',
   'warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','warehouse-sku-link-mode.js',
-  'stock-history-core.js','batch-stock-core.js','stock-import-core.js','auto-sync-core.js',
+  'stock-history-core.js','batch-stock-core.js','scan-quality-core.js','stock-import-core.js','auto-sync-core.js',
   'sapo-inventory-resolver-core.js','sapo-inventory-set-compat.js',
   'manual-job-runner-background.js','manual-job-runner-mode.js',
   'manual-sapo-background.js','manual-sapo-output-mode.js',
@@ -33,6 +33,7 @@ for(const file of runtimeFiles)assert.ok(fs.existsSync(path.join(dir,file)),`Thi
 
 const background=read('background.js');
 assert.ok(background.includes("'manual-job-runner-background.js'"));
+assert.ok(background.includes("'scan-quality-core.js'"),'Thiếu core kiểm tra chất lượng quét');
 assert.ok(background.includes("'manual-sapo-background.js'"));
 assert.ok(background.includes("'sapo-inventory-set-compat.js'"));
 assert.ok(background.includes("'sapo-product-create-background.js'"));

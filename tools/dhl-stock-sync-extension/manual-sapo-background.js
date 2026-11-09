@@ -4,7 +4,8 @@
   const autoCore=globalThis.DHLAutoSyncCore;
   const batch=globalThis.DHLBatchStockCore;
   const resolver=globalThis.DHLSapoInventoryResolver;
-  if(!autoCore||!batch||!resolver)return;
+  const quality=globalThis.DHLScanQualityCore;
+  if(!autoCore||!batch||!resolver||!quality)return;
 
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const STATUS_KEY='dhlAutoSyncStatusV1';
@@ -305,6 +306,8 @@
     if(cycle&&cycle.running)throw new Error('Đang có lượt quét tự động chạy. Chờ quét xong rồi đẩy Sapo thủ công.');
 
     if(existing&&existing.source==='manual'&&existing.status==='running'&&existing.manualPaused===true){
+      // Do not resume a queue created before scan-quality validation existed.
+      if(existing.qualityValidated!==true)throw new Error('Queue cũ chưa xác minh chất lượng quét. Hãy quét lại trước khi tiếp tục đẩy Sapo.');
       const oldErrors=Array.isArray(existing.errors)?existing.errors:[];
       if(oldErrors.length){
         existing.retryHistory=Array.isArray(existing.retryHistory)?existing.retryHistory:[];
@@ -324,6 +327,9 @@
     const ids=Array.isArray(profileIds)?profileIds.map(String).filter(Boolean):[];
     const entries=(ids.length?ids.map(id=>pending[id]):Object.values(pending)).filter(Boolean);
     if(!entries.length)throw new Error('Chưa có kết quả quét thủ công để đẩy lên Sapo.');
+    if(entries.some(entry=>!quality.trustedEntry(entry))){
+      throw new Error('Kết quả quét còn thiếu màu/size/SKU hoặc chưa xác minh. Không đẩy Sapo; hãy quét lại sản phẩm lỗi.');
+    }
     const branch=text(config.sapo.locationName);
     const normalizedEntries=entries.map(entry=>({...entry,branch:text(entry&&entry.branch)||branch}));
     const combined=batch.combineEntries(normalizedEntries);
@@ -334,6 +340,7 @@
       id:`manual-push-${startedAt}`,source:'manual',manualPaused:false,status:'running',createdAt:startedAt,startedAt,
       host:storeHost(config.sapo.storeHost),locationId:Number(config.sapo.locationId),locationName:text(config.sapo.locationName),
       rows:combined.rows,index:0,total:combined.rows.length,success:0,successRows:[],errors:[],profileCount:combined.profileCount,profileIds:ids,
+      qualityValidated:true,
       sourceScans:sourceScanMap(entries)
     };
     await chrome.alarms.clear(AUTO_PUSH_ALARM);
@@ -347,6 +354,17 @@
     const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]);
     const queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
     if(!queue||queue.source!=='manual'||queue.status!=='running'||queue.manualPaused===true)return;
+    // Safe migration: never continue uploading a queue prepared by a version
+    // that did not validate every source product, color, size and output SKU.
+    if(queue.qualityValidated!==true){
+      queue.manualPaused=true;
+      queue.status='blocked-quality';
+      queue.errors=Array.isArray(queue.errors)?queue.errors:[];
+      queue.errors.push({at:Date.now(),index:queue.index,error:'Queue cũ không có xác minh chất lượng dữ liệu nguồn. Dừng để tránh cập nhật tồn sai.'});
+      await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+      await writePushStatus({status:'manual-error',source:'manual',error:queue.errors[queue.errors.length-1].error});
+      return;
+    }
 
     queue.successRows=Array.isArray(queue.successRows)?queue.successRows:[];
     queue.errors=Array.isArray(queue.errors)?queue.errors:[];

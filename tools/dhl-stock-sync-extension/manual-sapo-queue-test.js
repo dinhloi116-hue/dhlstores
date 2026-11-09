@@ -11,7 +11,7 @@ function jsonResponse(status,data){
 async function main(){
   const state={
     dhlSapoPushQueueV1:{
-      id:'test',source:'manual',manualPaused:false,status:'running',
+      id:'test',source:'manual',manualPaused:false,status:'running',qualityValidated:true,
       host:'demo.mysapo.net',locationId:1,locationName:'Kho',
       rows:[
         {sku:'SKU-S',variantId:1,productId:11,stock:5},
@@ -70,6 +70,7 @@ async function main(){
   context.globalThis=context;
   context.DHLAutoSyncCore={normalizeConfig:(x)=>x||{}};
   context.DHLBatchStockCore={};
+  context.DHLScanQualityCore=require('./scan-quality-core.js');
   context.DHLSapoInventoryResolver={
     normSku:(v)=>String(v||'').trim().toUpperCase(),
     inventoryCandidates:(data)=>Array.isArray(data&&data.inventory_items)?data.inventory_items:[],

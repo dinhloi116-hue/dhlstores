@@ -85,6 +85,26 @@
     return out;
   }
 
+  // Expected sizes must be established independently for EACH selected color.
+  // A numeric size such as 70 in the first color does not mean other colors
+  // must offer 70. Collect visible size LABELS, including rows whose stock
+  // cell has not loaded yet, rather than using only successfully read stock.
+  function sizeLabelsFromVisibleRows(root){
+    const found=[],seen=new Set();
+    if(!root)return found;
+    for(const tr of root.querySelectorAll('tr,[role="row"]')){
+      if(!visible(tr))continue;
+      const cell=tr.querySelector('td:first-child,[role="cell"]:first-child');
+      if(!cell)continue;
+      const label=text(cell);
+      if(!label||label.length>32)continue;
+      const size=dom.extractSize(label);
+      if(!size||!/^\s*(?:size\s*[:\-]?\s*)?(?:[0-9]{1,3}|[a-z]{1,7})\s*$/i.test(label))continue;
+      if(!seen.has(size)){seen.add(size);found.push(size);}
+    }
+    return found;
+  }
+
   function expectedSizesFromRoot(root){
     const detected=detectedSizesFromRoot(root);
     const standard=new Set(TARGET_SIZES.map(dom.normalizeSize));
@@ -505,7 +525,10 @@
       // A real inventory-row transition is also evidence of the color changing,
       // even if the supplier's custom control has no reliable "checked" attribute.
       const changedRows = Boolean(previousSignature && signature && signature !== previousSignature);
-      const selectionConfirmed = seenSelected || changedRows;
+      // A selected radio alone is NOT evidence that the stock table refreshed.
+      // On later colors we must observe changed stock/size rows to avoid
+      // assigning the previous color's inventory to the next color.
+      const selectionConfirmed = alreadySelected || !previousSignature || changedRows;
       if (selectionConfirmed && hasAllTargetRows(rows, targetSizes)) {
         if (alreadySelected || changedRows || elapsed >= 650) {
           await sleep(60);
@@ -522,7 +545,8 @@
     }
     // An unconfirmed color switch must never be assigned the previous color's
     // stock. Return only a verified partial read, otherwise mark it missing.
-    return seenSelected || (previousSignature && rowsSignature(best) !== previousSignature) ? best : [];
+    return alreadySelected || !previousSignature || (rowsSignature(best) && rowsSignature(best)!==previousSignature)
+      ? best : [];
   }
 
   function productAnchors(descriptor) {
@@ -877,6 +901,24 @@
     };
   }
 
+  function auditColorSnapshots(snapshots){
+    const missing=[],unverifiedColors=[];
+    for(const snapshot of snapshots){
+      const rows=Array.isArray(snapshot&&snapshot.rows)?snapshot.rows:[];
+      const expected=Array.isArray(snapshot&&snapshot.expectedSizes)?snapshot.expectedSizes:[];
+      const color=dom.colorKey(snapshot&&snapshot.color||'');
+      if(!rows.length||!expected.length){
+        unverifiedColors.push(snapshot&&snapshot.color||'Chưa rõ');
+        continue;
+      }
+      for(const size of expected){
+        if(!rows.some(row=>dom.normalizeSize(row.size)===dom.normalizeSize(size)))
+          missing.push(`${color}/${size}`);
+      }
+    }
+    return {missing,unverifiedColors};
+  }
+
   async function readOpenedPopup(descriptor, hints, progress, openInfo = null, cancelVersion = null) {
     assertPopupScanActive(cancelVersion);
     const root = (openInfo && openInfo.root) || findStockRoot();
@@ -886,7 +928,11 @@
     const parentName = core.normalizeText(descriptor.title || productTitleFromDocument() || `#${parentId}`);
     const hint = hintForTitle(parentName, hints);
     const hintedSizes = targetSizesForHint(hint);
-    const neededSizes = hintedSizes.length ? hintedSizes : expectedSizesFromRoot(root);
+    const inferredSizes=expectedSizesFromRoot(root);
+    const adultSize=Boolean(inferredSizes.some(size=>TARGET_SIZES.includes(size)));
+    // Adult sizes follow the fixed 5-size schema. Numeric sizes are discovered
+    // from the selected color, never copied from the first color.
+    const neededSizes = hintedSizes.length ? hintedSizes : (adultSize ? inferredSizes : []);
     const allControls = colorControls(root);
     const targetSelection = selectTargetControls(allControls, hint);
     // Bỏ fetch fallback khi popup đã có đủ control màu; tiết kiệm 1 request/SP.
@@ -924,11 +970,19 @@
         rows = await stableTargetRows(currentRoot, neededSizes, 4000, cancelVersion);
       }
       assertPopupScanActive(cancelVersion);
-      previousSignature = rowsSignature(rows);
+      if(rows.length)previousSignature = rowsSignature(rows);
       currentRoot=findStockRoot()||currentRoot;
+      const colorExpectedSizes=neededSizes.length
+        ? neededSizes
+        : sizeLabelsFromVisibleRows(currentRoot);
       const imageUrl=colorImageUrl(target.name,currentRoot,target.el,target.imageUrl||descriptor.imageUrl||'');
 
-      snapshots.push({ color: target.name, hint: target.hint || '', hintScore: target.hintScore || 0, imageUrl, rows });
+      snapshots.push({
+        color:target.name,hint:target.hint||'',hintScore:target.hintScore||0,
+        imageUrl,rows,expectedSizes:colorExpectedSizes,
+        verified:Boolean(rows.length&&colorExpectedSizes.length
+          &&colorExpectedSizes.every(size=>rows.some(row=>row.size===size)))
+      });
       progress({
         stage: 'dom-color',
         descriptor,
@@ -936,8 +990,8 @@
         colorIndex: index + 1,
         colorTotal: controls.length,
         rows: rows.length,
-        targetRows: neededSizes.length,
-        targetSizes: neededSizes,
+        targetRows: colorExpectedSizes.length,
+        targetSizes: colorExpectedSizes,
         imageUrl
       });
       rows.forEach((row) => {
@@ -954,18 +1008,19 @@
     const list = [...unique.values()];
     const imageUrls=[...new Set(list.map(v=>normalizeImageUrl(v&&v.image)).filter(Boolean))];
     const colorKeys = [...new Set(list.map((variant) => dom.colorKey(variant.color)).filter(Boolean))];
-    const missing = [];
-    for (const color of colorKeys) {
-      for (const size of neededSizes) {
-        if (!list.some((variant) => dom.colorKey(variant.color) === color && variant.size === size)) missing.push(`${color}/${size}`);
-      }
-    }
+    const {missing,unverifiedColors}=auditColorSnapshots(snapshots);
 
     const missingSourceSku=[];
     const expectedHints = expectedColorHints(hint);
-    const uiComplete = expectedHints.length
-      ? targetSelection.missingHints.length === 0 && colorKeys.length === expectedHints.length && missing.length === 0
-      : Boolean(list.length) && missing.length === 0;
+    const allColorsVerified=Boolean(snapshots.length)
+      &&snapshots.length===controls.length
+      &&snapshots.every(snapshot=>snapshot.verified);
+    const uiComplete = allColorsVerified
+      &&missing.length===0
+      &&unverifiedColors.length===0
+      &&(expectedHints.length
+        ? targetSelection.missingHints.length===0&&colorKeys.length===expectedHints.length
+        : colorKeys.length===controls.length);
     const complete=uiComplete;
 
     const result = {
@@ -992,7 +1047,11 @@
         missingColorHints: targetSelection.missingHints,
         colorsRead: colorKeys.length,
         expectedColorCount: expectedHints.length,
-        expectedSizes: neededSizes,
+        expectedSizes: neededSizes.length?neededSizes:[],
+        expectedSizesByColor:snapshots.map(snapshot=>({
+          color:snapshot.color,sizes:snapshot.expectedSizes,verified:snapshot.verified
+        })),
+        unverifiedColors,
         ignoredSizes: [],
         missingSizes: missing,
         imagesRead:imageUrls.length,
@@ -1019,7 +1078,7 @@
       // Tránh trường hợp mạng/UI lag làm mất một size như ARS-M.
       const missing = result&&result.domDiagnostics&&Array.isArray(result.domDiagnostics.missingSizes)
         ? result.domDiagnostics.missingSizes : [];
-      if(result&&result.variants&&result.variants.length&&missing.length){
+      if(result&&result.variants&&result.variants.length&&result.complete!==true){
         try{
           const current=findStockRoot();
           if(current)await closeStockPopup(current);
@@ -1033,7 +1092,13 @@
           const oldMissing=missing.length;
           const newMissing=retry&&retry.domDiagnostics&&Array.isArray(retry.domDiagnostics.missingSizes)
             ? retry.domDiagnostics.missingSizes.length : 999;
-          if(newCount>oldCount||(newCount===oldCount&&newMissing<oldMissing))result=retry;
+          const oldUnverified=Array.isArray(result.domDiagnostics&&result.domDiagnostics.unverifiedColors)
+            ?result.domDiagnostics.unverifiedColors.length:999;
+          const newUnverified=Array.isArray(retry&&retry.domDiagnostics&&retry.domDiagnostics.unverifiedColors)
+            ?retry.domDiagnostics.unverifiedColors.length:999;
+          if(retry&&retry.complete===true
+            ||(newCount>=oldCount&&newMissing+newUnverified<oldMissing+oldUnverified)
+            ||(newMissing+newUnverified===oldMissing+oldUnverified&&newCount>oldCount))result=retry;
         }catch(_){}
       }
       return result;
