@@ -45,6 +45,7 @@
     });
     const identity={
       locationId:Number(sapo.locationId),
+      verifiedAt:Number(sapo.verifiedAt),
       host:text(sapo.storeHost).toLowerCase(),
       branch:text(combined.branch),
       scans:normalized.map(entry=>[text(entry.profileId),Number(entry.scannedAt||0),text(entry.jobId)]).sort((a,b)=>a[0].localeCompare(b[0])),
