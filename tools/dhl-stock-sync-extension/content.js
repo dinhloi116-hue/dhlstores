@@ -234,6 +234,77 @@
     return[...seen.values()];
   }
 
+
+  // Inventory scanning must use ONLY product cards on the currently rendered
+  // category page. Browsing every href on document previously picked up stray
+  // links from menus, widgets or cached markup (e.g. a kids product in HD).
+  function visibleStockProductCard(anchor,productId){
+    if(!visible(anchor))return null;
+    let el=anchor;
+    for(let depth=0;depth<9&&el&&el!==document.body;depth++,el=el.parentElement){
+      if(!visible(el))continue;
+      const rawText=text(el);
+      if(!rawText||rawText.length>1600)break;
+      const links=[...el.querySelectorAll('a[href]')];
+      const productIds=new Set();
+      for(const link of links){
+        try{
+          const url=new URL(link.getAttribute('href'),location.href);
+          if(url.host!==location.host)continue;
+          const id=core.extractProductId(url.href);
+          if(id)productIds.add(Number(id));
+        }catch(_){}
+      }
+      if(productIds.size!==1||!productIds.has(Number(productId)))continue;
+      const images=[...el.querySelectorAll('img')].filter(visible);
+      if(!images.length)continue;
+      const actions=[...el.querySelectorAll('button,a,[role="button"],[onclick]')]
+        .some(node=>/them vao gio|them gio|add to cart|ch[oọ]n mua/i.test(plain(text(node))));
+      if(!actions)continue;
+      const price=/(?:\d[\d.,\s]*)\s*(?:₫|đ|vnd)/i.test(rawText);
+      if(!price)continue;
+      return el;
+    }
+    return null;
+  }
+
+  function discoverVisibleStockProducts(){
+    const grid=globalThis.DHLVisibleCategoryGridCore;
+    if(!grid)throw new Error('Thiếu bộ kiểm tra lưới sản phẩm trên tab nguồn.');
+    const candidates=[];
+    const byId=new Map();
+    for(const anchor of document.querySelectorAll('a[href]')){
+      if(!visible(anchor))continue;
+      let url;
+      try{url=new URL(anchor.getAttribute('href'),location.href);}
+      catch(_){continue;}
+      if(url.host!==location.host)continue;
+      const id=Number(core.extractProductId(url.href))||0;
+      if(!id)continue;
+      const card=visibleStockProductCard(anchor,id);
+      if(!card)continue;
+      const heading=card.querySelector('h2,h3,h4,[class*="product-name"],[class*="product-title"]');
+      const headingTitle=core.normalizeText(text(heading));
+      const title=(headingTitle.length>2&&headingTitle.length<180?headingTitle:titleForProductAnchor(anchor));
+      if(!title||title.length>180||/^(?:them vao gio|mua ngay|xem chi tiet)$/i.test(plain(title)))continue;
+      const imageUrl=imageUrlFromScope(card,location.href)||imageUrlNearAnchor(anchor,location.href);
+      const candidate={id,url:url.href,title,card,imageUrl};
+      if(!byId.has(id))byId.set(id,candidate);
+    }
+    const selected=grid.selectMainGrid([...byId.values()],document.body);
+    if(!selected.length)throw new Error('Không xác định được ô sản phẩm đang hiển thị. Dừng quét để tránh lẫn sản phẩm ngoài trang.');
+    return{
+      items:selected.map(({id,url,title,imageUrl})=>({
+        id,url,title,imageUrl,categoryPath:location.pathname
+      })),
+      pageTitle:document.title,
+      pageUrl:location.href,
+      visibleCount:selected.length,
+      excludedCount:Math.max(0,byId.size-selected.length),
+      discoveryMode:'visible-category-grid'
+    };
+  }
+
   async function discoverCurrentCategory(){
     const links=findProductLinksInDocument(document,location.href);
     if(!links.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục đang mở');
@@ -1269,6 +1340,12 @@
       return true;
     }
 
+    if (message.type === 'DHL_DISCOVER_VISIBLE_CATEGORY') {
+      try{sendResponse({ok:true,result:discoverVisibleStockProducts()});}
+      catch(error){sendResponse({ok:false,error:error.message||String(error)});}
+      return true;
+    }
+
     if (message.type === 'DHL_DISCOVER_HD_2026') {
       discoverHd2026().then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
@@ -1302,6 +1379,22 @@
       descriptor.title=core.normalizeText(descriptor.title||descriptor.parentName);
       descriptor.url=String(descriptor.url||descriptor.sourceUrl||location.href);
       descriptor.categoryPath=location.pathname;
+      // A saved descriptor may come from an older, over-broad scan. Verify it
+      // still belongs to a visible product card on THIS page before clicking.
+      let liveProduct;
+      try{
+        liveProduct=discoverVisibleStockProducts().items.find(item=>Number(item.id)===Number(descriptor.id));
+      }catch(error){
+        sendResponse({ok:false,error:error.message||String(error)});
+        return true;
+      }
+      if(!liveProduct){
+        sendResponse({ok:false,error:'Sản phẩm không có trong lưới đang hiển thị của tab này; không mở popup ngoài danh mục.'});
+        return true;
+      }
+      descriptor.title=liveProduct.title;
+      descriptor.url=liveProduct.url;
+      descriptor.imageUrl=liveProduct.imageUrl||descriptor.imageUrl||'';
 
       // Chế độ CHUẨN HÓA 1 LẦN:
       // 1) đóng popup cũ nếu còn mở,
