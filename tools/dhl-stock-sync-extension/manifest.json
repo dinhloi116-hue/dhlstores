@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.25.0",
+  "version": "0.25.1",
   "minimum_chrome_version": "116",
-  "description": "Giữ cache quét khi tải Excel, yêu cầu xem trước xác nhận Sapo và chỉ ghép màu trùng chính xác.",
+  "description": "Tab báo cáo ảnh SKU: đang hết hàng, vừa hết, có hàng lại và tăng/giảm tồn theo lần quét.",
   "permissions": [
     "storage",
     "unlimitedStorage",
