@@ -8,7 +8,8 @@
   const historyCore=globalThis.DHLStockHistoryCore;
   const resolver=globalThis.DHLSapoInventoryResolver;
   const rules=globalThis.DHLShopRules;
-  if(!xlsx||!matcher||!autoCore||!batch||!historyCore||!resolver||!rules)return;
+  const branchCore=globalThis.DHLStockBranchCore;
+  if(!xlsx||!matcher||!autoCore||!batch||!historyCore||!resolver||!rules||!branchCore)return;
 
   const CONFIG_KEY='dhlAutoSyncConfigV1';
   const STATUS_KEY='dhlAutoSyncStatusV1';
@@ -96,14 +97,14 @@
     const selected=new Set(config.selectedProfileIds||[]);
     const branchNames=[...new Set(profiles.filter(p=>selected.has(String(p.id))).map(p=>text(p.branchName)).filter(Boolean))];
     if(branchNames.length>1)throw new Error(`Các hồ sơ tự động đang khác chi nhánh: ${branchNames.join(', ')}`);
-    const wanted=autoCore.plain(branchNames[0]||text(sapo.locationName));
+    const wanted=autoCore.plain(branchNames[0]||text(sapo.excelLocationName)||text(sapo.locationName)||branchCore.DEFAULT_WAREHOUSE_NAME);
     let location=null;
     if(Number(sapo.locationId))location=locations.find(x=>Number(x.id)===Number(sapo.locationId))||null;
     if(!location&&wanted)location=locations.find(x=>autoCore.plain(x&&x.name)===wanted)||null;
     if(!location&&locations.length===1)location=locations[0];
     if(!location)throw new Error(`Không tìm thấy chi nhánh Sapo khớp “${branchNames[0]||sapo.locationName||''}”.`);
 
-    const verified={storeHost:sapo.storeHost,apiKey:text(sapo.apiKey),apiSecret:text(sapo.apiSecret),locationId:Number(location.id),locationName:text(location.name),locationCount:locations.length,verifiedAt:Date.now()};
+    const verified={...sapo,storeHost:sapo.storeHost,apiKey:text(sapo.apiKey),apiSecret:text(sapo.apiSecret),locationId:Number(location.id),locationName:text(location.name),locationCount:locations.length,verifiedAt:Date.now()};
     await saveConfig({sapo:verified});
     return{ok:true,storeName:text(shop&&shop.shop&&shop.shop.name||shop&&shop.store&&shop.store.name||sapo.storeHost),location:{id:verified.locationId,name:verified.locationName},locationCount:locations.length};
   }
@@ -171,7 +172,11 @@
       const sourceResults=Array.isArray(response.result)?response.result:[];
       const prepared=autoCore.prepareRows(parsed.warehouseData,parsed.catalogData,sourceResults,matcher,rules);
       if(!prepared.rows.length)throw new Error('Quét xong nhưng chưa ghép được dòng tồn kho nào.');
-      const branch=text(parsed.warehouseData.warehouseBranchName||profile.branchName);if(!branch)throw new Error('Không đọc được tên chi nhánh từ hồ sơ.');
+      const branch=branchCore.resolve({
+        profileName:profile.name,sourceUrl:url,
+        branch:text(parsed.warehouseData.warehouseBranchName||profile.branchName),
+        branchSource:parsed.warehouseData.warehouseBranchName?'legacy-file':''
+      },config);
       const entry={profileId:profile.id,profileName:text(profile.name)||'Hồ sơ',branch,sourceUrl:url,scannedAt:Date.now(),variantTotal:Number(prepared.sourceVariantCount||prepared.rows.length),sourceProductCount:Number(prepared.sourceProductCount||0),generatedSkuCount:0,matchedSkuCount:Number(prepared.matchedSkuCount||0),sourceOnlySkuCount:Number(prepared.sourceOnlySkuCount||0),rowCount:prepared.rows.length,missingSkuCount:prepared.missingSku.length,rows:prepared.rows,auto:true};
       const s=await chrome.storage.local.get(BATCH_KEY),pending=s[BATCH_KEY]&&typeof s[BATCH_KEY]==='object'?s[BATCH_KEY]:{};
       await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});await recordHistory(profile,url,sourceResults);return entry;
