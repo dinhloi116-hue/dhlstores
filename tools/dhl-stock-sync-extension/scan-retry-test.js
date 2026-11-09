@@ -55,5 +55,5 @@ assert.ok(ui.includes("['done','output-error'].includes(job.status)&&unfinished"
 assert.ok(src.includes('job.retryQueue=remaining'),'Must resume only failed product indices');
 assert.ok(ui.includes("job.status==='retrying'"),'Retry progress missing');
 assert.ok(bg.includes("'scan-retry-core.js'"),'Background must preload retry core');
-assert.strictEqual(manifest.version,'0.24.10');
+assert.strictEqual(manifest.version,'0.25.0');
 console.log('INCOMPLETE PRODUCT RETRY PASS: preserve good results, retry bad products, pause safely and resume');
