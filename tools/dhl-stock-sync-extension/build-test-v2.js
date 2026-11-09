@@ -16,7 +16,7 @@ assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'));
 
 const runtimeFiles=[
   'background.js','popup.html','popup.css',
-  'safe-category-guard.js','stock-core.js','dom-stock-parser.js','content.js',
+  'safe-category-guard.js','stock-core.js','dom-stock-parser.js','visible-category-grid-core.js','content.js',
   'match-core.js','shop-rules.js','generic-shop-rules.js','xlsx-lite.js',
   'warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','warehouse-sku-link-mode.js',
   'stock-history-core.js','batch-stock-core.js','scan-quality-core.js','stock-import-core.js','auto-sync-core.js',
