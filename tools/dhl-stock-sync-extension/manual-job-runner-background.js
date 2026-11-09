@@ -870,23 +870,54 @@
     const job=await readJob();
     if(!job||!['paused','retry-paused','done','output-error'].includes(job.status))
       throw new Error('Không có lượt quét đã lưu để tiếp tục.');
-    const remaining=retryCore.incompleteIndexes(job.results,job.total);
-    const needsRepair=['done','output-error','retry-paused'].includes(job.status);
-    if(needsRepair){
-      if(!Array.isArray(job.descriptors)||job.descriptors.length!==Number(job.total||0))
-        throw new Error('Không còn danh sách sản phẩm gốc để quét lại. Hãy chạy một lượt quét mới.');
-      if(!remaining.length)throw new Error('Không còn sản phẩm popup lỗi để quét lại.');
-      job.retryQueue=remaining;
-      job.retryCursor=0;
-      job.retryPass=1; // New bounded retry batch after explicit user action.
-      job.lastError='';
-    }else if(job.index>=job.total&&remaining.length&&!(Array.isArray(job.retryQueue)&&job.retryQueue.length)){
-      job.retryQueue=remaining;
-      job.retryCursor=0;
-      job.retryPass=1;
+    const tabId=Number(job.sourceTabId)||0;
+    if(!tabId)throw new Error('Không còn tab nguồn của lượt quét cũ. Mở lại đúng danh mục để quét mới.');
+    let tab;
+    try{tab=await chrome.tabs.get(tabId);}
+    catch(_){throw new Error('Tab nguồn của lượt quét trước đã đóng. Hãy mở lại danh mục và bắt đầu lượt mới.');}
+    if(!tab||!tab.active||!sameCategoryPage(tab.url,job.sourceUrl))
+      throw new Error('Chọn lại đúng tab và trang danh mục đã quét trước khi tiếp tục.');
+
+    // Reconcile stored descriptors with the *actual visible grid* every time
+    // the user resumes. An older build scanned every link on the page and
+    // could accidentally save products from menus/other departments.
+    const discovered=await discoverProducts(tabId);
+    let visibleItems=discovered.items;
+    if(job.scope==='selected'||job.scope==='one'){
+      const selected=new Set((job.selectedIds||[]).map(Number).filter(Boolean));
+      visibleItems=visibleItems.filter(item=>selected.has(Number(item.id)));
+      if(job.scope==='one')visibleItems=visibleItems.slice(0,1);
     }
-    job.running=true;job.status='queued';job.stopAfterCurrent=false;job.resumedAt=Date.now();
-    await saveJob(job);scheduleNext(150);return job;
+    if(!visibleItems.length)
+      throw new Error('Không còn sản phẩm thuộc phạm vi đã chọn trong lưới đang hiển thị.');
+    const oldItems=Array.isArray(job.descriptors)?job.descriptors:[];
+    const oldResults=Array.isArray(job.results)?job.results:[];
+    const savedById=new Map(oldItems.map((item,i)=>[Number(item&&item.id),oldResults[i]||null]));
+    const visibleIds=new Set(visibleItems.map(item=>Number(item.id)));
+    job.outsideGridRemoved=oldItems.filter(item=>!visibleIds.has(Number(item&&item.id)))
+      .map(item=>({id:Number(item&&item.id)||0,title:text(item&&item.title)}));
+    job.descriptors=visibleItems;
+    job.results=visibleItems.map(item=>savedById.get(Number(item.id))||null);
+    job.total=visibleItems.length;
+    job.index=job.total;
+    job.pageTitle=text(discovered.pageTitle);
+    job.profileName=profileName(job.pageTitle,job.sourceUrl);
+    job.errors=(Array.isArray(job.errors)?job.errors:[])
+      .filter(err=>visibleIds.has(Number(err&&err.id)));
+    const remaining=retryCore.incompleteIndexes(job.results,job.total);
+    job.retryQueue=remaining;
+    job.retryCursor=0;
+    job.retryPass=remaining.length?1:0;
+    job.retryAttempts={};
+    job.lastError='';
+    job.progress=`${job.index}/${job.total}`;
+    job.running=true;
+    job.status='queued';
+    job.stopAfterCurrent=false;
+    job.resumedAt=Date.now();
+    await saveJob(job);
+    scheduleNext(150);
+    return job;
   }
 
   async function rebuildLastOutput(){
