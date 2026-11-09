@@ -12,6 +12,7 @@
   const QUEUE_KEY='dhlSapoPushQueueV1';
   const branchCore=globalThis.DHLStockBranchCore;
   const quality=globalThis.DHLScanQualityCore;
+  const excelSku=globalThis.DHLExcelSkuCore;
   const text=(v)=>String(v==null?'':v).trim();
   const esc=(v)=>text(v).replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 
@@ -70,8 +71,13 @@
       const stored=await chrome.storage.local.get(CONFIG_KEY);
       const config=stored[CONFIG_KEY]&&typeof stored[CONFIG_KEY]==='object'?stored[CONFIG_KEY]:{};
       if(!branchCore)throw new Error('Thiếu bộ xác định kho Sapo. Hãy cập nhật lại extension.');
-      const normalized=list.map(entry=>({...entry,branch:branchCore.resolve(entry,config)}));
+      if(!excelSku)throw new Error('Thiếu bộ kiểm tra SKU Excel. Hãy tải bản tool mới.');
+      const normalized=list.map(entry=>{
+        excelSku.validate(entry.rows);
+        return{...entry,branch:branchCore.resolve(entry,config)};
+      });
       const combined=batch.combineEntries(normalized);
+      excelSku.validate(combined.rows);
       const out=stockImport.buildOfficialInventoryWorkbook(xlsx,combined.rows,combined.branch);
       const d=new Date();
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
