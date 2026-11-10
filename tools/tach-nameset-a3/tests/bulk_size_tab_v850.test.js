@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const root=path.join(__dirname,'../src');
 const ui=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
 const tab=fs.readFileSync(path.join(root,'V850_BULK_SIZE_TAB.html'),'utf8');
-assert.ok(ui.includes('DHL_UI_VERSION=8.50'));
+assert.ok(ui.includes('DHL_UI_VERSION=8.51'));
 assert.equal((ui.match(/id="dhl-v850-size-tab"/g)||[]).length,1);
 assert.ok(ui.includes("try{\n   doc.Unit=3;\n   val=axis==='w'"));
 const ids={},storageValue={},rootCard={appendChild(x){x.parentNode=this;}};
