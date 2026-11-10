@@ -1,5 +1,5 @@
 // node tools/tach-nameset-a3/tests/nameset_composer_v854.test.js
-// CorelDRAW mock tests for V8.55 three-line editable NAMESET composer.
+// CorelDRAW mock tests for V8.56 three-line editable NAMESET composer.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const root=path.join(__dirname,'../src');
 const src=fs.readFileSync(path.join(root,'V854_NAMESET_COMPOSER.html'),'utf8');
@@ -88,4 +88,4 @@ fail=true;
 assert.throws(()=>api.make({...p,logo:false}),/mock creation failure/);
 assert.equal(undoCount,1,'failed create rolled back');
 assert.equal(d.Unit,4,'unit restored after rollback');
-console.log('PASS V8.55: three fields, font history, custom width/height, gap, fill, outline, logo, mirror and undo rollback');
+console.log('PASS V8.56: three fields, font history, custom width/height, gap, fill, outline, logo, mirror and undo rollback');
