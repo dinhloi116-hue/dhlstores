@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.join(__dirname,'../src');
 const moduleHtml=fs.readFileSync(path.join(root,'V854_NAMESET_COMPOSER.html'),'utf8');
 const release=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
-assert.match(release,/DHL_UI_VERSION=8\.55/);
+assert.match(release,/DHL_UI_VERSION=8\.56/);
 assert.ok(release.includes(moduleHtml.trim()),'release must embed exactly the current module');
 assert.match(moduleHtml,/id="v854'\+k\+'Search"/,'each line gets a search box');
 assert.match(moduleHtml,/id="v854'\+k\+'Matches"/,'each line gets a matching-results list');
@@ -43,7 +43,7 @@ const store={data:{},getItem(k){return this.data[k]||null;},setItem(k,v){this.da
 new Function('window','document','currentLang','localStorage','setTimeout','corelApp','Option','ActiveXObject',script)(
  window,document,'vi',store,()=>{},()=>{},Option,ActiveXObject);
 const api=window.DHLNamesetComposer;
-assert.equal(api.version,'8.55');
+assert.equal(api.version,'8.56');
 assert.equal(api.loadFonts(true),8,'8 installed fonts from Windows');
 assert.equal(shellCalls.length,1);
 assert.ok(shellCalls[0].includes('InstalledFontCollection'));
@@ -62,4 +62,4 @@ assert.deepEqual(api.recents(),['DIN 2014','Montserrat']);
 assert.deepEqual(JSON.parse(store.data.dhl_v854_recent_fonts),['DIN 2014','Montserrat']);
 fields.v854NameSearch.value='no such font';
 assert.equal(api.searchFonts('Name'),0,'no match reported');
-console.log('PASS V8.55: Windows font enumeration, 3 searchable pickers, substring match, independent selection and 10 recent persistence');
+console.log('PASS V8.56: Windows font enumeration, 3 searchable pickers, substring match, independent selection and 10 recent persistence');
