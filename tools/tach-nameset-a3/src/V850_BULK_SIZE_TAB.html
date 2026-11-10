@@ -1,0 +1,139 @@
+<style id="dhl-v850-size-tab-style">
+/* ES5/MSHTML compatible: independent SIZE tab, no nesting controls. */
+#v82Tabs .v850-nav-button{font-size:9px!important;padding:8px 0 7px!important}
+#v850PanelSize{padding:7px 1px 12px!important}
+#v850PanelSize .v850-head{font-size:14px!important;font-weight:800!important;color:#133b66!important;margin:3px 0 4px!important}
+#v850PanelSize .v850-tip{font-size:10px!important;color:#506175!important;line-height:1.45!important;margin:4px 0 9px!important}
+#v850PanelSize .v850-card{border:1px solid #cbd8e8!important;border-radius:7px!important;background:#fff!important;margin:8px 0!important;padding:9px!important}
+#v850PanelSize .v850-subhead{font-size:11px!important;font-weight:800!important;color:#133b66!important;margin:0 0 6px!important}
+#v850PanelSize .v850-row{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:4px 0!important}
+#v850PanelSize .v850-row>div{display:table-cell!important;vertical-align:bottom!important}
+#v850PanelSize .v850-label{display:block!important;font-size:10px!important;font-weight:700!important;color:#2b4562!important;margin:4px 0!important}
+#v850PanelSize input[type=number]{box-sizing:border-box!important;width:100%!important;min-height:34px!important;border:1px solid #a8bbd2!important;border-radius:5px!important;background:#fff!important;color:#1a3552!important}
+#v850PanelSize button.v850-read{font-size:10px!important;min-height:34px!important;padding:5px 2px!important;background:#eef4fa!important;color:#163e69!important;border:1px solid #b5cbe3!important;border-radius:5px!important}
+#v850PanelSize button.v850-apply{display:block!important;width:100%!important;margin-top:7px!important;min-height:38px!important;background:#176bd1!important;color:#fff!important;border:1px solid #1457af!important;font-size:11px!important;font-weight:800!important;border-radius:5px!important}
+#v850PanelSize #v821BulkHeightResult{display:block!important;white-space:normal!important;border:1px solid #c5d7e8!important;border-radius:5px!important;background:#f5f9fe!important;margin:9px 0!important;padding:9px!important;font-size:11px!important;color:#20446a!important;line-height:1.45!important}
+#v850PanelSize .v850-footer{font-size:10px!important;color:#536b80!important;line-height:1.4!important}
+</style>
+<script id="dhl-v850-size-tab" type="text/javascript">
+(function(){
+ function E(id){return document.getElementById(id);}
+ function lang(){try{return currentLang==='en'?'en':'vi';}catch(e){return 'vi';}}
+ function T(vi,en){return lang()==='vi'?vi:en;}
+ var oldShow=null,ready=false;
+ function label(){
+  var items=[
+   ['v850TabSize','SET SIZE','SIZE'],
+   ['v850Title','SET KÍCH THƯỚC HÀNG LOẠT','BULK RESIZE'],
+   ['v850Intro','Chọn nhiều đối tượng trong CorelDRAW. Đặt chung chiều cao hoặc chiều ngang; không cần chạy DÀN TỐI ƯU.','Select multiple CorelDRAW objects. Set height or width independently of nesting.'],
+   ['v821HeightSubhead','THEO CHIỀU CAO','BY HEIGHT'],
+   ['v821BulkHeightLabel','Chiều cao chung (cm)','Target height (cm)'],
+   ['v821GetHeightBtn','LẤY CAO TỪ MẪU','READ HEIGHT'],
+   ['v821SetHeightBtn','SET CHIỀU CAO','SET HEIGHT'],
+   ['v821WidthSubhead','THEO CHIỀU NGANG','BY WIDTH'],
+   ['v821BulkWidthLabel','Chiều ngang chung (cm)','Target width (cm)'],
+   ['v821GetWidthBtn','LẤY NGANG TỪ MẪU','READ WIDTH'],
+   ['v821SetWidthBtn','SET CHIỀU NGANG','SET WIDTH'],
+   ['v850Foot','Giữ tỷ lệ và tâm của từng đối tượng · Không tự dàn, không tách Group · Ctrl+Z để hoàn tác.','Preserves each object aspect ratio and center · Does not nest or ungroup · Ctrl+Z to undo.']
+  ],i,e;
+  for(i=0;i<items.length;i++){e=E(items[i][0]);if(e)e.innerHTML=T(items[i][1],items[i][2]);}
+ }
+ function fromStorage(){
+  var h=E('v821BulkHeightInput'),w=E('v821BulkWidthInput'),v;
+  try{v=localStorage.getItem('dhl_v821_height');if(h&&Number(v)>0)h.value=v;}catch(e){}
+  try{v=localStorage.getItem('dhl_v821_width');if(w&&Number(v)>0)w.value=v;}catch(e2){}
+ }
+ function invoke(fn){
+  var m=E('v821BulkHeightResult');
+  try{
+   if(typeof window[fn]!=='function')throw new Error(T('Bộ SET SIZE chưa sẵn sàng.','Bulk resize module unavailable.'));
+   window[fn]();
+  }catch(e){if(m)m.innerHTML='⚠ '+String(e.message||e);}
+ }
+ function makeMarkup(){
+  return '<div id="v850Title" class="v850-head"></div>'
+  +'<div id="v850Intro" class="v850-tip"></div>'
+  +'<div id="v821BulkHeightBox">'
+  +'<div class="v850-card"><div class="v850-subhead" id="v821HeightSubhead"></div>'
+  +'<div class="v850-row"><div><label class="v850-label" id="v821BulkHeightLabel"></label><input type="number" id="v821BulkHeightInput" min="0.01" step="0.1" value="10"/></div>'
+  +'<div><button type="button" class="v850-read" id="v821GetHeightBtn"></button></div></div>'
+  +'<button type="button" class="v850-apply" id="v821SetHeightBtn"></button></div>'
+  +'<div class="v850-card"><div class="v850-subhead" id="v821WidthSubhead"></div>'
+  +'<div class="v850-row"><div><label class="v850-label" id="v821BulkWidthLabel"></label><input type="number" id="v821BulkWidthInput" min="0.01" step="0.1" value="10"/></div>'
+  +'<div><button type="button" class="v850-read" id="v821GetWidthBtn"></button></div></div>'
+  +'<button type="button" class="v850-apply" id="v821SetWidthBtn"></button></div>'
+  +'<div id="v821BulkHeightResult">'+T('Chọn đối tượng để đặt kích thước.','Select objects to resize.')+'</div></div>'
+  +'<div class="v850-footer" id="v850Foot"></div>';
+ }
+ function mark(){
+  var b=E('v850TabSize'),q=E('v850PanelSize');
+  if(!b||!q)return;
+  b.className='v82-tabbtn v850-nav-button'+((q.className||'').indexOf(' active')>=0?' selected':'');
+ }
+ function show(name){
+  var panel=E('v850PanelSize'),nest=E('v77NestCard');
+  if(!panel||!oldShow)return;
+  if(name==='size'){
+   oldShow('nest');
+   if(nest)nest.className=String(nest.className).replace(/\s*active\b/g,'');
+   panel.className='v82-panel active';
+   if(E('v82TabNest'))E('v82TabNest').className='v82-tabbtn';
+   try{localStorage.setItem('dhl_v82_tab','size');}catch(e){}
+  }else{
+   panel.className='v82-panel';
+   oldShow(name);
+  }
+  mark();
+ }
+ function build(){
+  var tabs=E('v82Tabs'),nest=E('v77NestCard'),tab,panel,box,old,buttons,i,b;
+  if(!tabs||!nest||!window.V82ShowTab)return false;
+  if(ready)return true;
+  oldShow=window.V82ShowTab;
+  panel=E('v850PanelSize');
+  if(!panel){
+   panel=document.createElement('div');
+   panel.id='v850PanelSize';panel.className='v82-panel';
+   // Create standalone sibling after the navigation rather than nesting it
+   // inside the old #v77NestCard, which is permanently CSS-hidden.
+   old=E('v821BulkHeightBox');if(old&&old.parentNode)try{old.parentNode.removeChild(old);}catch(ex){}
+   panel.innerHTML=makeMarkup();
+   if(tabs.parentNode)tabs.parentNode.appendChild(panel);else return false;
+  }
+  tab=E('v850TabSize');
+  if(!tab){
+   tab=document.createElement('div');
+   tab.innerHTML='<button id="v850TabSize" class="v82-tabbtn v850-nav-button" type="button">SET SIZE</button>';
+   tabs.appendChild(tab);
+  }
+  b=E('v850TabSize');if(b)b.onclick=function(){show('size');};
+  buttons=[
+   ['v821GetHeightBtn','V821GetHeight'],
+   ['v821SetHeightBtn','V821SetHeight'],
+   ['v821GetWidthBtn','V821GetWidth'],
+   ['v821SetWidthBtn','V821SetWidth']
+  ];
+  for(i=0;i<buttons.length;i++){b=E(buttons[i][0]);if(b)(function(id,fn){E(id).onclick=function(){invoke(fn);};})(buttons[i][0],buttons[i][1]);}
+  fromStorage();label();
+  window.V82ShowTab=show;
+  var previousLanguage=window.setLanguage;
+  if(typeof previousLanguage==='function'&&!previousLanguage._v850){
+   var change=function(x){var r=previousLanguage(x);setTimeout(label,70);return r;};
+   change._v850=true;window.setLanguage=change;
+  }
+  ready=true;
+  var remembered='';try{remembered=localStorage.getItem('dhl_v82_tab');}catch(e){}
+  if(remembered==='size')show('size');else mark();
+  return true;
+ }
+ function boot(){
+  var tries=0;
+  function retry(){if(build()||tries++>=60)return;setTimeout(retry,250);}
+  retry();
+ }
+ window.DHLBulkSizeTab={mount:build,open:function(){show('size');},version:'8.50'};
+ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1450);},false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1450);});
+ else setTimeout(boot,1550);
+})();
+</script>
