@@ -73,9 +73,50 @@
     return data||{};
   }
 
+  // Connection is an explicit user action. Credentials are never embedded in
+  // the extension source, logged, or returned by the connection response.
+  async function connectSapo(request){
+    const current=await readConfig();
+    const previous=current&&current.sapo||{};
+    const candidate={
+      ...previous,
+      storeHost:storeHost(text(request&&request.storeHost)||previous.storeHost),
+      apiKey:text(request&&request.apiKey)||text(previous.apiKey),
+      apiSecret:text(request&&request.apiSecret)||text(previous.apiSecret),
+      verifiedAt:0,locationId:0,locationName:''
+    };
+    authHeaders(candidate);
+    await sapoFetch(candidate,'/admin/store.json');
+    const data=await sapoFetch(candidate,'/admin/locations.json');
+    const locations=(Array.isArray(data&&data.locations)?data.locations:Array.isArray(data&&data.data)?data.data:[])
+      .filter(x=>Number(x&&x.id)>0&&text(x&&x.name))
+      .map(x=>({id:Number(x.id),name:text(x.name)}));
+    if(!locations.length)throw new Error('Sapo chưa trả danh sách kho/chi nhánh. Kiểm tra quyền Admin API.');
+    const chosenId=Number(request&&request.locationId)||0;
+    const configuredName=text(previous.excelLocationName||current.excelLocationName||'dhl sport').toLowerCase();
+    const matches=locations.filter(x=>x.name.toLowerCase()===configuredName);
+    let location=chosenId?locations.find(x=>x.id===chosenId)||null:null;
+    if(chosenId&&!location)throw new Error('Kho vừa chọn không tồn tại trong danh sách Sapo.');
+    if(!location&&matches.length===1)location=matches[0];
+    if(!location&&locations.length===1)location=locations[0];
+    if(!location)return{needsLocation:true,locations};
+    // Save unverified credentials FIRST, then verified location in a second
+    // write. Existing auth-change safety guard cannot erase a newly verified
+    // location as the credentials stay unchanged in the second write.
+    const staged={...current,autoPushSapo:false,sapo:candidate};
+    await chrome.storage.local.set({[CONFIG_KEY]:staged});
+    const verified={...staged,sapo:{
+      ...candidate,locationId:location.id,locationName:location.name,
+      verifiedAt:Date.now()
+    }};
+    await chrome.storage.local.set({[CONFIG_KEY]:verified});
+    await chrome.storage.local.remove(PREVIEW_KEY);
+    return{connected:true,locationId:location.id,locationName:location.name,storeHost:candidate.storeHost};
+  }
+
   async function ensureVerifiedSapo(config){
     const sapo={...(config&&config.sapo||{})};
-    if(sapo.verifiedAt&&sapo.locationId)return config;
+    if(sapo.verifiedAt&&sapo.locationId&&text(sapo.storeHost)&&text(sapo.apiKey)&&text(sapo.apiSecret))return config;
     if(!text(sapo.storeHost)||!text(sapo.apiKey)||!text(sapo.apiSecret)){
       throw new Error('Chưa có thông tin kết nối Sapo đã lưu.');
     }
@@ -543,6 +584,11 @@
 
   chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
     if(!message)return;
+    if(message.type==='DHL_SAPO_CONNECT'){
+      connectSapo(message).then(result=>sendResponse({ok:true,result}))
+        .catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
+      return true;
+    }
     if(message.type==='DHL_SAPO_PREVIEW_MANUAL'){
       prepareManualPreview(message.profileIds||[]).then(preview=>sendResponse({ok:true,preview})).catch(err=>sendResponse({ok:false,error:err&&err.message||String(err)}));
       return true;
