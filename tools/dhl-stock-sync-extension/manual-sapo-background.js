@@ -22,6 +22,10 @@
   const AUTO_PUSH_ALARM='dhl-sapo-push-queue';
   const LEGACY_STOCK_QUEUE_CUTOFF=Date.parse('2026-09-28T00:00:00Z');
   const PUSH_CHUNK=12;
+  // Four simultaneous stock operations balance low latency against Sapo
+  // throttling. Each is an idempotent absolute stock SET, never additive.
+  const MAX_PARALLEL_SKUS=4;
+  let pushInFlight=false;
   const LIST_PAGE_LIMIT=250;
   const MAX_LIST_PAGES=12;
 
@@ -460,104 +464,134 @@
   }
 
   async function processManualQueue(){
-    const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]);
-    const queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
-    if(!queue||queue.source!=='manual'||queue.status!=='running'||queue.manualPaused===true)return;
-    // Safe migration: never continue uploading a queue prepared by a version
-    // that did not validate every source product, color, size and output SKU.
-    if(queue.qualityValidated!==true){
-      queue.manualPaused=true;
-      queue.status='blocked-quality';
+    // Chrome alarms and a manual trigger can overlap. Never run two
+    // competing writers against the same queue.
+    if(pushInFlight)return;
+    pushInFlight=true;
+    try{
+      const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]);
+      const queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
+      if(!queue||queue.source!=='manual'||queue.status!=='running'||queue.manualPaused===true)return;
+      if(queue.qualityValidated!==true){
+        queue.manualPaused=true;
+        queue.status='blocked-quality';
+        queue.errors=Array.isArray(queue.errors)?queue.errors:[];
+        queue.errors.push({at:Date.now(),index:queue.index,error:'Queue cũ chưa xác minh đủ nguồn, màu, size và SKU.'});
+        await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+        await writePushStatus({status:'manual-error',source:'manual',error:queue.errors[queue.errors.length-1].error});
+        return;
+      }
+
+      queue.successRows=Array.isArray(queue.successRows)?queue.successRows:[];
       queue.errors=Array.isArray(queue.errors)?queue.errors:[];
-      queue.errors.push({at:Date.now(),index:queue.index,error:'Queue cũ không có xác minh chất lượng dữ liệu nguồn. Dừng để tránh cập nhật tồn sai.'});
-      await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
-      await writePushStatus({status:'manual-error',source:'manual',error:queue.errors[queue.errors.length-1].error});
-      return;
-    }
+      queue.skippedRows=Array.isArray(queue.skippedRows)?queue.skippedRows:[];
+      queue.failed=queue.skippedRows.length;
+      queue.success=queue.successRows.length;
+      if(!config.sapo||!config.sapo.verifiedAt||!config.sapo.locationId
+        ||!text(config.sapo.storeHost)||!text(config.sapo.apiKey)||!text(config.sapo.apiSecret)){
+        queue.manualPaused=true;
+        queue.errors.push({at:Date.now(),index:queue.index,error:'Mất xác minh hoặc thiếu API key/secret Sapo.'});
+        await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+        await writePushStatus(pushState(queue,'manual-error',config,{error:'Mất kết nối xác minh Sapo.'}));
+        return;
+      }
 
-    queue.successRows=Array.isArray(queue.successRows)?queue.successRows:[];
-    queue.errors=Array.isArray(queue.errors)?queue.errors:[];
-    queue.skippedRows=Array.isArray(queue.skippedRows)?queue.skippedRows:[];
-    queue.failed=Number(queue.failed||queue.skippedRows.length||0);
+      const map=s[SAPO_MAP_KEY]&&typeof s[SAPO_MAP_KEY]==='object'?s[SAPO_MAP_KEY]:{};
+      const completed=new Set([
+        ...queue.successRows.map(x=>Number(x.index)),
+        ...queue.skippedRows.map(x=>Number(x.index))
+      ]);
+      const advance=()=>{
+        while(queue.index<queue.total&&completed.has(Number(queue.index)))queue.index+=1;
+      };
+      advance();
+      const end=Math.min(queue.total,queue.index+PUSH_CHUNK);
+      for(let start=queue.index;start<end;start+=MAX_PARALLEL_SKUS){
+        const indices=[];
+        for(let i=start;i<Math.min(start+MAX_PARALLEL_SKUS,end);i++){
+          if(!completed.has(i))indices.push(i);
+        }
+        const results=await Promise.all(indices.map(async index=>{
+          const row=queue.rows[index];
+          try{
+            const resolved=await resolveInventoryItem(config.sapo,row,map);
+            const written=await writeStockWith403Fallback(config.sapo,row,resolved);
+            return{kind:'success',index,row,resolved,written};
+          }catch(err){
+            const message=err&&err.message||String(err);
+            return{kind:isFatalPushError(message)?'fatal':'skipped',index,row,error:message};
+          }
+        }));
 
-    if(!config.sapo||!config.sapo.verifiedAt||!config.sapo.locationId){
-      queue.manualPaused=true;
-      const row=Array.isArray(queue.rows)?queue.rows[queue.index]||{}:{};
-      const lastError={at:Date.now(),index:queue.index,sku:text(row.sku),variantId:Number(row.variantId)||0,stock:Number(row.stock),error:'Mất xác minh Ứng dụng riêng Sapo.'};
-      queue.errors.push(lastError);
-      await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
-      await writePushStatus(pushState(queue,'manual-error',config,{error:lastError.error}));
-      return;
-    }
+        let fatal=null;
+        for(const result of results){
+          if(result.kind==='success'){
+            if(completed.has(result.index))continue;
+            queue.successRows.push({
+              index:result.index,sku:text(result.row.sku),
+              variantId:Number(result.written.variantId)||Number(result.row.variantId)||0,
+              productId:Number(result.row.productId)||0,
+              stock:Number(result.row.stock),itemId:result.resolved.itemId,
+              method:result.written.method,at:Date.now()
+            });
+            completed.add(result.index);
+          }else{
+            const error={
+              at:Date.now(),index:result.index,sku:text(result.row&&result.row.sku),
+              variantId:Number(result.row&&result.row.variantId)||0,
+              stock:Number(result.row&&result.row.stock),error:result.error
+            };
+            queue.errors.push(error);
+            if(result.kind==='fatal'){
+              if(!fatal)fatal=error;
+            }else{
+              error.skipped=true;error.skippedAt=Date.now();
+              queue.skippedRows.push({...error});
+              completed.add(result.index);
+            }
+          }
+        }
+        queue.success=queue.successRows.length;
+        queue.failed=queue.skippedRows.length;
+        advance();
 
-    const map=s[SAPO_MAP_KEY]&&typeof s[SAPO_MAP_KEY]==='object'?s[SAPO_MAP_KEY]:{};
-    const end=Math.min(queue.total,queue.index+PUSH_CHUNK);
-
-    while(queue.index<end){
-      const row=queue.rows[queue.index],rowIndex=queue.index;
-      try{
-        const resolved=await resolveInventoryItem(config.sapo,row,map);
-        const written=await writeStockWith403Fallback(config.sapo,row,resolved);
-
-        queue.success=Number(queue.success||0)+1;
-        queue.successRows.push({
-          index:rowIndex,
-          sku:text(row.sku),
-          variantId:Number(written.variantId)||Number(row.variantId)||0,
-          productId:Number(row.productId)||0,
-          stock:Number(row.stock),
-          itemId:resolved.itemId,
-          method:written.method,
-          at:Date.now()
-        });
-        queue.index+=1;
-      }catch(err){
-        const message=err&&err.message||String(err);
-        const lastError={
-          at:Date.now(),
-          index:rowIndex,
-          sku:text(row&&row.sku),
-          variantId:Number(row&&row.variantId)||0,
-          stock:Number(row&&row.stock),
-          error:message
-        };
-        queue.errors.push(lastError);
-
-        if(isFatalPushError(message)){
-          queue.manualPaused=true;
-          await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
-          await writePushStatus(pushState(queue,'manual-error',config,{error:message}));
+        // An in-flight group cannot be unsent. Respect cancellation before
+        // scheduling another group and preserve the results already written.
+        const latest=(await chrome.storage.local.get(SAPO_QUEUE_KEY))[SAPO_QUEUE_KEY];
+        const cancelled=latest&&latest.id===queue.id&&latest.status==='cancelled';
+        if(cancelled){queue.status='cancelled';queue.manualPaused=true;}
+        if(fatal)queue.manualPaused=true;
+        // Persist one checkpoint per bounded group instead of per SKU. On
+        // worker restart, any uncheckpointed absolute SET may be repeated
+        // safely, while recorded success indices are skipped on resume.
+        await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
+        if(cancelled){
+          await writePushStatus(pushState(queue,'cancelled',config));
           return;
         }
-
-        // Lỗi riêng một SKU không được làm dừng cả queue.
-        lastError.skipped=true;
-        lastError.skippedAt=Date.now();
-        queue.skippedRows.push({...lastError});
-        queue.failed=Number(queue.failed||0)+1;
-        queue.index+=1;
+        if(fatal){
+          await writePushStatus(pushState(queue,'manual-error',config,{error:fatal.error}));
+          return;
+        }
       }
 
-      // Checkpoint sau từng SKU; không thêm sleep cố định.
-      await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
-    }
-
-    if(queue.index>=queue.total){
-      queue.status=queue.failed>0?'done-with-errors':'done';
-      queue.manualPaused=false;
-      queue.finishedAt=Date.now();
-      await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
-
-      // Chỉ dọn cache khi toàn bộ SKU thành công; có lỗi thì giữ cache để retry/xuất Excel.
-      if(queue.failed===0){
-        try{await clearConsumedManualCache(queue);}catch{}
+      if(queue.index>=queue.total){
+        queue.status=queue.failed>0?'done-with-errors':'done';
+        queue.manualPaused=false;
+        queue.finishedAt=Date.now();
+        await chrome.storage.local.set({[SAPO_MAP_KEY]:map,[SAPO_QUEUE_KEY]:queue});
+        if(queue.failed===0){
+          try{await clearConsumedManualCache(queue);}catch{}
+        }
+        await writePushStatus(pushState(queue,queue.status,config));
+        return;
       }
-      await writePushStatus(pushState(queue,queue.status,config));
-      return;
-    }
 
-    await writePushStatus(pushState(queue,'running',config));
-    chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+80});
+      await writePushStatus(pushState(queue,'running',config));
+      chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+80});
+    }finally{
+      pushInFlight=false;
+    }
   }
 
   async function cancelManualPush(){
