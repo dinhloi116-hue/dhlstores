@@ -3,13 +3,13 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const html=fs.readFileSync(path.join(__dirname,'../src/DockerUI_CURRENT.html'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'../src/V841_UI_REDESIGN.html'),'utf8');
-assert.ok(html.includes('DHL_UI_VERSION=8.51'));
+assert.ok(html.includes('DHL_UI_VERSION=8.52'));
 assert.equal((html.match(/id="dhl-v841-ui-redesign-style"/g)||[]).length,1,'no duplicate theme');
 assert.ok(html.includes('id="dhl-v840-fast-update"'),'fast updater retained');
 assert.ok(html.includes('id="dhl-v838-direct-groups"'),'direct-group tool retained');
 assert.ok(html.includes('id="dhl-v837-digit-logo"'),'digit-logo tool retained');
-assert.ok(html.includes('<span class="ver">v8.51</span>'),'visible version at first paint');
-assert.ok(html.includes("v8.51 · outline + UI"),'deferred version update matches release');
+assert.ok(html.includes('<span class="ver">v8.52</span>'),'visible version at first paint');
+assert.ok(html.includes("v8.52 · outline + UI"),'deferred version update matches release');
 const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
 scripts.forEach((m,i)=>assert.doesNotThrow(()=>new Function(m[1]),'JS script '+i));
 const source=css.replace(/\/\*[\s\S]*?\*\//g,'');
