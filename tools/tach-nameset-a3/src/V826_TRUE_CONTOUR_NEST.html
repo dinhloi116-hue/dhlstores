@@ -128,7 +128,28 @@ function xCandidates(it,placed,W,g,currentX){
  gridStep=Math.max(1.25,Math.min(4,Math.min(it.w,it.h)/8));if(max/gridStep>220)gridStep=max/220;
  for(q=0;q<=max+.001;q+=gridStep)addX(xs,seen,q,max);
  xs.sort(function(a,b){return a-b;});
- if(xs.length>300){cut=[];step=xs.length/300;for(q=0;q<300;q++)cut.push(xs[Math.floor(q*step)]);xs=cut;}
+ if(xs.length>300){
+  // Inspired by SVGnest's contact-position exploration (MIT), preserving
+  // vertex-alignment anchors before uniform grid samples. Unlike an actual
+  // NFP solver this stays ES5/MSHTML-safe and is always collision validated.
+  cut=[];var picked={},key,contact=[],cx,cy,bx,maxCount=270;
+  function keep(v){key=Math.round(v*4)/4;if(!picked[key]){picked[key]=1;cut.push(key);}}
+  keep(0);keep(max);keep(currentX);
+  for(i=0;i<placed.length;i++){
+   p=placed[i];
+   for(j=0;j<it.anchors.length;j++)for(k=0;k<p.item.anchors.length;k++){
+    a=it.anchors[j];b=p.item.anchors[k];bx=p.x+b.x-a.x;
+    if(bx>=-.001&&bx<=max+.001){contact.push(Math.max(0,Math.min(max,bx)));}
+   }
+  }
+  contact.sort(function(u,v){return u-v;});
+  step=Math.max(1,Math.ceil(contact.length/maxCount));
+  for(q=0;q<contact.length;q+=step)keep(contact[q]);
+  xs.sort(function(u,v){return u-v;});
+  step=Math.max(1,Math.ceil(xs.length/Math.max(1,300-cut.length)));
+  for(q=0;q<xs.length&&cut.length<300;q+=step)keep(xs[q]);
+  xs=cut;xs.sort(function(u,v){return u-v;});
+ }
  return xs;
 }
 function firstYAtX(x,it,placed,H,g,limit){
@@ -139,7 +160,7 @@ function firstYAtX(x,it,placed,H,g,limit){
 function placedDepth(placed){var d=0,i;for(i=0;i<placed.length;i++)d=Math.max(d,placed[i].y+placed[i].item.h);return d;}
 function pack(items,W,H,g){
  var ord=items.slice(0),placed=[],i,it,xs,j,x,y,best,origY,limit,depth;
- ord.sort(function(a,b){var m=window.DHL_ORDER||'area';if(m==='height')return b.h-a.h||b.area-a.area;if(m==='width')return b.w-a.w||b.area-a.area;return b.area-a.area||a._y-b._y||a._x-b._x;});
+ ord.sort(function(a,b){var m=window.DHL_ORDER||'area';if(m==='height')return b.h-a.h||b.area-a.area;if(m==='width')return b.w-a.w||b.area-a.area;if(m==='small')return a.area-b.area||b.h-a.h;if(m==='slender')return Math.max(b.w/b.h,b.h/b.w)-Math.max(a.w/a.h,a.h/a.w)||b.area-a.area;if(m==='original')return (a._ord||0)-(b._ord||0);return b.area-a.area||(a._y||0)-(b._y||0)||(a._x||0)-(b._x||0);});
  for(i=0;i<ord.length;i++){
   it=ord[i];origY=isFinite(Number(it._y))?Math.max(0,Number(it._y)):0;xs=xCandidates(it,placed,W,g,it._x);best=null;depth=placedDepth(placed);
   limit=Math.min(H-it.h,Math.max(origY+it.h+g*2,depth+it.h+g*2,40));
