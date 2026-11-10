@@ -78,7 +78,7 @@
  }
  function minPair(a,b,g,start,limit){
   var i,j,k,n,m,q,la,lb,aa,bb,segA,segB,lo=1e100,intersection=false,interior=false,
-      margin=Math.max(0,g),v;
+      margin=Math.max(0,g),v,checks=0;
   if(!near(a.bb,b.bb,margin))return{close:false};
   for(i=0;i<a.leaves.length;i++){
    la=a.leaves[i];
@@ -92,6 +92,7 @@
        segA=aa.points[m];var segA2=aa.points[(m+1)%aa.points.length];
        for(q=0;q<bb.points.length-(bb.closed?0:1);q++){
         segB=bb.points[q];var segB2=bb.points[(q+1)%bb.points.length];
+        if((++checks%512)===0&&now()-start>limit)return{timeout:true,close:false};
         v=segment2(segA,segA2,segB,segB2);
         if(v<lo)lo=v;
         if(v<.000001){intersection=true;break;}
@@ -151,7 +152,8 @@
     if(now()-started>(maxMs||9000)){report.incomplete=true;break;}
     if(!near(objects[i].bb,objects[j].bb,gap))continue;
     report.checkedPairs++;
-    var pair=minPair(objects[i],objects[j],gap,started,maxMs);
+    var pair=minPair(objects[i],objects[j],gap,started,maxMs||9000);
+    if(pair.timeout){report.incomplete=true;break;}
     if(!pair.close)continue;
     var detail={a:objects[i].name,b:objects[j].name,dist:pair.dist};
     var group=pair.estimated?'estimated':pair.overlap?'overlap':'spacing';
