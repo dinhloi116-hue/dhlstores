@@ -545,6 +545,7 @@
             if(result.kind==='fatal'){
               if(!fatal)fatal=error;
             }else{
+              // Lỗi riêng một SKU không được làm dừng cả queue.
               error.skipped=true;error.skippedAt=Date.now();
               queue.skippedRows.push({...error});
               completed.add(result.index);
