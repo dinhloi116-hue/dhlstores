@@ -7,7 +7,7 @@ const root=path.join(__dirname,'../src');
 const source=fs.readFileSync(path.join(root,'V846_SIMPLE_NEST_UI.html'),'utf8');
 const release=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
 const js=source.match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1];
-assert.ok(release.includes('DHL_UI_VERSION=8.51'));
+assert.ok(release.includes('DHL_UI_VERSION=8.52'));
 assert.equal((release.match(/id="dhl-v846-simple-nest"/g)||[]).length,1);
 assert.ok(source.includes('v847-hidden-controls'));
 assert.ok(source.includes('v847-mode-row'));
