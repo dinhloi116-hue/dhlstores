@@ -72,7 +72,7 @@ assert.ok(manualPush.includes("message.type==='DHL_SAPO_PUSH_CANCEL'"));
 const processBody=(manualPush.match(/async function processManualQueue\(\)\{([\s\S]*?)\n  \}\n\n  async function cancelManualPush/)||[])[1]||'';
 assert.ok(processBody,'Không tìm thấy processManualQueue');
 assert.ok(!/await sleep\(/.test(processBody),'Không được sleep cố định giữa SKU');
-assert.ok(manualPush.includes('if(isFatalPushError(message))'),'Chỉ lỗi hệ thống mới pause');
+assert.ok(manualPush.includes("isFatalPushError(message)?'fatal':'skipped'"),'Chỉ lỗi hệ thống mới pause');
 
 const popup=read('popup.html');
 for(const file of [
@@ -108,6 +108,9 @@ assert.ok(runnerUi.includes('sourceTabId:tab.tabId'));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes('ĐẨY LÊN SAPO'));
+assert.ok(manualUi.includes('KẾT NỐI / ĐỔI KHO SAPO'));
+assert.ok(manualPush.includes("message.type==='DHL_SAPO_CONNECT'"));
+assert.ok(manualPush.includes('const MAX_PARALLEL_SKUS=4'));
 assert.ok(manualUi.includes('DỪNG ĐẨY SAPO'));
 assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_MANUAL'"));
 assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_CANCEL'"));

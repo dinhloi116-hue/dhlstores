@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.25.1",
+  "version": "0.25.2",
   "minimum_chrome_version": "116",
-  "description": "Tab báo cáo ảnh SKU: đang hết hàng, vừa hết, có hàng lại và tăng/giảm tồn theo lần quét.",
+  "description": "Khôi phục kết nối API Sapo trực tiếp và tăng tốc đồng bộ tồn với xử lý song song có giới hạn, checkpoint an toàn.",
   "permissions": [
     "storage",
     "unlimitedStorage",

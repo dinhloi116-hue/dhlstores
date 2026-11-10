@@ -1,6 +1,17 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.25.1**.
+Phiên bản: **v0.25.2**.
+
+## Khôi phục kết nối Sapo và tăng tốc đồng bộ tồn (v0.25.2)
+
+- Nút **XEM TRƯỚC SAPO** vẫn tồn tại nhưng có thể bị khóa nếu thiếu thông tin kết nối đã lưu. Giao diện cũ cho key/secret từng nằm trong auto-sync UI nay không được nạp. Đã bổ sung **KẾT NỐI / ĐỔI KHO SAPO** ngay trong ĐẦU RA.
+- Nhập địa chỉ shop, API key và secret của **Ứng dụng riêng**; xác thực `/admin/store.json`, lấy các kho bằng `/admin/locations.json` và chỉ lưu ID chi nhánh sau khi xác minh. Nếu nhiều kho mà không trùng kho Excel được chọn, người dùng phải tự chọn kho. Không lấy credential từ ảnh hay lưu trong Git.
+- Thay đổi credential thực hiện 2 bước lưu: credentials chưa xác minh trước, ID kho đã xác minh sau. Điều này tương thích cơ chế background xóa xác minh cũ khi thay API key, không để kết nối vừa được xác minh bị khóa ngược.
+- Hàng đợi **đẩy trực tiếp lên Sapo chạy tối đa 4 SKU song song**, 12 SKU/lượt; lưu checkpoint sau mỗi nhóm 4 thay vì mỗi dòng. Chỉ dùng ghi số tồn tuyệt đối theo SKU, không cộng tồn. Kết nối chậm có thể nhanh hơn đáng kể nhưng không cam kết tốc độ cố định; phụ thuộc API/giới hạn Sapo.
+- HTTP 429, 401/403 và lỗi hệ thống dừng an toàn, lưu các SKU đã thực sự thành công và không tự đẩy lại các SKU này khi tiếp tục. Trường hợp ngắt/đóng ứng dụng vẫn giữ dữ liệu quét và hàng đợi trong Chrome. Lệnh hủy không khởi động thêm nhóm đẩy mới.
+- Vẫn yêu cầu kiểm tra chất lượng quét, **XEM TRƯỚC SAPO → XÁC NHẬN ĐẨY** và đối chiếu ID kho trước khi ghi. Không tự động đồng bộ tồn khi chỉ mở extension.
+- **Bảo mật:** Không sao chép key/secret từ ảnh người dùng vào mã nguồn/CI, không trả credential vào kết quả kết nối. Nếu ảnh đã làm lộ API key, cần thu hồi/đổi bộ khóa trong Sapo.
+- Bộ kiểm thử mới mô phỏng hai kho Sapo, kết nối/xác minh, 4 tác vụ song song, lỗi 429, resume không ghi lại những SKU thành công. Sau khi Pull origin và Reload, cần kiểm thử thực tế bằng một nhóm SKU nhỏ trước khi ghi toàn bộ.
 
 ## Báo cáo ảnh biến động tồn kho ở tab Chrome lớn (v0.25.1)
 
