@@ -162,6 +162,7 @@ try{
     }catch{Log ('Picker unavailable: '+$_.Exception.Message)}
   }
   if($targets.Count -eq 0){throw 'Corel 2025 DHL addon not identified. No file was modified. Please send the report.'}
+  Log 'RESCUE ENGINE V8.55.2 (Copy-Item, not File.Replace)'
   Log ('Confirmed target(s) for Corel 2025: ' + $targets.Count)
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   $url = $repo + '/src/DockerUI_CURRENT.html?fresh=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
@@ -186,15 +187,25 @@ try{
         $entry.Result='Already current V'+$latest
         Log ('ALREADY CURRENT | '+$dst);$success++;continue
       }
-      # File.Replace requires a valid backup path; passing $null raised
-      # "The path is not of a legal form" on Windows PowerShell 5.1.
-      # File.Replace itself creates the backup atomically at $backup.
+      # CorelDRAW 2025 OEM: .NET File.Replace failed even with a valid
+      # third backup argument. Use PowerShell Copy-Item instead (no File.Replace).
+      # Keep a separately verified backup; rollback below on any write failure.
+      Log ('COPY ENGINE V8.55.2 | preparing target ' + $dst)
+      Copy-Item -LiteralPath $dst -Destination $backup -ErrorAction Stop
+      if(-not (Test-Path -LiteralPath $backup -PathType Leaf)){throw 'Original version backup not created.'}
+      if((Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash -ne $originalHash){throw 'Original version backup checksum mismatch.'}
+      Log ('BACKUP VERIFIED | '+$backup)
       Copy-Item -LiteralPath $stageRemote -Destination $stage -ErrorAction Stop
       if((Get-FileHash -LiteralPath $stage -Algorithm SHA256).Hash -ne $hash){throw 'Staged file checksum mismatch.'}
-      [IO.File]::Replace($stage,$dst,$backup)
-      if(-not (Test-Path -LiteralPath $backup -PathType Leaf)){throw 'Atomic replacement did not create the previous-version backup.'}
-      if((Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash -ne $originalHash){throw 'Previous-version backup checksum mismatch.'}
-      if((Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash -ne $hash){throw 'Installed file hash mismatch.'}
+      # CorelDRAW must be closed; no executable/code files or CDR are touched.
+      Copy-Item -LiteralPath $stage -Destination $dst -Force -ErrorAction Stop
+      if((Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash -ne $hash){throw 'Installed file hash mismatch. Backup will be restored.'}
+      $installedText = [IO.File]::ReadAllText($dst)
+      if($installedText.IndexOf('DHL_UI_VERSION='+$latest) -lt 0 -or $installedText.IndexOf('dhl-v854-composer') -lt 0){
+        throw 'Installed UI content/version verification failed. Backup will be restored.'
+      }
+      Unblock-File -LiteralPath $dst -ErrorAction SilentlyContinue
+      Log ('INSTALL VERIFIED | V'+$latest+' | SHA256 '+$hash.Substring(0,16))
       $entry.Result='UPDATED V'+$entry.Version+' to V'+$latest
       Log ('SUCCESS '+$entry.Result+' | '+$dst)
       Log ('Backup saved | '+$backup)
