@@ -7,7 +7,7 @@ const ui=fs.readFileSync(path.join(dir,'DockerUI_CURRENT.html'),'utf8');
 const geo=fs.readFileSync(path.join(dir,'V826_TRUE_CONTOUR_NEST.html'),'utf8').match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1];
 const direct=fs.readFileSync(path.join(dir,'V838_DIRECT_GROUPS.html'),'utf8').match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1];
 const simple=fs.readFileSync(path.join(dir,'V846_SIMPLE_NEST_UI.html'),'utf8');
-assert.ok(ui.includes('DHL_UI_VERSION=8.49'));
+assert.ok(ui.includes('DHL_UI_VERSION=8.51'));
 assert.ok(!simple.match(/function run\(\)\{[\s\S]*?function undo\(\)\{/) [0].includes('V77NestSelected'),'quick panel never routes back to legacy nesting');
 let frames=0,undos=0,optimized=0;
 const shapes=Array.from({length:26},(_,i)=>({
