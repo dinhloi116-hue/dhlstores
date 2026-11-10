@@ -46,6 +46,6 @@ assert.ok(ps.includes('UP TO DATE (skip)'));
 assert.ok(ps.includes('ACTIVE VERIFY OK:'),'must verify current Corel Docker bytes');
 assert.ok(!ps.includes('Get-ChildItem -LiteralPath $root -Directory -Filter'));
 assert.ok(!ps.includes(' -Recurse'));
-assert.ok(!ps.includes("DHL_UI_VERSION=8.55"),'must not pin prior version');
+assert.ok(!ps.includes("DHL_UI_VERSION=8.56"),'must not pin prior version');
 assert.ok(ps.includes('DHL_UI_VERSION=([0-9]+'));
 console.log('PASS: fast update is direct, safe, reentrant; no old BAT or recursive search; current version dynamic');
