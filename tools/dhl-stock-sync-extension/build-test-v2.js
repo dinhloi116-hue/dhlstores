@@ -72,7 +72,7 @@ assert.ok(manualPush.includes("message.type==='DHL_SAPO_PUSH_CANCEL'"));
 const processBody=(manualPush.match(/async function processManualQueue\(\)\{([\s\S]*?)\n  \}\n\n  async function cancelManualPush/)||[])[1]||'';
 assert.ok(processBody,'Không tìm thấy processManualQueue');
 assert.ok(!/await sleep\(/.test(processBody),'Không được sleep cố định giữa SKU');
-assert.ok(manualPush.includes('if(isFatalPushError(message))'),'Chỉ lỗi hệ thống mới pause');
+assert.ok(manualPush.includes("isFatalPushError(message)?'fatal':'skipped'"),'Chỉ lỗi hệ thống mới pause');
 
 const popup=read('popup.html');
 for(const file of [
