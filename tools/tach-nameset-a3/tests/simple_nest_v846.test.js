@@ -68,6 +68,9 @@ selection=[{SizeWidth:35,SizeHeight:50,Shapes:{Count:0}}];
 win.V77NestSelected=()=>{individualCalls++;ids.v77NestResult.innerText='✓ Đã xếp 1 đối tượng';};
 assert.equal(win.DHLSimpleNest.run(),false,'never silently ungroup loose contents');
 ids.v847Objects.value='loose';ids.v847Objects.onchange();
+// Restore the minimal UI routing stub after loading the real config() for geometry assertions.
+// Full mixed-object Corel execution is separately covered by unified_mixed_v848.test.js.
+win.DHLDirectGroups.run=function(){groupCalls++;ids.v838DirectMsg.innerText='✓ Packed unified shapes';return true;};
 assert.equal(win.DHLSimpleNest.run(),true,'explicit loose opt-in works');
 assert.equal(groupCalls,2,'mixed objects must use the SAME unified Group contour engine');
 assert.equal(individualCalls,0,'legacy loose algorithm must not run');
