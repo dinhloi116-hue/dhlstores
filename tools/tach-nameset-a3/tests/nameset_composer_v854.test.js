@@ -16,9 +16,9 @@ for(const k of ['Name','Number','Footer']){
  assert.ok(src.includes("v854'+k+'W"),k+' independent width');
  assert.ok(src.includes("v854'+k+'H"),k+' independent height');
 }
-for(const id of ['v854Gap1','v854Gap2','v854NameFill','v854NumberFill','v854FooterStrokeMm',
- 'v854Logo','v854Capture','v854Mirror','v854Create','v854LoadFonts'])
+for(const id of ['v854Gap1','v854Gap2','v854Logo','v854Capture','v854Mirror','v854Create','v854LoadFonts'])
  assert.ok(src.includes(id),'missing '+id);
+for(const part of ['Fill','Stroke','StrokeMm'])assert.ok(src.includes("v854'+k+'"+part),'missing per-line '+part);
 for(const [i,m] of [...release.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].entries())
  assert.doesNotThrow(()=>new Function(m[1]),'release script '+i);
 const script=src.match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1];
