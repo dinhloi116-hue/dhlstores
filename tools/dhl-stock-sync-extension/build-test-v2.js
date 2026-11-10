@@ -108,6 +108,9 @@ assert.ok(runnerUi.includes('sourceTabId:tab.tabId'));
 
 const manualUi=read('manual-sapo-output-mode.js');
 assert.ok(manualUi.includes('ĐẨY LÊN SAPO'));
+assert.ok(manualUi.includes('KẾT NỐI / ĐỔI KHO SAPO'));
+assert.ok(manualPush.includes("message.type==='DHL_SAPO_CONNECT'"));
+assert.ok(manualPush.includes('const MAX_PARALLEL_SKUS=4'));
 assert.ok(manualUi.includes('DỪNG ĐẨY SAPO'));
 assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_MANUAL'"));
 assert.ok(manualUi.includes("type:'DHL_SAPO_PUSH_CANCEL'"));
