@@ -26,11 +26,11 @@ function group(s){
  // Excel nameset without a number is legitimately one text shape; don't treat it as an arbitrary loose object.
  try{return /^DHL_EXCEL_ROW_\d+(?:_SIZE_[A-Za-z0-9_-]+)?$/.test(String(s.Name||''));}catch(e2){return false;}
 }
-function shapes(a){
+function shapes(a,allowLoose){
  var r=a.ActiveSelectionRange,arr=[],i;
  if(r&&r.Count)for(i=1;i<=r.Count;i++)arr.push(r.Item(i));
  if(!arr.length)throw new Error(T('Chọn các Group cần dàn trong Corel trước.','Select the Corel groups to pack first.'));
- for(i=0;i<arr.length;i++)if(!group(arr[i]))throw new Error(T('Vùng chọn có '+arr.length+' đối tượng, nhưng đối tượng thứ '+(i+1)+' chưa Group. Không tự tách chữ/số/logo. Hãy Ctrl+G từng bộ rồi chọn lại.','Object '+(i+1)+' of '+arr.length+' is not a group. Group each complete set first.'));
+ for(i=0;!allowLoose&&i<arr.length;i++)if(!group(arr[i]))throw new Error(T('Vùng chọn có '+arr.length+' đối tượng, nhưng đối tượng thứ '+(i+1)+' chưa Group. Không tự tách chữ/số/logo. Hãy Ctrl+G từng bộ rồi chọn lại.','Object '+(i+1)+' of '+arr.length+' is not a group. Group each complete set first.'));
  return arr;
 }
 function config(){
@@ -40,7 +40,7 @@ function config(){
  var rotate=E('v838Rotate')&&E('v838Rotate').value==='auto',order=E('v838Order')?E('v838Order').value:'visual';
  var mode=E('v838Mode')?E('v838Mode').value:'pack',mirror=!!(E('v838Mirror')&&E('v838Mirror').value==='yes');
  if(!(W>0&&H>0&&gap>=0&&mt>=0&&mb>=0&&ml>=0&&mr>=0&&W>ml+mr&&H>mt+mb))throw new Error(T('Khổ, lề hoặc khoảng cách không hợp lệ.','Invalid material size, margins or gap.'));
- return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,contour:!!(E('v838Contour')&&E('v838Contour').checked),deepMode:(E('v845Effort')?E('v845Effort').value:'balanced'),frameGap:N('v77FrameGapInput',0)*10};
+ return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,contour:!!(E('v838Contour')&&E('v838Contour').checked),allowLoose:!!(E('v832AllowLoose')&&E('v832AllowLoose').checked),deepMode:(E('v845Effort')?E('v845Effort').value:'balanced'),frameGap:N('v77FrameGapInput',0)*10};
 }
 function shapeSize(s){return{w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
 function canFit(s,c){var d=shapeSize(s);return(d.w<=c.usableW+.001&&d.h<=c.usableH+.001)||(c.rotate&&d.h<=c.usableW+.001&&d.w<=c.usableH+.001);}
@@ -193,7 +193,7 @@ function packGroups(a,ss,c){
   try{a.Optimization=false;}catch(y){}opt=false;
   doc.EndCommandGroup();cmd=false;doc.Unit=old;
   try{a.ActiveWindow.Refresh();}catch(e){}
-  output(T('✓ Đã dàn '+ss.length+' Group trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên nội dung Group. '+(plan.contourImproved?'Đã tận dụng khe mở; lỗ kín bị chặn.':'Chế độ khung bao an toàn.'),'✓ Packed '+ss.length+' groups in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Group contents unchanged. '+(plan.contourImproved?'Open pockets used; closed counters blocked.':'Safe rectangular geometry.'))+(plan.deepInfo?(' | '+T('Tối ưu ','Effort ')+plan.deepInfo.mode+' · '+plan.deepInfo.trials+T(' lượt thử',' trials')+' · '+T('Tiết kiệm ','Saved ')+(Math.round(plan.deepInfo.saved*10)/10)+' mm'+(plan.deepInfo.framesAfter<plan.deepInfo.framesBefore?T(' · giảm khổ',' · fewer frames'):'')+(plan.deepInfo.status!=='complete'?' · '+plan.deepInfo.status:'')):''),true);
+  output(T('✓ Đã dàn '+ss.length+(c.allowLoose?' đối tượng':' Group')+' trên '+plan.bins.length+' khổ; chiều dài sử dụng '+(Math.round(plan.total/10*100)/100)+' cm. Giữ nguyên Group. '+(plan.contourImproved?'Đã tận dụng khe mở; lỗ kín bị chặn.':'Dàn khung bao an toàn.'),'✓ Packed '+ss.length+(c.allowLoose?' objects':' groups')+' in '+plan.bins.length+' frames; used length '+(Math.round(plan.total/10*100)/100)+' cm. Existing groups remain intact. '+(plan.contourImproved?'Open pockets used; closed counters blocked.':'Safe rectangular fallback.'))+(plan.deepInfo?(' | '+T('Tối ưu ','Effort ')+plan.deepInfo.mode+' · '+plan.deepInfo.trials+T(' lượt thử',' trials')+' · '+T('Tiết kiệm ','Saved ')+(Math.round(plan.deepInfo.saved*10)/10)+' mm'+(plan.deepInfo.framesAfter<plan.deepInfo.framesBefore?T(' · giảm khổ',' · fewer frames'):'')+(plan.deepInfo.status!=='complete'?' · '+plan.deepInfo.status:'')):''),true);
   return true;
  }catch(e){
   try{if(opt)a.Optimization=false;}catch(x2){}
@@ -248,7 +248,7 @@ function execute(){
  var a,doc,old,sel,conf,ok=false;
  try{
   a=app();doc=a.ActiveDocument;old=doc.Unit;doc.Unit=3;
-  sel=shapes(a);conf=config();
+  conf=config();sel=shapes(a,conf.mode==='pack'&&conf.allowLoose);
   if(typeof window.DHLLicenseGate==='function'&&!window.DHLLicenseGate())return false;
   return conf.mode==='pages'?pagesGroups(a,sel,conf):packGroups(a,sel,conf);
  }catch(e){output(String(e.message||e),false);return false;}
