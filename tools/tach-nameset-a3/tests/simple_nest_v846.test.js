@@ -67,7 +67,7 @@ assert.match(card.className,/v846-simple/,'simple mode can be restored');
 selection=[{SizeWidth:35,SizeHeight:50,Shapes:{Count:0}}];
 win.V77NestSelected=()=>{individualCalls++;ids.v77NestResult.innerText='✓ Đã xếp 1 đối tượng';};
 assert.equal(win.DHLSimpleNest.run(),false,'never silently ungroup loose contents');
-ids.v846Loose.checked=true;
+ids.v847Objects.value='loose';ids.v847Objects.onchange();
 assert.equal(win.DHLSimpleNest.run(),true,'explicit loose opt-in works');
 assert.equal(individualCalls,1);
 console.log('PASS V8.46: compact defaults, true-contour Group routing, cm-mm accuracy, advanced toggle, loose guard');
