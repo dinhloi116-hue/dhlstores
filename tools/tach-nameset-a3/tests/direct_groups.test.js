@@ -31,9 +31,9 @@ function scenario(mode,count,fail){
   return{Count:originals.length,Item(n){return originals[n-1]}};
  }};
  const fields={
-  v77NestW:{value:mode==='pages'?297:580},v77NestH:{value:mode==='pages'?420:2000},
-  v77NestGap:{value:5},v77MarginT:{value:5},v77MarginB:{value:5},
-  v77MarginL:{value:5},v77MarginR:{value:5},v77FrameGapInput:{value:20},
+  v77NestW:{value:mode==='pages'?29.7:58},v77NestH:{value:mode==='pages'?42:200},
+  v77NestGap:{value:0.5},v77MarginT:{value:0.5},v77MarginB:{value:0.5},
+  v77MarginL:{value:0.5},v77MarginR:{value:0.5},v77FrameGapInput:{value:2},
   v838Mode:{value:mode},v838Rotate:{value:'auto'},
   v838Mirror:{value:'no'},v838Order:{value:'visual'},
   v838DirectMsg:{innerHTML:'',className:''}
