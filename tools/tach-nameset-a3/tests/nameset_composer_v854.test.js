@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.join(__dirname,'../src');
 const src=fs.readFileSync(path.join(root,'V854_NAMESET_COMPOSER.html'),'utf8');
 const release=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
-assert.match(release,/DHL_UI_VERSION=8\.54/);
+assert.match(release,/DHL_UI_VERSION=8\.55/);
 assert.equal((release.match(/id="dhl-v854-composer"/g)||[]).length,1);
 assert.ok(release.includes(src.trim()),'snapshot must contain exact module version');
 assert.match(src,/#v82PanelNameset > \*\{display:none!important\}/);
