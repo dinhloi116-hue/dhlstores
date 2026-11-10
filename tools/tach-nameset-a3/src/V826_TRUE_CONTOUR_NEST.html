@@ -233,7 +233,7 @@ function contourCompact(sourceShapes){
    }
   }
   if(!best||best.depth>=baseline-.1){
-   window.DHL_CONTOUR_STATUS=best?'Không tìm được phương án ngắn hơn.':'Chưa tìm được vị trí hợp lệ.';
+   window.DHL_CONTOUR_STATUS=best?'Contour không rút ngắn thêm; giữ kết quả đã xếp.':'Contour bổ sung không cải thiện; giữ kết quả dàn chính.';
    return false;
   }
   doc.BeginCommandGroup('DHL Global Contour Repack V8.33');cmd=true;
