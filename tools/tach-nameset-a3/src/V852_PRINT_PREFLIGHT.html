@@ -1,0 +1,257 @@
+<style id="dhl-v852-preflight-style">
+#v846QuickPanel #v852Preflight{display:block!important;border-top:1px solid #d9e4f1!important;margin-top:11px!important;padding-top:9px!important}
+#v846QuickPanel .v852-title{font-weight:800!important;color:#1b416c!important;font-size:11px!important;margin-bottom:5px!important}
+#v846QuickPanel #v852Scope{box-sizing:border-box!important;display:block!important;width:100%!important;min-height:30px!important;border:1px solid #bacce1!important;background:#fff!important;color:#17324f!important;border-radius:5px!important;font-size:11px!important}
+#v846QuickPanel #v852Run{display:block!important;width:100%!important;margin-top:6px!important;min-height:37px!important;background:#edf5ff!important;color:#145497!important;font-weight:800!important;border:1px solid #a8c5e6!important;border-radius:5px!important;font-size:11px!important}
+#v846QuickPanel #v852Pick{display:none!important;width:100%!important;margin-top:5px!important;min-height:30px!important;background:#fff!important;color:#a23d1d!important;border:1px solid #e2baa8!important;border-radius:5px!important}
+#v846QuickPanel #v852Pick.v852-visible{display:block!important}
+#v846QuickPanel #v852Report{white-space:normal!important;word-wrap:break-word!important;font-size:10px!important;line-height:1.5!important;background:#f5f9fe!important;color:#284863!important;border:1px solid #d6e2ee!important;padding:7px!important;margin-top:7px!important;border-radius:5px!important}
+#v846QuickPanel #v852Report.v852-error{border-color:#d8aaa8!important;color:#923125!important}
+#v846QuickPanel #v852Report.v852-warning{border-color:#e4c792!important;color:#72511c!important}
+#v846QuickPanel #v852Report.v852-good{border-color:#b1d7be!important;color:#175b3d!important}
+#v846QuickPanel .v852-muted{font-size:10px!important;color:#627588!important}
+</style>
+<script id="dhl-v852-preflight" type="text/javascript">
+(function(){
+ var mounted=false,last=null;
+ function E(id){return document.getElementById(id);}
+ function T(vi,en){try{return currentLang==='en'?en:vi;}catch(e){return vi;}}
+ function h(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+ function num(x){return Number(x);}
+ function finite(x){return isFinite(num(x));}
+ function round(x){return Math.round(x*100)/100;}
+ function now(){return (new Date()).getTime();}
+ function app(){if(window.external&&window.external.Application)return window.external.Application;
+  if(typeof corelApp==='function')return corelApp();throw new Error(T('Không kết nối CorelDRAW.','CorelDRAW connection unavailable.'));}
+ function array(range){var out=[],i;if(!range||!finite(range.Count))return out;for(i=1;i<=range.Count;i++)out.push(range.Item(i));return out;}
+ function getSelection(a,scope){
+  var sr=scope==='page'?(a.ActivePage&&a.ActivePage.Shapes):a.ActiveSelectionRange;
+  if(!sr)throw new Error(T('Không đọc được đối tượng trong phạm vi này.','Could not read objects in this scope.'));
+  return array(sr);
+ }
+ function title(shape,i){
+  var s='';try{s=String(shape.Name||'');}catch(e){}
+  return s?s.slice(0,70):(T('Đối tượng ','Object ')+(i+1));
+ }
+ function ignored(sh){
+  var s='';try{s=String(sh.Name||'');}catch(e){}
+  return /^DHL_(?:NEST_)?FRAME(?:_|$)/i.test(s)||/^DHL_NEST_FRAME_/i.test(s);
+ }
+ function box(shape){
+  var w=Math.abs(num(shape.SizeWidth)),z=Math.abs(num(shape.SizeHeight)),x=num(shape.CenterX),y=num(shape.CenterY);
+  if(!finite(w)||!finite(z)||!finite(x)||!finite(y)||w<=0||z<=0)throw new Error(T('Có đối tượng sai kích thước hoặc tọa độ.','Invalid object size or position.'));
+  return{l:x-w/2,r:x+w/2,t:-y-z/2,b:-y+z/2,w:w,h:z};
+ }
+ function near(a,b,margin){
+  return a.l<=b.r+margin+.001&&a.r+margin+.001>=b.l&&a.t<=b.b+margin+.001&&a.b+margin+.001>=b.t;
+ }
+ function orientation(a,b,c){return(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);}
+ function insideSeg(a,b,c){return c.x>=Math.min(a.x,b.x)-.0001&&c.x<=Math.max(a.x,b.x)+.0001&&c.y>=Math.min(a.y,b.y)-.0001&&c.y<=Math.max(a.y,b.y)+.0001;}
+ function crossing(a,b,c,d){
+  var q=orientation(a,b,c),r=orientation(a,b,d),t=orientation(c,d,a),u=orientation(c,d,b),tol=.0001;
+  if(((q>tol&&r<-tol)||(q<-tol&&r>tol))&&((t>tol&&u<-tol)||(t<-tol&&u>tol)))return true;
+  return (Math.abs(q)<=tol&&insideSeg(a,b,c))||(Math.abs(r)<=tol&&insideSeg(a,b,d))||
+    (Math.abs(t)<=tol&&insideSeg(c,d,a))||(Math.abs(u)<=tol&&insideSeg(c,d,b));
+ }
+ function ptSeg2(p,a,b){
+  var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,d=vx*vx+vy*vy,t=0;
+  if(d>1e-15)t=Math.max(0,Math.min(1,(wx*vx+wy*vy)/d));
+  vx=p.x-a.x-t*vx;vy=p.y-a.y-t*vy;return vx*vx+vy*vy;
+ }
+ function segment2(a,b,c,d){
+  if(crossing(a,b,c,d))return 0;
+  return Math.min(ptSeg2(a,c,d),ptSeg2(b,c,d),ptSeg2(c,a,b),ptSeg2(d,a,b));
+ }
+ function pointInLoop(p,loop){
+  var i,j,a,b,hit=false,pts=loop.points;
+  for(i=0,j=pts.length-1;i<pts.length;j=i++){
+   a=pts[i];b=pts[j];
+   if(((a.y>p.y)!==(b.y>p.y))&&(p.x<(b.x-a.x)*(p.y-a.y)/((b.y-a.y)||1e-15)+a.x))hit=!hit;
+  }return hit;
+ }
+ function filled(p,item){
+  // Conservative safety: treat counters in 0,6,8,9 as occupied, not nesting pockets.
+  var i,j,leaf;for(i=0;i<item.leaves.length;i++){
+   leaf=item.leaves[i];for(j=0;j<leaf.length;j++)
+    if(leaf[j].closed&&pointInLoop(p,leaf[j]))return true;
+  }return false;
+ }
+ function minPair(a,b,g,start,limit){
+  var i,j,k,n,m,q,la,lb,aa,bb,segA,segB,lo=1e100,intersection=false,interior=false,
+      margin=Math.max(0,g),v;
+  if(!near(a.bb,b.bb,margin))return{close:false};
+  for(i=0;i<a.leaves.length;i++){
+   la=a.leaves[i];
+   for(j=0;j<b.leaves.length;j++){
+    lb=b.leaves[j];
+    for(k=0;k<la.length;k++){
+     aa=la[k];if(!near(aa.bb,b.bb,margin))continue;
+     for(n=0;n<lb.length;n++){
+      bb=lb[n];if(!near(aa.bb,bb.bb,margin))continue;
+      for(m=0;m<aa.points.length-(aa.closed?0:1);m++){
+       segA=aa.points[m];var segA2=aa.points[(m+1)%aa.points.length];
+       for(q=0;q<bb.points.length-(bb.closed?0:1);q++){
+        segB=bb.points[q];var segB2=bb.points[(q+1)%bb.points.length];
+        v=segment2(segA,segA2,segB,segB2);
+        if(v<lo)lo=v;
+        if(v<.000001){intersection=true;break;}
+       }if(intersection)break;
+      }if(intersection)break;
+     }if(intersection)break;
+    }if(intersection)break;
+   }if(intersection)break;
+  }
+  if(!intersection&&near(a.bb,b.bb,0)){
+   for(i=0;i<a.leaves.length&&!interior;i++)for(j=0;j<a.leaves[i].length&&!interior;j++)
+    if(a.leaves[i][j].closed&&filled(a.leaves[i][j].points[0],b))interior=true;
+   for(i=0;i<b.leaves.length&&!interior;i++)for(j=0;j<b.leaves[i].length&&!interior;j++)
+    if(b.leaves[i][j].closed&&filled(b.leaves[i][j].points[0],a))interior=true;
+  }
+  // A rectangle fallback is only an estimate: must never be certified as exact.
+  return{close:intersection||interior||lo<margin*margin-.0001,
+    overlap:intersection||interior,dist:lo<1e90?Math.sqrt(lo):null,
+    estimated:!!(a.fallback||b.fallback)};
+ }
+ function inspect(input,gap,engine,maxMs){
+  var started=now(),objects=[],ignoredCount=0,invalid=0,fallbacks=0,open=0,i,j,k,z,x,fx,bb,fg,leaves,lp,pts,
+      report={items:0,ignored:0,open:0,fallback:0,overlap:[],spacing:[],estimated:[],
+       incomplete:false,invalid:[],offenders:[],checkedPairs:0,gap:gap},offenderIndices={};
+  if(!engine||typeof engine.footprintAt!=='function')throw new Error(T('Chưa tải được engine contour.','Contour engine unavailable.'));
+  if(!finite(gap)||gap<0||gap>500)throw new Error(T('Khoảng cách cần kiểm tra không hợp lệ.','Invalid clearance.'));
+  if(input.length>250)throw new Error(T('Tối đa 250 đối tượng mỗi lượt; hãy chia vùng chọn.','Maximum 250 objects per scan; split the selection.'));
+  for(i=0;i<input.length;i++){
+   if(ignored(input[i])){ignoredCount++;continue;}
+   try{
+    bb=box(input[i]);
+    var before=num(window.DHL_RECT_FALLBACKS)||0;
+    fg=engine.footprintAt(input[i],0);
+    var after=num(window.DHL_RECT_FALLBACKS)||0;
+    fx=after>before;
+    leaves=[];
+    for(j=0;j<fg.leaves.length;j++){
+     var leaf=[],leafLoops=fg.leaves[j].loops;
+     for(k=0;k<leafLoops.length;k++){
+      lp=leafLoops[k];pts=[],x;
+      for(z=0;z<lp.pts.length;z++)pts.push({x:bb.l+lp.pts[z].x,y:bb.t+lp.pts[z].y});
+      x={closed:!!lp.closed,points:pts,bb:{l:bb.l+lp.bb.l,r:bb.l+lp.bb.r,t:bb.t+lp.bb.t,b:bb.t+lp.bb.b}};
+      leaf.push(x);if(!x.closed)open++;
+     }
+     if(leaf.length)leaves.push(leaf);
+    }
+    if(!leaves.length)throw new Error('no sampled contour');
+    if(fx)fallbacks++;
+    objects.push({shape:input[i],name:title(input[i],i),bb:bb,leaves:leaves,fallback:fx,sourceIndex:i});
+   }catch(e){report.invalid.push(title(input[i],i));offenderIndices[i]=true;}
+  }
+  report.items=objects.length;report.ignored=ignoredCount;report.open=open;report.fallback=fallbacks;
+  if(!objects.length)throw new Error(T('Không có đối tượng hợp lệ để kiểm tra.','No inspectable objects.'));
+  for(i=0;i<objects.length;i++){
+   if(now()-started>(maxMs||9000)){report.incomplete=true;break;}
+   for(j=i+1;j<objects.length;j++){
+    if(now()-started>(maxMs||9000)){report.incomplete=true;break;}
+    if(!near(objects[i].bb,objects[j].bb,gap))continue;
+    report.checkedPairs++;
+    var pair=minPair(objects[i],objects[j],gap,started,maxMs);
+    if(!pair.close)continue;
+    var detail={a:objects[i].name,b:objects[j].name,dist:pair.dist};
+    var group=pair.estimated?'estimated':pair.overlap?'overlap':'spacing';
+    if(report[group].length<35)report[group].push(detail);
+    offenderIndices[objects[i].sourceIndex]=true;offenderIndices[objects[j].sourceIndex]=true;
+   }
+   if(report.incomplete)break;
+  }
+  for(i=0;i<objects.length;i++)if(offenderIndices[objects[i].sourceIndex]||objects[i].fallback)report.offenders.push(objects[i].shape);
+  for(i=0;i<report.invalid.length;i++){} // invalid names remain visible in the report.
+  return report;
+ }
+ function render(rep){
+  var good=rep.overlap.length===0&&rep.spacing.length===0&&rep.estimated.length===0&&
+      rep.open===0&&rep.fallback===0&&rep.invalid.length===0&&!rep.incomplete;
+  var b='<b>'+h(T('Đã quét ','Scanned '))+rep.items+h(T(' đối tượng',' objects'))+'</b> · '+round(rep.gap)+' mm';
+  b+='<div>'+T('Chồng/chạm: ','Overlap/touch: ')+rep.overlap.length+
+   ' · '+T('Thiếu khoảng cách: ','Clearance violations: ')+rep.spacing.length+'</div>';
+  b+='<div>'+T('Đường hở: ','Open contours: ')+rep.open+
+   ' · '+T('Khung bao thay thế: ','Rectangular fallbacks: ')+rep.fallback+'</div>';
+  if(rep.estimated.length)b+='<div>'+T('Vị trí nghi vấn do không đọc được contour: ','Estimated proximity (contour unavailable): ')+rep.estimated.length+'</div>';
+  if(rep.invalid.length)b+='<div>'+T('Không đọc được: ','Unreadable: ')+rep.invalid.length+' ('+h(rep.invalid.slice(0,5).join(', '))+')</div>';
+  if(rep.ignored)b+='<div>'+T('Bỏ qua khung dàn: ','Ignored nesting frames: ')+rep.ignored+'</div>';
+  var groups=[['overlap',T('CHỒNG/CHẠM','OVERLAP/CONTACT')],['spacing',T('KHOẢNG CÁCH','CLEARANCE')],['estimated',T('CẦN XÁC MINH','NEEDS REVIEW')]],i,j,rows;
+  for(i=0;i<groups.length;i++){
+   rows=rep[groups[i][0]];if(!rows.length)continue;
+   b+='<div style="margin-top:6px"><b>'+groups[i][1]+'</b></div>';
+   for(j=0;j<Math.min(rows.length,6);j++)
+    b+='<div>• '+h(rows[j].a)+' / '+h(rows[j].b)+(rows[j].dist===null?'':' · '+round(rows[j].dist)+' mm')+'</div>';
+   if(rows.length>6)b+='<div>… +'+(rows.length-6)+'</div>';
+  }
+  if(rep.incomplete)b+='<div><b>'+T('Chưa kiểm tra hết (giới hạn thời gian). Không được coi là đạt.','Scan timed out. Result is NOT certified.')+'</b></div>';
+  if(good)b+='<div><b>'+T('✓ Không phát hiện lỗi khoảng cách theo đường bao đã lấy mẫu.','✓ No sampled contour clearance violation detected.')+'</b></div>';
+  else b+='<div><b>'+T('⚠ Cần kiểm tra các mục cảnh báo trước khi in.','⚠ Review warnings before printing.')+'</b></div>';
+  b+='<div class="v852-muted">'+T('Chỉ kiểm tra hình học vector đã đọc được; không chứng nhận màu in, DPI hoặc chất liệu. Không sửa thiết kế.','Checks sampled vector geometry only; not color, DPI or material. Does not modify artwork.')+'</div>';
+  return{html:b,good:good};
+ }
+ function status(msg,level){var e=E('v852Report');if(e){e.className=level?'v852-'+level:'';e.innerHTML=msg;}}
+ function gap(){
+  var e=E('v77NestGap'),x=e?num(e.value):.5;
+  if(!finite(x)||x<0||x>50)throw new Error(T('Khoảng cách trong DÀN FILE phải từ 0 đến 50 cm.','Nesting gap must be 0 to 50 cm.'));
+  return x*10;
+ }
+ function run(){
+  last=null;var pick=E('v852Pick');if(pick)pick.className='';
+  var a=app(),doc=a.ActiveDocument,unit=doc.Unit,scope=E('v852Scope')?E('v852Scope').value:'selection',res,shapes,oldFallback=window.DHL_RECT_FALLBACKS;
+  try{
+   doc.Unit=3;
+   shapes=getSelection(a,scope);
+   if(!shapes.length)throw new Error(T('Chưa chọn đối tượng. Chọn bản in hoặc chuyển sang Toàn trang.','No objects selected. Select artwork or use Whole page.'));
+   window.DHL_RECT_FALLBACKS=0;
+   res=inspect(shapes,gap(),window.DHLContourGeometry,9000);
+   last={report:res,shapes:shapes};
+   var output=render(res);
+   status(output.html,output.good?'good':(res.overlap.length||res.spacing.length?'error':'warning'));
+   if(pick&&res.offenders.length)pick.className='v852-visible';
+   return res;
+  }catch(e){status('⚠ '+h(e.message||e),'error');return null;}
+  finally{
+   window.DHL_RECT_FALLBACKS=oldFallback;
+   try{doc.Unit=unit;}catch(e){}
+  }
+ }
+ function pick(){
+  try{
+   if(!last||!last.report.offenders.length)throw new Error(T('Chưa có lỗi hình học để chọn.','No flagged geometry to select.'));
+   var a=app(),range=a.CreateShapeRange(),i;
+   for(i=0;i<last.report.offenders.length;i++)range.Add(last.report.offenders[i]);
+   range.CreateSelection();return true;
+  }catch(e){status('⚠ '+h(e.message||e),'error');return false;}
+ }
+ function labels(){
+  var btn=E('v852Run'),p=E('v852Pick'),scope=E('v852Scope'),title=E('v852Title');
+  if(title)title.innerHTML=T('KIỂM TRA TRƯỚC IN','PRINT PREFLIGHT');
+  if(btn)btn.innerHTML=T('KIỂM TRA FILE','CHECK ARTWORK');
+  if(p)p.innerHTML=T('CHỌN ĐỐI TƯỢNG CẦN KIỂM TRA','SELECT FLAGGED OBJECTS');
+  if(scope&&scope.options&&scope.options.length===2){
+   scope.options[0].text=T('Đối tượng đang chọn','Selected objects');
+   scope.options[1].text=T('Toàn trang hiện tại','Current page');
+  }
+ }
+ function mount(){
+  var q=E('v846QuickPanel'),panel,e;
+  if(mounted)return true;
+  if(!q||!E('v846Go'))return false;
+  panel=document.createElement('div');panel.id='v852Preflight';
+  panel.innerHTML='<div class="v852-title" id="v852Title"></div>'+
+   '<select id="v852Scope"><option value="selection"></option><option value="page"></option></select>'+
+   '<button id="v852Run" type="button"></button>'+
+   '<button id="v852Pick" type="button"></button>'+
+   '<div id="v852Report" class="v852-muted"></div>';
+  q.appendChild(panel);
+  E('v852Run').onclick=run;E('v852Pick').onclick=pick;
+  labels();status(T('Chỉ kiểm tra, không sửa file gốc. Khoảng cách lấy từ DÀN FILE.','Read-only scan. Clearance uses the Nesting tab gap.'),'');
+  mounted=true;return true;
+ }
+ function boot(){var n=0;function retry(){if(mount()||n++>=65)return;setTimeout(retry,300);}retry();}
+ window.DHLPrintPreflight={run:run,inspect:inspect,pick:pick,render:render,mount:mount,version:'8.52'};
+ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1250);},false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1250);});
+ else setTimeout(boot,1500);
+})();
+</script>
