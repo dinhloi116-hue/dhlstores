@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.join(__dirname,'../src');
 const src=fs.readFileSync(path.join(root,'V854_NAMESET_COMPOSER.html'),'utf8');
 const release=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
-assert.match(release,/DHL_UI_VERSION=8\.55/);
+assert.match(release,/DHL_UI_VERSION=8\.56/);
 assert.equal((release.match(/id="dhl-v854-composer"/g)||[]).length,1);
 assert.ok(release.includes(src.trim()),'snapshot must contain exact module version');
 assert.match(src,/#v82PanelNameset > \*\{display:none!important\}/);
@@ -16,7 +16,7 @@ for(const k of ['Name','Number','Footer']){
  assert.ok(src.includes("v854'+k+'W"),k+' independent width');
  assert.ok(src.includes("v854'+k+'H"),k+' independent height');
 }
-for(const id of ['v854Gap1','v854Gap2','v854Fill','v854Stroke','v854StrokeMm',
+for(const id of ['v854Gap1','v854Gap2','v854NameFill','v854NumberFill','v854FooterStrokeMm',
  'v854Logo','v854Capture','v854Mirror','v854Create','v854LoadFonts'])
  assert.ok(src.includes(id),'missing '+id);
 for(const [i,m] of [...release.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].entries())
@@ -31,9 +31,13 @@ function field(id,val){
 const values={NameText:'MESSI',NumberText:'10',FooterText:'A12-K41-MK',
  NameFont:'Arial',NumberFont:'Arial Black',FooterFont:'Arial',
  NameW:20,NameH:5,NumberW:12,NumberH:25,FooterW:10,FooterH:2,
- Gap1:3,Gap2:1,Fill:'#FFFFFF',Stroke:'#000000',StrokeMm:2.5,
+ Gap1:3,Gap2:1,
+ NameFill:'#FFFFFF',NameStroke:'#000000',NameStrokeMm:2.5,
+ NumberFill:'#FFFFFF',NumberStroke:'#000000',NumberStrokeMm:2.5,
+ FooterFill:'#FFFFFF',FooterStroke:'#000000',FooterStrokeMm:2.5,
  LogoPct:9,LogoBottom:2,LogoInset:1,LogoMode:'per'};
 for(const [k,v] of Object.entries(values))field('v854'+k,v);
+for(const k of ['Name','Number','Footer'])field('v854'+k+'Enabled','').checked=true;
 field('v854Logo','').checked=true;field('v854Mirror','').checked=true;
 let fail=false,undoCount=0;
 const created=[],fonts=[],calls=[];
@@ -77,9 +81,9 @@ assert.equal(d.Unit,4);assert.equal(undoCount,0);
 assert.ok(api.recents().includes('Arial Black'));
 api.remember(['Font 1','Font 2','Font 3','Font 4','Font 5','Font 6','Font 7','Font 8','Font 9','Font 10','Font 11']);
 assert.equal(api.recents().length,10,'only last 10 fonts');
-fields.v854Fill.value='#GG0000';
+fields.v854NameFill.value='#GG0000';
 assert.throws(()=>api.read(),/HEX/,'invalid hex rejected before document change');
-fields.v854Fill.value='#FFFFFF';
+fields.v854NameFill.value='#FFFFFF';
 fail=true;
 assert.throws(()=>api.make({...p,logo:false}),/mock creation failure/);
 assert.equal(undoCount,1,'failed create rolled back');
