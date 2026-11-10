@@ -159,7 +159,7 @@
  function createText(layer,row,p,name){
   var s=layer.CreateArtisticText(0,0,row.text);
   if(!s)throw error('Không tạo được đối tượng Text.','Cannot create Artistic Text.');
-  if(typeof window.applyFontRecursive==='function')window.applyFontRecursive(s,row.font);
+  if(typeof window.applyFontRecursive==='function'){if(window.applyFontRecursive(s,row.font)===false)throw error('Không áp được font đã chọn.','Selected font could not be applied.');}
   else s.Text.Story.Font=row.font;
   dimensions(s,row.w,row.h);style(s,p);
   try{s.Name='DHL_NAMESET_'+name;}catch(e){}
