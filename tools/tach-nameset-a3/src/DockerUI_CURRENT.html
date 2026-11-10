@@ -3135,7 +3135,7 @@ body .footer{color:#698099!important;font-size:10px!important;padding:7px!import
   showText('v846DeepLabel','Tìm sâu hơn (ưu tiên tiết kiệm vật liệu)','Deep search (maximize material saving)');
   showText('v846Go','DÀN TỐI ƯU','OPTIMIZE LAYOUT');
   showText('v846Undo','HOÀN TÁC','UNDO');
-  showText('v846Tip','Chọn các đối tượng trong Corel. Group sẽ giữ nguyên; chi tiết rời chỉ được dàn khi bạn bật tùy chọn tương ứng.','Select objects in Corel. Groups stay intact; individual elements require opt-in.');
+  showText('v846Tip','Ba mức tối ưu áp dụng cho Group. Vật rời dùng bộ dàn riêng; không tự tách Group.','The three optimization levels apply to Groups. Loose objects use the legacy individual packer; Groups stay intact.');
   var card=E('v77NestCard');if(card)showText('v846Advanced',(' '+card.className+' ').indexOf(' v846-simple ')>=0?'TÙY CHỌN NÂNG CAO ▾':'THU GỌN ▴','ADVANCED / COLLAPSE');
  }
  function mount(){
@@ -3150,7 +3150,7 @@ body .footer{color:#698099!important;font-size:10px!important;padding:7px!import
    +'<div class="v847-section"><label class="v846-label" id="v847ModeLabel"></label>'
    +'<div class="v847-mode-row"><div><button type="button" id="v847Fast" class="v847-mode"></button></div><div><button type="button" id="v847Contour" class="v847-mode"></button></div><div><button type="button" id="v847Deep" class="v847-mode"></button></div></div>'
    +'<div class="v847-hint" id="v847ModeHint"></div></div>'
-   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v847RotateLabel"></label><select class="v847-select" id="v847Rotate"><option value="none">'+T('Giữ nguyên hướng','Keep direction')+'</option><option value="auto">'+T('Tự xoay 0° / 90° / 180° / 270°','Auto rotate 0° / 90° / 180° / 270°')+'</option></select></div>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v847RotateLabel"></label><select class="v847-select" id="v847Rotate"><option value="none">'+T('Giữ nguyên hướng','Keep direction')+'</option><option value="auto">'+T('Tự xoay','Auto rotate')+'</option></select></div>'
    +'<div class="v846-cell"><label class="v846-label" id="v847ObjectsLabel"></label><select class="v847-select" id="v847Objects"><option value="group">'+T('Giữ nguyên Group','Preserve Groups')+'</option><option value="loose">'+T('Cho phép vật rời','Allow loose objects')+'</option></select></div></div>'
    +'<div class="v847-hidden-controls" style="display:none"><input type="checkbox" id="v846Rotate"/><input type="checkbox" id="v846Contour"/><input type="checkbox" id="v846Loose"/><input type="checkbox" id="v846Deep"/></div>'
    +'<button type="button" id="v846Go"></button>'
