@@ -6,7 +6,7 @@ const root=path.join(__dirname,'../src');
 const html=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
 const quickSrc=fs.readFileSync(path.join(root,'V846_SIMPLE_NEST_UI.html'),'utf8');
 const groupSrc=fs.readFileSync(path.join(root,'V838_DIRECT_GROUPS.html'),'utf8');
-assert.ok(html.includes('DHL_UI_VERSION=8.47'));
+assert.ok(html.includes('DHL_UI_VERSION=8.48'));
 assert.equal((html.match(/id="dhl-v846-simple-nest"/g)||[]).length,1);
 assert.ok(html.includes('#v77NestCard.v846-simple > *'),'advanced controls hidden only in simple mode');
 assert.ok(html.includes('id="v846Go"'),'one primary action');
@@ -69,5 +69,6 @@ win.V77NestSelected=()=>{individualCalls++;ids.v77NestResult.innerText='✓ Đã
 assert.equal(win.DHLSimpleNest.run(),false,'never silently ungroup loose contents');
 ids.v847Objects.value='loose';ids.v847Objects.onchange();
 assert.equal(win.DHLSimpleNest.run(),true,'explicit loose opt-in works');
-assert.equal(individualCalls,1);
+assert.equal(groupCalls,2,'mixed objects must use the SAME unified Group contour engine');
+assert.equal(individualCalls,0,'legacy loose algorithm must not run');
 console.log('PASS V8.46: compact defaults, true-contour Group routing, cm-mm accuracy, advanced toggle, loose guard');
