@@ -6,7 +6,7 @@ const root=path.join(__dirname,'../src');
 const html=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
 const quickSrc=fs.readFileSync(path.join(root,'V846_SIMPLE_NEST_UI.html'),'utf8');
 const groupSrc=fs.readFileSync(path.join(root,'V838_DIRECT_GROUPS.html'),'utf8');
-assert.ok(html.includes('DHL_UI_VERSION=8.52'));
+assert.ok(html.includes('DHL_UI_VERSION=8.53'));
 assert.equal((html.match(/id="dhl-v846-simple-nest"/g)||[]).length,1);
 assert.ok(html.includes('#v77NestCard > *{display:none!important}'),'historical controls are always hidden, including extra settings mode');
 assert.ok(html.includes('id="v846Go"'),'one primary action');
