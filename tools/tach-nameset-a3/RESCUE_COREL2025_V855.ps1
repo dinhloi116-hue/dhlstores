@@ -186,10 +186,14 @@ try{
         $entry.Result='Already current V'+$latest
         Log ('ALREADY CURRENT | '+$dst);$success++;continue
       }
-      Copy-Item -LiteralPath $dst -Destination $backup -ErrorAction Stop
+      # File.Replace requires a valid backup path; passing $null raised
+      # "The path is not of a legal form" on Windows PowerShell 5.1.
+      # File.Replace itself creates the backup atomically at $backup.
       Copy-Item -LiteralPath $stageRemote -Destination $stage -ErrorAction Stop
       if((Get-FileHash -LiteralPath $stage -Algorithm SHA256).Hash -ne $hash){throw 'Staged file checksum mismatch.'}
-      [IO.File]::Replace($stage,$dst,$null)
+      [IO.File]::Replace($stage,$dst,$backup)
+      if(-not (Test-Path -LiteralPath $backup -PathType Leaf)){throw 'Atomic replacement did not create the previous-version backup.'}
+      if((Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash -ne $originalHash){throw 'Previous-version backup checksum mismatch.'}
       if((Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash -ne $hash){throw 'Installed file hash mismatch.'}
       $entry.Result='UPDATED V'+$entry.Version+' to V'+$latest
       Log ('SUCCESS '+$entry.Result+' | '+$dst)
