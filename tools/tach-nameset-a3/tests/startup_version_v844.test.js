@@ -8,7 +8,7 @@ const ps=fs.readFileSync(path.join(root,'UPDATE_DHL_NAMESET.ps1'),'utf8');
 const m=ui.match(/DHL_UI_VERSION=(\d+\.\d+)/);
 assert.ok(m,'release marker');
 const version=m[1];
-assert.equal(version,'8.47');
+assert.equal(version,'8.48');
 assert.ok(ui.includes('<span class="ver">v'+version+'</span>'),'first paint uses latest version');
 const writers=[...ui.matchAll(/\.innerHTML\s*=\s*['"]v(\d+\.\d+)['"]/g)];
 assert.ok(writers.length>=20,'old deferred version writers are still covered by regression');
