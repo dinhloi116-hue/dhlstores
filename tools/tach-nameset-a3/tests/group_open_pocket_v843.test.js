@@ -5,7 +5,7 @@ const dir=path.join(__dirname,'../src');
 const geom=fs.readFileSync(path.join(dir,'V826_TRUE_CONTOUR_NEST.html'),'utf8').match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1];
 const direct=fs.readFileSync(path.join(dir,'V838_DIRECT_GROUPS.html'),'utf8').match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1].replace(/\}\)\(\);\s*$/,'window.__test={execute};})();');
 function run(contour){
- const fields={v77NestW:{value:'80'},v77NestH:{value:'150'},v77NestGap:{value:'2'},v77MarginL:{value:'0'},v77MarginR:{value:'0'},v77MarginT:{value:'0'},v77MarginB:{value:'0'},v77FrameGapInput:{value:'0'},v838Mode:{value:'pack'},v838Rotate:{value:'none'},v838Order:{value:'visual'},v838Mirror:{value:'no'},v838Contour:{checked:contour},v838DirectMsg:{innerHTML:'',className:''}};
+ const fields={v77NestW:{value:'8'},v77NestH:{value:'15'},v77NestGap:{value:'0.2'},v77MarginL:{value:'0'},v77MarginR:{value:'0'},v77MarginT:{value:'0'},v77MarginB:{value:'0'},v77FrameGapInput:{value:'0'},v838Mode:{value:'pack'},v838Rotate:{value:'none'},v838Order:{value:'visual'},v838Mirror:{value:'no'},v838Contour:{checked:contour},v838DirectMsg:{innerHTML:'',className:''}};
  function makeGroup(w,h,local,cx,cy){
   const pts=local.map(p=>({x:cx-w/2+p[0],y:cy-h/2+p[1]}));
   const sp={Length:200,Closed:true,GetPointPositionAt(t){const n=t*pts.length,i=Math.floor(n),u=n-i,p=pts[i%pts.length],q=pts[(i+1)%pts.length];return{x:p.x+(q.x-p.x)*u,y:p.y+(q.y-p.y)*u};}};
