@@ -1,7 +1,13 @@
 <style id="dhl-v846-simple-style">
 /* Stable ES5/IE-compatible compact mode: retain every original control in DOM. */
-#v77NestCard.v846-simple > *{display:none!important}
-#v77NestCard.v846-simple > #v846QuickPanel{display:block!important}
+/* V8.49: Never expose duplicate legacy controls, even when extra settings open. */
+#v77NestCard > *{display:none!important}
+#v77NestCard > #v846QuickPanel{display:block!important}
+#v846QuickPanel #v849ExtraPanel{display:none!important}
+#v846QuickPanel.v849-extra-open #v849ExtraPanel{display:block!important}
+#v846QuickPanel #v849ExtraPanel .v846-label{margin-top:6px!important}
+#v846QuickPanel #v849ExtraPanel input[type="number"]{min-height:30px!important;height:30px!important}
+#v846QuickPanel #v849ExtraPanel{padding:8px!important;border:1px solid #d6e2ef!important;border-radius:6px!important;margin:7px 0!important;background:#fafcff!important}
 #v846QuickPanel{display:block!important;background:#fff!important;border:1px solid #cbd7e7!important;border-radius:8px!important;padding:10px!important;margin:3px 0 8px!important;color:#16283d!important;font-family:"Segoe UI",Arial,sans-serif!important}
 #v846QuickPanel .v846-head{font-size:13px!important;font-weight:800!important;margin:0 0 8px!important;color:#173c6d!important}
 #v846QuickPanel .v846-note{font-size:10px!important;line-height:1.4!important;color:#5c6775!important;margin:5px 0 8px!important}
@@ -58,7 +64,13 @@
   E('v846Loose').checked=!!(loose&&loose.checked);
   E('v846Contour').checked=!!(cont&&cont.checked);
   E('v846Deep').checked=!!(eff&&eff.value==='deep');
-  syncOptions();presetState();
+  syncOptions();
+  var from=[['v849Layout','v838Mode'],['v849Mirror','v838Mirror'],
+            ['v849Top','v77MarginT'],['v849Bottom','v77MarginB'],
+            ['v849Left','v77MarginL'],['v849Right','v77MarginR'],
+            ['v849FrameGap','v77FrameGapInput']],i,src,dst;
+  for(i=0;i<from.length;i++){dst=E(from[i][0]);src=E(from[i][1]);if(dst&&src)dst.value=src.value;}
+  presetState();
  }
  function presetState(){
   var w=num(E('v846W').value),h=num(E('v846H').value),presets=[['v846A4',21,29.7],['v846A3',29.7,42],['v846Roll',58,2000]],i,b;
@@ -110,6 +122,17 @@
   if(E('v838Contour'))E('v838Contour').checked=!!E('v846Contour').checked;
   if(E('v845Effort'))E('v845Effort').value=E('v846Deep').checked?'deep':'balanced';
   if(E('v832AllowLoose'))E('v832AllowLoose').checked=!!E('v846Loose').checked;
+  var extra=[['v849Layout','v838Mode'],['v849Mirror','v838Mirror'],
+             ['v849Top','v77MarginT'],['v849Bottom','v77MarginB'],
+             ['v849Left','v77MarginL'],['v849Right','v77MarginR'],
+             ['v849FrameGap','v77FrameGapInput']],z,src,dst,numValue;
+  for(z=0;z<extra.length;z++){
+   src=E(extra[z][0]);dst=E(extra[z][1]);if(!src||!dst)continue;
+   if(z>=2){numValue=Number(src.value);
+    if(!isFinite(numValue)||numValue<0)throw new Error(T('Lề và khoảng cách khung phải ≥ 0 cm.','Margins and frame gap must be nonnegative.'));
+   }
+   dst.value=String(src.value);
+  }
   try{
    var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR','v77Rotate'],o=[],j;
    for(j=0;j<ids.length;j++)o.push(E(ids[j])?E(ids[j]).value:'0');
@@ -120,11 +143,13 @@
  }
  function preset(w,h){E('v846W').value=String(w);E('v846H').value=String(h);presetState();saveIntoSource();}
  function compact(on){
-  var card=E('v77NestCard'),advanced=E('v846Advanced');
-  if(!card)return;
+  var card=E('v77NestCard'),advanced=E('v846Advanced'),q=E('v846QuickPanel');
+  if(!card||!q)return;
   card.className=String(card.className).replace(/\s*v846-simple/g,'');
+  q.className=String(q.className).replace(/\s*v849-extra-open/g,'');
   if(on)card.className+=' v846-simple';
-  if(advanced)advanced.innerHTML=on?T('TÙY CHỌN NÂNG CAO ▾','ADVANCED SETTINGS ▾'):T('THU GỌN ▴','COLLAPSE ▴');
+  else q.className+=' v849-extra-open';
+  if(advanced)advanced.innerHTML=on?T('CÀI ĐẶT THÊM ▾','MORE SETTINGS ▾'):T('ẨN CÀI ĐẶT ▴','HIDE SETTINGS ▴');
   try{localStorage.setItem('dhl_v846_simple',on?'1':'0');}catch(e){}
  }
  function run(){
@@ -134,11 +159,13 @@
    saveIntoSource();
    if(!selection.length)throw new Error(T('Hãy chọn những đối tượng cần xếp trong CorelDRAW.','Select the objects to nest in CorelDRAW.'));
    for(i=0;i<selection.length;i++)if(!grouped(selection[i]))all=false;
+   if(E('v849Layout')&&E('v849Layout').value==='pages'&&!all)
+    throw new Error(T('Mỗi Group một trang yêu cầu toàn bộ vùng chọn là Group.','One Group per page requires only Groups.'));
    if(!all&&!E('v846Loose').checked)
     throw new Error(T('Có vật rời. Chuyển ĐỐI TƯỢNG sang “Cho phép vật rời” hoặc Group từng bộ.','Loose items found. Select Allow loose objects or Group each complete set.'));
    if(!engine||typeof engine.run!=='function')
     throw new Error(T('Bộ dàn chung chưa tải; không chuyển ngầm sang thuật toán cũ.','Unified nesting engine not loaded; refusing to silently use legacy packing.'));
-   if(E('v838Mode'))E('v838Mode').value='pack';
+   if(E('v838Mode'))E('v838Mode').value=E('v849Layout')&&E('v849Layout').value==='pages'?'pages':'pack';
    ok=engine.run();
    res=E('v838DirectMsg')?(E('v838DirectMsg').innerText||E('v838DirectMsg').textContent||E('v838DirectMsg').innerHTML):'';
    if(ok!==true){status(res||T('Không tìm được bố cục hợp lệ. Đối tượng gốc vẫn giữ nguyên.','No valid layout. Source artwork unchanged.'),false);return false;}
@@ -179,7 +206,15 @@
   showText('v846Go','DÀN TỐI ƯU','OPTIMIZE LAYOUT');
   showText('v846Undo','HOÀN TÁC','UNDO');
   showText('v846Tip','Cả Group và vật rời dùng cùng thuật toán dàn. Không tự tách Group, không xếp vào lỗ kín.','All three optimization levels use one engine for Groups and loose objects. Groups stay intact; closed holes are excluded.');
-  var card=E('v77NestCard');if(card)showText('v846Advanced',(' '+card.className+' ').indexOf(' v846-simple ')>=0?'TÙY CHỌN NÂNG CAO ▾':'THU GỌN ▴','ADVANCED / COLLAPSE');
+  showText('v849LayoutLabel','CÁCH DÀN','LAYOUT');
+  showText('v849MirrorLabel','LẬT GƯƠNG','MIRROR');
+  showText('v849MarginsLabel','LỀ VẬT LIỆU (cm)','MARGINS (cm)');
+  showText('v849TopLabel','Trên','Top');
+  showText('v849BottomLabel','Dưới','Bottom');
+  showText('v849LeftLabel','Trái','Left');
+  showText('v849RightLabel','Phải','Right');
+  showText('v849FrameLabel','Cách khung (cm)','Frame gap (cm)');
+  var card=E('v77NestCard');if(card)showText('v846Advanced',(' '+card.className+' ').indexOf(' v846-simple ')>=0?'CÀI ĐẶT THÊM ▾':'ẨN CÀI ĐẶT ▴','MORE SETTINGS / HIDE');
  }
  function mount(){
   var card=E('v77NestCard'),q,i;
@@ -196,6 +231,16 @@
    +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v847RotateLabel"></label><select class="v847-select" id="v847Rotate"><option value="none">'+T('Giữ nguyên hướng','Keep direction')+'</option><option value="auto">'+T('Tự xoay','Auto rotate')+'</option></select></div>'
    +'<div class="v846-cell"><label class="v846-label" id="v847ObjectsLabel"></label><select class="v847-select" id="v847Objects"><option value="group">'+T('Giữ nguyên Group','Preserve Groups')+'</option><option value="loose">'+T('Cho phép vật rời','Allow loose objects')+'</option></select></div></div>'
    +'<div class="v847-hidden-controls" style="display:none"><input type="checkbox" id="v846Rotate"/><input type="checkbox" id="v846Contour"/><input type="checkbox" id="v846Loose"/><input type="checkbox" id="v846Deep"/></div>'
+   +'<div id="v849ExtraPanel">'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v849LayoutLabel"></label><select class="v847-select" id="v849Layout"><option value="pack">'+T('Dàn chung khổ/cuộn','One material roll')+'</option><option value="pages">'+T('Mỗi Group một trang','One Group per page')+'</option></select></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v849MirrorLabel"></label><select class="v847-select" id="v849Mirror"><option value="no">'+T('Không','No')+'</option><option value="yes">'+T('Có','Yes')+'</option></select></div></div>'
+   +'<label class="v846-label" id="v849MarginsLabel"></label>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v849TopLabel"></label><input id="v849Top" type="number" min="0" step="0.1"/></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v849BottomLabel"></label><input id="v849Bottom" type="number" min="0" step="0.1"/></div></div>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v849LeftLabel"></label><input id="v849Left" type="number" min="0" step="0.1"/></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v849RightLabel"></label><input id="v849Right" type="number" min="0" step="0.1"/></div></div>'
+   +'<label class="v846-label" id="v849FrameLabel"></label><input id="v849FrameGap" type="number" min="0" step="0.1"/>'
+   +'</div>'
    +'<button type="button" id="v846Go"></button>'
    +'<div class="v846-actions"><div><button type="button" id="v846Advanced"></button></div><div><button type="button" id="v846Undo"></button></div></div>'
    +'<div class="v846-note" id="v846Tip"></div><div id="v846Status"></div>';
@@ -208,11 +253,13 @@
   E('v847Contour').onclick=function(){setMode('contour',true);};
   E('v847Deep').onclick=function(){setMode('deep',true);};
   E('v847Rotate').onchange=E('v847Objects').onchange=function(){try{saveIntoSource();}catch(e){status(String(e.message||e),false);}};
+  var inputs=['v849Layout','v849Mirror','v849Top','v849Bottom','v849Left','v849Right','v849FrameGap'],j;
+  for(j=0;j<inputs.length;j++)E(inputs[j]).onchange=function(){try{saveIntoSource();}catch(e){status(String(e.message||e),false);}};
   E('v846Go').onclick=run;
   E('v846Undo').onclick=undo;
   E('v846Advanced').onclick=function(){
    var on=(' '+card.className+' ').indexOf(' v846-simple ')>=0;
-   if(on)saveIntoSource();else{sourceToUI();saveIntoSource();}
+   if(!on)try{saveIntoSource();}catch(e){status(String(e.message||e),false);return;}
    compact(!on);
   };
   sourceToUI();textRefresh();
@@ -232,7 +279,7 @@
   setTimeout(function(){mount();},10000);
   setTimeout(function(){mount();},16000);
  }
- window.DHLSimpleNest={run:run,undo:undo,mount:mount,sourceToUI:sourceToUI,saveIntoSource:saveIntoSource,compact:compact,version:'8.48'};
+ window.DHLSimpleNest={run:run,undo:undo,mount:mount,sourceToUI:sourceToUI,saveIntoSource:saveIntoSource,compact:compact,version:'8.49'};
  if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1050);},false);
  else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1050);});
  else setTimeout(boot,1250);
