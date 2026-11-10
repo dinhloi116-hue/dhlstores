@@ -128,31 +128,22 @@
   try{localStorage.setItem('dhl_v846_simple',on?'1':'0');}catch(e){}
  }
  function run(){
-  var selection=dataFromCorel(),all=true,i,ok,res='';
+  var selection=dataFromCorel(),all=true,i,ok,res='',engine=window.DHLDirectGroups;
   lastRun='';
   try{
    saveIntoSource();
-   if(!selection.length)throw new Error(T('Hãy chọn các số / Group trong CorelDRAW trước.','Select objects or Groups in CorelDRAW first.'));
+   if(!selection.length)throw new Error(T('Hãy chọn những đối tượng cần xếp trong CorelDRAW.','Select the objects to nest in CorelDRAW.'));
    for(i=0;i<selection.length;i++)if(!grouped(selection[i]))all=false;
-   if(all&&window.DHLDirectGroups&&typeof window.DHLDirectGroups.run==='function'){
-    if(E('v838Mode'))E('v838Mode').value='pack';
-    ok=window.DHLDirectGroups.run();
-    res=E('v838DirectMsg')?(E('v838DirectMsg').innerText||E('v838DirectMsg').textContent||E('v838DirectMsg').innerHTML):'';
-    status(res||T('Đã chạy dàn Group.','Group layout finished.'),ok!==false);
-    if(ok===false)return false;
-    lastRun='group';
-   }else{
-    if(!E('v846Loose').checked)throw new Error(T('Có đối tượng rời. Bật “Dàn từng chi tiết rời” hoặc Ctrl+G mỗi bộ rồi chạy lại.','Loose objects found. Enable individual objects or Group each set first.'));
-    if(typeof window.V77NestSelected!=='function')throw new Error(T('Thuật toán dàn chưa sẵn sàng.','Nesting engine unavailable.'));
-    window.V77NestSelected();
-    res=E('v77NestResult')?(E('v77NestResult').innerText||E('v77NestResult').textContent||E('v77NestResult').innerHTML):'';
-    if(/(?:Đã xếp|Packed)\s+\d+/i.test(res)||/✓/.test(res)){
-     status(T('✓ Đã dàn ','✓ Packed ')+selection.length+T(' chi tiết. Mở Nâng cao để xem số liệu khổ và chiều dài.',' objects. Open Advanced for detailed material results.'),true);
-     lastRun='loose';
-    }else{
-     status(res||T('Không có kết quả dàn hợp lệ.','No valid nesting result.'),false);return false;
-    }
-   }
+   if(!all&&!E('v846Loose').checked)
+    throw new Error(T('Có vật rời. Chuyển ĐỐI TƯỢNG sang “Cho phép vật rời” hoặc Group từng bộ.','Loose items found. Select Allow loose objects or Group each complete set.'));
+   if(!engine||typeof engine.run!=='function')
+    throw new Error(T('Bộ dàn chung chưa tải; không chuyển ngầm sang thuật toán cũ.','Unified nesting engine not loaded; refusing to silently use legacy packing.'));
+   if(E('v838Mode'))E('v838Mode').value='pack';
+   ok=engine.run();
+   res=E('v838DirectMsg')?(E('v838DirectMsg').innerText||E('v838DirectMsg').textContent||E('v838DirectMsg').innerHTML):'';
+   if(ok!==true){status(res||T('Không tìm được bố cục hợp lệ. Đối tượng gốc vẫn giữ nguyên.','No valid layout. Source artwork unchanged.'),false);return false;}
+   lastRun='group';
+   status(res||T('Đã xếp xong.','Nesting complete.'),true);
    return true;
   }catch(e){status(String(e.message||e),false);return false;}
  }
@@ -187,7 +178,7 @@
   showText('v846DeepLabel','Tìm sâu hơn (ưu tiên tiết kiệm vật liệu)','Deep search (maximize material saving)');
   showText('v846Go','DÀN TỐI ƯU','OPTIMIZE LAYOUT');
   showText('v846Undo','HOÀN TÁC','UNDO');
-  showText('v846Tip','Ba mức tối ưu áp dụng cho Group. Vật rời dùng bộ dàn riêng; không tự tách Group.','The three optimization levels apply to Groups. Loose objects use the legacy individual packer; Groups stay intact.');
+  showText('v846Tip','Cả Group và vật rời dùng cùng thuật toán dàn. Không tự tách Group, không xếp vào lỗ kín.','All three optimization levels use one engine for Groups and loose objects. Groups stay intact; closed holes are excluded.');
   var card=E('v77NestCard');if(card)showText('v846Advanced',(' '+card.className+' ').indexOf(' v846-simple ')>=0?'TÙY CHỌN NÂNG CAO ▾':'THU GỌN ▴','ADVANCED / COLLAPSE');
  }
  function mount(){
@@ -241,7 +232,7 @@
   setTimeout(function(){mount();},10000);
   setTimeout(function(){mount();},16000);
  }
- window.DHLSimpleNest={run:run,undo:undo,mount:mount,sourceToUI:sourceToUI,saveIntoSource:saveIntoSource,compact:compact,version:'8.47'};
+ window.DHLSimpleNest={run:run,undo:undo,mount:mount,sourceToUI:sourceToUI,saveIntoSource:saveIntoSource,compact:compact,version:'8.48'};
  if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1050);},false);
  else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1050);});
  else setTimeout(boot,1250);
