@@ -14,7 +14,14 @@
 #v846QuickPanel input[type="number"]{width:100%!important;height:31px!important;min-height:31px!important;padding:5px!important;border:1px solid #a9bbd2!important;border-radius:5px!important;background:#fff!important;color:#152c43!important}
 #v846QuickPanel .v846-preset{width:100%!important;min-height:31px!important;background:#eef4fb!important;color:#19406b!important;border:1px solid #b9c9dc!important;border-radius:5px!important;padding:5px 2px!important;font-weight:700!important}
 #v846QuickPanel .v846-preset.on{background:#dbeaff!important;border-color:#1869c9!important}
-#v846QuickPanel .v846-hidden-setting{display:none!important}
+#v846QuickPanel .v846-hidden-setting.v846-check,#v846QuickPanel .v847-hidden-controls{display:none!important}
+#v846QuickPanel .v847-section{margin:7px 0 6px!important;padding:6px 0!important;border-top:1px solid #e4eaf3!important}
+#v846QuickPanel .v847-mode-row{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:3px 0!important}
+#v846QuickPanel .v847-mode-row>div{display:table-cell!important}
+#v846QuickPanel button.v847-mode{display:block!important;width:100%!important;min-height:33px!important;padding:4px 2px!important;font-size:10px!important;font-weight:700!important;background:#f1f5fb!important;color:#1e4c7c!important;border:1px solid #bccfe4!important;border-radius:5px!important}
+#v846QuickPanel button.v847-mode.selected{background:#176bd1!important;color:#fff!important;border-color:#1158b3!important}
+#v846QuickPanel .v847-hint{font-size:10px!important;line-height:1.35!important;color:#526578!important;margin:4px 0 6px!important}
+#v846QuickPanel select.v847-select{display:block!important;width:100%!important;max-width:100%!important;min-height:33px!important;box-sizing:border-box!important;padding:4px!important;border:1px solid #afc2da!important;border-radius:5px!important;background:#fff!important;color:#193b61!important}
 #v846QuickPanel .v846-check{display:block!important;padding:5px 0!important;font-size:10px!important;line-height:1.4!important;color:#183247!important}
 #v846QuickPanel .v846-check input{width:14px!important;height:14px!important;vertical-align:middle!important;margin-right:4px!important}
 #v846QuickPanel #v846Go{display:block!important;width:100%!important;min-height:40px!important;margin-top:8px!important;background:#176bd1!important;border:1px solid #1355a9!important;border-radius:6px!important;color:#fff!important;font-weight:800!important;font-size:12px!important}
@@ -51,14 +58,51 @@
   E('v846Loose').checked=!!(loose&&loose.checked);
   E('v846Contour').checked=!!(cont&&cont.checked);
   E('v846Deep').checked=!!(eff&&eff.value==='deep');
-  presetState();
+  syncOptions();presetState();
  }
  function presetState(){
   var w=num(E('v846W').value),h=num(E('v846H').value),presets=[['v846A4',21,29.7],['v846A3',29.7,42],['v846Roll',58,2000]],i,b;
   for(i=0;i<presets.length;i++){b=E(presets[i][0]);if(b)b.className='v846-preset'+(Math.abs(w-presets[i][1])<.01&&Math.abs(h-presets[i][2])<.01?' on':'');}
  }
+ function currentMode(){
+  return !E('v846Contour').checked?'quick':E('v846Deep').checked?'deep':'contour';
+ }
+ function updateMode(){
+  var mode=currentMode(),ids=['v847Fast','v847Contour','v847Deep'],values=['quick','contour','deep'],i,x;
+  for(i=0;i<ids.length;i++){x=E(ids[i]);if(x)x.className='v847-mode'+(mode===values[i]?' selected':'');}
+  showText('v847ModeHint',
+   mode==='quick'?'Nhanh: xếp theo khung bao, không tìm khe lõm.':mode==='deep'?'Tìm sâu: theo đường bao, thử nhiều cách xếp để giảm vật liệu.':'Tối ưu: xếp theo đường bao, tận dụng khe mở và tránh lỗ kín.',
+   mode==='quick'?'Fast: rectangle bounds, no open-pocket search.':mode==='deep'?'Deep: true contours with additional layout trials.':'Contour: use open pockets and exclude closed holes.');
+ }
+ function setMode(mode,persist){
+  if(mode!=='quick'&&mode!=='contour'&&mode!=='deep')return;
+  E('v846Contour').checked=mode!=='quick';
+  E('v846Deep').checked=mode==='deep';
+  updateMode();
+  if(persist)saveIntoSource();
+ }
+ function syncOptions(){
+  var rotate=E('v847Rotate'),objects=E('v847Objects');
+  if(rotate)rotate.value=E('v846Rotate').checked?'auto':'none';
+  if(objects)objects.value=E('v846Loose').checked?'loose':'group';
+  updateMode();
+ }
+ function loadPreferences(){
+  var mode,rotate,objects;
+  try{
+   mode=localStorage.getItem('dhl_v847_mode');
+   rotate=localStorage.getItem('dhl_v847_rotate');
+   objects=localStorage.getItem('dhl_v847_objects');
+   if(mode==='quick'||mode==='contour'||mode==='deep')setMode(mode,false);
+   if(rotate==='auto'||rotate==='none')E('v847Rotate').value=rotate;
+   if(objects==='loose'||objects==='group')E('v847Objects').value=objects;
+  }catch(e){}
+ }
  function saveIntoSource(){
-  var w=num(E('v846W').value),h=num(E('v846H').value),g=num(E('v846Gap').value),rot=!!E('v846Rotate').checked;
+  var w=num(E('v846W').value),h=num(E('v846H').value),g=num(E('v846Gap').value);
+  if(E('v847Rotate'))E('v846Rotate').checked=E('v847Rotate').value==='auto';
+  if(E('v847Objects'))E('v846Loose').checked=E('v847Objects').value==='loose';
+  var rot=!!E('v846Rotate').checked;
   if(!(w>0&&h>0&&g>=0&&isFinite(w)&&isFinite(h)&&isFinite(g)))throw new Error(T('Khổ và khoảng cách không hợp lệ.','Invalid material size or gap.'));
   E('v77NestW').value=String(w);E('v77NestH').value=String(h);E('v77NestGap').value=String(g);
   if(E('v77Rotate'))E('v77Rotate').value=rot?'45':'none';
@@ -70,6 +114,7 @@
    var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR','v77Rotate'],o=[],j;
    for(j=0;j<ids.length;j++)o.push(E(ids[j])?E(ids[j]).value:'0');
    localStorage.setItem('dhl_v77_nest',o.join('|'));localStorage.setItem('dhl_v79_cm','1');localStorage.setItem('dhl_v83_defaults','1');
+   localStorage.setItem('dhl_v847_mode',currentMode());localStorage.setItem('dhl_v847_rotate',rot?'auto':'none');localStorage.setItem('dhl_v847_objects',E('v846Loose').checked?'loose':'group');
   }catch(err){}
   presetState();
  }
@@ -129,6 +174,13 @@
   showText('v846WidthLabel','Rộng (cm)','Width (cm)');
   showText('v846HeightLabel','Dài (cm)','Length (cm)');
   showText('v846GapLabel','Cách vật (cm)','Gap (cm)');
+  showText('v847ModeLabel','MỨC TỐI ƯU','OPTIMIZATION LEVEL');
+  showText('v847Fast','NHANH','FAST');
+  showText('v847Contour','ĐƯỜNG BAO','CONTOUR');
+  showText('v847Deep','TÌM SÂU','DEEP');
+  showText('v847RotateLabel','XOAY KHI XẾP','ROTATION');
+  showText('v847ObjectsLabel','ĐỐI TƯỢNG','OBJECT TYPE');
+  updateMode();
   showText('v846RotationLabel','Tự tìm góc xoay tốt nhất','Find best rotation');
   showText('v846ContourLabel','Xếp sát đường bao · cấm lỗ kín','True contour · block closed holes');
   showText('v846LooseLabel','Cho phép dàn từng chi tiết rời','Allow individual objects');
@@ -147,10 +199,12 @@
    +'<div id="v846PresetLabel" class="v846-label"></div>'
    +'<div class="v846-presets"><div><button id="v846A4" class="v846-preset" type="button">A4</button></div><div><button id="v846A3" class="v846-preset" type="button">A3</button></div><div><button id="v846Roll" class="v846-preset" type="button">58 × 20m</button></div></div>'
    +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v846WidthLabel"></label><input id="v846W" type="number" min="0.1" step="0.1"/></div><div class="v846-cell"><label class="v846-label" id="v846HeightLabel"></label><input id="v846H" type="number" min="0.1" step="1"/></div><div class="v846-cell"><label class="v846-label" id="v846GapLabel"></label><input id="v846Gap" type="number" min="0" step="0.1"/></div></div>'
-   +'<label class="v846-check"><input type="checkbox" id="v846Rotate"/><span id="v846RotationLabel"></span></label>'
-   +'<label class="v846-check v846-hidden-setting"><input type="checkbox" id="v846Contour"/><span id="v846ContourLabel"></span></label>'
-   +'<label class="v846-check"><input type="checkbox" id="v846Loose"/><span id="v846LooseLabel"></span></label>'
-   +'<label class="v846-check v846-hidden-setting"><input type="checkbox" id="v846Deep"/><span id="v846DeepLabel"></span></label>'
+   +'<div class="v847-section"><label class="v846-label" id="v847ModeLabel"></label>'
+   +'<div class="v847-mode-row"><div><button type="button" id="v847Fast" class="v847-mode"></button></div><div><button type="button" id="v847Contour" class="v847-mode"></button></div><div><button type="button" id="v847Deep" class="v847-mode"></button></div></div>'
+   +'<div class="v847-hint" id="v847ModeHint"></div></div>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v847RotateLabel"></label><select class="v847-select" id="v847Rotate"><option value="none">'+T('Giữ nguyên hướng','Keep direction')+'</option><option value="auto">'+T('Tự xoay 0° / 90° / 180° / 270°','Auto rotate 0° / 90° / 180° / 270°')+'</option></select></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v847ObjectsLabel"></label><select class="v847-select" id="v847Objects"><option value="group">'+T('Giữ nguyên Group','Preserve Groups')+'</option><option value="loose">'+T('Cho phép vật rời','Allow loose objects')+'</option></select></div></div>'
+   +'<div class="v847-hidden-controls" style="display:none"><input type="checkbox" id="v846Rotate"/><input type="checkbox" id="v846Contour"/><input type="checkbox" id="v846Loose"/><input type="checkbox" id="v846Deep"/></div>'
    +'<button type="button" id="v846Go"></button>'
    +'<div class="v846-actions"><div><button type="button" id="v846Advanced"></button></div><div><button type="button" id="v846Undo"></button></div></div>'
    +'<div class="v846-note" id="v846Tip"></div><div id="v846Status"></div>';
@@ -159,17 +213,22 @@
   E('v846A3').onclick=function(){preset(29.7,42);};
   E('v846Roll').onclick=function(){preset(58,2000);};
   E('v846W').onchange=E('v846H').onchange=E('v846Gap').onchange=function(){try{saveIntoSource();}catch(e){status(String(e.message||e),false);}};
-  E('v846Rotate').onclick=E('v846Contour').onclick=E('v846Loose').onclick=E('v846Deep').onclick=function(){try{saveIntoSource();}catch(e){}};
+  E('v847Fast').onclick=function(){setMode('quick',true);};
+  E('v847Contour').onclick=function(){setMode('contour',true);};
+  E('v847Deep').onclick=function(){setMode('deep',true);};
+  E('v847Rotate').onchange=E('v847Objects').onchange=function(){try{saveIntoSource();}catch(e){status(String(e.message||e),false);}};
   E('v846Go').onclick=run;
   E('v846Undo').onclick=undo;
   E('v846Advanced').onclick=function(){
    var on=(' '+card.className+' ').indexOf(' v846-simple ')>=0;
-   if(on)saveIntoSource();else sourceToUI();
+   if(on)saveIntoSource();else{sourceToUI();saveIntoSource();}
    compact(!on);
   };
   sourceToUI();textRefresh();
   var open=false,fresh=false;try{fresh=localStorage.getItem('dhl_v846_simple')===null;open=localStorage.getItem('dhl_v846_simple')==='0';}catch(e){}
-  if(fresh){E('v846Rotate').checked=true;E('v846Contour').checked=true;E('v846Deep').checked=true;try{saveIntoSource();}catch(e){}}
+  if(fresh){E('v846Rotate').checked=true;E('v846Contour').checked=true;E('v846Deep').checked=true;syncOptions();}
+  else loadPreferences();
+  try{saveIntoSource();}catch(e){status(String(e.message||e),false);}
   compact(!open);
   status(T('Sẵn sàng. Chọn đối tượng rồi nhấn DÀN TỐI ƯU.','Ready. Select objects and choose Optimize Layout.'),null);
   return true;
@@ -182,7 +241,7 @@
   setTimeout(function(){mount();},10000);
   setTimeout(function(){mount();},16000);
  }
- window.DHLSimpleNest={run:run,undo:undo,mount:mount,sourceToUI:sourceToUI,saveIntoSource:saveIntoSource,compact:compact,version:'8.46'};
+ window.DHLSimpleNest={run:run,undo:undo,mount:mount,sourceToUI:sourceToUI,saveIntoSource:saveIntoSource,compact:compact,version:'8.47'};
  if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1050);},false);
  else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1050);});
  else setTimeout(boot,1250);
