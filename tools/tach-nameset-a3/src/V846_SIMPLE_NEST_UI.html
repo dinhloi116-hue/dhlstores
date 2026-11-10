@@ -14,6 +14,7 @@
 #v846QuickPanel input[type="number"]{width:100%!important;height:31px!important;min-height:31px!important;padding:5px!important;border:1px solid #a9bbd2!important;border-radius:5px!important;background:#fff!important;color:#152c43!important}
 #v846QuickPanel .v846-preset{width:100%!important;min-height:31px!important;background:#eef4fb!important;color:#19406b!important;border:1px solid #b9c9dc!important;border-radius:5px!important;padding:5px 2px!important;font-weight:700!important}
 #v846QuickPanel .v846-preset.on{background:#dbeaff!important;border-color:#1869c9!important}
+#v846QuickPanel .v846-hidden-setting{display:none!important}
 #v846QuickPanel .v846-check{display:block!important;padding:5px 0!important;font-size:10px!important;line-height:1.4!important;color:#183247!important}
 #v846QuickPanel .v846-check input{width:14px!important;height:14px!important;vertical-align:middle!important;margin-right:4px!important}
 #v846QuickPanel #v846Go{display:block!important;width:100%!important;min-height:40px!important;margin-top:8px!important;background:#176bd1!important;border:1px solid #1355a9!important;border-radius:6px!important;color:#fff!important;font-weight:800!important;font-size:12px!important}
@@ -140,9 +141,9 @@
    +'<div class="v846-presets"><div><button id="v846A4" class="v846-preset" type="button">A4</button></div><div><button id="v846A3" class="v846-preset" type="button">A3</button></div><div><button id="v846Roll" class="v846-preset" type="button">58 × 20m</button></div></div>'
    +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v846WidthLabel"></label><input id="v846W" type="number" min="0.1" step="0.1"/></div><div class="v846-cell"><label class="v846-label" id="v846HeightLabel"></label><input id="v846H" type="number" min="0.1" step="1"/></div><div class="v846-cell"><label class="v846-label" id="v846GapLabel"></label><input id="v846Gap" type="number" min="0" step="0.1"/></div></div>'
    +'<label class="v846-check"><input type="checkbox" id="v846Rotate"/><span id="v846RotationLabel"></span></label>'
-   +'<label class="v846-check"><input type="checkbox" id="v846Contour"/><span id="v846ContourLabel"></span></label>'
+   +'<label class="v846-check v846-hidden-setting"><input type="checkbox" id="v846Contour"/><span id="v846ContourLabel"></span></label>'
    +'<label class="v846-check"><input type="checkbox" id="v846Loose"/><span id="v846LooseLabel"></span></label>'
-   +'<label class="v846-check"><input type="checkbox" id="v846Deep"/><span id="v846DeepLabel"></span></label>'
+   +'<label class="v846-check v846-hidden-setting"><input type="checkbox" id="v846Deep"/><span id="v846DeepLabel"></span></label>'
    +'<button type="button" id="v846Go"></button>'
    +'<div class="v846-actions"><div><button type="button" id="v846Advanced"></button></div><div><button type="button" id="v846Undo"></button></div></div>'
    +'<div class="v846-note" id="v846Tip"></div><div id="v846Status"></div>';
@@ -160,7 +161,8 @@
    compact(!on);
   };
   sourceToUI();textRefresh();
-  var open=false;try{open=localStorage.getItem('dhl_v846_simple')==='0';}catch(e){}
+  var open=false,fresh=false;try{fresh=localStorage.getItem('dhl_v846_simple')===null;open=localStorage.getItem('dhl_v846_simple')==='0';}catch(e){}
+  if(fresh){E('v846Rotate').checked=true;E('v846Contour').checked=true;E('v846Deep').checked=true;try{saveIntoSource();}catch(e){}}
   compact(!open);
   status(T('Sẵn sàng. Chọn đối tượng rồi nhấn DÀN TỐI ƯU.','Ready. Select objects and choose Optimize Layout.'),null);
   return true;
