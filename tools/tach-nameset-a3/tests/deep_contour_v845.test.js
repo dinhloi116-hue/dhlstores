@@ -7,11 +7,11 @@ const shapeSrc=fs.readFileSync(path.join(root,'V826_TRUE_CONTOUR_NEST.html'),'ut
 const groupSrc=fs.readFileSync(path.join(root,'V838_DIRECT_GROUPS.html'),'utf8');
 const ui=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
 const js=mod.match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1];
-assert.ok(ui.includes('DHL_UI_VERSION=8.45'));
+assert.ok(ui.includes('DHL_UI_VERSION=8.46'));
 assert.ok(ui.includes('id="dhl-v845-deep-contour"'));
 assert.ok(ui.includes('id="v845Effort"'));
 assert.ok(ui.includes('DHLDeepContourSearch.optimize(items,c,plan)'));
-assert.ok(ui.includes('<span class="ver">v8.45</span>'));
+assert.ok(ui.includes('<span class="ver">v8.46</span>'));
 const versions=[...ui.matchAll(/\.innerHTML\s*=\s*['"]v(\d+\.\d+)['"]/g)];
 assert.ok(versions.length>=20);
 for(const v of versions)assert.equal(v[1],'8.45','no older startup version timer: '+v[0]);
