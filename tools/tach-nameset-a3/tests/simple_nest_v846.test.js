@@ -23,8 +23,9 @@ node('v838Contour').checked=true;
 node('v832AllowLoose').checked=false;
 const art={Shapes:{Count:2},SizeWidth:250,SizeHeight:300};
 let selection=[art],groupCalls=0,individualCalls=0;
+let undoCalls=0;
 const corel={ActiveSelectionRange:{get Count(){return selection.length},Item(n){return selection[n-1]}},
- ActiveDocument:{Unit:4,Undo(){}},ActiveWindow:{Refresh(){}}};
+ ActiveDocument:{Unit:4,Undo(){undoCalls++;}},ActiveWindow:{Refresh(){}}};
 const win={addEventListener(){},external:{Application:corel}};
 const data={},storage={getItem:k=>Object.prototype.hasOwnProperty.call(data,k)?data[k]:null,setItem:(k,v)=>{data[k]=v;}};
 const doc={getElementById:id=>ids[id]||null,getElementsByClassName(){return[];},
@@ -42,6 +43,8 @@ new Function('window','document','setTimeout','currentLang','corelApp','localSto
  win,doc,()=>{},'vi',()=>corel,storage);
 assert.equal(win.DHLSimpleNest.mount(),true);
 assert.match(card.className,/v846-simple/,'compact is initial mode');
+assert.equal(win.DHLSimpleNest.undo(),false,'cannot undo unrelated Corel activity');
+assert.equal(undoCalls,0);
 assert.equal(ids.v846Rotate.checked,true,'first launch defaults to auto rotation');
 assert.equal(ids.v846Contour.checked,true,'true contour remains enabled');
 assert.equal(ids.v846Deep.checked,true,'first launch uses full search');
@@ -55,6 +58,8 @@ new Function('window','document','setTimeout','currentLang','corelApp','localSto
 const c=win.__groupTest.config();
 assert.equal(c.W,580);assert.equal(c.H,20000);assert.equal(c.gap,5);
 assert.equal(win.__groupTest.canFit(art,c),true,'250mm Group must fit 58cm material');
+assert.equal(win.DHLSimpleNest.undo(),true);
+assert.equal(undoCalls,1,'one grouped dàn should undo one command group');
 ids.v846Advanced.onclick();
 assert.ok(!/v846-simple/.test(card.className),'advanced mode restores full controls');
 ids.v846Advanced.onclick();
