@@ -301,8 +301,10 @@
    // Sequence: name -> number -> optional third line, centered on the number.
    if(n&&nm){nm.CenterX=n.CenterX;nm.CenterY=Number(n.CenterY)+Number(n.SizeHeight)/2+p.gap1+Number(nm.SizeHeight)/2;}
    else if(nm){nm.CenterX=baseX;nm.CenterY=baseY;}
-   if(foot){foot.CenterX=n?Number(n.CenterX):Number(nm.CenterX);
-    lower=n?n:nm;foot.CenterY=Number(lower.CenterY)-Number(lower.SizeHeight)/2-p.gap2-Number(foot.SizeHeight)/2;}
+   if(foot){foot.CenterX=n?Number(n.CenterX):nm?Number(nm.CenterX):baseX;
+    lower=n?n:nm;
+    foot.CenterY=lower?Number(lower.CenterY)-Number(lower.SizeHeight)/2-p.gap2-Number(foot.SizeHeight)/2:baseY;
+   }
    if(p.logo){
     logos=window.DHLNumberLogo.intoNumber(n,p.number.text,layer);
     if(!logos.length)throw error('Không chèn được logo chân số.','Could not insert digit logo.');
