@@ -1,5 +1,6 @@
 <style id="dhl-v850-size-tab-style">
 /* ES5/MSHTML compatible: independent SIZE tab, no nesting controls. */
+#v82Tabs.v850-five .v82-tabbtn{font-size:9px!important;letter-spacing:-.2px!important;white-space:normal!important;padding:8px 1px 7px!important}
 #v82Tabs .v850-nav-button{font-size:9px!important;padding:8px 0 7px!important}
 #v850PanelSize{padding:7px 1px 12px!important}
 #v850PanelSize .v850-head{font-size:14px!important;font-weight:800!important;color:#133b66!important;margin:3px 0 4px!important}
@@ -106,6 +107,7 @@
    tab.innerHTML='<button id="v850TabSize" class="v82-tabbtn v850-nav-button" type="button">SET SIZE</button>';
    tabs.appendChild(tab);
   }
+  if((' '+tabs.className+' ').indexOf(' v850-five ')<0)tabs.className+=' v850-five';
   b=E('v850TabSize');if(b)b.onclick=function(){show('size');};
   buttons=[
    ['v821GetHeightBtn','V821GetHeight'],
