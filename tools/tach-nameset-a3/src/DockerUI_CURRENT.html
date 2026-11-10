@@ -3435,6 +3435,7 @@ body .footer{color:#698099!important;font-size:10px!important;padding:7px!import
 #v82PanelNameset > *{display:none!important}
 #v82PanelNameset > #v851PairPanel{display:block!important}
 #v82PanelNameset.v851-expanded > *{display:block!important}
+#v82PanelNameset button[data-i18n=alignSelected]{display:none!important}
 #v851PairPanel{padding:10px!important;border:1px solid #cbd8e9!important;background:#fff!important;border-radius:8px!important;margin:9px 0!important;color:#17324f!important}
 #v851PairPanel .v851-title{font-size:13px!important;font-weight:800!important;color:#113b6c!important;margin-bottom:6px!important}
 #v851PairPanel .v851-note{font-size:10px!important;color:#4d657b!important;line-height:1.4!important;margin-bottom:9px!important}
@@ -3668,6 +3669,11 @@ body .footer{color:#698099!important;font-size:10px!important;padding:7px!import
   E('v851Inspect').onclick=inspect;E('v851Align').onclick=align;
   E('v851Mode').onchange=E('v851Gap').onchange=change;E('v851More').onclick=oldControls;
   sourceSync();relabel();change();
+  var priorLang=window.setLanguage;
+  if(typeof priorLang==='function'&&!priorLang._v851){
+   var langWrap=function(x){var result=priorLang(x);setTimeout(relabel,50);return result;};
+   langWrap._v851=true;window.setLanguage=langWrap;
+  }
   ready=true;
   return true;
  }
@@ -3682,7 +3688,10 @@ body .footer{color:#698099!important;font-size:10px!important;padding:7px!import
   x=E('v851Mode');if(x&&x.options&&x.options.length>1){x.options[0].text=T('Tự nhận diện','Automatic');x.options[1].text=T('Theo Group','By Group');}
   x=E('v851Inspect');if(x)x.innerHTML=T('1. KIỂM TRA CẶP','1. INSPECT');
   x=E('v851Align');if(x)x.innerHTML=T('2. CĂN CHỈNH','2. ALIGN');
-  x=E('v851More');if(x)x.innerHTML=T('CÔNG CỤ CŨ: FONT / A3 / LOGO ▾','LEGACY TOOLS ▾');
+  x=E('v851More');if(x){
+   var p=E('v82PanelNameset'),expanded=p&&(' '+p.className+' ').indexOf(' v851-expanded ')>=0;
+   x.innerHTML=expanded?T('ẨN CÔNG CỤ CŨ ▴','HIDE LEGACY TOOLS ▴'):T('CÔNG CỤ CŨ: FONT / A3 / LOGO ▾','LEGACY TOOLS ▾');
+  }
  }
  function boot(){
   var n=0;function retry(){if(build()||n++>65)return;setTimeout(retry,250);}retry();
