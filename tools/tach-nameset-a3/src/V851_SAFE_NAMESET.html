@@ -127,6 +127,18 @@
   }
   return s;
  }
+ function sameDoc(a,b){
+  if(a===b)return true;
+  try{
+   var ax=String(a.FullFileName||''),bx=String(b.FullFileName||'');
+   if(ax&&bx)return ax===bx;
+  }catch(e){}
+  try{
+   var an=String(a.Name||''),bn=String(b.Name||'');
+   if(an&&bn)return an===bn;
+  }catch(e2){}
+  return false;
+ }
  function readPlan(){
   var a=app(),doc=a.ActiveDocument,old,sel,pairs,gap=val(E('v851Gap').value),mode=E('v851Mode').value,i,fp;
   if(!doc)throw new Error(T('Chưa mở tài liệu Corel.','No CorelDRAW document.'));
@@ -163,7 +175,7 @@
   try{
    if(!preview)throw new Error(T('Nhấn KIỂM TRA CẶP trước khi căn chỉnh.','Inspect the pairs before alignment.'));
    p=readPlan();
-   if(p.doc!==preview.doc||p.signature!==preview.signature)
+   if(!sameDoc(p.doc,preview.doc)||p.signature!==preview.signature)
     throw new Error(T('Vùng chọn đã thay đổi. Hãy KIỂM TRA CẶP lại.','Selection changed. Inspect again.'));
    doc=p.doc;old=doc.Unit;doc.Unit=3;
    try{
