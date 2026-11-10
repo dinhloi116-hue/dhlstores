@@ -1,0 +1,308 @@
+<style id="dhl-v854-composer-style">
+/* ES5 + MSHTML/CorelDRAW 2021/2025. Primary NAMESET surface only. */
+#v82PanelNameset > *{display:none!important}
+#v82PanelNameset > #v854Composer{display:block!important}
+#v82PanelNameset.v854-legacy > *{display:block!important}
+#v82PanelNameset #v837ManualPanel{display:none!important}
+#v854Composer{padding:10px!important;margin:5px 0 9px!important;background:#fff!important;border:1px solid #c6d6e8!important;border-radius:9px!important;color:#193550!important}
+#v854Composer *{box-sizing:border-box!important}
+#v854Composer .v854-title{font-weight:800!important;font-size:14px!important;color:#15436f!important;margin-bottom:4px!important}
+#v854Composer .v854-hint{font-size:10px!important;line-height:1.4!important;color:#566a80!important;margin-bottom:9px!important}
+#v854Composer .v854-card{border:1px solid #d0dcea!important;border-radius:7px!important;margin:8px 0!important;padding:8px!important;background:#fff!important}
+#v854Composer .v854-head{font-size:11px!important;font-weight:800!important;color:#164879!important;margin-bottom:7px!important}
+#v854Composer label{font-size:10px!important;font-weight:700!important;color:#344f69!important;display:block!important;margin:5px 0 3px!important}
+#v854Composer input[type=text],#v854Composer input[type=number],#v854Composer select{display:block!important;width:100%!important;border:1px solid #a8bdd4!important;border-radius:5px!important;background:#fff!important;color:#182f49!important;min-height:33px!important;padding:5px!important;font-size:11px!important}
+#v854Composer input[type=checkbox]{width:auto!important;min-height:0!important;vertical-align:middle!important;margin-right:5px!important}
+#v854Composer .v854-row{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:4px 0!important}
+#v854Composer .v854-row > div{display:table-cell!important;vertical-align:bottom!important}
+#v854Composer .v854-wide{width:58%!important}
+#v854Composer .v854-short{width:21%!important}
+#v854Composer button{min-height:30px!important;border-radius:5px!important;padding:5px!important;border:1px solid #afc7e0!important;background:#eef5fc!important;color:#194a7b!important;font-size:10px!important;font-weight:800!important}
+#v854Composer .v854-fontline{display:table!important;width:100%!important;table-layout:fixed!important}
+#v854Composer .v854-fontline > div{display:table-cell!important;vertical-align:middle!important}
+#v854Composer .v854-fontline .v854-fontbutton{width:85px!important;padding-left:3px!important;padding-right:3px!important}
+#v854Composer .v854-recent{display:none!important;padding:5px!important;background:#f4f8fe!important;border:1px solid #dae5f0!important;border-radius:5px!important;margin-top:4px!important}
+#v854Composer .v854-recent.open{display:block!important}
+#v854Composer .v854-recent button{display:block!important;width:100%!important;text-align:left!important;margin:2px 0!important;min-height:26px!important}
+#v854Composer .v854-actions{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:5px 0!important}
+#v854Composer .v854-actions>div{display:table-cell!important}
+#v854Composer #v854Create{background:#1769ce!important;color:#fff!important;border:1px solid #1455a6!important;min-height:41px!important;font-size:12px!important;width:100%!important}
+#v854Composer #v854LoadFonts{width:100%!important;margin:4px 0!important}
+#v854Composer #v854Legacy{width:100%!important;margin-top:7px!important;background:#fff!important;color:#52708b!important}
+#v854Composer #v854Report{font-size:10px!important;line-height:1.5!important;margin:8px 0!important;padding:8px!important;border-radius:5px!important;border:1px solid #d2dfef!important;background:#f4f8ff!important;color:#24476b!important;word-wrap:break-word!important}
+#v854Composer #v854Report.bad{border-color:#e5ada5!important;color:#9b352b!important}
+#v854Composer #v854Report.ok{border-color:#afd7be!important;color:#145c3b!important}
+#v854Composer .v854-swatch{display:inline-block!important;width:17px!important;height:17px!important;border:1px solid #879eb6!important;vertical-align:middle!important;margin-left:4px!important}
+#v854Composer .v854-palette{margin:5px 0!important}
+#v854Composer .v854-palette button{display:inline-block!important;width:23px!important;height:23px!important;min-height:23px!important;margin:2px 2px 0 0!important;padding:0!important;border:1px solid #899fb6!important}
+#v854Composer #v854LogoOptions{display:none!important}
+#v854Composer #v854LogoOptions.open{display:block!important}
+#v854Composer .v854-check{font-size:11px!important;font-weight:700!important;color:#294966!important;margin:7px 0!important;display:block!important}
+#v854Composer .v854-small{font-size:10px!important;color:#65798b!important}
+</style>
+<script id="dhl-v854-composer" type="text/javascript">
+(function(){
+ var ready=false,recents=[],knownFonts=[];
+ function E(k){return document.getElementById(k);}
+ function T(v,e){try{return currentLang==='en'?e:v;}catch(x){return v;}}
+ function trim(v){return String(v===null||v===undefined?'':v).replace(/^\s+|\s+$/g,'');}
+ function esc(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+ function error(v,e){return new Error(T(v,e));}
+ function finite(v){return v!==''&&v!==null&&v!==undefined&&isFinite(Number(v));}
+ function input(id){var el=E(id);return el?trim(el.value):'';}
+ function positive(v,min,max,caption){if(!finite(v)||Number(v)<min||Number(v)>max)throw new Error(caption+' '+T('không hợp lệ.','is invalid.'));return Number(v);}
+ function maybeWidth(v,caption){return trim(v)===''||Number(v)===0?0:positive(v,.01,200,caption);}
+ function hex(x){
+  x=trim(x).replace(/^#/,'').toUpperCase();
+  if(!/^[0-9A-F]{6}$/.test(x))throw error('Màu phải là mã HEX 6 ký tự, ví dụ #FFFFFF.','Use 6-digit HEX color such as #FFFFFF.');
+  return '#'+x;
+ }
+ function rgb(x){return[parseInt(x.substr(1,2),16),parseInt(x.substr(3,2),16),parseInt(x.substr(5,2),16)];}
+ function app(){var a=window.external&&window.external.Application;if(!a&&typeof corelApp==='function')a=corelApp();if(!a||!a.ActiveDocument)throw error('Chưa mở tài liệu CorelDRAW.','Open a CorelDRAW document.');return a;}
+ function loadRecent(){try{var v=JSON.parse(localStorage.getItem('dhl_v854_recent_fonts')||'[]');if(v&&v.length)recents=v.slice(0,10);}catch(e){recents=[];}}
+ function remember(fonts){
+  var next=[],seen={},i,f;
+  for(i=0;i<fonts.length;i++){f=trim(fonts[i]);if(f&&!seen[f.toLowerCase()]){seen[f.toLowerCase()]=true;next.push(f);}}
+  for(i=0;i<recents.length;i++){f=trim(recents[i]);if(f&&!seen[f.toLowerCase()]){seen[f.toLowerCase()]=true;next.push(f);}}
+  recents=next.slice(0,10);
+  try{localStorage.setItem('dhl_v854_recent_fonts',JSON.stringify(recents));}catch(e){}
+ }
+ function fontIds(){return['v854NameFont','v854NumberFont','v854FooterFont'];}
+ function fontSet(){
+  var out=[],seen={},srcs=['nameFont','numberFont','v86NameFont','v86NoFont'],i,j,s,f;
+  for(i=0;i<srcs.length;i++){
+   s=E(srcs[i]);if(!s||!s.options)continue;
+   for(j=0;j<s.options.length;j++){
+    f=trim(s.options[j].value);if(f&&!seen[f.toLowerCase()]){seen[f.toLowerCase()]=true;out.push(f);}
+   }
+  }
+  return out.sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:a.toLowerCase()>b.toLowerCase()?1:0;});
+ }
+ function repopulate(){
+  var ids=fontIds(),i,j,s,f,keep,seen,r,opt,all=knownFonts;
+  for(i=0;i<ids.length;i++){
+   s=E(ids[i]);if(!s)continue;keep=s.value||'Arial';
+   while(s.options.length)s.remove(0);
+   seen={};
+   function add(value,title){if(!value||seen[value.toLowerCase()])return;seen[value.toLowerCase()]=true;s.options.add(new Option(title||value,value));}
+   for(j=0;j<recents.length;j++){f=recents[j];add(f,'★ '+f);}
+   add(keep,keep);add('Arial','Arial');
+   for(j=0;j<all.length;j++)add(all[j],all[j]);
+   s.value=keep;
+  }
+  renderRecents();
+ }
+ function renderRecents(){
+  var ids=['Name','Number','Footer'],i,j,x,b;
+  for(i=0;i<ids.length;i++){
+   x=E('v854'+ids[i]+'Recent');if(!x)continue;
+   while(x.firstChild)x.removeChild(x.firstChild);
+   if(!recents.length){x.innerHTML='<span class="v854-small">'+T('Chưa có font đã dùng.','No recent fonts yet.')+'</span>';continue;}
+   for(j=0;j<recents.length&&j<10;j++){
+    b=document.createElement('button');b.type='button';b.innerHTML=esc(recents[j]);
+    (function(id,font,node){node.onclick=function(){var s=E('v854'+id+'Font'),found=false,k;for(k=0;k<s.options.length;k++)if(s.options[k].value===font)found=true;
+     if(!found)s.options.add(new Option(font,font));s.value=font;E('v854'+id+'Recent').className='v854-recent';};})(ids[i],recents[j],b);
+    x.appendChild(b);
+   }
+  }
+ }
+ function fonts(){var n=0;try{if(typeof window.loadInstalledFonts==='function')n=window.loadInstalledFonts(false)||0;}catch(e){}
+  knownFonts=fontSet();repopulate();
+  result((knownFonts.length?T('Đã nạp ','Loaded ')+knownFonts.length+T(' font.',' fonts.'):T('Chưa lấy được danh sách font. Có thể chọn font từng dùng nếu còn cài trong Corel.','Could not load installed fonts; recent choices remain available.')),knownFonts.length>0);
+  return knownFonts.length;
+ }
+ function sizeRow(prefix){
+  var name=input('v854'+prefix+'Text'),font=input('v854'+prefix+'Font'),
+    w=maybeWidth(input('v854'+prefix+'W'),prefix+' '+T('chiều rộng','width')),
+    h=positive(input('v854'+prefix+'H'),.01,200,prefix+' '+T('chiều cao','height'));
+  if(name.length>110)throw error('Nội dung mỗi ô tối đa 110 ký tự.','Maximum 110 characters per field.');
+  if(name&&!font)throw error('Hãy chọn font cho từng ô có nội dung.','Select a font for each populated field.');
+  return{text:name,font:font,w:w*10,h:h*10};
+ }
+ function read(){
+  var p={name:sizeRow('Name'),number:sizeRow('Number'),footer:null},t=input('v854FooterText');
+  if(!p.name.text&&!p.number.text)throw error('Phải nhập TÊN hoặc SỐ.','Enter a name or a number.');
+  if(t)p.footer=sizeRow('Footer');
+  p.gap1=positive(input('v854Gap1'),0,100,T('Khoảng cách tên–số','Name-number gap'))*10;
+  p.gap2=positive(input('v854Gap2'),0,100,T('Khoảng cách số–dòng 3','Number-third-line gap'))*10;
+  p.fill=hex(input('v854Fill'));p.stroke=hex(input('v854Stroke'));
+  p.strokeMm=positive(input('v854StrokeMm'),0,30,T('Độ dày viền','Outline thickness'));
+  p.mirror=!!E('v854Mirror').checked;p.logo=!!E('v854Logo').checked;
+  if(p.logo){
+   if(!p.number.text||!/^\d{1,4}$/.test(p.number.text))throw error('Logo chân số chỉ hỗ trợ số từ 1–4 chữ số (0–9).','Digit-foot logo supports 1–4 numeric digits only.');
+   if(!window.DHLNumberLogo||!window.DHLNumberLogo.available)throw error('Chưa có bộ chèn logo.','Logo module unavailable.');
+   // Check source before mutating any artwork or preferences.
+   var pref=window.DHLNumberLogo.settings?window.DHLNumberLogo.settings():{};
+   if(!pref.on){ /* will enable on apply; source can still be inspected */ }
+   if(typeof window.DHLNumberLogo.capture!=='function')throw error('Không thể dùng logo nguồn.','Logo capture unavailable.');
+   p.logoPct=positive(input('v854LogoPct'),2,30,T('Cỡ logo','Logo scale'));
+   p.logoBottom=positive(input('v854LogoBottom'),0,30,T('Cách đáy logo','Logo bottom offset'));
+   p.logoInset=positive(input('v854LogoInset'),0,10,T('Lề logo','Logo side inset'));
+   p.logoMode=E('v854LogoMode').value==='whole'?'whole':'per';
+  }
+  return p;
+ }
+ function dimensions(shape,w,h){
+  var sw=Math.abs(Number(shape.SizeWidth)),sh=Math.abs(Number(shape.SizeHeight));
+  if(!(sw>0&&sh>0))throw error('Font không tạo được hình hợp lệ.','Font produced invalid text geometry.');
+  if(!w)w=sw*(h/sh);
+  shape.SetSize(w,h); // Both explicit dimensions: stretch independently, never lock ratio.
+  if(Math.abs(Math.abs(Number(shape.SizeWidth))-w)>.4||Math.abs(Math.abs(Number(shape.SizeHeight))-h)>.4)
+   throw error('Corel không áp đúng kích thước rộng/cao độc lập.','CorelDRAW did not apply independent dimensions.');
+ }
+ function style(shape,p){
+  var fill=rgb(p.fill),stroke=rgb(p.stroke);
+  shape.Fill.UniformColor.RGBAssign(fill[0],fill[1],fill[2]);
+  if(p.strokeMm===0)shape.Outline.SetNoOutline();
+  else{shape.Outline.Color.RGBAssign(stroke[0],stroke[1],stroke[2]);shape.Outline.Width=p.strokeMm;}
+ }
+ function createText(layer,row,p,name){
+  var s=layer.CreateArtisticText(0,0,row.text);
+  if(!s)throw error('Không tạo được đối tượng Text.','Cannot create Artistic Text.');
+  if(typeof window.applyFontRecursive==='function')window.applyFontRecursive(s,row.font);
+  else s.Text.Story.Font=row.font;
+  dimensions(s,row.w,row.h);style(s,p);
+  try{s.Name='DHL_NAMESET_'+name;}catch(e){}
+  return s;
+ }
+ function make(p){
+  var a=app(),d=a.ActiveDocument,page=a.ActivePage,old=d.Unit,grouped=false,cmd=false,items=[],logos=[],shapes=[],r,group,n=null,nm=null,foot=null,i,baseX,baseY,upper,lower,doLogo=false;
+  if(!p)p=read();
+  // Preflight first: check captured logo source while engine is already enabled.
+  if(p.logo){
+   window.DHLNumberLogo.configure({on:true,pct:p.logoPct,bottom:p.logoBottom,inset:p.logoInset,mode:p.logoMode});
+   if(!window.DHLNumberLogo.available())throw error('Chưa LẤY LOGO nguồn.','Capture source logo before creating namesets.');
+  }else if(window.DHLNumberLogo&&typeof window.DHLNumberLogo.configure==='function'){
+   var existing=window.DHLNumberLogo.settings();
+   window.DHLNumberLogo.configure({on:false,pct:existing.pct,bottom:existing.bottom,inset:existing.inset,mode:existing.mode});
+  }
+  try{
+   d.Unit=3;
+   if(!page||!page.ActiveLayer)throw error('Không có trang hoặc layer đang hoạt động.','No active page or layer.');
+   d.BeginCommandGroup('DHL Nameset V8.54 - Create');cmd=true;
+   var layer=page.ActiveLayer;baseX=Number(page.CenterX);baseY=Number(page.CenterY);
+   if(!isFinite(baseX)||!isFinite(baseY))throw error('Không đọc được tâm trang.','Invalid page coordinates.');
+   if(p.number.text){n=createText(layer,p.number,p,'NUMBER');shapes.push(n);n.CenterX=baseX;n.CenterY=baseY;}
+   if(p.name.text){nm=createText(layer,p.name,p,'NAME');shapes.push(nm);}
+   if(p.footer&&p.footer.text){foot=createText(layer,p.footer,p,'THIRD');shapes.push(foot);}
+   // Sequence: name -> number -> optional third line, centered on the number.
+   if(n&&nm){nm.CenterX=n.CenterX;nm.CenterY=Number(n.CenterY)+Number(n.SizeHeight)/2+p.gap1+Number(nm.SizeHeight)/2;}
+   else if(nm){nm.CenterX=baseX;nm.CenterY=baseY;}
+   if(foot){foot.CenterX=n?Number(n.CenterX):Number(nm.CenterX);
+    lower=n?n:nm;foot.CenterY=Number(lower.CenterY)-Number(lower.SizeHeight)/2-p.gap2-Number(foot.SizeHeight)/2;}
+   if(p.logo){
+    logos=window.DHLNumberLogo.intoNumber(n,p.number.text,layer);
+    if(!logos.length)throw error('Không chèn được logo chân số.','Could not insert digit logo.');
+   }
+   r=a.CreateShapeRange();for(i=0;i<shapes.length;i++)r.Add(shapes[i]);for(i=0;i<logos.length;i++)r.Add(logos[i]);
+   group=r.Group();if(!group)throw error('Không gom được nameset thành Group.','Could not group the nameset.');
+   try{group.Name='DHL_NAMESET_V854';}catch(e){}
+   if(p.mirror)group.Flip(1);
+   group.CenterX=baseX;group.CenterY=baseY;
+   d.EndCommandGroup();cmd=false;grouped=true;
+   try{group.CreateSelection();}catch(x){}
+   try{a.ActiveWindow.Refresh();}catch(y){}
+   var recent=[];
+   if(p.name.text)recent.push(p.name.font);
+   if(p.number.text)recent.push(p.number.font);
+   if(p.footer&&p.footer.text)recent.push(p.footer.font);
+   remember(recent);repopulate();
+   return{success:true,count:shapes.length,logos:logos.length,mirror:p.mirror,group:group};
+  }catch(e){
+   if(cmd){try{d.EndCommandGroup();cmd=false;d.Undo();}catch(rollback){throw error('Tạo lỗi và không hoàn tác được; kiểm tra file gốc.','Creation failed and undo failed; inspect document.');}}
+   throw e;
+  }finally{try{d.Unit=old;}catch(restore){}}
+ }
+ function result(s,ok){var x=E('v854Report');if(x){x.className=ok===true?'ok':ok===false?'bad':'';x.innerHTML=esc(s);}}
+ function run(){try{var p=read(),r=make(p);result(T('✓ Đã tạo 1 Group nameset gồm ','✓ Created one nameset Group with ')+r.count+T(' dòng, ',' text line(s), ')+r.logos+T(' logo. Ctrl+Z để hoàn tác.',' logo(s). Ctrl+Z to undo.'),true);return r;}
+  catch(e){result('⚠ '+String(e.message||e),false);return null;}}
+ function capture(){
+  try{if(!window.DHLNumberLogo||!window.DHLNumberLogo.capture)throw error('Chưa tải bộ logo.','Logo engine unavailable.');
+   if(window.DHLNumberLogo.capture())result(T('✓ Đã lấy logo nguồn.','✓ Source logo captured.'),true);
+   else result(T('Chưa lấy được logo. Hãy chọn đúng một đối tượng.','Could not capture source. Select exactly one object.'),false);}
+  catch(e){result('⚠ '+String(e.message||e),false);}
+ }
+ function toggleRecent(k){
+  var x=E('v854'+k+'Recent');if(x)x.className=x.className.indexOf('open')>=0?'v854-recent':'v854-recent open';
+ }
+ function toggleLogo(){
+  var x=E('v854LogoOptions');if(x)x.className=E('v854Logo').checked?'open':'';
+ }
+ function toggleLegacy(){
+  var x=E('v82PanelNameset');if(!x)return;
+  if((' '+x.className+' ').indexOf(' v854-legacy ')>=0){x.className=x.className.replace(/\s*v854-legacy/g,'');E('v854Legacy').innerHTML=T('CÔNG CỤ CŨ / A3 / CĂN CẶP ▾','LEGACY / A3 / ALIGN ▾');}
+  else{x.className+=' v854-legacy';E('v854Legacy').innerHTML=T('ẨN CÔNG CỤ CŨ ▴','HIDE LEGACY ▴');}
+ }
+ function palette(target){
+  var colors=['#FFFFFF','#000000','#E21B2D','#2146A7','#F2CE25','#682E96','#009B77','#F47A1F','#B0B0B0','#F5D0A9'],box=E('v854'+target+'Palette'),j,b;
+  if(!box)return;
+  for(j=0;j<colors.length;j++){
+   b=document.createElement('button');b.type='button';b.title=colors[j];b.innerHTML='&nbsp;';
+   b.style.cssText='background-color:'+colors[j]+'!important;border:1px solid #899fb6!important;';
+   (function(hex){b.onclick=function(){E('v854'+target).value=hex;swatches();};})(colors[j]);box.appendChild(b);
+  }
+ }
+ function swatches(){var ids=['Fill','Stroke'],i,x,b;for(i=0;i<ids.length;i++){x=E('v854'+ids[i]);b=E('v854'+ids[i]+'Preview');if(x&&b){try{b.style.backgroundColor=hex(x.value);}catch(e){b.style.backgroundColor='#fff';}}}}
+ function row(k,labelText,defaultText,defaultH){
+  return '<div class="v854-card"><div class="v854-head">'+labelText+'</div>'
+   +'<input type="text" id="v854'+k+'Text" value="'+esc(defaultText)+'" placeholder="'+labelText+'"/>'
+   +'<label>'+T('Font chữ','Font')+'</label>'
+   +'<div class="v854-fontline"><div><select id="v854'+k+'Font"></select></div>'
+   +'<div class="v854-fontbutton"><button type="button" id="v854'+k+'RecentBtn">'+T('10 GẦN ĐÂY ▾','RECENT 10 ▾')+'</button></div></div>'
+   +'<div id="v854'+k+'Recent" class="v854-recent"></div>'
+   +'<div class="v854-row"><div><label>'+T('Rộng (cm) · trống = tự động','Width (cm) · blank = auto')+'</label><input id="v854'+k+'W" type="number" min="0" step="0.1" value="" placeholder="Auto"/></div>'
+   +'<div><label>'+T('Cao (cm)','Height (cm)')+'</label><input id="v854'+k+'H" type="number" min="0.01" step="0.1" value="'+defaultH+'"/></div></div>'
+   +'</div>';
+ }
+ function ui(){
+  return '<div class="v854-title">'+T('TẠO NAMESET','CREATE NAMESET')+'</div>'
+   +'<div class="v854-hint">'+T('Tạo trực tiếp Text chỉnh sửa được trong CorelDRAW. Rộng/cao độc lập, không khóa tỷ lệ.','Creates editable CorelDRAW text. Width and height independent, with no aspect-ratio lock.')+'</div>'
+   +row('Name',T('1. TÊN','1. NAME'),'TÊN CỦA BẠN',5)
+   +row('Number',T('2. SỐ ÁO','2. SHIRT NUMBER'),'10',25)
+   +row('Footer',T('3. DÒNG THỨ BA (TÙY CHỌN)','3. THIRD LINE (OPTIONAL)') ,'',2)
+   +'<button type="button" id="v854LoadFonts">'+T('↻ NẠP TẤT CẢ FONT ĐÃ CÀI','↻ LOAD INSTALLED FONTS')+'</button>'
+   +'<div class="v854-card"><div class="v854-head">'+T('KHOẢNG CÁCH (CM)','SPACING (CM)')+'</div>'
+   +'<div class="v854-row"><div><label>'+T('Tên → số','Name → number')+'</label><input type="number" id="v854Gap1" min="0" max="100" step="0.1" value="3"/></div>'
+   +'<div><label>'+T('Số → dòng 3','Number → third')+'</label><input type="number" id="v854Gap2" min="0" max="100" step="0.1" value="1"/></div></div></div>'
+   +'<div class="v854-card"><div class="v854-head">'+T('MÀU & VIỀN CHỮ / SỐ','TEXT FILL & OUTLINE')+'</div>'
+   +'<div class="v854-row"><div><label>'+T('Màu nền (thân chữ)','Fill color')+' <span id="v854FillPreview" class="v854-swatch"></span></label><input type="text" id="v854Fill" value="#FFFFFF"/></div>'
+   +'<div><label>'+T('Màu viền','Outline color')+' <span id="v854StrokePreview" class="v854-swatch"></span></label><input type="text" id="v854Stroke" value="#000000"/></div></div>'
+   +'<div id="v854FillPalette" class="v854-palette"></div><div id="v854StrokePalette" class="v854-palette"></div>'
+   +'<label>'+T('Độ dày viền (mm), 0 = không viền','Outline width (mm), 0 = none')+'</label><input type="number" id="v854StrokeMm" min="0" max="30" step="0.1" value="0"/></div>'
+   +'<div class="v854-card"><label class="v854-check"><input type="checkbox" id="v854Logo"/>'+T('Chèn logo chân số (tùy chọn)','Digit-foot logo (optional)')+'</label>'
+   +'<div id="v854LogoOptions"><button type="button" id="v854Capture">'+T('LẤY LOGO ĐANG CHỌN TRONG COREL','CAPTURE SELECTED COREL LOGO')+'</button>'
+   +'<div class="v854-row"><div><label>'+T('Cỡ (% cao số)','Logo height (%)')+'</label><input id="v854LogoPct" type="number" value="9" min="2" max="30" step="0.5"/></div>'
+   +'<div><label>'+T('Cách đáy (mm)','Bottom offset (mm)')+'</label><input id="v854LogoBottom" type="number" value="2" min="0" max="30" step="0.5"/></div>'
+   +'<div><label>'+T('Lề ngang (mm)','Side inset (mm)')+'</label><input id="v854LogoInset" type="number" value="1" min="0" max="10" step="0.5"/></div></div>'
+   +'<label>'+T('Kiểu chèn','Logo mode')+'</label><select id="v854LogoMode"><option value="per">'+T('Mỗi chữ số 1 logo','One per digit')+'</option><option value="whole">'+T('1 logo cho cả cụm số','One per number')+'</option></select>'
+   +'</div></div>'
+   +'<label class="v854-check"><input type="checkbox" id="v854Mirror"/>'+T('LẬT GƯƠNG NGANG CẢ BỘ','MIRROR THE COMPLETE NAMESET')+'</label>'
+   +'<button id="v854Create" type="button">'+T('TẠO NAMESET TRONG COREL','CREATE NAMESET IN COREL')+'</button>'
+   +'<div id="v854Report">'+T('Nhập thông tin, chọn font rồi tạo. Ctrl+Z để hoàn tác.','Enter text and fonts, then create. Ctrl+Z to undo.')+'</div>'
+   +'<button id="v854Legacy" type="button">'+T('CÔNG CỤ CŨ / A3 / CĂN CẶP ▾','LEGACY / A3 / ALIGN ▾')+'</button>';
+ }
+ function mount(){
+  var panel=E('v82PanelNameset'),q,ids=['Name','Number','Footer'],i,b;
+  if(ready)return true;
+  if(!panel||!window.DHLNumberLogo)return false;
+  q=E('v854Composer');
+  if(!q){q=document.createElement('div');q.id='v854Composer';q.innerHTML=ui();panel.insertBefore(q,panel.firstChild);}
+  loadRecent();knownFonts=fontSet();repopulate();
+  for(i=0;i<ids.length;i++){b=E('v854'+ids[i]+'RecentBtn');if(b)(function(k){b.onclick=function(){toggleRecent(k);};})(ids[i]);}
+  E('v854LoadFonts').onclick=fonts;E('v854Logo').onchange=toggleLogo;E('v854Capture').onclick=capture;
+  E('v854Create').onclick=run;E('v854Legacy').onclick=toggleLegacy;
+  E('v854Fill').onchange=swatches;E('v854Stroke').onchange=swatches;
+  palette('Fill');palette('Stroke');swatches();toggleLogo();
+  var old=window.setLanguage;if(typeof old==='function'&&!old._v854){
+   var wrap=function(v){var r=old(v);setTimeout(function(){var x=E('v854Title');if(x)x.innerHTML=T('TẠO NAMESET','CREATE NAMESET');},80);return r;};
+   wrap._v854=true;window.setLanguage=wrap;
+  }
+  ready=true;return true;
+ }
+ function boot(){var n=0;function tick(){if(mount()||n++>70)return;setTimeout(tick,250);}tick();}
+ window.DHLNamesetComposer={mount:mount,read:read,make:make,run:run,remember:remember,recents:function(){return recents.slice(0);},fontSet:fontSet,version:'8.54'};
+ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1750);},false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1750);});
+ else setTimeout(boot,1850);
+})();
+</script>
