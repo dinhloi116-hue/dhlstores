@@ -206,7 +206,7 @@
    if(p.name.text)recent.push(p.name.font);
    if(p.number.text)recent.push(p.number.font);
    if(p.footer&&p.footer.text)recent.push(p.footer.font);
-   remember(recent);repopulate();
+   try{remember(recent);repopulate();}catch(historyError){/* Artwork was committed: do not report a false creation failure. */}
    return{success:true,count:shapes.length,logos:logos.length,mirror:p.mirror,group:group};
   }catch(e){
    if(cmd){try{d.EndCommandGroup();cmd=false;d.Undo();}catch(rollback){throw error('Tạo lỗi và không hoàn tác được; kiểm tra file gốc.','Creation failed and undo failed; inspect document.');}}
