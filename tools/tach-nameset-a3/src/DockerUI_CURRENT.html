@@ -3873,14 +3873,14 @@ body .footer{color:#698099!important;font-size:10px!important;padding:7px!import
   var good=rep.overlapCount===0&&rep.spacingCount===0&&rep.estimatedCount===0&&
       rep.open===0&&rep.fallback===0&&rep.invalid.length===0&&!rep.incomplete;
   var b='<b>'+h(T('Đã quét ','Scanned '))+rep.items+h(T(' đối tượng',' objects'))+'</b> · '+round(rep.gap)+' mm';
-  b+='<div>'+T('Chồng/chạm: ','Overlap/touch: ')+rep.overlapCount+
+  b+='<div>'+T('Xung đột/vùng kín: ','Overlap/enclosed area: ')+rep.overlapCount+
    ' · '+T('Thiếu khoảng cách: ','Clearance violations: ')+rep.spacingCount+'</div>';
   b+='<div>'+T('Đường hở: ','Open contours: ')+rep.open+
    ' · '+T('Khung bao thay thế: ','Rectangular fallbacks: ')+rep.fallback+'</div>';
   if(rep.estimatedCount)b+='<div>'+T('Vị trí nghi vấn do không đọc được contour: ','Estimated proximity (contour unavailable): ')+rep.estimatedCount+'</div>';
   if(rep.invalid.length)b+='<div>'+T('Không đọc được: ','Unreadable: ')+rep.invalid.length+' ('+h(rep.invalid.slice(0,5).join(', '))+')</div>';
   if(rep.ignored)b+='<div>'+T('Bỏ qua khung dàn: ','Ignored nesting frames: ')+rep.ignored+'</div>';
-  var groups=[['overlap',T('CHỒNG/CHẠM','OVERLAP/CONTACT')],['spacing',T('KHOẢNG CÁCH','CLEARANCE')],['estimated',T('CẦN XÁC MINH','NEEDS REVIEW')]],i,j,rows;
+  var groups=[['overlap',T('XUNG ĐỘT / VÙNG KÍN','OVERLAP / ENCLOSED REGION')],['spacing',T('KHOẢNG CÁCH','CLEARANCE')],['estimated',T('CẦN XÁC MINH','NEEDS REVIEW')]],i,j,rows;
   for(i=0;i<groups.length;i++){
    rows=rep[groups[i][0]];if(!rows.length)continue;
    b+='<div style="margin-top:6px"><b>'+groups[i][1]+'</b></div>';
@@ -3891,7 +3891,7 @@ body .footer{color:#698099!important;font-size:10px!important;padding:7px!import
   if(rep.incomplete)b+='<div><b>'+T('Chưa kiểm tra hết (giới hạn thời gian). Không được coi là đạt.','Scan timed out. Result is NOT certified.')+'</b></div>';
   if(good)b+='<div><b>'+T('✓ Không phát hiện lỗi khoảng cách theo đường bao đã lấy mẫu.','✓ No sampled contour clearance violation detected.')+'</b></div>';
   else b+='<div><b>'+T('⚠ Cần kiểm tra các mục cảnh báo trước khi in.','⚠ Review warnings before printing.')+'</b></div>';
-  b+='<div class="v852-muted">'+T('Chỉ kiểm tra hình học vector đã đọc được; không chứng nhận màu in, DPI hoặc chất liệu. Không sửa thiết kế.','Checks sampled vector geometry only; not color, DPI or material. Does not modify artwork.')+'</div>';
+  b+='<div class="v852-muted">'+T('Kết quả dựa trên đường bao lấy mẫu; vùng kín được coi là vùng cấm. Chưa kiểm tra màu, DPI hoặc chất liệu. Không sửa thiết kế.','Based on sampled contours; enclosed counters are conservatively blocked. Color, DPI and materials are not checked. Artwork is unchanged.')+'</div>';
   return{html:b,good:good};
  }
  function status(msg,level){var e=E('v852Report');if(e){e.className=level?'v852-'+level:'';e.innerHTML=msg;}}
