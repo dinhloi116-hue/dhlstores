@@ -20,6 +20,7 @@ if not errorlevel 1 (
     exit /b 2
 )
 
+if exist "%TEMP%\DHL_NAMESET_COREL2025_REPORT.txt" del /q "%TEMP%\DHL_NAMESET_COREL2025_REPORT.txt" >nul 2>&1
 echo [2/4] Tai bo sua truc tiep tu GitHub DHL Stores...
 echo [3/4] Khi Windows yeu cau quyen Administrator, bam Yes.
 echo.
