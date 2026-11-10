@@ -2,6 +2,7 @@
 /* ES5 / CorelDRAW MSHTML. Old tools stay in DOM; phase-one UI is compact. */
 #v82PanelNameset > *{display:none!important}
 #v82PanelNameset > #v851PairPanel{display:block!important}
+#v82PanelNameset #v837ManualPanel{display:none!important}
 #v82PanelNameset.v851-expanded > *{display:block!important}
 #v82PanelNameset button[data-i18n=alignSelected]{display:none!important}
 #v851PairPanel{padding:10px!important;border:1px solid #cbd8e9!important;background:#fff!important;border-radius:8px!important;margin:9px 0!important;color:#17324f!important}
@@ -209,7 +210,7 @@
   var expanded=(' '+p.className+' ').indexOf(' v851-expanded ')>=0;
   if(expanded)p.className=p.className.replace(/\s*v851-expanded\b/g,'');
   else p.className+=' v851-expanded';
-  more.innerHTML=expanded?T('CÔNG CỤ CŨ: FONT / A3 / LOGO ▾','LEGACY TOOLS ▾'):T('ẨN CÔNG CỤ CŨ ▴','HIDE LEGACY TOOLS ▴');
+  more.innerHTML=expanded?T('CÔNG CỤ CŨ: FONT / A3 ▾','LEGACY FONT / A3 ▾'):T('ẨN CÔNG CỤ CŨ ▴','HIDE LEGACY TOOLS ▴');
  }
  function sourceSync(){
   var mode=E('mode'),gap=E('nameNumberGap');
@@ -258,7 +259,7 @@
   x=E('v851Align');if(x)x.innerHTML=T('2. CĂN CHỈNH','2. ALIGN');
   x=E('v851More');if(x){
    var p=E('v82PanelNameset'),expanded=p&&(' '+p.className+' ').indexOf(' v851-expanded ')>=0;
-   x.innerHTML=expanded?T('ẨN CÔNG CỤ CŨ ▴','HIDE LEGACY TOOLS ▴'):T('CÔNG CỤ CŨ: FONT / A3 / LOGO ▾','LEGACY TOOLS ▾');
+   x.innerHTML=expanded?T('ẨN CÔNG CỤ CŨ ▴','HIDE LEGACY TOOLS ▴'):T('CÔNG CỤ CŨ: FONT / A3 ▾','LEGACY FONT / A3 ▾');
   }
  }
  function boot(){
