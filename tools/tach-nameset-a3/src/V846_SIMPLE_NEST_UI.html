@@ -27,6 +27,7 @@
 </style>
 <script id="dhl-v846-simple-nest" type="text/javascript">
 (function(){
+ var lastRun='';
  function E(x){return document.getElementById(x);}
  function VI(){try{return currentLang!=='en';}catch(e){return true;}}
  function T(vi,en){return VI()?vi:en;}
@@ -83,6 +84,7 @@
  }
  function run(){
   var selection=dataFromCorel(),all=true,i,ok,res='';
+  lastRun='';
   try{
    saveIntoSource();
    if(!selection.length)throw new Error(T('Hãy chọn các số / Group trong CorelDRAW trước.','Select objects or Groups in CorelDRAW first.'));
@@ -93,6 +95,7 @@
     res=E('v838DirectMsg')?(E('v838DirectMsg').innerText||E('v838DirectMsg').textContent||E('v838DirectMsg').innerHTML):'';
     status(res||T('Đã chạy dàn Group.','Group layout finished.'),ok!==false);
     if(ok===false)return false;
+    lastRun='group';
    }else{
     if(!E('v846Loose').checked)throw new Error(T('Có đối tượng rời. Bật “Dàn từng chi tiết rời” hoặc Ctrl+G mỗi bộ rồi chạy lại.','Loose objects found. Enable individual objects or Group each set first.'));
     if(typeof window.V77NestSelected!=='function')throw new Error(T('Thuật toán dàn chưa sẵn sàng.','Nesting engine unavailable.'));
@@ -100,6 +103,7 @@
     res=E('v77NestResult')?(E('v77NestResult').innerText||E('v77NestResult').textContent||E('v77NestResult').innerHTML):'';
     if(/(?:Đã xếp|Packed)\s+\d+/i.test(res)||/✓/.test(res)){
      status(T('✓ Đã dàn ','✓ Packed ')+selection.length+T(' chi tiết. Mở Nâng cao để xem số liệu khổ và chiều dài.',' objects. Open Advanced for detailed material results.'),true);
+     lastRun='loose';
     }else{
      status(res||T('Không có kết quả dàn hợp lệ.','No valid nesting result.'),false);return false;
     }
@@ -109,10 +113,13 @@
  }
  function undo(){
   try{
-   var app=window.external&&window.external.Application?window.external.Application:corelApp();
-   app.ActiveDocument.Undo();
+   if(!lastRun){status(T('Chưa có lượt dàn nào trong bảng này để hoàn tác.','No nesting operation from this panel to undo.'),false);return false;}
+   var mode=lastRun,app=window.external&&window.external.Application?window.external.Application:corelApp();
+   if(mode==='loose'&&typeof window.V77Undo==='function')window.V77Undo();
+   else app.ActiveDocument.Undo();
+   lastRun='';
    try{app.ActiveWindow.Refresh();}catch(e){}
-   status(T('Đã hoàn tác thao tác gần nhất.','Undid the latest action.'),true);
+   status(T('Đã hoàn tác lượt dàn vừa chạy.','Last nesting operation undone.'),true);
    return true;
   }catch(e){status(String(e.message||e),false);return false;}
  }
