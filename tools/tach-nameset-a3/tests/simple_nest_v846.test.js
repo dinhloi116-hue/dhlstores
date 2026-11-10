@@ -6,7 +6,7 @@ const root=path.join(__dirname,'../src');
 const html=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
 const quickSrc=fs.readFileSync(path.join(root,'V846_SIMPLE_NEST_UI.html'),'utf8');
 const groupSrc=fs.readFileSync(path.join(root,'V838_DIRECT_GROUPS.html'),'utf8');
-assert.ok(html.includes('DHL_UI_VERSION=8.48'));
+assert.ok(html.includes('DHL_UI_VERSION=8.49'));
 assert.equal((html.match(/id="dhl-v846-simple-nest"/g)||[]).length,1);
 assert.ok(html.includes('#v77NestCard.v846-simple > *'),'advanced controls hidden only in simple mode');
 assert.ok(html.includes('id="v846Go"'),'one primary action');
@@ -61,7 +61,7 @@ assert.equal(win.__groupTest.canFit(art,c),true,'250mm Group must fit 58cm mater
 assert.equal(win.DHLSimpleNest.undo(),true);
 assert.equal(undoCalls,1,'one grouped dàn should undo one command group');
 ids.v846Advanced.onclick();
-assert.ok(!/v846-simple/.test(card.className),'advanced mode restores full controls');
+assert.ok(!/v846-simple/.test(card.className),'extra settings can expand; duplicate legacy controls remain CSS-hidden');
 ids.v846Advanced.onclick();
 assert.match(card.className,/v846-simple/,'simple mode can be restored');
 selection=[{SizeWidth:35,SizeHeight:50,Shapes:{Count:0}}];
