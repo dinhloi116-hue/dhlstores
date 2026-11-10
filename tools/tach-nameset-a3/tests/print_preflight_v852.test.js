@@ -7,7 +7,7 @@ const dir=path.join(__dirname,'../src');
 const source=fs.readFileSync(path.join(dir,'V852_PRINT_PREFLIGHT.html'),'utf8');
 const geo=fs.readFileSync(path.join(dir,'V826_TRUE_CONTOUR_NEST.html'),'utf8');
 const release=fs.readFileSync(path.join(dir,'DockerUI_CURRENT.html'),'utf8');
-assert.ok(release.includes('DHL_UI_VERSION=8.54'));
+assert.ok(release.includes('DHL_UI_VERSION=8.55'));
 assert.equal((release.match(/id="dhl-v852-preflight"/g)||[]).length,1);
 assert.ok(source.includes('v852Scope'));
 assert.ok(source.includes('v852Pick'));
