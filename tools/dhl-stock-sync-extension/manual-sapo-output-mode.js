@@ -120,6 +120,48 @@
     }
   }
 
+  async function connectSapo(){
+    const button=document.getElementById('manualSapoConnectBtn');
+    const status=document.getElementById('manualSapoConnectStatus');
+    const host=document.getElementById('manualSapoHostInput');
+    const key=document.getElementById('manualSapoApiKeyInput');
+    const secret=document.getElementById('manualSapoApiSecretInput');
+    const location=document.getElementById('manualSapoLocationSelect');
+    if(button)button.disabled=true;
+    if(status)status.textContent='Đang kiểm tra API và danh sách kho Sapo...';
+    try{
+      const response=await send({
+        type:'DHL_SAPO_CONNECT',
+        storeHost:text(host&&host.value),
+        apiKey:text(key&&key.value),
+        apiSecret:text(secret&&secret.value),
+        locationId:Number(location&&!location.hidden&&location.value)||0
+      });
+      if(!response.ok)throw new Error(response.error||'Không thể kết nối Sapo.');
+      const result=response.result||{};
+      if(result.needsLocation){
+        if(!location)throw new Error('Thiếu bộ chọn kho Sapo.');
+        location.innerHTML='<option value="">Chọn đúng kho trước khi đồng bộ</option>'
+          +(result.locations||[]).map(x=>`<option value="${Number(x.id)}">${esc(x.name)}</option>`).join('');
+        location.hidden=false;
+        location.required=true;
+        if(status)status.textContent='Shop có nhiều kho. Chọn kho cần ghi tồn rồi bấm KẾT NỐI.';
+        return;
+      }
+      if(!result.connected)throw new Error('Sapo chưa xác nhận kết nối.');
+      if(key)key.value='';
+      if(secret)secret.value='';
+      if(location){location.hidden=true;location.innerHTML='';}
+      if(status)status.textContent='Đã xác minh kết nối với kho '+text(result.locationName)+'.';
+      const details=document.getElementById('manualSapoConnection');
+      if(details)details.open=false;
+      clearPreview();
+      await refresh();
+    }catch(error){
+      if(status)status.textContent='Không kết nối được: '+String(error&&error.message||error);
+    }finally{if(button)button.disabled=false;}
+  }
+
   async function cancelPush(){
     const btn=document.getElementById('manualSapoCancelBtn');
     if(btn){btn.disabled=true;setText(btn,'ĐANG DỪNG...');}
@@ -154,6 +196,13 @@
       .sapo-preview-line span{word-break:break-word}
       .sapo-preview-heading{font-weight:800;background:#f1f5f9}
       #manualSapoPreviewCancel{margin-top:8px;width:100%}
+      #manualSapoConnection{margin-top:8px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:8px;font-size:11px}
+      #manualSapoConnection summary{font-weight:800;cursor:pointer}
+      .manual-sapo-fields{display:grid;gap:7px;margin-top:9px}
+      .manual-sapo-fields label{font-size:10px;font-weight:750;color:#334155}
+      .manual-sapo-fields input,.manual-sapo-fields select{width:100%;margin-top:3px;min-height:32px;padding:6px 7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box}
+      #manualSapoConnectBtn{min-height:35px;width:100%;font-size:11px;font-weight:850}
+      #manualSapoConnectStatus{margin:7px 0 0;line-height:1.4;color:#475569}
     `;
     document.head.appendChild(style);
   }
@@ -187,10 +236,25 @@
     cancel.addEventListener('click',cancelPush);
     actions.insertAdjacentElement('afterend',cancel);
 
+    const connection=document.createElement('details');
+    connection.id='manualSapoConnection';
+    connection.innerHTML=`
+      <summary>KẾT NỐI / ĐỔI KHO SAPO</summary>
+      <div class="manual-sapo-fields">
+        <label>Địa chỉ shop Sapo<input id="manualSapoHostInput" type="text" placeholder="ten-shop.mysapo.net" autocomplete="off"></label>
+        <label>API key<input id="manualSapoApiKeyInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
+        <label>API secret<input id="manualSapoApiSecretInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
+        <label>Kho Sapo<select id="manualSapoLocationSelect" hidden></select></label>
+        <button id="manualSapoConnectBtn" type="button" class="primary">KẾT NỐI & XÁC MINH KHO</button>
+      </div>
+      <p id="manualSapoConnectStatus">Thông tin chỉ lưu trong Chrome của extension; không đưa API key/secret lên GitHub.</p>`;
+    cancel.insertAdjacentElement('afterend',connection);
+    connection.querySelector('#manualSapoConnectBtn')?.addEventListener('click',connectSapo);
+
     const note=document.createElement('div');
     note.id='manualSapoOutputState';
     note.className='manual-output-state';
-    cancel.insertAdjacentElement('afterend',note);
+    connection.insertAdjacentElement('afterend',note);
 
     const previewBox=document.createElement('div');
     previewBox.id='manualSapoPreview';
@@ -239,6 +303,10 @@
     const sapo=s.config&&s.config.sapo||{};
     const verified=Boolean(sapo.verifiedAt&&sapo.locationId);
     const hasCredentials=Boolean(text(sapo.storeHost)&&text(sapo.apiKey)&&text(sapo.apiSecret));
+    const hostInput=document.getElementById('manualSapoHostInput');
+    if(hostInput&&document.activeElement!==hostInput&&!hostInput.value){
+      hostInput.value=text(sapo.storeHost);
+    }
     const count=s.manualEntries.length;
     const rows=s.manualEntries.reduce((sum,x)=>sum+Number(x.rowCount||(x.rows||[]).length||0),0);
     const queue=s.queue&&s.queue.source==='manual'?s.queue:null;
@@ -252,7 +320,9 @@
       setText(push,pendingPreview
         ?`XÁC NHẬN ĐẨY (${Number(pendingPreview.summary&&pendingPreview.summary.count||rows)} SKU)`
         :(rows?`XEM TRƯỚC SAPO (${rows} DÒNG)`:'XEM TRƯỚC SAPO'));
-      push.disabled=!allVerified||busy||(!verified&&!hasCredentials);
+      push.disabled=!allVerified||busy||!hasCredentials;
+      push.title=!hasCredentials?'Mở KẾT NỐI / ĐỔI KHO SAPO, nhập API key và secret để kích hoạt đẩy trực tiếp.'
+        :!allVerified?'Kết quả quét cần đủ SKU/size/màu.':'Xem trước rồi xác nhận để đẩy trực tiếp.';
     }
     if(cancel){
       cancel.hidden=!busy;
@@ -289,7 +359,9 @@
     }else if(verified||hasCredentials){
       setState(`${count} hồ sơ • ${rows} dòng sẵn sàng. Xem trước và xác nhận trước khi đẩy Sapo.`,'ok');
     }else{
-      setState('Đã có dữ liệu quét. Có thể tải Excel ngay; đẩy trực tiếp cần kết nối Sapo.','ok');
+      setState('Đã có dữ liệu quét. Mở KẾT NỐI / ĐỔI KHO SAPO bên dưới, nhập API key + secret và xác minh kho để bật nút đẩy trực tiếp.','bad');
+      const connection=document.getElementById('manualSapoConnection');
+      if(connection)connection.open=true;
     }
   }
 
