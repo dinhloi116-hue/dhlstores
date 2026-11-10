@@ -16,8 +16,8 @@
  function optimize(items,c,baseline){
   var G=window.DHLContourGeometry,mode=configOrDefault(c),maxMs=timeBudget(mode),
       started=now(),deadline=started+maxMs,priorOrder=window.DHL_ORDER,priorDeadline=window.DHL_SEARCH_DEADLINE,
-      tries=0,improvements=0,error='',cache={},original=baseline, best=baseline,angles=c.rotate?[0,90,180,270]:[0],
-      kinds=mode==='quick'?['area']:['area','height','width'],raw=items.slice(0),i,j,k;
+      tries=0,improvements=0,error='',cache={},original=baseline, best=baseline,priorFallback=window.DHL_RECT_FALLBACKS,fallbacks=0,angles=c.rotate?[0,90,180,270]:[0],
+      kinds=mode==='quick'?['area']:mode==='deep'?['area','height','width','small','slender','original']:['area','height','width','small'],raw=items.slice(0),i,j,k;
   if(!G||typeof G.pack!=='function'||typeof G.footprintAt!=='function'||!raw.length){
    original.deepInfo={mode:mode,trials:0,elapsed:0,saved:0,status:'missing contour engine'};
    return original;
@@ -111,8 +111,9 @@
    return bestLocal;
   }
   try{
+   window.DHL_RECT_FALLBACKS=0;
    if(!number(baseline.total)||!baseline.bins||!baseline.bins.length)throw new Error('Invalid baseline layout');
-   var maxTrials=mode==='quick'?15:mode==='deep'?140:45,all=[],b,one,updated=[],candidate,total;
+   var maxTrials=mode==='quick'?15:mode==='deep'?220:65,all=[],b,one,updated=[],candidate,total;
    for(i=0;i<baseline.bins.length;i++)
     for(j=0;j<baseline.bins[i].places.length;j++)all.push(baseline.bins[i].places[j]);
    // Attempt a single true-contour bin even where rectangular nesting
@@ -139,6 +140,8 @@
    if(!better(best,baseline))best=baseline;
   }catch(e){error=String(e.message||e);best=baseline;}
   finally{
+   fallbacks=Number(window.DHL_RECT_FALLBACKS)||0;
+   window.DHL_RECT_FALLBACKS=priorFallback;
    window.DHL_ORDER=priorOrder;window.DHL_SEARCH_DEADLINE=priorDeadline;
   }
   var saved=baseline.total-best.total;
@@ -146,7 +149,7 @@
   best.deepInfo={mode:mode,trials:tries,elapsed:now()-started,
                  saved:Math.max(0,saved),baseline:baseline.total,
                  framesBefore:baseline.bins.length,framesAfter:best.bins.length,
-                 status:error||'complete',improvements:improvements};
+                 status:error||'complete',improvements:improvements,rectangleFallbacks:fallbacks,certified:true};
   best.contourImproved=best!==baseline?improvements:0;
   return best;
  }
