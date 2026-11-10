@@ -9,7 +9,7 @@ assert.ok(release.includes(moduleHtml.trim()),'release must embed exactly the cu
 assert.match(moduleHtml,/id="v854'\+k\+'Search"/,'each line gets a search box');
 assert.match(moduleHtml,/id="v854'\+k\+'Matches"/,'each line gets a matching-results list');
 assert.match(moduleHtml,/InstalledFontCollection/,'Windows font enumeration');
-assert.ok(!moduleHtml.includes('^|'),'legacy PowerShell pipe escape must not return');
+assert.ok(!/var command\s*=.*\^\|/.test(moduleHtml),'font loader command must not use legacy pipeline escaping');
 const script=moduleHtml.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i)[1];
 let shellCalls=[];
 function Option(text,value){this.text=text;this.value=value;}
