@@ -34,12 +34,13 @@ function shapes(a){
  return arr;
 }
 function config(){
- var W=N('v77NestW',580),H=N('v77NestH',2000),gap=N('v77NestGap',5);
- var mt=N('v77MarginT',0),mb=N('v77MarginB',0),ml=N('v77MarginL',0),mr=N('v77MarginR',0);
+ // UI inputs are centimetres; Corel geometry and nesting engine use millimetres.
+ var W=N('v77NestW',58)*10,H=N('v77NestH',2000)*10,gap=N('v77NestGap',0.5)*10;
+ var mt=N('v77MarginT',0)*10,mb=N('v77MarginB',0)*10,ml=N('v77MarginL',0)*10,mr=N('v77MarginR',0)*10;
  var rotate=E('v838Rotate')&&E('v838Rotate').value==='auto',order=E('v838Order')?E('v838Order').value:'visual';
  var mode=E('v838Mode')?E('v838Mode').value:'pack',mirror=!!(E('v838Mirror')&&E('v838Mirror').value==='yes');
  if(!(W>0&&H>0&&gap>=0&&mt>=0&&mb>=0&&ml>=0&&mr>=0&&W>ml+mr&&H>mt+mb))throw new Error(T('Khổ, lề hoặc khoảng cách không hợp lệ.','Invalid material size, margins or gap.'));
- return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,contour:!!(E('v838Contour')&&E('v838Contour').checked),deepMode:(E('v845Effort')?E('v845Effort').value:'balanced'),frameGap:N('v77FrameGapInput',0)};
+ return{W:W,H:H,gap:gap,mt:mt,mb:mb,ml:ml,mr:mr,usableW:W-ml-mr,usableH:H-mt-mb,rotate:rotate,order:order,mode:mode,mirror:mirror,contour:!!(E('v838Contour')&&E('v838Contour').checked),deepMode:(E('v845Effort')?E('v845Effort').value:'balanced'),frameGap:N('v77FrameGapInput',0)*10};
 }
 function shapeSize(s){return{w:Math.abs(Number(s.SizeWidth)),h:Math.abs(Number(s.SizeHeight))};}
 function canFit(s,c){var d=shapeSize(s);return(d.w<=c.usableW+.001&&d.h<=c.usableH+.001)||(c.rotate&&d.h<=c.usableW+.001&&d.w<=c.usableH+.001);}
