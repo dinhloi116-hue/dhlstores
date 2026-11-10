@@ -115,7 +115,7 @@
  function inspect(input,gap,engine,maxMs){
   var started=now(),objects=[],ignoredCount=0,invalid=0,fallbacks=0,open=0,i,j,k,z,x,fx,bb,fg,leaves,lp,pts,
       report={items:0,ignored:0,open:0,fallback:0,overlap:[],spacing:[],estimated:[],
-       incomplete:false,invalid:[],offenders:[],checkedPairs:0,gap:gap},offenderIndices={};
+       incomplete:false,invalid:[],offenders:[],checkedPairs:0,gap:gap,overlapCount:0,spacingCount:0,estimatedCount:0},offenderIndices={};
   if(!engine||typeof engine.footprintAt!=='function')throw new Error(T('Chưa tải được engine contour.','Contour engine unavailable.'));
   if(!finite(gap)||gap<0||gap>500)throw new Error(T('Khoảng cách cần kiểm tra không hợp lệ.','Invalid clearance.'));
   if(input.length>250)throw new Error(T('Tối đa 250 đối tượng mỗi lượt; hãy chia vùng chọn.','Maximum 250 objects per scan; split the selection.'));
@@ -155,24 +155,25 @@
     if(!pair.close)continue;
     var detail={a:objects[i].name,b:objects[j].name,dist:pair.dist};
     var group=pair.estimated?'estimated':pair.overlap?'overlap':'spacing';
+    report[group+'Count']++;
     if(report[group].length<35)report[group].push(detail);
     offenderIndices[objects[i].sourceIndex]=true;offenderIndices[objects[j].sourceIndex]=true;
    }
    if(report.incomplete)break;
   }
-  for(i=0;i<objects.length;i++)if(offenderIndices[objects[i].sourceIndex]||objects[i].fallback)report.offenders.push(objects[i].shape);
-  for(i=0;i<report.invalid.length;i++){} // invalid names remain visible in the report.
+  for(i=0;i<input.length;i++)if(offenderIndices[i])report.offenders.push(input[i]);
+  for(i=0;i<objects.length;i++)if(objects[i].fallback&&!offenderIndices[objects[i].sourceIndex])report.offenders.push(objects[i].shape);
   return report;
  }
  function render(rep){
-  var good=rep.overlap.length===0&&rep.spacing.length===0&&rep.estimated.length===0&&
+  var good=rep.overlapCount===0&&rep.spacingCount===0&&rep.estimatedCount===0&&
       rep.open===0&&rep.fallback===0&&rep.invalid.length===0&&!rep.incomplete;
   var b='<b>'+h(T('Đã quét ','Scanned '))+rep.items+h(T(' đối tượng',' objects'))+'</b> · '+round(rep.gap)+' mm';
-  b+='<div>'+T('Chồng/chạm: ','Overlap/touch: ')+rep.overlap.length+
-   ' · '+T('Thiếu khoảng cách: ','Clearance violations: ')+rep.spacing.length+'</div>';
+  b+='<div>'+T('Chồng/chạm: ','Overlap/touch: ')+rep.overlapCount+
+   ' · '+T('Thiếu khoảng cách: ','Clearance violations: ')+rep.spacingCount+'</div>';
   b+='<div>'+T('Đường hở: ','Open contours: ')+rep.open+
    ' · '+T('Khung bao thay thế: ','Rectangular fallbacks: ')+rep.fallback+'</div>';
-  if(rep.estimated.length)b+='<div>'+T('Vị trí nghi vấn do không đọc được contour: ','Estimated proximity (contour unavailable): ')+rep.estimated.length+'</div>';
+  if(rep.estimatedCount)b+='<div>'+T('Vị trí nghi vấn do không đọc được contour: ','Estimated proximity (contour unavailable): ')+rep.estimatedCount+'</div>';
   if(rep.invalid.length)b+='<div>'+T('Không đọc được: ','Unreadable: ')+rep.invalid.length+' ('+h(rep.invalid.slice(0,5).join(', '))+')</div>';
   if(rep.ignored)b+='<div>'+T('Bỏ qua khung dàn: ','Ignored nesting frames: ')+rep.ignored+'</div>';
   var groups=[['overlap',T('CHỒNG/CHẠM','OVERLAP/CONTACT')],['spacing',T('KHOẢNG CÁCH','CLEARANCE')],['estimated',T('CẦN XÁC MINH','NEEDS REVIEW')]],i,j,rows;
@@ -206,7 +207,7 @@
    res=inspect(shapes,gap(),window.DHLContourGeometry,9000);
    last={report:res,shapes:shapes};
    var output=render(res);
-   status(output.html,output.good?'good':(res.overlap.length||res.spacing.length?'error':'warning'));
+   status(output.html,output.good?'good':(res.overlapCount||res.spacingCount?'error':'warning'));
    if(pick&&res.offenders.length)pick.className='v852-visible';
    return res;
   }catch(e){status('⚠ '+h(e.message||e),'error');return null;}
