@@ -153,8 +153,36 @@ function xCandidates(it,placed,W,g,currentX){
  return xs;
 }
 function firstYAtX(x,it,placed,H,g,limit){
- var coarse=Math.max(.6,Math.min(2,g>0?g/3:1.2)),y=0,lastBad=-coarse,hi=Math.min(H-it.h,limit),fine,yy;
- for(y=0;y<=hi+.001;y+=coarse){if(valid(x,y,it,placed,1e30,H,g)){fine=Math.max(0,lastBad);for(yy=fine;yy<=y+.001;yy+=.15)if(valid(x,yy,it,placed,1e30,H,g))return yy;return y;}lastBad=y;}
+ var hi=Math.min(H-it.h,limit),cand=[],seen={},i,j,k,p,a,b,v,step,yy;
+ function add(y){
+  if(!isFinite(Number(y))||y<-.001||y>hi+.001)return;
+  y=Math.max(0,Math.min(hi,Number(y)));var key=Math.round(y*4)/4;
+  if(!seen[key]){seen[key]=1;cand.push(key);}
+ }
+ add(0);
+ for(i=0;i<placed.length;i++){
+  p=placed[i];
+  if(x+it.w+g<p.x||p.x+p.item.w+g<x)continue;
+  add(p.y+p.item.h+g);add(p.y-it.h-g);add(p.y+p.item.h-it.h+g);
+  // Vertex contact heuristics inspired by SVGnest MIT; placement safety is
+  // still enforced by the independent filled-geometry collision validator.
+  var as=it.anchors,bs=p.item.anchors;
+  var astep=Math.max(1,Math.ceil(as.length/14)),bstep=Math.max(1,Math.ceil(bs.length/14));
+  for(j=0;j<as.length;j+=astep)for(k=0;k<bs.length;k+=bstep){
+   a=as[j];b=bs[k];v=p.y+b.y-a.y;add(v);add(v+g);add(v-g);
+  }
+ }
+ cand.sort(function(a,b){return a-b;});
+ for(i=0;i<cand.length;i++)if(valid(x,cand[i],it,placed,1e30,H,g))return cand[i];
+ var coarse=Math.max(.7,Math.min(2,g>0?g/3:1.2)),lastBad=-coarse;
+ for(yy=0;yy<=hi+.001;yy+=coarse){
+  if(valid(x,yy,it,placed,1e30,H,g)){
+   for(v=Math.max(0,lastBad);v<=yy+.001;v+=.15)
+    if(valid(x,v,it,placed,1e30,H,g))return v;
+   return yy;
+  }
+  lastBad=yy;
+ }
  return null;
 }
 function placedDepth(placed){var d=0,i;for(i=0;i<placed.length;i++)d=Math.max(d,placed[i].y+placed[i].item.h);return d;}
