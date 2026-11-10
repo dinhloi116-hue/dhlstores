@@ -5,7 +5,7 @@ const root=path.join(__dirname,'../src');
 const src=fs.readFileSync(path.join(root,'V851_SAFE_NAMESET.html'),'utf8');
 const ui=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
 const js=src.match(/<script\b[^>]*>([\s\S]*?)<\/script>/)[1];
-assert.ok(ui.includes('DHL_UI_VERSION=8.54'));
+assert.ok(ui.includes('DHL_UI_VERSION=8.55'));
 assert.ok(ui.includes('id="dhl-v851-safe-nameset"'));
 assert.ok(src.includes('#v82PanelNameset > *{display:none!important}'));
 function run(shapes,mode){
