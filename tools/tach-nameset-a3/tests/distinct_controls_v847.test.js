@@ -14,7 +14,7 @@ assert.ok(source.includes('v847-mode-row'));
 assert.ok(source.includes('display:none!important'));
 assert.ok(!source.includes('<label class="v846-check"><input type="checkbox" id="v846Rotate"'));
 function mount(settings){
- const ids={},data=Object.assign({},settings||{}),state={group:0,loose:0},selection=[{Shapes:{Count:2},SizeWidth:200,SizeHeight:280}];
+ const ids={},data=Object.assign({},settings||{}),state={group:0,loose:0};let selection=[{Shapes:{Count:2},SizeWidth:200,SizeHeight:280}];
  function node(id){return ids[id]={id,className:'',value:'',checked:false,style:{},innerHTML:'',innerText:'',textContent:''};}
  const card=node('v77NestCard');card.className='v77-card';card.insertBefore=q=>{ids[q.id]=q;};
  for(const [id,value] of Object.entries({v77NestW:'58',v77NestH:'2000',v77NestGap:'0.5',v77FrameGapInput:'0',
