@@ -14,7 +14,7 @@ assert.ok(ui.includes('DHLDeepContourSearch.optimize(items,c,plan)'));
 assert.ok(ui.includes('<span class="ver">v8.46</span>'));
 const versions=[...ui.matchAll(/\.innerHTML\s*=\s*['"]v(\d+\.\d+)['"]/g)];
 assert.ok(versions.length>=20);
-for(const v of versions)assert.equal(v[1],'8.45','no older startup version timer: '+v[0]);
+for(const v of versions)assert.equal(v[1],'8.46','no older startup version timer: '+v[0]);
 for(const [i,b] of [...ui.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].entries())
  assert.doesNotThrow(()=>new Function(b[1]),'Corel MSHTML JavaScript block '+i+' compiles');
 function fake(rotate,mode,throws){
