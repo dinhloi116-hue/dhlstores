@@ -279,7 +279,7 @@
   return s;
  }
  function make(p){
-  var a=app(),d=a.ActiveDocument,page=a.ActivePage,old=d.Unit,grouped=false,cmd=false,items=[],logos=[],shapes=[],r,group,n=null,nm=null,foot=null,i,baseX,baseY,upper,lower,doLogo=false;
+  var a=app(),d=a.ActiveDocument,page=a.ActivePage,old=d.Unit,imageSession=null,grouped=false,cmd=false,items=[],logos=[],shapes=[],r,group,n=null,nm=null,foot=null,i,baseX,baseY,upper,lower,doLogo=false;
   if(!p)p=read();
   // Preflight first: check captured logo source while engine is already enabled.
   if(p.logo){
@@ -292,7 +292,7 @@
   try{
    d.Unit=3;
    if(!page||!page.ActiveLayer)throw error('Không có trang hoặc layer đang hoạt động.','No active page or layer.');
-   d.BeginCommandGroup('DHL Nameset V8.56 - Create');cmd=true;
+   d.BeginCommandGroup('DHL Nameset V8.57 - Create');cmd=true;
    var layer=page.ActiveLayer;baseX=Number(page.CenterX);baseY=Number(page.CenterY);
    if(!isFinite(baseX)||!isFinite(baseY))throw error('Không đọc được tâm trang.','Invalid page coordinates.');
    if(p.number){n=createText(layer,p.number,p,'NUMBER');shapes.push(n);n.CenterX=baseX;n.CenterY=baseY;}
@@ -309,9 +309,20 @@
     logos=window.DHLNumberLogo.intoNumber(n,p.number.text,layer);
     if(!logos.length)throw error('Không chèn được logo chân số.','Could not insert digit logo.');
    }
+   // Image fill uses the same shared settings as Excel batches.
+   if(window.DHLImageFill){
+    var imageConfig=window.DHLImageFill.read();
+    if(imageConfig.enabled){
+     imageSession=window.DHLImageFill.session(a,layer,imageConfig);
+     if(nm)window.DHLImageFill.apply(imageSession,nm,'name');
+     if(n)window.DHLImageFill.apply(imageSession,n,'number');
+     if(foot)window.DHLImageFill.apply(imageSession,foot,'footer');
+     window.DHLImageFill.finish(imageSession);imageSession=null;
+    }
+   }
    r=a.CreateShapeRange();for(i=0;i<shapes.length;i++)r.Add(shapes[i]);for(i=0;i<logos.length;i++)r.Add(logos[i]);
    group=r.Group();if(!group)throw error('Không gom được nameset thành Group.','Could not group the nameset.');
-   try{group.Name='DHL_NAMESET_V856';}catch(e){}
+   try{group.Name='DHL_NAMESET_V857';}catch(e){}
    if(p.mirror)group.Flip(1);
    group.CenterX=baseX;group.CenterY=baseY;
    d.EndCommandGroup();cmd=false;grouped=true;
@@ -324,6 +335,7 @@
    try{remember(recent);repopulate();}catch(historyError){/* Artwork was committed: do not report a false creation failure. */}
    return{success:true,count:shapes.length,logos:logos.length,mirror:p.mirror,group:group};
   }catch(e){
+   if(imageSession&&window.DHLImageFill)try{window.DHLImageFill.abort(imageSession);}catch(abortError){}
    if(cmd){try{d.EndCommandGroup();cmd=false;d.Undo();}catch(rollback){throw error('Tạo lỗi và không hoàn tác được; kiểm tra file gốc.','Creation failed and undo failed; inspect document.');}}
    throw e;
   }finally{try{d.Unit=old;}catch(restore){}}
@@ -468,7 +480,7 @@
   return true;
  }
  function boot(){var n=0;function tick(){if(mount()||n++>70)return;setTimeout(tick,250);}tick();}
- window.DHLNamesetComposer={mount:mount,read:read,make:make,run:run,remember:remember,recents:function(){return recents.slice(0);},fontSet:fontSet,loadFonts:fonts,searchFonts:renderMatches,chooseFont:selectFont,installedFonts:function(){return knownFonts.slice(0);},version:'8.56'};
+ window.DHLNamesetComposer={mount:mount,read:read,make:make,run:run,remember:remember,recents:function(){return recents.slice(0);},fontSet:fontSet,loadFonts:fonts,searchFonts:renderMatches,chooseFont:selectFont,installedFonts:function(){return knownFonts.slice(0);},version:'8.57'};
  if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1750);},false);
  else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1750);});
  else setTimeout(boot,1850);
