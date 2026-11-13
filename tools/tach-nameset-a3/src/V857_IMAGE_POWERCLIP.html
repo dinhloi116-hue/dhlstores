@@ -25,6 +25,15 @@
  function trim(v){return String(v===null||v===undefined?'':v).replace(/^\s+|\s+$/g,'');}
  function esc(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
  function error(vi,en){return new Error(T(vi,en));}
+ function sameDocument(doc){
+  if(!sourceDoc)return false;
+  if(sourceDoc===doc)return true;
+  try{
+   var a=trim(sourceDoc.FullFileName||sourceDoc.Name),
+       b=trim(doc.FullFileName||doc.Name);
+   return !!(a&&b&&a===b);
+  }catch(e){return false;}
+ }
  function app(){var a=window.external&&window.external.Application;if(!a&&typeof corelApp==='function')a=corelApp();if(!a||!a.ActiveDocument)throw error('Chưa mở tài liệu CorelDRAW.','Open a CorelDRAW document.');return a;}
  function status(v){var s=E('v857Status');if(s)s.innerHTML=esc(v);}
  function enabled(){var x=E('v857On');return !!(x&&x.checked);}
@@ -35,6 +44,7 @@
   updateExcelNotice();
  }
  function readSettings(){
+  if(!mounted&&E('v854Composer'))mount();
   if(!enabled())return{enabled:false};
   var count=Number((E('v857Count')||{}).value),parts={name:!!(E('v857Name')&&E('v857Name').checked),
       number:!!(E('v857Number')&&E('v857Number').checked),footer:!!(E('v857Footer')&&E('v857Footer').checked)};
@@ -42,7 +52,7 @@
   if(!parts.name&&!parts.number&&!parts.footer)throw error('Chọn ít nhất một phần TÊN / SỐ / DÒNG 3 để lồng ảnh.','Choose at least one text/number/third-line target.');
   var fp=E('v857File'),path=fp?trim(fp.value):'',a=app();
   if(mode==='selected'){
-   if(!source||sourceDoc!==a.ActiveDocument)throw error('Ảnh nguồn không còn trong tài liệu hiện tại. Hãy LẤY ẢNH lại.','Captured image is not in the current document. Capture it again.');
+   if(!source||!sameDocument(a.ActiveDocument))throw error('Ảnh nguồn không còn trong tài liệu hiện tại. Hãy LẤY ẢNH lại.','Captured image is not in the current document. Capture it again.');
    try{if(!(Math.abs(Number(source.SizeWidth))>0&&Math.abs(Number(source.SizeHeight))>0))throw 0;}
    catch(e){throw error('Ảnh nguồn đã bị xóa hoặc có kích thước không hợp lệ.','Captured source image no longer exists or has invalid dimensions.');}
   }else{
@@ -65,7 +75,7 @@
   var src,temp=false;
   if(cfg.mode==='selected'){
    src=source;
-   if(!src||sourceDoc!==a.ActiveDocument)throw error('Cần LẤY ẢNH từ tài liệu đang mở.','Capture source in current document.');
+   if(!src||!sameDocument(a.ActiveDocument))throw error('Cần LẤY ẢNH từ tài liệu đang mở.','Capture source in current document.');
   }else{
    var file=cfg.path;
    if(!file)throw error('Chưa chọn ảnh.','Select an image file.');
@@ -147,7 +157,7 @@
   E('v857Name').onchange=refresh;E('v857Number').onchange=refresh;E('v857Footer').onchange=refresh;
   E('v857File').onchange=function(){mode='file';status(T('Ảnh đã chọn: ','Selected image: ')+this.value);};
   E('v857Capture').onclick=capture;
-  refresh();mounted=true;return true;
+  mounted=true;refresh();return true;
  }
  function excelNotice(){var box=E('v86ExcelBox'),hint=E('v857ExcelNotice'),line;
   if(!box)return false;if(hint)return true;line=document.createElement('div');line.id='v857ExcelNotice';
