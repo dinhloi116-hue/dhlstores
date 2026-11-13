@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.join(__dirname,'../src');
 const html=fs.readFileSync(path.join(root,'V854_NAMESET_COMPOSER.html'),'utf8');
 const release=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
-assert.match(release,/DHL_UI_VERSION=8\.56/);
+assert.match(release,/DHL_UI_VERSION=8\.57/);
 assert.ok(release.includes(html.trim()));
 assert.equal((release.match(/id="dhl-v854-composer"/g)||[]).length,1);
 for(const key of ['Name','Number','Footer']){
@@ -74,4 +74,4 @@ fields.v854NumberEnabled.checked=true;fields.v854NumberText.value='';
 assert.throws(()=>composer.read(),/có nội dung|needs text/i,'checked empty row is rejected');
 fields.v854NumberText.value='10';fields.v854Logo.checked=true;fields.v854NumberEnabled.checked=false;fields.v854FooterEnabled.checked=true;
 assert.throws(()=>composer.read(),/chèn logo|enable NUMBER/i,'no digit logo without enabled number');
-console.log('PASS V8.56: 3 independent checkboxes, 3 color/outline sets, only enabled artwork, third-only, safe missing inputs');
+console.log('PASS V8.57: 3 independent checkboxes, 3 color/outline sets, only enabled artwork, third-only, safe missing inputs');
