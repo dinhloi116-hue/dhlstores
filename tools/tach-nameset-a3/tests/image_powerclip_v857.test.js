@@ -69,4 +69,17 @@ cells.v857Count.value='1';cells.v857Number.checked=false;
 assert.throws(()=>api.read(),/ít nhất một/);
 cells.v857Number.checked=true;cells.v857File.value='C:\\fakepath\\pattern.png';
 assert.throws(()=>api.read(),/đường dẫn đầy đủ/);
+// Capture an already selected Corel image. The original must never be deleted.
+const deletedBefore=deleted,importsBefore=imports;
+assert.equal(api.capture(),true);
+corelDoc.Name='Test.cdr';
+// COM may return a new wrapper for the same document on subsequent calls.
+corel.ActiveDocument={Name:'Test.cdr'};
+const selectedCfg=api.read();assert.equal(selectedCfg.mode,'selected');
+const selectedSession=api.session(corel,layer,selectedCfg);
+assert.equal(selectedSession.temp,false);
+assert.equal(api.apply(selectedSession,text,'number'),1);
+api.finish(selectedSession);
+assert.equal(deleted,deletedBefore,'captured Corel source remains intact');
+assert.equal(imports,importsBefore,'selected source does not trigger an import');
 console.log('PASS V8.57 PowerClip: local image, exact repeat X, 3 independent targets, reuse in batch, cleanup and validation');
