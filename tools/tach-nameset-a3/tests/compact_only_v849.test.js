@@ -5,7 +5,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.join(__dirname,'../src');
 const source=fs.readFileSync(path.join(root,'V846_SIMPLE_NEST_UI.html'),'utf8');
 const release=fs.readFileSync(path.join(root,'DockerUI_CURRENT.html'),'utf8');
-assert.ok(release.includes('DHL_UI_VERSION=8.56'));
+assert.ok(release.includes('DHL_UI_VERSION=8.57'));
 assert.ok(source.includes('#v77NestCard > *{display:none!important}'));
 assert.ok(source.includes('#v77NestCard > #v846QuickPanel{display:block!important}'));
 assert.ok(source.includes('#v846QuickPanel.v849-extra-open #v849ExtraPanel{display:block!important}'));
