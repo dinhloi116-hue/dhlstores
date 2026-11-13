@@ -1,0 +1,162 @@
+<!-- DHL Nameset V8.57: shared image PowerClip for single and Excel -->
+<style id="dhl-v857-image-style">
+#v857ImagePanel{padding:9px!important;margin:9px 0!important;border:1px solid #c5d7eb!important;border-radius:7px!important;background:#f9fbff!important;color:#1a3c5f!important}
+#v857ImagePanel .v857-title{font-weight:800!important;font-size:12px!important;margin:0 0 5px!important;color:#114a80!important}
+#v857ImagePanel .v857-help{font-size:10px!important;line-height:1.4!important;color:#526c86!important;margin:4px 0 8px!important}
+#v857ImagePanel input[type=checkbox]{width:auto!important;min-height:0!important;vertical-align:middle!important;margin:0 4px 0 0!important}
+#v857ImagePanel label{display:block!important;font-size:11px!important;margin:6px 0!important;color:#23496e!important}
+#v857ImagePanel input[type=file]{width:100%!important;max-width:100%!important;font-size:11px!important;background:white!important;padding:5px!important;border:1px solid #b7cce3!important}
+#v857ImagePanel input[type=number]{width:95px!important;min-height:30px!important;padding:4px!important;font-size:11px!important}
+#v857ImagePanel button{font-size:10px!important;font-weight:700!important;border:1px solid #a8c3df!important;border-radius:5px!important;background:#e9f3ff!important;color:#144b82!important;padding:6px!important;min-height:29px!important}
+#v857ImagePanel #v857Capture{width:100%!important;margin-top:5px!important}
+#v857ImagePanel .v857-row{display:table!important;width:100%!important}
+#v857ImagePanel .v857-row>span{display:table-cell!important;vertical-align:middle!important}
+#v857ImagePanel .v857-targets{padding:5px!important;background:#fff!important;border:1px solid #e1e9f3!important;border-radius:5px!important}
+#v857ImagePanel .v857-targets label{display:inline-block!important;margin:3px 7px 3px 0!important;font-size:10px!important}
+#v857ImagePanel #v857Status{font-size:10px!important;color:#335c82!important;word-wrap:break-word!important;margin:5px 0!important;line-height:1.4!important}
+#v857ImagePanel .v857-off{display:none!important}
+#v857ExcelNotice{font-size:10px!important;line-height:1.4!important;padding:6px!important;background:#f4f8fd!important;color:#285780!important;border:1px solid #d4e1ef!important;border-radius:5px!important;margin:5px 0!important}
+</style>
+<script id="dhl-v857-image-powerclip" type="text/javascript">
+(function(){
+ var source=null,sourceDoc=null,mode='file',mounted=false,latest=null;
+ function E(id){return document.getElementById(id);}
+ function T(vi,en){try{return currentLang==='en'?en:vi;}catch(e){return vi;}}
+ function trim(v){return String(v===null||v===undefined?'':v).replace(/^\s+|\s+$/g,'');}
+ function esc(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+ function error(vi,en){return new Error(T(vi,en));}
+ function app(){var a=window.external&&window.external.Application;if(!a&&typeof corelApp==='function')a=corelApp();if(!a||!a.ActiveDocument)throw error('Chưa mở tài liệu CorelDRAW.','Open a CorelDRAW document.');return a;}
+ function status(v){var s=E('v857Status');if(s)s.innerHTML=esc(v);}
+ function enabled(){var x=E('v857On');return !!(x&&x.checked);}
+ function refresh(){var x=E('v857Details');if(x)x.className=enabled()?'':'v857-off';try{
+   var value={on:enabled(),count:Number(E('v857Count').value)||1,name:!!E('v857Name').checked,number:!!E('v857Number').checked,footer:!!E('v857Footer').checked};
+   localStorage.setItem('dhl_v857_image_settings',JSON.stringify(value));
+  }catch(e){}
+  updateExcelNotice();
+ }
+ function readSettings(){
+  if(!enabled())return{enabled:false};
+  var count=Number((E('v857Count')||{}).value),parts={name:!!(E('v857Name')&&E('v857Name').checked),
+      number:!!(E('v857Number')&&E('v857Number').checked),footer:!!(E('v857Footer')&&E('v857Footer').checked)};
+  if(!isFinite(count)||Math.floor(count)!==count||count<1||count>64)throw error('Số lần lặp phải là số nguyên từ 1 đến 64.','Repeat count must be an integer from 1 to 64.');
+  if(!parts.name&&!parts.number&&!parts.footer)throw error('Chọn ít nhất một phần TÊN / SỐ / DÒNG 3 để lồng ảnh.','Choose at least one text/number/third-line target.');
+  var fp=E('v857File'),path=fp?trim(fp.value):'',a=app();
+  if(mode==='selected'){
+   if(!source||sourceDoc!==a.ActiveDocument)throw error('Ảnh nguồn không còn trong tài liệu hiện tại. Hãy LẤY ẢNH lại.','Captured image is not in the current document. Capture it again.');
+   try{if(!(Math.abs(Number(source.SizeWidth))>0&&Math.abs(Number(source.SizeHeight))>0))throw 0;}
+   catch(e){throw error('Ảnh nguồn đã bị xóa hoặc có kích thước không hợp lệ.','Captured source image no longer exists or has invalid dimensions.');}
+  }else{
+   if(!path||/^[A-Za-z]:\\fakepath\\/i.test(path))throw error('Cần chọn ảnh từ ổ đĩa (đường dẫn đầy đủ) hoặc bấm LẤY ẢNH ĐANG CHỌN trong Corel.','Select an image file with a full local path, or capture a selected image in Corel.');
+   if(!/\.(png|jpe?g|bmp|gif|tiff?|webp)$/i.test(path))throw error('Ảnh hỗ trợ: PNG, JPG, BMP, GIF, TIFF, WEBP.','Supported images: PNG, JPG, BMP, GIF, TIFF, WEBP.');
+  }
+  return{enabled:true,count:count,name:parts.name,number:parts.number,footer:parts.footer,mode:mode,path:mode==='file'?path:null};
+ }
+ function capture(){
+  try{var a=app(),sr=a.ActiveSelectionRange;if(!sr||Number(sr.Count)!==1)throw error('Hãy chọn đúng 1 ảnh/đối tượng trong Corel.','Select exactly one image or shape in Corel.');
+   var sh=sr.Item(1);if(!(Math.abs(Number(sh.SizeWidth))>0&&Math.abs(Number(sh.SizeHeight))>0))throw error('Đối tượng ảnh có kích thước không hợp lệ.','Source image has invalid dimensions.');
+   source=sh;sourceDoc=a.ActiveDocument;mode='selected';
+   status(T('✓ Đã lấy ảnh từ Corel. Ảnh nguồn sẽ không bị xóa.','✓ Image captured from Corel. Original will not be deleted.'));
+   updateExcelNotice();return true;
+  }catch(e){status('⚠ '+String(e.message||e));return false;}
+ }
+ function session(a,layer,config){
+  var cfg=config||readSettings();
+  if(!cfg.enabled)return null;
+  var src,temp=false;
+  if(cfg.mode==='selected'){
+   src=source;
+   if(!src||sourceDoc!==a.ActiveDocument)throw error('Cần LẤY ẢNH từ tài liệu đang mở.','Capture source in current document.');
+  }else{
+   var file=cfg.path;
+   if(!file)throw error('Chưa chọn ảnh.','Select an image file.');
+   try{layer.Import(file);}
+   catch(e){throw new Error(T('Không nhập được ảnh vào Corel: ','Corel image import failed: ')+String(e.message||e));}
+   var selected=a.ActiveSelectionRange;
+   if(!selected||Number(selected.Count)!==1)throw error('Ảnh nhập phải là 1 đối tượng. Hãy thử file PNG/JPG hoặc chọn ảnh trong Corel.','Imported image must be a single object. Try PNG/JPG or capture from Corel.');
+   src=selected.Item(1);temp=true;
+  }
+  if(!(Math.abs(Number(src.SizeWidth))>0&&Math.abs(Number(src.SizeHeight))>0))throw error('Kích thước ảnh nguồn không hợp lệ.','Source image has invalid dimensions.');
+  return{src:src,temp:temp,layer:layer,config:cfg,used:0,finished:false};
+ }
+ function apply(sess,frame,key){
+  if(!sess||!frame||!sess.config[key])return 0;
+  var src=sess.src,layer=sess.layer,total=sess.config.count,
+      width=Math.abs(Number(frame.SizeWidth)),height=Math.abs(Number(frame.SizeHeight)),
+      x=Number(frame.CenterX),y=Number(frame.CenterY),
+      srcWidth=Math.abs(Number(src.SizeWidth)),srcHeight=Math.abs(Number(src.SizeHeight));
+  if(!(width>0&&height>0&&srcWidth>0&&srcHeight>0))throw error('Không tính được vùng lồng ảnh.','Invalid image or text bounds.');
+  var rows=Math.max(1,Math.min(total,Math.round(Math.sqrt(total*height/width))));
+  var cols=Math.ceil(total/rows),i,row,column,nInRow,w,h,scale,copy,centerX,centerY;
+  // Each row is completely covered; the last row stretches its columns to avoid gaps.
+  try{frame.Fill.ApplyNoFill();}
+  catch(e){throw error('Corel không bỏ được màu thân để hiện ảnh PowerClip.','Could not clear frame fill for PowerClip.');}
+  for(i=0;i<total;i++){
+   row=Math.floor(i/cols);column=i%cols;
+   nInRow=(row===rows-1)?total-cols*(rows-1):cols;
+   w=width/nInRow;h=height/rows;
+   centerX=x-width/2+(column+.5)*w;
+   centerY=y+height/2-(row+.5)*h;
+   scale=Math.max(w/srcWidth,h/srcHeight);
+   copy=src.CopyToLayer(layer);
+   if(!copy)throw error('Không sao chép được ảnh.','Cannot duplicate image source.');
+   copy.SetSize(srcWidth*scale,srcHeight*scale);
+   copy.CenterX=centerX;copy.CenterY=centerY;
+   try{copy.AddToPowerClip(frame,0);}catch(e2){throw new Error(T('Không lồng được ảnh bằng PowerClip: ','PowerClip insertion failed: ')+String(e2.message||e2));}
+   sess.used++;
+  }
+  return total;
+ }
+ function finish(sess){
+  if(!sess||sess.finished)return;
+  if(sess.temp&&sess.src)sess.src.Delete();
+  sess.finished=true;
+ }
+ function abort(sess){if(!sess||sess.finished)return;try{if(sess.temp&&sess.src)sess.src.Delete();}catch(e){}sess.finished=true;}
+ function updateExcelNotice(){
+  var e=E('v857ExcelNotice'),cfg;
+  if(!e)return;
+  try{cfg=readSettings();e.innerHTML=cfg.enabled?T('✓ Lồng ảnh từ NAMESET: ','✓ Image fill from NAMESET: ')+cfg.count+T(' ảnh mỗi phần | ',' images per target | ')+(cfg.name?'TÊN ':'')+(cfg.number?'SỐ ':'')+(cfg.footer?'DÒNG 3':''):T('Lồng ảnh đang tắt trong NAMESET.','Image fill is off in NAMESET.');}
+  catch(ex){e.innerHTML=T('⚠ Kiểm tra cấu hình lồng ảnh ở tab NAMESET: ','⚠ Check image fill settings in NAMESET: ')+esc(ex.message||ex);}
+ }
+ function mount(){
+  var composer=E('v854Composer'),button=E('v854Create'),p,settings={on:false,count:1,name:false,number:true,footer:false};
+  if(mounted)return true;if(!composer||!button)return false;
+  p=E('v857ImagePanel');if(!p){
+   p=document.createElement('div');p.id='v857ImagePanel';
+   p.innerHTML='<div class="v857-title">'+T('LỒNG ẢNH / POWERCLIP (TÙY CHỌN)','IMAGE FILL / POWERCLIP (OPTIONAL)')+'</div>'
+    +'<label><input type="checkbox" id="v857On"/> '+T('Bật lồng ảnh vào phần được chọn','Enable image fill for selected parts')+'</label>'
+    +'<div id="v857Details" class="v857-off">'
+    +'<label>'+T('Chọn file ảnh từ máy','Choose local image')+'</label>'
+    +'<input type="file" id="v857File" accept=".png,.jpg,.jpeg,.bmp,.gif,.tif,.tiff,.webp,image/*"/>'
+    +'<button type="button" id="v857Capture">'+T('HOẶC LẤY 1 ẢNH ĐANG CHỌN TRONG COREL','OR CAPTURE 1 SELECTED COREL IMAGE')+'</button>'
+    +'<div class="v857-row"><span><label>'+T('Lặp X ảnh (1–64)','Repeat X times (1–64)')+'</label><input id="v857Count" type="number" min="1" max="64" step="1" value="1"/></span></div>'
+    +'<div class="v857-targets"><label><input id="v857Name" type="checkbox"/> '+T('TÊN','NAME')+'</label>'
+    +'<label><input id="v857Number" type="checkbox" checked="checked"/> '+T('SỐ','NUMBER')+'</label>'
+    +'<label><input id="v857Footer" type="checkbox"/> '+T('DÒNG 3','THIRD LINE')+'</label></div>'
+    +'<div class="v857-help">'+T('X=1: ảnh phủ kín chữ/số. X>1: lặp X tấm theo lưới. Dùng chung cho NAMESET và EXCEL hàng loạt.','X=1: one image covers the text. X>1: repeat image in a grid. Same settings for NAMESET and Excel batch.')+'</div>'
+    +'</div><div id="v857Status"></div>';
+   composer.insertBefore(p,button);
+  }
+  try{var saved=JSON.parse(localStorage.getItem('dhl_v857_image_settings')||'{}');if(saved&&typeof saved==='object'){
+   settings.on=!!saved.on;settings.count=Number(saved.count)||1;
+   settings.name=!!saved.name;settings.number=!!saved.number;settings.footer=!!saved.footer;
+  }}catch(e){}
+  E('v857On').checked=settings.on;E('v857Count').value=settings.count;
+  E('v857Name').checked=settings.name;E('v857Number').checked=settings.number;E('v857Footer').checked=settings.footer;
+  E('v857On').onchange=refresh;E('v857Count').onchange=refresh;
+  E('v857Name').onchange=refresh;E('v857Number').onchange=refresh;E('v857Footer').onchange=refresh;
+  E('v857File').onchange=function(){mode='file';status(T('Ảnh đã chọn: ','Selected image: ')+this.value);};
+  E('v857Capture').onclick=capture;
+  refresh();mounted=true;return true;
+ }
+ function excelNotice(){var box=E('v86ExcelBox'),hint=E('v857ExcelNotice'),line;
+  if(!box)return false;if(hint)return true;line=document.createElement('div');line.id='v857ExcelNotice';
+  box.appendChild(line);updateExcelNotice();return true;
+ }
+ function boot(){var i=0;function tick(){var a=mount(),b=excelNotice();if(a&&b||i++>90)return;setTimeout(tick,250);}tick();}
+ window.DHLImageFill={read:readSettings,session:session,apply:apply,finish:finish,abort:abort,capture:capture,refresh:refresh,version:'8.57'};
+ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,2200);},false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,2200);});
+ else setTimeout(boot,2400);
+})();
+</script>
