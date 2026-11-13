@@ -43,4 +43,4 @@ selected=[logo];assert.throws(()=>win.DHLNumberLogo.inspectManual(),/nguồn|sou
 selected=[{Name:'GROUP',SizeWidth:100,SizeHeight:100,Shapes:{Count:1,Item(){return logo;}}}];
 assert.throws(()=>win.DHLNumberLogo.inspectManual(),/nguồn|source/i);
 assert.throws(()=>win.DHLNumberLogo.configure({on:true,pct:100,bottom:2,inset:1,mode:'per'}),/2–30/);
-console.log('PASS V8.56: compact logo module, read-only preview, safe insertion and source guards');
+console.log('PASS V8.57: compact logo module, read-only preview, safe insertion and source guards');
