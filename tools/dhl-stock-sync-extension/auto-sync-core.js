@@ -164,7 +164,7 @@
 
   function normalizeConfig(raw){
     const source=raw&&typeof raw==='object'?raw:{};
-    const hours=[1,2,3].includes(Number(source.intervalHours))?Number(source.intervalHours):2;
+    const hours=[1,2,3,6,12,24].includes(Number(source.intervalHours))?Number(source.intervalHours):2;
     const ids=Array.isArray(source.selectedProfileIds)?[...new Set(source.selectedProfileIds.map(text).filter(Boolean))]:[];
     const urls={};
     for(const [id,url] of Object.entries(source.profileUrls||{}))if(text(id)&&text(url))urls[text(id)]=text(url);
