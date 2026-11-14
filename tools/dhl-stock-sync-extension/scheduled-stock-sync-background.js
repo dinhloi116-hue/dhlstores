@@ -24,14 +24,19 @@
   const getStorage=keys=>chrome.storage.local.get(keys);
   const setCycle=c=>chrome.storage.local.set({[CYCLE_KEY]:c});
 
-  async function setupAlarm(){
+  async function setupAlarm(force=false){
     const stored=await getStorage(CONFIG_KEY);
     const config=normalize(stored[CONFIG_KEY]);
-    await chrome.alarms.clear(ALARM);
-    if(config.enabled){
+    const existing=await chrome.alarms.get(ALARM);
+    if(!config.enabled){
+      if(existing)await chrome.alarms.clear(ALARM);
+      return 0;
+    }
+    const period=config.intervalHours*60;
+    if(force||!existing||Number(existing.periodInMinutes)!==period){
+      if(existing)await chrome.alarms.clear(ALARM);
       chrome.alarms.create(ALARM,{
-        delayInMinutes:config.intervalHours*60,
-        periodInMinutes:config.intervalHours*60
+        delayInMinutes:period,periodInMinutes:period
       });
     }
     const alarm=await chrome.alarms.get(ALARM);
@@ -40,6 +45,16 @@
   function scheduleStep(){
     chrome.alarms.create(STEP,{when:Date.now()+30000});
     setTimeout(()=>advance().catch(()=>{}),150);
+  }
+  async function waitSourceTab(tabId,sourceUrl){
+    const deadline=Date.now()+45000;
+    while(Date.now()<deadline){
+      let tab;
+      try{tab=await chrome.tabs.get(tabId);}catch(_){throw new Error('Tab nguồn tự động đã bị đóng.');}
+      if(tab&&tab.status==='complete'&&tab.url===sourceUrl&&tab.active)return tab;
+      await new Promise(resolve=>setTimeout(resolve,500));
+    }
+    throw new Error('Danh mục nguồn tải quá lâu hoặc tab không còn được chọn.');
   }
   async function closeOwnWindow(cycle){
     if(!Number(cycle&&cycle.windowId))return;
@@ -117,7 +132,7 @@
       autoPushSapo:request.autoPushSapo===true,
       intervalHours:hours,selectedProfileIds:ids,updatedAt:Date.now()};
     await chrome.storage.local.set({[CONFIG_KEY]:next});
-    const nextRunAt=await setupAlarm();
+    const nextRunAt=await setupAlarm(true);
     if(!next.enabled&&current&&current.running){
       await finish(current,'failed','Người dùng đã tắt lịch tự động; không đẩy Sapo.');
     }
@@ -210,6 +225,7 @@
         cycle={...cycle,phase:'launching',windowId:window.id,tabId:tab.id,
           currentProfileId:id,currentName:text(profile.name)||id};
         await setCycle(cycle);
+        await waitSourceTab(tab.id,url);
         const job=await runner.startJob({
           profileId:id,sourceUrl:url,sourceTabId:tab.id,
           pageTitle:text(profile.pageTitle||profile.name),scope:'all',autoCycleId:cycle.id
