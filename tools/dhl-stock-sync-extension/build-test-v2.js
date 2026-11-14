@@ -22,7 +22,7 @@ const runtimeFiles=[
   'stock-history-core.js','stock-report-core.js','stock-report.html','stock-report.css','stock-report.js','batch-stock-core.js','scan-quality-core.js','stock-branch-core.js','excel-sku-core.js','stock-push-preview-core.js','stock-import-core.js','auto-sync-core.js',
   'sapo-inventory-resolver-core.js','sapo-inventory-set-compat.js',
   'manual-job-runner-background.js','manual-job-runner-mode.js',
-  'manual-sapo-background.js','manual-sapo-output-mode.js',
+  'manual-sapo-background.js','manual-sapo-output-mode.js','scheduled-stock-sync-background.js','scheduled-stock-sync-mode.js',
   'sapo-product-create-background.js','sapo-product-create-continuous-background.js',
   'auto-sync-safety-background.js','saved-profiles-mode.js','tool-reset-mode.js','batch-stock-cache-mode.js',
   'lazy-product-mode.js','workflow-order-mode.js',
@@ -35,6 +35,8 @@ const background=read('background.js');
 assert.ok(background.includes("'manual-job-runner-background.js'"));
 assert.ok(background.includes("'scan-quality-core.js'"),'Thiếu core kiểm tra chất lượng quét');
 assert.ok(background.includes("'manual-sapo-background.js'"));
+assert.ok(background.includes("'scheduled-stock-sync-background.js'"));
+assert.ok(read('scheduled-stock-sync-background.js').includes('quality.trustedEntry(entry)'));
 assert.ok(background.includes("'sapo-inventory-set-compat.js'"));
 assert.ok(background.includes("'sapo-product-create-background.js'"));
 assert.ok(background.includes("'sapo-product-create-continuous-background.js'"));
@@ -77,7 +79,7 @@ assert.ok(manualPush.includes("isFatalPushError(message)?'fatal':'skipped'"),'Ch
 const popup=read('popup.html');
 for(const file of [
   'saved-profiles-mode.js','tool-reset-mode.js','manual-job-runner-mode.js','batch-stock-cache-mode.js',
-  'manual-sapo-output-mode.js','lazy-product-mode.js','workflow-order-mode.js'
+  'manual-sapo-output-mode.js','scheduled-stock-sync-mode.js','lazy-product-mode.js','workflow-order-mode.js'
 ]) assert.ok(popup.includes(file),`Popup thiếu ${file}`);
 for(const old of ['auto-sync-mode.js','auto-sync-safety-mode.js','auto-sync-ui-sticky-mode.js','sapo-push-report-mode.js']){
   assert.ok(!popup.includes(old),`Popup không được load module cũ ${old}`);
