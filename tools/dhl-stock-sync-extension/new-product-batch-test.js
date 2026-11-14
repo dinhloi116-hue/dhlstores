@@ -42,7 +42,7 @@ assert.ok(productCore.includes('sku:`${skuBase}-${size}`'));
 assert.ok(productCore.includes('Ảnh phiên bản: ghi link cho TỪNG SKU'));
 
 assert.ok(workflow.includes("document.getElementById('catalogMode')"));
-assert.ok(workflow.includes('2. THÊM SẢN PHẨM MỚI'));
+assert.ok(workflow.includes('3. THÊM SẢN PHẨM MỚI'));
 assert.ok(direct.includes('SKU KHÔNG lấy từ dữ liệu cũ.'));
 assert.ok(direct.includes('Thiếu link ảnh nguồn'));
 
