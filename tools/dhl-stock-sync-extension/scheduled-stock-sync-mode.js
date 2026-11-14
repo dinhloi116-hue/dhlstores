@@ -33,7 +33,7 @@ function render(){
  const heading=names[run.phase]||'Sẵn sàng đồng bộ';
  const count=(state.profiles||[]).length;
  $('scheduledStockPanel').innerHTML=
-   '<div class="dhl-batch-head"><b>3. ĐỒNG BỘ CÁC TAB ĐÃ LƯU</b>'
+   '<div class="dhl-batch-head"><b>2. ĐỒNG BỘ CÁC TAB ĐÃ LƯU</b>'
    +'<small>Chạy khi bấm, không có lịch tự quét.</small></div>'
    +'<button id="savedTabsSyncNow" class="dhl-batch-run" type="button"'
    +(run.running||!count?' disabled':'')+'>ĐỒNG BỘ NGAY</button>'
