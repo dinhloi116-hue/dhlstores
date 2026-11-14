@@ -1,6 +1,19 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.25.2**.
+Phiên bản: **v0.26.0**.
+
+## Tự động quét danh mục đã lưu và tự đẩy Sapo (v0.26.0)
+
+- Chức năng **3. TỰ ĐỘNG QUÉT & ĐẨY SAPO** được thêm vào Side Panel; chế độ quét và đẩy Sapo thủ công hiện tại được giữ nguyên.
+- **Mặc định tắt.** Người dùng chọn chính xác các hồ sơ danh mục đã lưu từ tab nguồn; chọn khoảng cách quét 1, 2, 3, 6, 12 hoặc 24 giờ. Có nút QUÉT NGAY để chạy thử khi đã bật.
+- Tự quét dùng chung `DHLManualJobRunner` hiện có (popup-only, nhiều màu/size, báo cáo lỗi và retry), không bật lại `auto-sync-background-v2.js` cũ. Tool mở một cửa sổ Chrome riêng **không giành focus** cho từng danh mục rồi đóng cửa sổ đó khi quét xong, không đóng tab người dùng.
+- Lưu checkpoint cho từng danh mục trong Chrome local. Chỉ khi **tất cả** hồ sơ được chọn quét xong đầy đủ, quality.ok, sourceVariantCount, SKU, màu/size và kiểm tra kho trùng khớp mới được đẩy tự động qua API riêng đã xác minh.
+- Tùy chọn **Tự đẩy Sapo** là một công tắc riêng (mặc định tắt). Nếu chỉ bật tự quét, hoàn thành rồi lưu snapshot, không ghi Sapo. Người dùng cần vào ĐẦU RA để kết nối và xác minh `storeHost`, API key/secret và `locationId`; mật khẩu không nhập trong phần lịch.
+- Khi bật tự đẩy, queue dùng lại cơ chế 4 SKU song song với xử lý 429/403, không ghi SKU sai, lưu checkpoint và không chạy nếu manual queue đang hoạt động. Nếu một tab không đủ dữ liệu, cả chu kỳ **không gửi SKU nào lên Sapo**.
+- Giao diện hiển thị lần chạy gần nhất, lần tới, tab hiện tại, tiến độ quét và đẩy SKU, lý do lỗi, khả năng tiếp tục hàng đợi Sapo đang tạm dừng. Vẫn giữ chức năng Excel và tab báo cáo ảnh riêng.
+- Chrome cần **đang mở** để lịch extension chạy; máy tắt/trình duyệt đóng sẽ không tự quét. Không cam kết máy quét hết danh mục nếu nguồn thay đổi HTML, mạng lỗi hoặc popup không hoạt động trên cửa sổ không focus; các trường hợp đó sẽ dừng, không đẩy sai.
+- **Lưu ý bảo mật:** API key từng xuất hiện trong ảnh; hãy xoay vòng key/secret ở Sapo trước khi kích hoạt tự đẩy. Không ghi API vào GitHub hoặc tệp kiểm thử.
+- CI mô phỏng hai danh mục, một lượt quét không đầy đủ bị chặn toàn bộ, một chu kỳ hợp lệ ghi queue Sapo, và kiểm tra bật/tắt lịch không xóa dữ liệu thủ công.
 
 ## Khôi phục kết nối Sapo và tăng tốc đồng bộ tồn (v0.25.2)
 
