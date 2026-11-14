@@ -41,5 +41,5 @@ assert.ok(background.includes('job.descriptors=visibleItems'));
 assert.ok(background.includes('job.retryQueue=remaining'));
 assert.ok(manifest.content_scripts[0].js.indexOf('visible-category-grid-core.js')
   <manifest.content_scripts[0].js.indexOf('content.js'),'Module must load before scanner');
-assert.strictEqual(manifest.version,'0.26.0');
+assert.strictEqual(manifest.version,'0.26.1');
 console.log('VISIBLE GRID SCOPE PASS: 24/24 HD cards, stray kids product excluded, old checkpoint reconciled.');
