@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "DHL Stock Sync",
+  "version": "0.26.1",
+  "minimum_chrome_version": "116",
+  "description": "Đồng bộ ngay: một nút tự quét tuần tự các danh mục đã lưu, tùy chọn đẩy Sapo sau khi kiểm tra, không chạy định kỳ.",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "activeTab",
+    "tabs",
+    "sidePanel",
+    "scripting",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://si.aobongda.net/*",
+    "https://*.mysapo.net/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Mở DHL Stock Sync",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://si.aobongda.net/*"
+      ],
+      "js": [
+        "safe-category-guard.js",
+        "stock-core.js",
+        "dom-stock-parser.js",
+        "match-core.js",
+        "visible-category-grid-core.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

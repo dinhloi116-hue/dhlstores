@@ -1,0 +1,189 @@
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const dir = __dirname;
+
+const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+assert.strictEqual(manifest.manifest_version, 3);
+assert.ok(manifest.host_permissions.includes('https://si.aobongda.net/*'));
+assert.ok(manifest.host_permissions.includes('https://*.mysapo.net/*'), 'Tự ghi Sapo cần host permission cho shop .mysapo.net');
+assert.ok(manifest.permissions.includes('sidePanel'));
+assert.ok(manifest.permissions.includes('scripting'));
+assert.ok(manifest.permissions.includes('tabs'));
+assert.ok(manifest.permissions.includes('alarms'), 'Lịch tự quét phải dùng chrome.alarms');
+assert.strictEqual(manifest.side_panel.default_path, 'popup.html');
+assert.ok(!manifest.action.default_popup);
+assert.strictEqual(manifest.content_scripts[0].js[0], 'safe-category-guard.js', 'Guard phải chạy trước scanner');
+for (const file of manifest.content_scripts[0].js) assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
+for (const file of ['background.js','auto-sync-core.js','auto-sync-background.js','auto-sync-mode.js','safe-category-guard.js','popup.html','popup.js','popup.css','catalog-ui-shell.js','catalog-mode.js','catalog-generic-mode.js','catalog-api-mode.js','maintenance-ui.js','simple-mode.js','one-file-mode.js','warehouse-core.js','generic-warehouse-mode.js','kids-product-size-mode.js','warehouse-sku-link-mode.js','stock-import-core.js','product-create-core.js','shop-rules.js','generic-shop-rules.js','match-core.js','batch-stock-core.js','batch-stock-cache-mode.js','stock-history-core.js','stock-history-mode.js','xlsx-lite.js','xlsx-preserve.js','dom-stock-parser.js','saved-profiles-mode.js','profile-tabs-mode.js','profile-create-safe-mode.js','ui-v2-mode.js','ui-v2-fix-mode.js','ui-v3-polish-mode.js']) {
+  assert.ok(fs.existsSync(path.join(dir, file)), `Thiếu ${file}`);
+}
+
+const popupHtml = fs.readFileSync(path.join(dir, 'popup.html'), 'utf8');
+assert.ok(popupHtml.includes('Chọn file Quản lý kho Sapo'));
+assert.ok(popupHtml.includes('templateStep" style="display:none"'));
+assert.ok(popupHtml.includes('QUÉT KHO TRANG ĐANG MỞ'));
+assert.ok(popupHtml.includes('ĐẦU RA = FILE NHẬP TỒN KHO CHÍNH THỨC SAPO'));
+assert.ok(popupHtml.includes('generic-shop-rules.js'));
+assert.ok(popupHtml.includes('generic-warehouse-mode.js'));
+assert.ok(popupHtml.includes('kids-product-size-mode.js'));
+assert.ok(popupHtml.includes('warehouse-sku-link-mode.js'));
+assert.ok(popupHtml.includes('product-create-core.js'));
+assert.ok(popupHtml.includes('batch-stock-core.js'));
+assert.ok(popupHtml.includes('batch-stock-cache-mode.js'));
+assert.ok(popupHtml.includes('stock-history-core.js'));
+assert.ok(popupHtml.includes('stock-history-mode.js'));
+assert.ok(popupHtml.includes('auto-sync-core.js'));
+assert.ok(popupHtml.includes('auto-sync-mode.js'));
+assert.ok(popupHtml.includes('catalog-ui-shell.js'), 'Phải dùng UI shell không có redirect HD');
+assert.ok(!popupHtml.includes('<script src="catalog-mode.js"></script>'), 'Không được load scanner legacy ép tab sang HD');
+assert.ok(popupHtml.includes('catalog-generic-mode.js'));
+assert.ok(popupHtml.includes('catalog-api-mode.js'));
+assert.ok(popupHtml.indexOf('catalog-ui-shell.js') < popupHtml.indexOf('catalog-generic-mode.js'), 'UI shell phải mount trước scanner danh mục an toàn');
+assert.ok(popupHtml.indexOf('catalog-generic-mode.js') < popupHtml.indexOf('catalog-api-mode.js'), 'API mode phải override scanner cũ sau cùng');
+assert.ok(popupHtml.includes('one-file-mode.js'));
+assert.ok(popupHtml.includes('maintenance-ui.js'));
+assert.ok(popupHtml.includes('saved-profiles-mode.js'));
+assert.ok(popupHtml.includes('profile-tabs-mode.js'));
+assert.ok(popupHtml.includes('profile-create-safe-mode.js'));
+assert.ok(popupHtml.includes('ui-v2-mode.js'));
+assert.ok(popupHtml.includes('ui-v2-fix-mode.js'));
+assert.ok(popupHtml.includes('ui-v3-polish-mode.js'));
+assert.ok(popupHtml.indexOf('batch-stock-core.js') < popupHtml.indexOf('batch-stock-cache-mode.js'));
+assert.ok(popupHtml.indexOf('stock-history-core.js') < popupHtml.indexOf('stock-history-mode.js'));
+assert.ok(popupHtml.indexOf('stock-history-mode.js') > popupHtml.indexOf('saved-profiles-mode.js'), 'Lịch sử phải chạy sau hồ sơ đã lưu');
+assert.ok(popupHtml.indexOf('batch-stock-cache-mode.js') > popupHtml.indexOf('stock-history-mode.js'), 'Cache gộp chạy sau lịch sử và UI để chỉ bọc hành vi xuất');
+assert.ok(popupHtml.indexOf('auto-sync-mode.js') > popupHtml.indexOf('batch-stock-cache-mode.js'), 'UI tự động phải mount sau cache gộp');
+assert.ok(popupHtml.indexOf('profile-create-safe-mode.js') > popupHtml.indexOf('profile-tabs-mode.js'));
+assert.ok(popupHtml.indexOf('ui-v2-fix-mode.js') > popupHtml.indexOf('ui-v2-mode.js'));
+
+const background = fs.readFileSync(path.join(dir, 'background.js'), 'utf8');
+assert.ok(background.includes('importScripts('));
+assert.ok(background.includes("'auto-sync-background.js'"));
+assert.ok(background.indexOf("'xlsx-lite.js'") < background.indexOf("'generic-warehouse-mode.js'"), 'Background phải load parser gốc trước patch kho');
+assert.ok(background.indexOf("'warehouse-sku-link-mode.js'") < background.indexOf("'auto-sync-background.js'"), 'Tự động phải dùng parser SKU ổn định đã patch');
+
+const safeGuard = fs.readFileSync(path.join(dir, 'safe-category-guard.js'), 'utf8');
+assert.ok(safeGuard.includes('data-dhl-safe-action'));
+assert.ok(safeGuard.includes("anchor.setAttribute('href', 'javascript:void(0)')"));
+assert.ok(safeGuard.includes('event.preventDefault()'));
+assert.ok(!safeGuard.includes('stopImmediatePropagation'), 'Guard không được chặn AJAX/delegated handler của web nguồn');
+assert.ok(safeGuard.includes('MutationObserver'), 'Sản phẩm lazy-load cũng phải được bảo vệ');
+
+const content = fs.readFileSync(path.join(dir, 'content.js'), 'utf8');
+assert.ok(content.includes('DHL_SCAN_HD_LIVE'));
+assert.ok(content.includes('openStockPopup'));
+assert.ok(content.includes('discoverCurrentCategory'));
+assert.ok(content.includes('detectedSizesFromRoot'));
+assert.ok(content.includes('navigation-guard-v1'), 'Scanner phải có guard chống nhảy trang chi tiết');
+assert.ok(content.includes('inertActionHref'), 'Scanner phải loại link điều hướng thật');
+assert.ok(content.includes('clickQuickCandidate'), 'Scanner phải click quick action với preventDefault');
+assert.ok(!content.includes('HD_PATH'), 'Scanner không được khóa cứng danh mục HD');
+
+const popupJs = fs.readFileSync(path.join(dir, 'popup.js'), 'utf8');
+assert.ok(popupJs.includes('ensureCurrentCategoryTab'));
+assert.ok(!popupJs.includes('ensureHdCategoryTab'));
+assert.ok(popupJs.includes('DHL_SCAN_HD_LIVE'));
+assert.ok(popupJs.includes('variantMatches'));
+assert.ok(!popupJs.includes('fullMatchReady'));
+
+const genericWarehouse = fs.readFileSync(path.join(dir, 'generic-warehouse-mode.js'), 'utf8');
+assert.ok(genericWarehouse.includes('parseGenericWarehouse'));
+assert.ok(genericWarehouse.includes('genericSizes:true'));
+
+const stockImport = fs.readFileSync(path.join(dir, 'stock-import-core.js'), 'utf8');
+assert.ok(stockImport.includes('Cập nhật tồn kho phiên bản sản phẩm'));
+assert.ok(stockImport.includes("'Tên phiên bản sản phẩm','SKU*','Mã lô','Ngày sản xuất','Hạn sử dụng','Tồn kho','Vị trí lưu kho'"));
+assert.ok(stockImport.includes('buildOfficialInventoryWorkbook'));
+
+const oneFile = fs.readFileSync(path.join(dir, 'one-file-mode.js'), 'utf8');
+assert.ok(oneFile.includes('TẠO FILE NHẬP TỒN KHO SAPO'));
+assert.ok(oneFile.includes('file TỒN KHO'), 'Luồng hằng ngày phải lấy file tồn kho làm gốc');
+assert.ok(oneFile.includes('file DANH SÁCH'), 'Luồng phải có file danh sách riêng để tra SKU');
+assert.ok(oneFile.includes('skuCatalogFile'), 'UI phải có input thứ hai cho products_export có SKU');
+assert.ok(oneFile.includes('catalogSkuIndex'), 'Phải tạo bảng tra SKU riêng từ products_export');
+assert.ok(oneFile.includes('lookup.sku'), 'File nhập phải lấy SKU gốc từ file danh sách');
+assert.ok(!oneFile.includes('skuBaseForStandardName'), 'Không được tự map/sinh SKU khi cập nhật tồn');
+assert.ok(oneFile.includes('buildOfficialInventoryWorkbook'));
+assert.ok(oneFile.includes('SAPO_NHAP_TON_KHO_'));
+
+const safeCreate = fs.readFileSync(path.join(dir, 'profile-create-safe-mode.js'), 'utf8');
+assert.ok(safeCreate.includes('Hồ sơ cũ được giữ nguyên'));
+assert.ok(safeCreate.includes('event.stopImmediatePropagation()'));
+assert.ok(safeCreate.includes('profiles.push(profile)'));
+
+const uiFix = fs.readFileSync(path.join(dir, 'ui-v2-fix-mode.js'), 'utf8');
+assert.ok(uiFix.indexOf("hay.includes('tre em')") < uiFix.indexOf("path.includes('/hd-pc36029')"), 'Phải ưu tiên nhận Trẻ em trước HD');
+assert.ok(uiFix.includes("if(p.includes('tre em'))return'tre em'"), 'Trẻ em HD phải map về nhóm Trẻ em');
+assert.ok(uiFix.includes('runSmart'));
+assert.ok(uiFix.includes('ĐÃ LƯU CACHE'), 'Đồng bộ nhanh phải chờ lưu cache');
+assert.ok(!uiFix.includes('exp.click()'), 'Đồng bộ nhanh không được tự tải file sau mỗi tab');
+
+const historyCore = fs.readFileSync(path.join(dir, 'stock-history-core.js'), 'utf8');
+assert.ok(historyCore.includes('snapshotFromSource'));
+assert.ok(historyCore.includes('compareSnapshots'));
+assert.ok(historyCore.includes("restocked"));
+assert.ok(historyCore.includes("soldout"));
+
+const historyMode = fs.readFileSync(path.join(dir, 'stock-history-mode.js'), 'utf8');
+assert.ok(historyMode.includes('dhlStockScanHistoryV1'));
+assert.ok(historyMode.includes('MAX_PER_PROFILE=60'));
+assert.ok(historyMode.includes('TẢI BÁO CÁO .TXT'));
+assert.ok(historyMode.includes('QUÉT XONG'));
+assert.ok(historyMode.includes('matcher.matchSapoProducts=function'), 'Lịch sử chỉ quan sát dữ liệu matcher, không thay core scan');
+
+const batchCore = fs.readFileSync(path.join(dir, 'batch-stock-core.js'), 'utf8');
+assert.ok(batchCore.includes('combineEntries'));
+assert.ok(batchCore.includes('nhiều chi nhánh'));
+assert.ok(batchCore.includes('tồn khác nhau'));
+
+const batchMode = fs.readFileSync(path.join(dir, 'batch-stock-cache-mode.js'), 'utf8');
+assert.ok(batchMode.includes('dhlPendingStockBatchV1'));
+assert.ok(batchMode.includes('ĐÃ LƯU CACHE'));
+assert.ok(batchMode.includes('XUẤT FILE TỒN KHO GỘP'));
+assert.ok(batchMode.includes('SAPO_NHAP_TON_KHO_GOP_'));
+assert.ok(batchMode.includes('event.stopImmediatePropagation()'), 'Xuất gộp phải chặn handler xuất từng hồ sơ cũ');
+assert.ok(batchMode.includes("[BATCH_KEY]:{}"), 'Sau khi xuất gộp phải dọn cache chờ');
+
+const autoCore = fs.readFileSync(path.join(dir, 'auto-sync-core.js'), 'utf8');
+assert.ok(autoCore.includes('prepareRows'));
+assert.ok(autoCore.includes('skuCoverage'));
+assert.ok(autoCore.includes('validSourceUrl'));
+assert.ok(autoCore.includes('[1,2,3]'));
+
+const autoBg = fs.readFileSync(path.join(dir, 'auto-sync-background.js'), 'utf8');
+assert.ok(autoBg.includes("const ALARM='dhl-auto-stock-sync'"));
+assert.ok(autoBg.includes("const STEP_ALARM='dhl-auto-stock-step'"));
+assert.ok(autoBg.includes("const PUSH_ALARM='dhl-sapo-push-queue'"));
+assert.ok(autoBg.includes("chrome.tabs.create({url,active:false})"), 'Tự quét phải mở tab nền, không giành tab đang làm việc');
+assert.ok(autoBg.includes("type:'DHL_SCAN_HD_LIVE'"));
+assert.ok(autoBg.includes('profile.lastSourceUrl'));
+assert.ok(autoBg.includes("'/admin/store.json'"));
+assert.ok(autoBg.includes("'/admin/locations.json'"));
+assert.ok(autoBg.includes('/admin/inventory_items.json'));
+assert.ok(autoBg.includes('inventory_level:{available:Number(row.stock)}'));
+assert.ok(autoBg.includes('if(!config.autoPushSapo||!config.sapo||!config.sapo.verifiedAt)'), 'Không được ghi Sapo nếu chưa xác minh');
+assert.ok(autoBg.includes('cycle.errors.length===0'), 'Có hồ sơ lỗi thì không được tự ghi Sapo');
+assert.ok(autoBg.includes('PUSH_CHUNK=20'), 'Ghi Sapo phải chia hàng đợi, không bắn hàng trăm request cùng lúc');
+
+const autoUi = fs.readFileSync(path.join(dir, 'auto-sync-mode.js'), 'utf8');
+assert.ok(autoUi.includes('Mỗi 1 giờ'));
+assert.ok(autoUi.includes('Mỗi 2 giờ'));
+assert.ok(autoUi.includes('Mỗi 3 giờ'));
+assert.ok(autoUi.includes('CHẠY THỬ NGAY'));
+assert.ok(autoUi.includes('KIỂM TRA KẾT NỐI SAPO'));
+assert.ok(autoUi.includes('tự ghi tồn thật lên Sapo'));
+assert.ok(autoUi.includes('API Key/Secret chỉ lưu trong Chrome'));
+
+console.log('BUILD PASS', {
+  version: manifest.version,
+  scanner: 'current category, manual + scheduled background scan',
+  matching: 'warehouse primary + original Sapo SKU by exact name and size',
+  savedProfiles: 'local Chrome profiles, new profile never overwrites selected profile',
+  uiV2: 'one-click scan caches only; no automatic per-tab download',
+  history: '60 local scan snapshots/profile + diff + TXT report',
+  batchExport: 'multiple profile caches -> one official Sapo inventory workbook',
+  autoSync: '1/2/3 hour alarm -> background tab scans -> cache/history',
+  sapoPush: 'private app verified location + chunked absolute inventory updates',
+  sourceHost: manifest.host_permissions[0]
+});

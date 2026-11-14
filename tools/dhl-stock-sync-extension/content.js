@@ -1,0 +1,1437 @@
+(() => {
+  'use strict';
+
+  const core = globalThis.DHLStockCore;
+  const dom = globalThis.DHLDomStockParser;
+  const matcher = globalThis.DHLMatchCore;
+  if (!core || !dom || !matcher) return;
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  let popupScanCancelVersion=0;
+  function assertPopupScanActive(version){
+    if(version==null)return;
+    if(version!==popupScanCancelVersion){
+      const error=new Error('Đã hủy quét popup.');
+      error.code='DHL_SCAN_CANCELLED';
+      throw error;
+    }
+  }
+  const TARGET_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+  const TEAM_PATTERNS = [
+    ['bo dao nha', 'portugal'], ['tay ban nha', 'spain'], ['nhat ban', 'japan'], ['nhat', 'japan'],
+    ['ha lan', 'netherlands'], ['argentina', 'argentina'], ['brazil', 'brazil'], ['mexico', 'mexico'],
+    ['croatia', 'croatia'], ['crotia', 'croatia'], ['phap', 'france'], ['duc', 'germany'],
+    ['anh', 'england'], ['bi', 'belgium'], ['y', 'italy']
+  ];
+
+  function plain(value) {
+    return dom.plain(value).replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function text(el) {
+    return core.normalizeText((el && (el.innerText || el.textContent)) || '');
+  }
+
+  function visible(el) {
+    if (!el || !el.isConnected) return false;
+    const style = getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 2 && rect.height > 2;
+  }
+
+  function teamKey(value) {
+    const p = ` ${plain(value)} `;
+    for (const [pattern, key] of TEAM_PATTERNS) if (p.includes(` ${pattern} `)) return key;
+    return '';
+  }
+
+  function hintForTitle(title, hints) {
+    const key = teamKey(title);
+    return key ? (hints || []).find((hint) => hint && hint.team === key) || null : null;
+  }
+
+  function targetSizesForHint(hint) {
+    const requested=[];
+    const seen=new Set();
+    for(const product of (hint&&hint.products)||[]){
+      for(const value of product.sizes||[]){
+        const size=dom.normalizeSize(value);
+        if(size&&!seen.has(size)){seen.add(size);requested.push(size);}
+      }
+    }
+    return requested;
+  }
+
+
+  function verifiedInventoryTable(root){
+    if(!root||typeof root.querySelectorAll!=='function')return null;
+    const tables=[
+      ...(root.matches&&root.matches('table,[role="table"]')?[root]:[]),
+      ...root.querySelectorAll('table,[role="table"]')
+    ];
+    for(const table of tables){
+      if(!visible(table))continue;
+      const head=table.querySelector('thead tr')||table.querySelector('tr,[role="row"]');
+      if(!head)continue;
+      const columns=dom.inventoryColumns(
+        [...head.querySelectorAll('th,[role="columnheader"]')].map(text)
+      );
+      if(columns)return{table,columns};
+    }
+    return null;
+  }
+
+  function inventoryTableSnapshot(root){
+    const found=verifiedInventoryTable(root);
+    if(!found)return{tableFound:false,labels:[],rows:[]};
+    const labels=[],rows=[],seen=new Set();
+    const trs=found.table.querySelectorAll('tbody tr,[role="row"]');
+    const candidates=trs.length?trs:found.table.querySelectorAll('tr,[role="row"]');
+    for(const tr of candidates){
+      if(!visible(tr))continue;
+      const cells=[...tr.children].filter(el=>el.matches&&el.matches('td,[role="cell"]')).map(text);
+      const parsed=dom.inventoryRowFromCells(cells,found.columns);
+      if(!parsed)continue;
+      if(!seen.has(parsed.size)){
+        seen.add(parsed.size);labels.push(parsed.size);
+        if(parsed.stock!=null)rows.push({size:parsed.size,stock:parsed.stock,raw:cells.join(' | ')});
+      }
+    }
+    return{tableFound:true,labels,rows};
+  }
+
+  function detectedSizesFromRoot(root){
+    return inventoryTableSnapshot(root).labels;
+  }
+
+  function sizeLabelsFromVisibleRows(root){
+    return inventoryTableSnapshot(root).labels;
+  }
+
+  function expectedSizesFromRoot(root){
+    const detected=detectedSizesFromRoot(root);
+    const standard=new Set(TARGET_SIZES.map(dom.normalizeSize));
+    const hasAdultSize=detected.some(size=>standard.has(dom.normalizeSize(size)));
+    if(!hasAdultSize)return detected;
+    // Popup áo người lớn đôi khi render thiếu tạm 1 dòng (ví dụ M).
+    // Khi đã thấy size chữ chuẩn, luôn chờ đủ S/M/L/XL/XXL thay vì khóa theo snapshot đầu tiên.
+    const out=[],seen=new Set();
+    for(const raw of [...TARGET_SIZES,...detected]){
+      const size=dom.normalizeSize(raw);
+      if(size&&!seen.has(size)){seen.add(size);out.push(size);}
+    }
+    return out;
+  }
+
+    function productTitleFromDocument(doc = document) {
+    for (const selector of ['h1', '[itemprop="name"]', '.product-name', '.detail-title', '[class*="product-name"]', '[class*="product-title"]']) {
+      const el = doc.querySelector(selector);
+      if (el) {
+        const value = core.normalizeText(el.textContent);
+        if (value) return value;
+      }
+    }
+    return core.normalizeText(doc.title).replace(/\s*[-|].*$/, '');
+  }
+
+  function titleForProductAnchor(a) {
+    const direct=core.normalizeText(a&&a.textContent);
+    if(direct&&direct.length>2&&direct.length<200&&!/^(đăng nhập ngay|xem chi tiết|mua ngay)$/i.test(direct))return direct;
+    const img=a&&a.querySelector&&a.querySelector('img');
+    const alt=core.normalizeText(img&&(img.alt||img.title));
+    return alt&&alt.length<200?alt:'';
+  }
+
+  function normalizeImageUrl(raw,base=location.href){
+    let value=String(raw==null?'':raw).trim();
+    if(!value)return'';
+    const css=value.match(/^url\((['"]?)(.*?)\1\)$/i);
+    if(css)value=css[2];
+    if(/^(?:data:|blob:|javascript:|#)/i.test(value))return'';
+    try{
+      const url=new URL(value,base);
+      return /^https?:$/.test(url.protocol)?url.href:'';
+    }catch{return'';}
+  }
+
+  function firstSrcsetUrl(value,base=location.href){
+    const parts=String(value||'').split(',').map(x=>x.trim()).filter(Boolean);
+    for(let i=parts.length-1;i>=0;i-=1){
+      const raw=parts[i].split(/\s+/)[0];
+      const url=normalizeImageUrl(raw,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
+  function imageUrlFromNode(node,base=location.href){
+    if(!node||!node.getAttribute)return'';
+    const candidates=[];
+    for(const attr of ['src','data-src','data-original','data-lazy-src','data-url','data-image','data-image-url']){
+      const value=node.getAttribute(attr);
+      if(value)candidates.push(value);
+    }
+    for(const attr of ['srcset','data-srcset']){
+      const value=node.getAttribute(attr);
+      if(value){
+        const picked=firstSrcsetUrl(value,base);
+        if(picked)candidates.push(picked);
+      }
+    }
+    if(node.currentSrc)candidates.unshift(node.currentSrc);
+    if(node.src)candidates.unshift(node.src);
+    const style=node.style&&node.style.backgroundImage;
+    if(style&&style!=='none')candidates.push(style);
+    for(const raw of candidates){
+      const url=normalizeImageUrl(raw,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
+  function imageUrlFromScope(scope,base=location.href){
+    if(!scope)return'';
+    const own=imageUrlFromNode(scope,base);
+    if(own)return own;
+    const imgs=scope.querySelectorAll?scope.querySelectorAll('img,source,[data-image],[data-image-url],[style*="background-image"]'):[];
+    for(const node of imgs){
+      const url=imageUrlFromNode(node,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
+  function imageUrlNearAnchor(a,base=location.href){
+    if(!a)return'';
+    const direct=imageUrlFromScope(a,base);
+    if(direct)return direct;
+    let el=a.parentElement;
+    for(let depth=0;depth<5&&el&&el!==document.body;depth+=1,el=el.parentElement){
+      const url=imageUrlFromScope(el,base);
+      if(url)return url;
+    }
+    return'';
+  }
+
+  function findProductLinksInDocument(doc=document,baseUrl=location.href){
+    const base=new URL(baseUrl,location.href),seen=new Map();
+    for(const a of doc.querySelectorAll('a[href]')){
+      try{
+        const url=new URL(a.getAttribute('href'),base);
+        if(url.host!==location.host)continue;
+        const id=core.extractProductId(url.href),title=titleForProductAnchor(a);
+        if(!id||!title)continue;
+        const imageUrl=imageUrlNearAnchor(a,base.href);
+        const current=seen.get(id);
+        if(!current||title.length>current.title.length){
+          seen.set(id,{id,url:url.href,title,categoryPath:location.pathname,imageUrl:imageUrl||current&&current.imageUrl||''});
+        }else if(imageUrl&&!current.imageUrl){
+          current.imageUrl=imageUrl;
+        }
+      }catch(_){}
+    }
+    return[...seen.values()];
+  }
+
+
+  // Inventory scanning must use ONLY product cards on the currently rendered
+  // category page. Browsing every href on document previously picked up stray
+  // links from menus, widgets or cached markup (e.g. a kids product in HD).
+  function visibleStockProductCard(anchor,productId){
+    if(!visible(anchor))return null;
+    let el=anchor;
+    for(let depth=0;depth<9&&el&&el!==document.body;depth++,el=el.parentElement){
+      if(!visible(el))continue;
+      const rawText=text(el);
+      if(!rawText||rawText.length>1600)break;
+      const links=[...el.querySelectorAll('a[href]')];
+      const productIds=new Set();
+      for(const link of links){
+        try{
+          const url=new URL(link.getAttribute('href'),location.href);
+          if(url.host!==location.host)continue;
+          const id=core.extractProductId(url.href);
+          if(id)productIds.add(Number(id));
+        }catch(_){}
+      }
+      if(productIds.size!==1||!productIds.has(Number(productId)))continue;
+      const images=[...el.querySelectorAll('img')].filter(visible);
+      if(!images.length)continue;
+      const actions=[...el.querySelectorAll('button,a,[role="button"],[onclick]')]
+        .some(node=>/them vao gio|them gio|add to cart|ch[oọ]n mua/i.test(plain(text(node))));
+      if(!actions)continue;
+      const price=/(?:\d[\d.,\s]*)\s*(?:₫|đ|vnd)/i.test(rawText);
+      if(!price)continue;
+      return el;
+    }
+    return null;
+  }
+
+  function discoverVisibleStockProducts(){
+    const grid=globalThis.DHLVisibleCategoryGridCore;
+    if(!grid)throw new Error('Thiếu bộ kiểm tra lưới sản phẩm trên tab nguồn.');
+    const candidates=[];
+    const byId=new Map();
+    for(const anchor of document.querySelectorAll('a[href]')){
+      if(!visible(anchor))continue;
+      let url;
+      try{url=new URL(anchor.getAttribute('href'),location.href);}
+      catch(_){continue;}
+      if(url.host!==location.host)continue;
+      const id=Number(core.extractProductId(url.href))||0;
+      if(!id)continue;
+      const card=visibleStockProductCard(anchor,id);
+      if(!card)continue;
+      const heading=card.querySelector('h2,h3,h4,[class*="product-name"],[class*="product-title"]');
+      const headingTitle=core.normalizeText(text(heading));
+      const title=(headingTitle.length>2&&headingTitle.length<180?headingTitle:titleForProductAnchor(anchor));
+      if(!title||title.length>180||/^(?:them vao gio|mua ngay|xem chi tiet)$/i.test(plain(title)))continue;
+      const imageUrl=imageUrlFromScope(card,location.href)||imageUrlNearAnchor(anchor,location.href);
+      const candidate={id,url:url.href,title,card,imageUrl};
+      if(!byId.has(id))byId.set(id,candidate);
+    }
+    const selected=grid.selectMainGrid([...byId.values()],document.body);
+    if(!selected.length)throw new Error('Không xác định được ô sản phẩm đang hiển thị. Dừng quét để tránh lẫn sản phẩm ngoài trang.');
+    return{
+      items:selected.map(({id,url,title,imageUrl})=>({
+        id,url,title,imageUrl,categoryPath:location.pathname
+      })),
+      pageTitle:document.title,
+      pageUrl:location.href,
+      visibleCount:selected.length,
+      excludedCount:Math.max(0,byId.size-selected.length),
+      discoveryMode:'visible-category-grid'
+    };
+  }
+
+  async function discoverCurrentCategory(){
+    const links=findProductLinksInDocument(document,location.href);
+    if(!links.length)throw new Error('Không tìm thấy sản phẩm trên trang danh mục đang mở');
+    return links;
+  }
+
+    function stockMarker(value) {
+    return /nhap so luong cho tung size|ten size|tinh trang ton|con hang|het hang|ton kho/.test(plain(value));
+  }
+
+  function colorMarker(value) {
+    return /chon mau|mau sac|chon mau sac/.test(plain(value));
+  }
+
+  function findStockRoot() {
+    const tables = [...document.querySelectorAll('table,[role="table"]')]
+      .filter(table=>visible(table)&&Boolean(verifiedInventoryTable(table)));
+
+    for (const table of tables) {
+      let best = table;
+      let colorContainer = null;
+      for (let depth = 0, el = table.parentElement; depth < 8 && el && el !== document.body; depth += 1, el = el.parentElement) {
+        const value = text(el);
+        if (!value || value.length > 6500) break;
+        best = el;
+        if (colorMarker(value)) {
+          colorContainer = el;
+          break;
+        }
+      }
+      return colorContainer || best;
+    }
+
+    const selectors = ['[role="dialog"]', 'dialog', '.modal.show', '.modal.in', '.modal', '.modal-content', '[class*="modal"]', '[class*="popup"]', '[class*="dialog"]'];
+    const candidates = [];
+    for (const selector of selectors) {
+      for (const el of document.querySelectorAll(selector)) {
+        if (!visible(el)) continue;
+        const value = text(el);
+        if (value.length < 6500 && stockMarker(value)) candidates.push(el);
+      }
+    }
+    candidates.sort((a, b) => text(a).length - text(b).length);
+    return candidates[0] || null;
+  }
+
+  async function waitForStockRoot(timeout = 3500) {
+    const started = Date.now();
+    while (Date.now() - started < timeout) {
+      const root = findStockRoot();
+      if (root) return root;
+      await sleep(70);
+    }
+    return null;
+  }
+
+
+  function readTargetRows(root,targetSizes){
+    const snapshot=inventoryTableSnapshot(root);
+    if(!snapshot.tableFound)return[];
+    const order=(targetSizes&&targetSizes.length?targetSizes:snapshot.labels).map(dom.normalizeSize).filter(Boolean);
+    const bySize=new Map(snapshot.rows.map(row=>[row.size,row]));
+    return order.filter(size=>bySize.has(size)).map(size=>bySize.get(size));
+  }
+
+  function rowsSignature(rows) {
+    return JSON.stringify((rows || []).map((row) => [row.size, Number(row.stock)]));
+  }
+
+  function hasAllTargetRows(rows, targetSizes) {
+    const wanted = new Set((targetSizes || []).map(dom.normalizeSize));
+    return wanted.size>0 && rows.length === wanted.size && [...wanted].every((size) => rows.some((row) => row.size === size));
+  }
+
+  // Explicit "Hết hàng" in the inventory column means stock 0, not a
+  // missing value. When two colors are both fully sold out their size/stock
+  // signatures are identical, so row changes cannot prove a color switch.
+  function explicitSoldOutRows(rows,targetSizes){
+    return hasAllTargetRows(rows,targetSizes)
+      &&rows.every(row=>row.stock===0&&/\b(?:hết\s*hàng|het\s*hang|sold\s*out|không\s*còn\s*hàng)\b/i.test(String(row.raw||'')));
+  }
+
+  async function stableTargetRows(root, targetSizes, timeout = 4000, cancelVersion = null) {
+    let best = [];
+    let previous = '';
+    let stable = 0;
+    const started = Date.now();
+    while (Date.now() - started < timeout) {
+      assertPopupScanActive(cancelVersion);
+      await sleep(70);
+      assertPopupScanActive(cancelVersion);
+      const currentRoot = findStockRoot() || root;
+      const effectiveSizes=targetSizes&&targetSizes.length?targetSizes:sizeLabelsFromVisibleRows(currentRoot);
+      const rows = readTargetRows(currentRoot, effectiveSizes);
+      const signature = rowsSignature(rows);
+      if (rows.length > best.length) best = rows;
+      if (signature && signature === previous) stable += 1;
+      else stable = 0;
+      previous = signature;
+      if (hasAllTargetRows(rows, effectiveSizes) && stable >= 1) return rows;
+      if (rows.length > 0 && stable >= 3) return rows;
+    }
+    return best;
+  }
+
+  function labelForInput(input, root) {
+    const candidates = [];
+    if (input.id) {
+      const selector = `label[for="${CSS.escape(input.id)}"]`;
+      const label = root.querySelector(selector) || document.querySelector(selector);
+      if (label) candidates.push(text(label));
+    }
+    const own = input.closest('label');
+    if (own) candidates.push(text(own));
+    for (const el of [input.nextElementSibling, input.previousElementSibling, input.parentElement]) if (el) candidates.push(text(el));
+    for (const value of [input.dataset && input.dataset.color, input.dataset && input.dataset.name, input.title, input.getAttribute('aria-label')]) {
+      if (value) candidates.push(core.normalizeText(value));
+    }
+
+    for (const candidate of candidates) {
+      const clean = core.normalizeText(candidate);
+      if (clean.length <= 45 && dom.looksLikeColorName(clean)) return clean;
+    }
+    return '';
+  }
+
+  function colorControlScopes(el,root){
+    const out=[];
+    const add=(node)=>{if(node&&node.nodeType===1&&!out.includes(node))out.push(node);};
+    if(el){
+      add(el);
+      if(el.id){
+        try{add((root||document).querySelector(`label[for="${CSS.escape(el.id)}"]`));}catch(_){}
+      }
+      add(el.closest&&el.closest('label'));
+      add(el.nextElementSibling);
+      add(el.previousElementSibling);
+      let parent=el.parentElement;
+      for(let depth=0;depth<4&&parent&&parent!==(root&&root.parentElement);depth+=1,parent=parent.parentElement)add(parent);
+    }
+    return out;
+  }
+
+  function colorImageUrl(name,root,controlEl,fallback=''){
+    const key=plain(name);
+    const current=findColorControl(name,root);
+    const el=current&&current.el?current.el:controlEl;
+    const directCandidates=[];
+    if(current&&current.imageUrl)directCandidates.push(current.imageUrl);
+    for(const scope of colorControlScopes(el,root)){
+      const url=imageUrlFromScope(scope);
+      if(url)directCandidates.push(url);
+    }
+    for(const raw of directCandidates){
+      const url=normalizeImageUrl(raw);
+      if(url)return url;
+    }
+
+    let best=null;
+    const nodes=root&&root.querySelectorAll
+      ? root.querySelectorAll('img,source,[data-image],[data-image-url],[style*="background-image"]')
+      : [];
+    for(const node of nodes){
+      const url=imageUrlFromNode(node);
+      if(!url)continue;
+      const scope=node.closest&&node.closest('label,[data-color],[class*="color"],[class*="variant"],[class*="option"],li,div');
+      const meta=plain(`${node.getAttribute&&node.getAttribute('alt')||''} ${node.getAttribute&&node.getAttribute('title')||''} ${scope?text(scope):''}`);
+      let score=0;
+      if(key&&meta.includes(key))score+=220;
+      if(scope&&/\b(active|selected|checked)\b/i.test(String(scope.className||'')))score+=65;
+      if(visible(node))score+=20;
+      const w=Number(node.naturalWidth||node.width||0),h=Number(node.naturalHeight||node.height||0);
+      if(w>=80&&h>=80)score+=Math.min(50,Math.round((w*h)/20000));
+      if(!best||score>best.score)best={url,score};
+    }
+    if(best&&best.score>=40)return best.url;
+    return normalizeImageUrl(fallback);
+  }
+
+  function colorControls(root) {
+    if (!root) return [];
+    const radios = [];
+    const seen = new Set();
+
+    for (const input of root.querySelectorAll('input[type="radio"]')) {
+      const name = labelForInput(input, root);
+      const key = dom.colorKey(name);
+      if (!name || !key || seen.has(key)) continue;
+      seen.add(key);
+      const scopes=colorControlScopes(input,root);
+      const imageUrl=scopes.map(scope=>imageUrlFromScope(scope)).find(Boolean)||'';
+      radios.push({ name, el: input, imageUrl });
+    }
+    if (radios.length) return radios;
+
+    for (const el of root.querySelectorAll('[data-color]')) {
+      const name = core.normalizeText(el.getAttribute('data-color'));
+      const key = dom.colorKey(name);
+      if (!name || !key || seen.has(key) || !dom.looksLikeColorName(name)) continue;
+      seen.add(key);
+      const imageUrl=imageUrlFromScope(el)||'';
+      radios.push({ name, el, imageUrl });
+    }
+    return radios;
+  }
+
+  function findColorControl(name, root) {
+    const key = dom.colorKey(name);
+    return colorControls(root).find((item) => dom.colorKey(item.name) === key) || null;
+  }
+
+  function expectedColorHints(hint) {
+    return [...new Set(((hint && hint.colors) || []).map((value) => core.normalizeText(value)).filter(Boolean))];
+  }
+
+  // Only exact normalized color names may select a source inventory table.
+  // "Trắng" != "Trắng Đỏ", "Xanh" != "Xanh Đen": a fuzzy color match
+  // can silently overwrite inventory of the wrong SKU.
+  function exactColor(name,expected){
+    const a=dom.colorKey(name),b=dom.colorKey(expected);
+    return Boolean(a&&b&&a===b);
+  }
+
+  function selectTargetControls(allControls, hint) {
+    const wanted = expectedColorHints(hint);
+    if (!wanted.length) return { controls: allControls, missingHints: [] };
+    const selected=[],missingHints=[],used=new Set();
+    for(const color of wanted){
+      const exact=allControls
+        .map((control,index)=>({control,index}))
+        .filter(x=>!used.has(x.index)&&exactColor(x.control.name,color));
+      if(exact.length!==1){
+        missingHints.push(color);
+        continue;
+      }
+      used.add(exact[0].index);
+      selected.push({...exact[0].control,hint:color,hintScore:1});
+    }
+    return{controls:selected,missingHints};
+  }
+
+  async function clickElement(el) {
+    if (!el) return;
+    try { el.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (_) {}
+    try { el.click(); } catch (_) {}
+    if (el.matches && el.matches('input')) {
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  function isSelectedColor(name, root) {
+    const control = findColorControl(name, root);
+    if (!control || !control.el) return false;
+    if ('checked' in control.el) return Boolean(control.el.checked);
+    return control.el.getAttribute('aria-checked') === 'true' || /\b(active|selected|checked)\b/i.test(String(control.el.className || ''));
+  }
+
+  async function switchColorAndRead(name, root, targetSizes, previousSignature = '', cancelVersion = null) {
+    let currentRoot = findStockRoot() || root;
+    const control = findColorControl(name, currentRoot);
+    if (!control) return [];
+
+    const alreadySelected = isSelectedColor(name, currentRoot);
+    if (!alreadySelected) await clickElement(control.el);
+
+    const started = Date.now();
+    let best = [], previousRowsSignature = '', stableReads = 0;
+    let seenSelected = alreadySelected;
+    while (Date.now() - started < 6500) {
+      assertPopupScanActive(cancelVersion);
+      await sleep(60);
+      assertPopupScanActive(cancelVersion);
+      currentRoot = findStockRoot() || currentRoot;
+      if (isSelectedColor(name, currentRoot)) seenSelected = true;
+      const effectiveSizes=targetSizes&&targetSizes.length?targetSizes:sizeLabelsFromVisibleRows(currentRoot);
+      const rows = readTargetRows(currentRoot, effectiveSizes);
+      const signature = rowsSignature(rows);
+      if (rows.length > best.length) best = rows;
+      if (signature && signature === previousRowsSignature) stableReads += 1;
+      else stableReads = 0;
+      previousRowsSignature = signature;
+      const elapsed = Date.now() - started;
+
+      // A real inventory-row transition is also evidence of the color changing,
+      // even if the supplier's custom control has no reliable "checked" attribute.
+      const changedRows = Boolean(previousSignature && signature && signature !== previousSignature);
+      // A selected radio alone is NOT evidence that the stock table refreshed.
+      // On later colors we must observe changed stock/size rows to avoid
+      // assigning the previous color's inventory to the next color.
+      // Both colors can legitimately have exactly the same stock signature:
+      // S/M/L/XL/XXL = "Hết hàng" (0). In this case a changed row signature
+      // is impossible. Use the selected radio + explicit zero labels + stable
+      // reads after a settling interval, rather than marking stock as missing.
+      const sameZeroStock=Boolean(previousSignature&&signature===previousSignature
+        &&seenSelected&&explicitSoldOutRows(rows,effectiveSizes)
+        &&stableReads>=5&&elapsed>=1500);
+      const selectionConfirmed = alreadySelected || !previousSignature || changedRows || sameZeroStock;
+      if (selectionConfirmed && hasAllTargetRows(rows, effectiveSizes)) {
+        if (alreadySelected || changedRows || sameZeroStock || elapsed >= 650) {
+          await sleep(60);
+          return stableTargetRows(currentRoot, effectiveSizes, 1800, cancelVersion);
+        }
+      }
+
+      // If the supplier has fewer sizes than expected, do NOT wait 6.5s on
+      // each color just to confirm a stable partial result. The caller will
+      // report missing sizes and retry the product once with a new popup.
+      if (selectionConfirmed && rows.length > 0 && stableReads >= 4 && elapsed >= 850) {
+        return rows;
+      }
+    }
+    // An unconfirmed color switch must never be assigned the previous color's
+    // stock. Return only a verified partial read, otherwise mark it missing.
+    const fullZeroConfirmed=seenSelected&&explicitSoldOutRows(best,targetSizes)
+      &&rowsSignature(best)===previousSignature&&stableReads>=5;
+    return alreadySelected || !previousSignature || fullZeroConfirmed
+      ||(rowsSignature(best) && rowsSignature(best)!==previousSignature)
+      ? best : [];
+  }
+
+  function productAnchors(descriptor) {
+    const out = [];
+    for (const a of document.querySelectorAll('a[href]')) {
+      try {
+        const url = new URL(a.getAttribute('href'), location.href);
+        if (core.extractProductId(url.href) === Number(descriptor.id)) out.push(a);
+      } catch (_) {}
+    }
+    return out;
+  }
+
+  function cardForDescriptor(descriptor) {
+    const anchors = productAnchors(descriptor);
+    let best = null;
+    for (const anchor of anchors) {
+      let el = anchor;
+      for (let depth = 0; depth < 8 && el; depth += 1, el = el.parentElement) {
+        if (!el || el === document.body) break;
+        const value = text(el);
+        if (!value || value.length > 3500) continue;
+        const productLinks = [...el.querySelectorAll('a[href]')].filter((a) => {
+          try { return !!core.extractProductId(new URL(a.getAttribute('href'), location.href).href); } catch (_) { return false; }
+        });
+        const clickables = el.querySelectorAll('button,[role="button"],[onclick],[data-id],[data-product-id],[data-product],[data-psid],[class*="cart"],[class*="buy"],[class*="quick"]').length;
+        if (productLinks.length <= 3 && clickables) {
+          const score = (productLinks.length === 1 ? 100 : 60) - value.length / 100;
+          if (!best || score > best.score) best = { el, score };
+        }
+      }
+    }
+    return best ? best.el : (anchors[0] ? anchors[0].parentElement : null);
+  }
+
+  function quickCandidates(descriptor, card) {
+    const id = String(descriptor.id);
+    const selectors = 'button,a,[role="button"],[onclick],[data-id],[data-product-id],[data-product],[data-psid],[data-variant-id],[class*="cart"],[class*="buy"],[class*="quick"],[class*="add"]';
+    const pools = [];
+    if (card) pools.push(...card.querySelectorAll(selectors));
+    pools.push(...document.querySelectorAll(`[data-id="${CSS.escape(id)}"],[data-product-id="${CSS.escape(id)}"],[data-product="${CSS.escape(id)}"],[data-psid="${CSS.escape(id)}"]`));
+
+    const out = [];
+    const seen = new Set();
+    for (const el of pools) {
+      if (!el || seen.has(el) || !visible(el)) continue;
+      seen.add(el);
+      const attrs = ['id', 'class', 'onclick', 'href', 'data-id', 'data-product-id', 'data-product', 'data-psid', 'data-variant-id', 'title', 'aria-label']
+        .map((name) => (el.getAttribute && el.getAttribute(name)) || '').join(' ');
+      const p = plain(`${text(el)} ${attrs}`);
+      let score = 0;
+      if (attrs.includes(id)) score += 140;
+      if (/them vao gio|them gio|chon mua|chon size|dat hang/.test(p)) score += 120;
+      if (/add.?to.?cart|addcart|cart|quick.?buy|quick.?view|buy.?now|order/.test(p)) score += 70;
+      if (card && card.contains(el)) score += 25;
+      if (el.matches('button,[role="button"],[onclick]')) score += 15;
+      if (score > 0) out.push({ el, score });
+    }
+    out.sort((a, b) => b.score - a.score);
+    return out.slice(0, 10);
+  }
+
+  function modalContainer(root) {
+    return root ? (root.closest('[role="dialog"],dialog,.modal,[class*="modal"],[class*="popup"],[class*="dialog"]') || root) : null;
+  }
+
+  async function closeStockPopup(root) {
+    const container=modalContainer(root);
+    if(!container)return true;
+    const selector='button,a,[role="button"],[onclick],[aria-label],[title],[class*="close"],[class*="Close"],[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close';
+    const scopes=[container];
+    let ancestor=container.parentElement;
+    for(let i=0;i<3&&ancestor&&ancestor!==document.body;i+=1,ancestor=ancestor.parentElement){
+      scopes.push(ancestor);
+    }
+    const candidates=new Map();
+    for(let depth=0;depth<scopes.length;depth+=1){
+      for(const el of scopes[depth].querySelectorAll(selector)){
+        if(!visible(el))continue;
+        const clickable=el.closest('button,[role="button"],[onclick],a')||el;
+        if(!visible(clickable))continue;
+        const label=plain(`${text(el)} ${el.getAttribute('aria-label')||''} ${el.getAttribute('title')||''} ${el.className||''}`);
+        let score=0;
+        if(el.matches('[data-dismiss="modal"],[data-bs-dismiss="modal"],.btn-close,.close'))score+=180;
+        if(/dong|close|modal-close|popup-close/.test(label))score+=130;
+        if(/^[x×]$/.test(text(el).trim().toLowerCase()))score+=160;
+        if(score<=0)continue;
+        score-=depth*15;
+        const previous=candidates.get(clickable);
+        if(!previous||score>previous.score)candidates.set(clickable,{el:clickable,score});
+      }
+    }
+    const sorted=[...candidates.values()].sort((a,b)=>b.score-a.score);
+    for(const item of sorted.slice(0,5)){
+      await clickElement(item.el);
+      for(let attempt=0;attempt<8;attempt+=1){
+        if(!findStockRoot())return true;
+        await sleep(55);
+      }
+    }
+    // Một số popup bắt phím Escape ở cửa sổ hoặc ở chính phần tử modal.
+    for(const target of [document.activeElement,container,document,window]){
+      if(!target||typeof target.dispatchEvent!=='function')continue;
+      for(const type of ['keydown','keyup']){
+        target.dispatchEvent(new KeyboardEvent(type,{
+          key:'Escape',code:'Escape',keyCode:27,which:27,bubbles:true,cancelable:true
+        }));
+      }
+    }
+    for(let attempt=0;attempt<10;attempt+=1){
+      if(!findStockRoot())return true;
+      await sleep(60);
+    }
+    return !findStockRoot();
+  }
+
+  function popupFingerprint(root) {
+    if (!root) return '';
+    const rows = readTargetRows(root, detectedSizesFromRoot(root));
+    const colors = colorControls(root).map((x) => dom.colorKey(x.name));
+    const marker = String(root.innerHTML || '').replace(/\s+/g, ' ').slice(0, 12000);
+    return JSON.stringify({ rows: rows.map((r) => [r.size, Number(r.stock)]), colors, marker });
+  }
+
+  // navigation-guard-v1
+  function inertActionHref(el) {
+    if (!el || !el.matches || !el.matches('a[href]')) return false;
+    try {
+      const url = new URL(el.getAttribute('href'), location.href);
+      return url.host === location.host && Boolean(core.extractProductId(url.href));
+    } catch (_) { return false; }
+  }
+
+  async function clickQuickCandidate(el) {
+    if (!el) return;
+    if (el.matches && el.matches('a[href]')) {
+      const guard = (event) => event.preventDefault();
+      el.addEventListener('click', guard, { capture: true, once: true });
+    }
+    await clickElement(el);
+  }
+
+  async function waitForPopupRefresh(beforeFingerprint, expectedPath, timeout = 3200, cancelVersion = null) {
+    const started = Date.now();
+    while (Date.now() - started < timeout) {
+      assertPopupScanActive(cancelVersion);
+      await sleep(70);
+      assertPopupScanActive(cancelVersion);
+      if (expectedPath && location.pathname !== expectedPath) throw new Error('Trang nguồn đã rời danh mục đang quét; dừng để tránh sai dữ liệu.');
+      const root = findStockRoot();
+      if (!root) continue;
+      const fp = popupFingerprint(root);
+      if (!beforeFingerprint || (fp && fp !== beforeFingerprint)) {
+        await sleep(75);
+        return findStockRoot() || root;
+      }
+    }
+    return null;
+  }
+
+  async function openStockPopup(descriptor, cancelVersion = null) {
+    assertPopupScanActive(cancelVersion);
+    const expectedPath=descriptor.categoryPath||location.pathname;
+    if (location.pathname !== expectedPath) throw new Error('Tool chỉ quét trên đúng trang danh mục đang mở.');
+    const existing = findStockRoot();
+    const before = popupFingerprint(existing);
+    const card = cardForDescriptor(descriptor);
+    const candidates = quickCandidates(descriptor, card).filter((item) => !inertActionHref(item.el));
+    // Quick probes prevent a non-working button from consuming 4.6 seconds.
+    // Any delayed popup is still accepted by the final passive wait below.
+    for (let index=0;index<candidates.length;index+=1) {
+      assertPopupScanActive(cancelVersion);
+      await clickQuickCandidate(candidates[index].el);
+      assertPopupScanActive(cancelVersion);
+      const root = await waitForPopupRefresh(before, expectedPath, index===0?2200:1200, cancelVersion);
+      if (root) return { root, cardFound: !!card, candidateCount: candidates.length, reusedPopup: !!existing };
+    }
+    // Retain a slow-network recovery window without further clicks. Do not
+    // mistake a late popup for an empty product or zero stock.
+    if (candidates.length) {
+      const lateRoot=await waitForPopupRefresh(before,expectedPath,2600,cancelVersion);
+      if(lateRoot)return {root:lateRoot,cardFound:!!card,candidateCount:candidates.length,reusedPopup:!!existing};
+    }
+    const error = new Error(`Không bật được popup tồn cho ${descriptor.title} ngay trên trang danh mục.`);
+    error.diagnostics = { cardFound: !!card, candidateCount: candidates.length, anchorCount: productAnchors(descriptor).length, categoryOnly: true };
+    throw error;
+  }
+
+  async function firstVariant(parentId, parentName) {
+    try {
+      const response = await fetch(`/product/child?psId=${encodeURIComponent(parentId)}`, {
+        credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json, text/plain, */*' }
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data && data.data ? core.normalizeVariant(data.data, parentId, parentName) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function fetchSourceChildVariant(psId,parentId,parentName){
+    try{
+      const response=await fetch(`/product/child?psId=${encodeURIComponent(psId)}`,{
+        credentials:'include',
+        cache:'no-store',
+        headers:{Accept:'application/json, text/plain, */*'}
+      });
+      if(!response.ok)return{variant:null,http:response.status};
+      const json=await response.json();
+      const raw=json&&(json.data||json.result||json);
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return{variant:null};
+      const variant=core.normalizeVariant(raw,parentId,parentName);
+      if(!variant)return{variant:null};
+      return{variant};
+    }catch(error){
+      return{variant:null,error:error&&error.message||String(error)};
+    }
+  }
+
+  async function collectSourceSkuBundle(parentId,parentName,expectedCount=0){
+    const expected=Math.max(0,Number(expectedCount)||0);
+    const firstResponse=await fetchSourceChildVariant(parentId,parentId,parentName);
+    const first=firstResponse.variant;
+    if(!first)return{variants:[],complete:false,requestCount:1,stopReason:'first-child-missing'};
+
+    const byId=new Map([[Number(first.id),first]]);
+    let requestCount=1,stale=0,stopReason='max-span',complete=false;
+    const firstId=Number(first.id)>0?Number(first.id):Number(parentId)+1;
+    // Đây là cơ chế quét nhanh của bước SẢN PHẨM MỚI:
+    // lấy child đầu tiên rồi đi tuần tự ID kế tiếp để đọc code/SKU thật của website.
+    const maxSpan=Math.max(24,expected?expected+12:48);
+
+    for(let offset=0;offset<maxSpan;offset+=1){
+      const childId=firstId+offset;
+      if(childId===Number(first.id))continue;
+      const response=await fetchSourceChildVariant(childId,parentId,parentName);
+      requestCount+=1;
+      const variant=response.variant;
+
+      if(variant&&Number(variant.parentId)!==Number(parentId)){
+        stopReason='next-parent';
+        complete=byId.size>0;
+        break;
+      }
+
+      if(variant){
+        const existed=byId.has(Number(variant.id));
+        if(!existed){
+          byId.set(Number(variant.id),variant);
+          stale=0;
+        }else stale+=1;
+        if(expected>0&&byId.size>=expected){
+          stopReason='expected-count';
+          complete=true;
+          break;
+        }
+      }else{
+        stale+=1;
+      }
+
+      if(byId.size>0&&stale>=5){
+        stopReason='sequence-ended';
+        complete=expected>0?byId.size>=expected:true;
+        break;
+      }
+    }
+
+    const variants=[...byId.values()].filter(Boolean);
+    if(expected>0&&variants.length>=expected)complete=true;
+    return{variants,complete,requestCount,stopReason};
+  }
+
+  async function collectSourceSkuVariants(parentId,parentName,expectedCount){
+    const bundle=await collectSourceSkuBundle(parentId,parentName,expectedCount);
+    return bundle.variants;
+  }
+
+  async function scanDescriptorApiFast(descriptor,progress){
+    const parentId=Number(descriptor&&descriptor.id)||0;
+    const parentName=core.normalizeText(descriptor&&descriptor.title)||`#${parentId}`;
+    if(!parentId)return{
+      parentId:0,parentName,sourceUrl:String(descriptor&&descriptor.url||location.href),
+      variants:[],complete:false,confidence:'low',scanMethod:'api-source-sku-sequential',
+      stopReason:'missing-parent-id',errors:[{message:'Thiếu parentId'}]
+    };
+
+    const bundle=await collectSourceSkuBundle(parentId,parentName,0);
+    const variants=bundle.variants.map(v=>({
+      ...v,
+      parentId,
+      scanMethod:'api-source-sku-sequential'
+    }));
+    const complete=bundle.complete===true&&variants.length>0;
+    if(progress)progress({
+      stage:'api-product',
+      descriptor,
+      variants:variants.length,
+      requests:bundle.requestCount,
+      stopReason:bundle.stopReason
+    });
+    return{
+      parentId,parentName,
+      sourceUrl:String(descriptor&&descriptor.url||location.href),
+      imageUrl:String(descriptor&&descriptor.imageUrl||''),
+      variants,
+      complete,
+      confidence:complete?'high':(variants.length?'medium':'low'),
+      scanMethod:'api-source-sku-sequential',
+      requestCount:bundle.requestCount,
+      stopReason:bundle.stopReason,
+      errors:complete?[]:[{message:'API nguồn chưa xác nhận đủ toàn bộ biến thể/SKU'}],
+      domDiagnostics:{apiFast:true,sourceSkuRead:variants.length}
+    };
+  }
+
+  function sourceSkuKey(color,size){
+    return `${dom.colorKey(color)}|${dom.normalizeSize(size)}`;
+  }
+
+  function findSourceSkuVariant(sourceVariants,color,size){
+    const normalizedSize=dom.normalizeSize(size);
+    const candidates=(sourceVariants||[]).filter(v=>dom.normalizeSize(v&&v.size)===normalizedSize&&v&&v.sku);
+    if(!candidates.length)return null;
+    const exact=candidates.filter(v=>exactColor(v.color,color));
+    return exact.length===1?exact[0]:null;
+  }
+
+  function makeVariant(parentId, parentName, color, row, index, sourceVariant=null, imageUrl='') {
+    const cleanColor = core.normalizeText(color) || '(không màu)';
+    const size = dom.normalizeSize(row.size);
+    const exactSku=core.normalizeText(sourceVariant&&sourceVariant.sku);
+    const resolvedImage=normalizeImageUrl(imageUrl)||normalizeImageUrl(sourceVariant&&sourceVariant.image)||'';
+    return {
+      id: Number(sourceVariant&&sourceVariant.id)||Number(parentId) * 1000 + index + 1,
+      parentId: Number(parentId),
+      sku: exactSku,
+      skuKey: core.normalizeSku(exactSku),
+      name: core.normalizeText(sourceVariant&&sourceVariant.name)||`${parentName} - ${cleanColor} - ${size}`,
+      color: core.normalizeText(sourceVariant&&sourceVariant.color)||cleanColor,
+      size: dom.normalizeSize(sourceVariant&&sourceVariant.size)||size,
+      available: Number(row.stock),
+      price: Number(sourceVariant&&sourceVariant.price)||0,
+      image: resolvedImage,
+      status: Number(row.stock) > 0 ? 2 : 0,
+      scanMethod: 'category-alias-size'
+    };
+  }
+
+  function auditColorSnapshots(snapshots){
+    const missing=[],unverifiedColors=[];
+    for(const snapshot of snapshots){
+      const rows=Array.isArray(snapshot&&snapshot.rows)?snapshot.rows:[];
+      const expected=Array.isArray(snapshot&&snapshot.expectedSizes)?snapshot.expectedSizes:[];
+      const color=dom.colorKey(snapshot&&snapshot.color||'');
+      if(!rows.length||!expected.length){
+        unverifiedColors.push(snapshot&&snapshot.color||'Chưa rõ');
+        continue;
+      }
+      for(const size of expected){
+        if(!rows.some(row=>dom.normalizeSize(row.size)===dom.normalizeSize(size)))
+          missing.push(`${color}/${size}`);
+      }
+    }
+    return {missing,unverifiedColors};
+  }
+
+  async function readOpenedPopup(descriptor, hints, progress, openInfo = null, cancelVersion = null) {
+    assertPopupScanActive(cancelVersion);
+    const root = (openInfo && openInfo.root) || findStockRoot();
+    if (!root) throw new Error('Chưa có popup tồn kho đang mở');
+
+    const parentId = Number(descriptor.id || core.extractProductId(location.href));
+    const parentName = core.normalizeText(descriptor.title || productTitleFromDocument() || `#${parentId}`);
+    const hint = hintForTitle(parentName, hints);
+    const hintedSizes = targetSizesForHint(hint);
+    const inferredSizes=expectedSizesFromRoot(root);
+    const adultSize=Boolean(inferredSizes.some(size=>TARGET_SIZES.includes(size)));
+    // Adult sizes follow the fixed 5-size schema. Numeric sizes are discovered
+    // from the selected color, never copied from the first color.
+    const neededSizes = hintedSizes.length ? hintedSizes : (adultSize ? inferredSizes : []);
+    const allControls = colorControls(root);
+    const targetSelection = selectTargetControls(allControls, hint);
+    // Bỏ fetch fallback khi popup đã có đủ control màu; tiết kiệm 1 request/SP.
+    const first = targetSelection.controls.length ? null : await firstVariant(parentId, parentName);
+    assertPopupScanActive(cancelVersion);
+    const fallbackColor = first && first.color ? first.color : '';
+    let controls = targetSelection.controls;
+    const fallbackWanted = expectedColorHints(hint);
+    // single-color-fallback
+    if (!controls.length && fallbackColor) {
+      if (!fallbackWanted.length) {
+        controls = [{ name: fallbackColor, el: null, hint: fallbackColor, hintScore: 1 }];
+      } else {
+        const exact = fallbackWanted.filter(wanted=>exactColor(wanted,fallbackColor));
+        if(exact.length===1){
+          controls=[{name:fallbackColor,el:null,hint:exact[0],hintScore:1}];
+          targetSelection.missingHints=(targetSelection.missingHints||[]).filter(value=>value!==exact[0]);
+        }
+      }
+    }
+
+    const variants = [];
+    const snapshots = [];
+    let previousSignature = '';
+
+    for (let index = 0; index < controls.length; index += 1) {
+      assertPopupScanActive(cancelVersion);
+      const target = controls[index];
+      let rows = [];
+      let currentRoot = findStockRoot() || root;
+      if (target.el) {
+        rows = await switchColorAndRead(target.name, currentRoot, neededSizes, previousSignature, cancelVersion);
+      } else {
+        rows = await stableTargetRows(currentRoot, neededSizes, 4000, cancelVersion);
+      }
+      assertPopupScanActive(cancelVersion);
+      if(rows.length)previousSignature = rowsSignature(rows);
+      currentRoot=findStockRoot()||currentRoot;
+      const colorExpectedSizes=neededSizes.length
+        ? neededSizes
+        : sizeLabelsFromVisibleRows(currentRoot);
+      const imageUrl=colorImageUrl(target.name,currentRoot,target.el,target.imageUrl||descriptor.imageUrl||'');
+
+      snapshots.push({
+        color:target.name,hint:target.hint||'',hintScore:target.hintScore||0,
+        imageUrl,rows,expectedSizes:colorExpectedSizes,
+        verified:Boolean(rows.length&&colorExpectedSizes.length
+          &&colorExpectedSizes.every(size=>rows.some(row=>row.size===size)))
+      });
+      progress({
+        stage: 'dom-color',
+        descriptor,
+        color: target.name,
+        colorIndex: index + 1,
+        colorTotal: controls.length,
+        rows: rows.length,
+        targetRows: colorExpectedSizes.length,
+        targetSizes: colorExpectedSizes,
+        imageUrl
+      });
+      rows.forEach((row) => {
+        variants.push(makeVariant(parentId,parentName,target.name,row,variants.length,null,imageUrl));
+      });
+    }
+
+    const unique = new Map();
+    for (const variant of variants) {
+      const key = `${dom.colorKey(variant.color)}|${dom.normalizeSize(variant.size)}`;
+      if (!unique.has(key)) unique.set(key, variant);
+    }
+
+    const list = [...unique.values()];
+    const imageUrls=[...new Set(list.map(v=>normalizeImageUrl(v&&v.image)).filter(Boolean))];
+    const colorKeys = [...new Set(list.map((variant) => dom.colorKey(variant.color)).filter(Boolean))];
+    const {missing,unverifiedColors}=auditColorSnapshots(snapshots);
+
+    const missingSourceSku=[];
+    const expectedHints = expectedColorHints(hint);
+    const allColorsVerified=Boolean(snapshots.length)
+      &&snapshots.length===controls.length
+      &&snapshots.every(snapshot=>snapshot.verified);
+    const uiComplete = allColorsVerified
+      &&missing.length===0
+      &&unverifiedColors.length===0
+      &&(expectedHints.length
+        ? targetSelection.missingHints.length===0&&colorKeys.length===expectedHints.length
+        : colorKeys.length===controls.length);
+    const complete=uiComplete;
+
+    const result = {
+      parentId,
+      parentName,
+      variants: list,
+      errors: [],
+      requestCount: 1,
+      stopReason: complete ? 'alias-size-ready' : 'target-colors-size-partial',
+      confidence: list.length ? (complete ? 'high' : 'medium') : 'low',
+      complete,
+      scanMethod: 'category-alias-size',
+      sourceUrl: String(descriptor.url||location.href),
+      imageUrl: imageUrls[0]||normalizeImageUrl(descriptor.imageUrl)||'',
+      imageUrls,
+      expectedFromSapo: expectedHints.length * neededSizes.length,
+      domDiagnostics: {
+        stockUiFound: true,
+        cardFound: openInfo ? openInfo.cardFound : null,
+        candidateCount: openInfo ? openInfo.candidateCount : null,
+        allColorControls: allControls.map((item) => item.name),
+        targetColorHints: expectedHints,
+        selectedColorControls: controls.map((item) => item.name),
+        missingColorHints: targetSelection.missingHints,
+        colorsRead: colorKeys.length,
+        expectedColorCount: expectedHints.length,
+        expectedSizes: neededSizes.length?neededSizes:[],
+        expectedSizesByColor:snapshots.map(snapshot=>({
+          color:snapshot.color,sizes:snapshot.expectedSizes,verified:snapshot.verified
+        })),
+        unverifiedColors,
+        ignoredSizes: [],
+        missingSizes: missing,
+        imagesRead:imageUrls.length,
+        missingImageColors:[...new Set(list.filter(v=>!normalizeImageUrl(v&&v.image)).map(v=>core.normalizeText(v.color)).filter(Boolean))],
+        skuRule:'alias+size',
+        missingSourceSku,
+        snapshots
+      }
+    };
+    result.validation = core.validateScanResult(result);
+    return result;
+  }
+
+  async function scanOneDescriptor(descriptor, hints, progress, cancelVersion = null) {
+    let openInfo = null;
+    try {
+      assertPopupScanActive(cancelVersion);
+      openInfo = await openStockPopup(descriptor, cancelVersion);
+      assertPopupScanActive(cancelVersion);
+      let result = await readOpenedPopup(descriptor, hints, progress, openInfo, cancelVersion);
+      assertPopupScanActive(cancelVersion);
+
+      // Nếu popup đã đọc được nhưng còn thiếu size, đóng/mở lại và thử riêng sản phẩm đó 1 lần.
+      // Tránh trường hợp mạng/UI lag làm mất một size như ARS-M.
+      const missing = result&&result.domDiagnostics&&Array.isArray(result.domDiagnostics.missingSizes)
+        ? result.domDiagnostics.missingSizes : [];
+      if(result&&result.variants&&result.variants.length&&result.complete!==true){
+        try{
+          const current=findStockRoot();
+          if(current)await closeStockPopup(current);
+          await sleep(100);
+          assertPopupScanActive(cancelVersion);
+          const retryOpen=await openStockPopup(descriptor, cancelVersion);
+          const retry=await readOpenedPopup(descriptor,hints,progress,retryOpen,cancelVersion);
+          assertPopupScanActive(cancelVersion);
+          const oldCount=Array.isArray(result.variants)?result.variants.length:0;
+          const newCount=Array.isArray(retry&&retry.variants)?retry.variants.length:0;
+          const oldMissing=missing.length;
+          const newMissing=retry&&retry.domDiagnostics&&Array.isArray(retry.domDiagnostics.missingSizes)
+            ? retry.domDiagnostics.missingSizes.length : 999;
+          const oldUnverified=Array.isArray(result.domDiagnostics&&result.domDiagnostics.unverifiedColors)
+            ?result.domDiagnostics.unverifiedColors.length:999;
+          const newUnverified=Array.isArray(retry&&retry.domDiagnostics&&retry.domDiagnostics.unverifiedColors)
+            ?retry.domDiagnostics.unverifiedColors.length:999;
+          if(retry&&retry.complete===true
+            ||(newCount>=oldCount&&newMissing+newUnverified<oldMissing+oldUnverified)
+            ||(newMissing+newUnverified===oldMissing+oldUnverified&&newCount>oldCount))result=retry;
+        }catch(_){}
+      }
+      return result;
+    } catch (error) {
+      if(error&&error.code==='DHL_SCAN_CANCELLED')throw error;
+      return {
+        parentId: Number(descriptor.id),
+        parentName: descriptor.title || '',
+        sourceUrl: descriptor.url || location.href,
+        variants: [],
+        complete: false,
+        confidence: 'low',
+        scanMethod: 'category-target-color-size',
+        stopReason: 'popup-open-error',
+        errors: [{ message: error.message || String(error) }],
+        domDiagnostics: error.diagnostics || {}
+      };
+    }
+  }
+
+  async function scanHdLive(hints,progress){
+    const categoryPath=location.pathname;
+    const links=await discoverCurrentCategory();
+    links.forEach(item=>{item.categoryPath=categoryPath;});
+    progress({stage:'discovered',productTotal:links.length,categoryPath,mode:'api-fast-source-sku'});
+
+    const results=new Array(links.length);
+    let cursor=0;
+    const concurrency=Math.min(3,Math.max(1,links.length));
+
+    async function worker(){
+      while(true){
+        const i=cursor++;
+        if(i>=links.length)return;
+        if(location.pathname!==categoryPath)throw new Error('Trang nguồn đã rời danh mục đang quét.');
+        const descriptor=links[i];
+        progress({stage:'product',productIndex:i+1,productTotal:links.length,descriptor,mode:'api-fast-source-sku'});
+        results[i]=await scanDescriptorApiFast(descriptor,progress);
+      }
+    }
+
+    await Promise.all(Array.from({length:concurrency},()=>worker()));
+
+    // Chỉ những sản phẩm API nhanh không xác nhận đủ mới mở popup để cứu dữ liệu.
+    const failedIndexes=[];
+    for(let i=0;i<results.length;i++){
+      if(!results[i]||results[i].complete!==true)failedIndexes.push(i);
+    }
+    if(failedIndexes.length){
+      const stale=findStockRoot();if(stale)await closeStockPopup(stale);
+      for(let n=0;n<failedIndexes.length;n++){
+        const i=failedIndexes[n],descriptor=links[i];
+        progress({stage:'popup-fallback',productIndex:i+1,productTotal:links.length,descriptor,fallbackIndex:n+1,fallbackTotal:failedIndexes.length});
+        const fallback=await scanOneDescriptor(descriptor,hints,progress);
+        const oldCount=(results[i]&&results[i].variants||[]).length;
+        const newCount=(fallback&&fallback.variants||[]).length;
+        if(fallback&&fallback.complete===true||newCount>oldCount)results[i]=fallback;
+      }
+      const finalPopup=findStockRoot();if(finalPopup)await closeStockPopup(finalPopup);
+    }
+    return results;
+  }
+
+  async function scanHdLivePopupOnly(hints,progress,options={}){
+    const categoryPath=location.pathname;
+    const links=await discoverCurrentCategory();
+    links.forEach(item=>{item.categoryPath=categoryPath;});
+    progress({stage:'discovered',productTotal:links.length,categoryPath,mode:'popup-stock-full'});
+
+    const results=[];
+    const suppressed=new Set((options&&Array.isArray(options.suppressedIds)?options.suppressedIds:[]).map(Number).filter(Boolean));
+    const stale=findStockRoot();
+    if(stale){
+      await closeStockPopup(stale);
+      await sleep(220);
+    }
+
+    for(let i=0;i<links.length;i+=1){
+      if(location.pathname!==categoryPath)throw new Error('Trang nguồn đã rời danh mục đang quét.');
+      const descriptor=links[i];
+      progress({
+        stage:'popup-stock-product',
+        productIndex:i+1,
+        productTotal:links.length,
+        descriptor,
+        mode:'popup-stock-full',
+        suppressed:suppressed.has(Number(descriptor.id))
+      });
+
+      let result;
+      if(suppressed.has(Number(descriptor.id))){
+        // Sản phẩm đã 0 tồn >=10 ngày: không mở popup đầy đủ nữa.
+        // Chỉ probe API nhanh để phát hiện hàng quay lại.
+        const probe=await scanDescriptorApiFast(descriptor,progress);
+        const hasPositive=Boolean(probe&&Array.isArray(probe.variants)&&probe.variants.some(v=>Number(v&&v.available)>0));
+        if(hasPositive||!probe||probe.complete!==true){
+          progress({stage:hasPositive?'revived-product':'suppressed-probe-verify',descriptor,mode:'popup-stock-full'});
+          result=await scanOneDescriptor(descriptor,hints,progress);
+        }else{
+          result={...probe,suppressedProbe:true,complete:true};
+        }
+      }else{
+        result=await scanOneDescriptor(descriptor,hints,progress);
+      }
+      results.push(result);
+
+      const visiblePopup=findStockRoot();
+      if(visiblePopup){
+        await sleep(180);
+        await closeStockPopup(visiblePopup);
+        await sleep(160);
+      }
+    }
+
+    const finalPopup=findStockRoot();
+    if(finalPopup)await closeStockPopup(finalPopup);
+    return results;
+  }
+
+    async function scanCurrentPopup(hints, progress) {
+    const root = findStockRoot();
+    if (!root) throw new Error('Hãy mở popup chọn màu/size của một sản phẩm trước rồi bấm Test popup đang mở.');
+
+    // QUÉT 1 SP và QUÉT HÀNG LOẠT phải dùng CÙNG descriptor.
+    // Trước đây QUÉT 1 SP lấy h1/title của trang danh mục (ví dụ "Áo Bulbal"),
+    // còn quét hàng loạt lấy tên đúng trên card (ví dụ "Bộ Bulbal Strivend GO SG1").
+    // Ưu tiên parentId nằm ngay trong popup rồi map ngược về đúng card sản phẩm.
+    const popupParentId=core.extractParentIdFromHtml(root.outerHTML,'');
+    const documentParentId=core.extractParentIdFromHtml(document.documentElement.innerHTML,core.extractProductId(location.href));
+    const parentId=Number(popupParentId||documentParentId||core.extractProductId(location.href))||0;
+
+    const candidates=findProductLinksInDocument(document,location.href);
+    const card=candidates.find(item=>Number(item&&item.id)===parentId)||null;
+    const descriptor={
+      id:parentId,
+      title:core.normalizeText(card&&card.title)||productTitleFromDocument(),
+      url:String(card&&card.url||location.href),
+      imageUrl:normalizeImageUrl(card&&card.imageUrl)||'',
+      categoryPath:location.pathname
+    };
+
+    return readOpenedPopup(descriptor,hints,progress,{
+      root,
+      cardFound:Boolean(card),
+      candidateCount:candidates.length
+    });
+  }
+
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (!message || !message.type) return;
+    const hints = Array.isArray(message.hints) ? message.hints : [];
+    const progress = (data) => chrome.runtime.sendMessage({ type: 'DHL_STOCK_PROGRESS', data }).catch(() => {});
+
+    if (message.type === 'DHL_CANCEL_POPUP_SCAN') {
+      popupScanCancelVersion+=1;
+      (async()=>{
+        const root=findStockRoot();
+        if(root)await closeStockPopup(root);
+        return true;
+      })().then(()=>sendResponse({ok:true,cancelled:true})).catch(()=>sendResponse({ok:true,cancelled:true}));
+      return true;
+    }
+
+    if (message.type === 'DHL_DISCOVER_VISIBLE_CATEGORY') {
+      try{sendResponse({ok:true,result:discoverVisibleStockProducts()});}
+      catch(error){sendResponse({ok:false,error:error.message||String(error)});}
+      return true;
+    }
+
+    if (message.type === 'DHL_DISCOVER_HD_2026') {
+      discoverHd2026().then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
+    }
+    if (message.type === 'DHL_SCAN_HD_LIVE') {
+      scanHdLive(hints, progress).then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
+    }
+    if (message.type === 'DHL_SCAN_HD_LIVE_POPUP_ONLY') {
+      scanHdLivePopupOnly(hints, progress, {suppressedIds:Array.isArray(message.suppressedIds)?message.suppressedIds:[]})
+        .then((result) => sendResponse({ ok: true, result }))
+        .catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
+    }
+    if (message.type === 'DHL_SCAN_ONE_DESCRIPTOR') {
+      const descriptor={...(message.descriptor||{})};
+      descriptor.id=Number(descriptor.id||descriptor.parentId)||0;
+      descriptor.title=core.normalizeText(descriptor.title||descriptor.parentName);
+      descriptor.url=String(descriptor.url||descriptor.sourceUrl||location.href);
+      descriptor.categoryPath=location.pathname;
+      (async()=>{
+        const fast=await scanDescriptorApiFast(descriptor,progress);
+        if(fast&&fast.complete===true)return fast;
+        return scanOneDescriptor(descriptor,hints,progress);
+      })().then((result)=>sendResponse({ok:true,result})).catch((error)=>sendResponse({ok:false,error:error.message}));
+      return true;
+    }
+    if (message.type === 'DHL_SCAN_ONE_DESCRIPTOR_POPUP_ONLY') {
+      const descriptor={...(message.descriptor||{})};
+      descriptor.id=Number(descriptor.id||descriptor.parentId)||0;
+      descriptor.title=core.normalizeText(descriptor.title||descriptor.parentName);
+      descriptor.url=String(descriptor.url||descriptor.sourceUrl||location.href);
+      descriptor.categoryPath=location.pathname;
+      // A saved descriptor may come from an older, over-broad scan. Verify it
+      // still belongs to a visible product card on THIS page before clicking.
+      let liveProduct;
+      try{
+        liveProduct=discoverVisibleStockProducts().items.find(item=>Number(item.id)===Number(descriptor.id));
+      }catch(error){
+        sendResponse({ok:false,error:error.message||String(error)});
+        return true;
+      }
+      if(!liveProduct){
+        sendResponse({ok:false,error:'Sản phẩm không có trong lưới đang hiển thị của tab này; không mở popup ngoài danh mục.'});
+        return true;
+      }
+      descriptor.title=liveProduct.title;
+      descriptor.url=liveProduct.url;
+      descriptor.imageUrl=liveProduct.imageUrl||descriptor.imageUrl||'';
+
+      // Chế độ CHUẨN HÓA 1 LẦN:
+      // 1) đóng popup cũ nếu còn mở,
+      // 2) BẬT popup thật của đúng sản phẩm,
+      // 3) giữ popup hiển thị trong lúc đọc màu/size/tồn,
+      // 4) đóng popup rồi mới sang sản phẩm tiếp theo.
+      (async()=>{
+        const cancelVersion=popupScanCancelVersion;
+        assertPopupScanActive(cancelVersion);
+        const stale=findStockRoot();
+        if(stale){
+          await closeStockPopup(stale);
+          if(findStockRoot())throw new Error('Không thể đóng popup cũ trước lượt quét mới.');
+        }
+
+        progress({
+          stage:'popup-opening',
+          descriptor,
+          mode:'popup-standardize-once'
+        });
+
+        const result=await scanOneDescriptor(descriptor,hints,progress,cancelVersion);
+
+        assertPopupScanActive(cancelVersion);
+        const visiblePopup=findStockRoot();
+        if(visiblePopup){
+          await closeStockPopup(visiblePopup);
+          if(findStockRoot())throw new Error('Popup chưa đóng, dừng để tránh đọc nhầm sản phẩm.');
+        }
+
+        progress({
+          stage:'popup-closed',
+          descriptor,
+          mode:'popup-standardize-once'
+        });
+        return result;
+      })()
+        .then((result)=>sendResponse({ok:true,result}))
+        .catch((error)=>sendResponse({ok:false,error:error.message}));
+      return true;
+    }
+    if (message.type === 'DHL_SCAN_CURRENT_POPUP' || message.type === 'DHL_SCAN_CURRENT_DOM' || message.type === 'DHL_SCAN_CURRENT') {
+      scanCurrentPopup(hints, progress).then((result) => sendResponse({ ok: true, result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
+    }
+  });
+})();
