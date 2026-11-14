@@ -513,7 +513,8 @@
         missingSkuCount:prepared.missingSku.length,
         rows:prepared.rows,
         qualityValidated:report.quality&&report.quality.ok===true,
-        auto:false,
+        auto:Boolean(job.autoCycleId),
+        autoCycleId:text(job.autoCycleId),
         partial:job.scope!=='all'||Number(job.index||0)<Number(job.total||0),
         jobId:job.id,
         report
@@ -799,6 +800,7 @@
       stopAfterCurrent:false,
       createdAt:Date.now(),startedAt:Date.now(),
       sourceTabId,
+      autoCycleId:text(message.autoCycleId),
       tabId:0,
       ownsTab:false,
       scanWindowId:0,
@@ -979,6 +981,10 @@
     await chrome.storage.local.set({[BATCH_KEY]:{...pending,[profile.id]:entry}});
     return entry;
   }
+
+  // Internal extension service for scheduled scans. Reuses exactly the
+  // same validated scanner as the user-triggered button.
+  globalThis.DHLManualJobRunner={startJob,readJob,cancelNow};
 
   chrome.alarms.onAlarm.addListener(alarm=>{
     if(alarm.name===ALARM)processStep().catch(()=>{});
