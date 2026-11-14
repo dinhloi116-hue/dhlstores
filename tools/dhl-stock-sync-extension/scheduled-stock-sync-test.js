@@ -19,7 +19,8 @@ const s={
     {id:'kids',name:'Trẻ em',lastSourceUrl:'https://si.aobongda.net/tre-em-pc31001.html'}
   ]
 };
-const alarms=new Map(),listeners={alarm:[],storage:[],runtime:[]},timers=[];
+const alarms=new Map([['dhl-scheduled-stock-cycle',{name:'dhl-scheduled-stock-cycle',periodInMinutes:120}]]),
+ listeners={alarm:[],storage:[],runtime:[]},timers=[];
 let creates=0,removed=0,starts=0,autoEnqueues=0;
 const tabs=new Map();
 const runner={
@@ -102,16 +103,20 @@ async function send(msg){
 (async()=>{
   await new Promise(resolve=>setImmediate(resolve));
   const initial=await send({type:'DHL_SCHEDULED_GET'});
+  assert.strictEqual(alarms.has('dhl-scheduled-stock-cycle'),false,
+    'Must remove the retired recurring alarm after upgrading');
   assert.strictEqual(initial.config.enabled,false,'Fresh install must start disabled');
   assert.strictEqual(JSON.stringify(initial).includes('FAKE_TEST_SECRET'),false);
   await assert.rejects(send({type:'DHL_SCHEDULED_CONFIGURE',
-    enabled:true,profileIds:[],intervalHours:2,autoPushSapo:true}),/Chọn ít nhất/);
+    profileIds:[],pushToSapo:true}),/ít nhất/);
   assert.strictEqual(creates,0);
   await send({type:'DHL_SCHEDULED_CONFIGURE',
-    enabled:true,profileIds:['hd','kids'],intervalHours:2,autoPushSapo:true});
+    profileIds:['hd','kids'],pushToSapo:true});
   assert.strictEqual(s.dhlAutoSyncConfigV1.autoPushSapo,true);
-  assert.ok(alarms.has('dhl-scheduled-stock-cycle'));
-  const start=await send({type:'DHL_SCHEDULED_RUN_NOW'});
+  assert.strictEqual(alarms.has('dhl-scheduled-stock-cycle'),false,
+    'Saving selections must never schedule recurring scans');
+  const start=await send({type:'DHL_SCHEDULED_RUN_NOW',
+    profileIds:['hd','kids'],pushToSapo:true});
   assert.strictEqual(start.started,true);
   await nextUntil(()=>s.dhlScheduledStockCycleV1.phase==='scan');
   let cycle=s.dhlScheduledStockCycleV1;
@@ -126,7 +131,8 @@ async function send(msg){
   assert.strictEqual(creates,1);
   assert.strictEqual(removed,1);
   // Re-run with valid output from BOTH categories.
-  const second=await send({type:'DHL_SCHEDULED_RUN_NOW'});
+  const second=await send({type:'DHL_SCHEDULED_RUN_NOW',
+    profileIds:['hd','kids'],pushToSapo:true});
   assert.strictEqual(second.started,true);
   await nextUntil(()=>s.dhlScheduledStockCycleV1.phase==='scan');
   cycle=s.dhlScheduledStockCycleV1;
@@ -147,20 +153,33 @@ async function send(msg){
   await nextUntil(()=>s.dhlScheduledStockCycleV1.phase==='done');
   assert.strictEqual(s.dhlScheduledStockCycleV1.running,false);
   assert.strictEqual(removed,3);
-  // Disable does not delete manual scan cache or Sapo credentials.
+  // Save only category/push preference; no scheduling and no data deletion.
   await send({type:'DHL_SCHEDULED_CONFIGURE',
-    enabled:false,profileIds:['hd','kids'],intervalHours:2,autoPushSapo:false});
+    profileIds:['hd','kids'],pushToSapo:false});
   assert.strictEqual(alarms.has('dhl-scheduled-stock-cycle'),false);
   assert.strictEqual(s.dhlAutoSyncConfigV1.sapo.apiSecret,'FAKE_TEST_SECRET');
   assert.ok(s.dhlManualPendingStockBatchV1.hd);
-  assert.strictEqual((await send({type:'DHL_SCHEDULED_RUN_NOW'})).started,false);
+  // Even without an enabled flag or prior schedule, one click starts a fresh
+  // saved-tab scan; opt-out must prevent Sapo writes for this cycle.
+  const manualClick=await send({type:'DHL_SCHEDULED_RUN_NOW',
+    profileIds:['hd','kids'],pushToSapo:false});
+  assert.strictEqual(manualClick.started,true);
+  assert.strictEqual(s.dhlScheduledStockCycleV1.autoPushRequested,false);
+  assert.strictEqual(s.dhlAutoSyncConfigV1.enabled,false);
+  assert.strictEqual(alarms.has('dhl-scheduled-stock-cycle'),false);
+  assert.strictEqual(autoEnqueues,1);
   assert.ok(background.includes("'scheduled-stock-sync-background.js'"));
   assert.ok(popup.includes('scheduled-stock-sync-mode.js'));
   assert.ok(manual.includes('autoCycleId:text(message.autoCycleId)'));
   assert.ok(sapo.includes('enqueueVerifiedAutoCycle'));
   assert.ok(sapo.includes('quality.trustedEntry(entry)'));
   assert.ok(sapo.includes("['manual','auto'].includes(queue.source)"));
-  assert.ok(ui.includes('TỰ ĐỘNG QUÉT & ĐẨY SAPO'));
-  assert.ok(ui.includes('Tự đẩy Sapo sau khi TẤT CẢ danh mục quét đạt'));
-  console.log('SCHEDULED AUTO PASS: opt-in, two saved tabs, all-or-nothing validation, complete Sapo queue, manual preserved');
+  assert.ok(ui.includes('ĐỒNG BỘ CÁC TAB ĐÃ LƯU'));
+  assert.ok(ui.includes('ĐỒNG BỘ NGAY'));
+  assert.ok(ui.includes('Sau khi quét đủ TẤT CẢ tab'));
+  assert.ok(ui.includes('defaultAll'),'All saved profiles must be checked by default');
+  assert.ok(!ui.includes('scheduledHours'));
+  assert.ok(!source.includes("chrome.alarms.create(ALARM,"));
+  assert.ok(!source.includes("if(a.name===ALARM)startCycle()"));
+  console.log('ONE-CLICK STOCK SYNC PASS: retired schedule removed, click scans saved tabs, invalid scan blocks Sapo, manual preserved');
 })().catch(e=>{console.error(e);process.exitCode=1;});
