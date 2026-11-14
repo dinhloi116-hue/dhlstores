@@ -202,8 +202,8 @@
       }
       if(cycle.phase==='next'){
         if(cycle.index>=cycle.profileIds.length){
-          if(!cfg.autoPushSapo){
-            await finish(cycle,'scan-only','Quét đủ danh mục, chế độ tự đẩy Sapo đang tắt.');
+          if(!cycle.autoPushRequested||!cfg.autoPushSapo){
+            await finish(cycle,'scan-only','Quét đủ danh mục; lượt này chưa được bật quyền tự đẩy Sapo.');
             return;
           }
           cycle={...cycle,phase:'ready-to-push'};
@@ -236,7 +236,9 @@
         return;
       }
       if(cycle.phase==='ready-to-push'){
-        if(!cfg.autoPushSapo){await finish(cycle,'scan-only','Tự đẩy đã được tắt.');return;}
+        if(!cfg.autoPushSapo||!cycle.autoPushRequested){
+          await finish(cycle,'scan-only','Tự đẩy phải được bật trước khi bắt đầu lượt quét.');return;
+        }
         if(cycle.scans.length!==cycle.profileIds.length){
           await finish(cycle,'failed','Thiếu kết quả danh mục; không đẩy tồn.');return;
         }
