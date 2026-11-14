@@ -24,23 +24,10 @@
   const getStorage=keys=>chrome.storage.local.get(keys);
   const setCycle=c=>chrome.storage.local.set({[CYCLE_KEY]:c});
 
-  async function setupAlarm(force=false){
-    const stored=await getStorage(CONFIG_KEY);
-    const config=normalize(stored[CONFIG_KEY]);
-    const existing=await chrome.alarms.get(ALARM);
-    if(!config.enabled){
-      if(existing)await chrome.alarms.clear(ALARM);
-      return 0;
-    }
-    const period=config.intervalHours*60;
-    if(force||!existing||Number(existing.periodInMinutes)!==period){
-      if(existing)await chrome.alarms.clear(ALARM);
-      chrome.alarms.create(ALARM,{
-        delayInMinutes:period,periodInMinutes:period
-      });
-    }
-    const alarm=await chrome.alarms.get(ALARM);
-    return alarm&&alarm.scheduledTime||0;
+  // Legacy v0.26.0 periodic scheduling is retired. The Chrome alarm below
+  // is ONLY a continuation/wake-up signal for a user-started scan.
+  async function clearLegacySchedule(){
+    await chrome.alarms.clear(ALARM);
   }
   function scheduleStep(){
     chrome.alarms.create(STEP,{when:Date.now()+30000});
@@ -75,12 +62,10 @@
   async function getState(){
     const s=await getStorage([CONFIG_KEY,PROFILE_KEY,CYCLE_KEY,QUEUE_KEY]);
     const cfg=normalize(s[CONFIG_KEY]),sapo=cfg.sapo||{};
-    const alarm=await chrome.alarms.get(ALARM);
     const cycle=s[CYCLE_KEY]||null;
     const q=s[QUEUE_KEY];
     return{
       config:{
-        enabled:cfg.enabled,intervalHours:cfg.intervalHours,
         autoPushSapo:cfg.autoPushSapo,selectedProfileIds:cfg.selectedProfileIds,
         profileUrls:cfg.profileUrls,
         sapoConnected:Boolean(sapo.verifiedAt&&sapo.locationId&&sapo.apiKey&&sapo.apiSecret),
@@ -102,64 +87,78 @@
         status:q.status,total:q.total,index:q.index,success:q.success,
         failed:q.failed,manualPaused:q.manualPaused,cycleId:q.autoCycleId
       }:null,
-      nextRunAt:alarm&&alarm.scheduledTime||0
+      scheduleDisabled:true
     };
   }
   async function configure(request){
     const stored=await getStorage([CONFIG_KEY,PROFILE_KEY,CYCLE_KEY]);
     const old=normalize(stored[CONFIG_KEY]);
     const profiles=Array.isArray(stored[PROFILE_KEY])?stored[PROFILE_KEY]:[];
-    const catalog=new Map(profiles.map(p=>[text(p&&p.id),p]));
+    const byId=new Map(profiles.map(p=>[text(p&&p.id),p]));
     const ids=[...new Set((Array.isArray(request.profileIds)?request.profileIds:[])
       .map(text).filter(Boolean))];
-    const hours=Number(request.intervalHours);
-    if(![1,2,3,6,12,24].includes(hours))throw new Error('Chu kỳ phải là 1, 2, 3, 6, 12 hoặc 24 giờ.');
+    if(!ids.length)throw new Error('Hãy chọn ít nhất một tab nguồn đã lưu.');
     for(const id of ids){
-      const p=catalog.get(id);
-      if(!p||!validUrl(p.lastSourceUrl))throw new Error('Hồ sơ không có URL nguồn hợp lệ: '+id);
+      const profile=byId.get(id);
+      if(!profile||!validUrl(profile.lastSourceUrl))
+        throw new Error('Danh mục không có URL nguồn hợp lệ: '+id);
     }
-    if(request.enabled&&!ids.length)throw new Error('Chọn ít nhất một danh mục đã lưu trước khi bật tự động.');
+    const push=request.pushToSapo===true;
     const sapo=old.sapo||{};
-    if(request.autoPushSapo&&!(
-      sapo.verifiedAt&&sapo.locationId&&text(sapo.storeHost)&&text(sapo.apiKey)&&text(sapo.apiSecret)
-    ))throw new Error('Hãy kết nối và xác minh kho Sapo trong ĐẦU RA trước khi bật tự đẩy.');
-    const current=stored[CYCLE_KEY];
-    if(current&&current.running&&request.enabled&&
-      (ids.join('|')!==current.profileIds.join('|')||hours!==old.intervalHours)){
-      throw new Error('Đang quét. Đợi lượt hiện tại xong hoặc tắt tự động trước khi đổi danh mục/lịch.');
-    }
-    const next={...old,enabled:request.enabled===true,
-      autoPushSapo:request.autoPushSapo===true,
-      intervalHours:hours,selectedProfileIds:ids,updatedAt:Date.now()};
+    if(push&&!(sapo.verifiedAt&&sapo.locationId&&text(sapo.storeHost)
+      &&text(sapo.apiKey)&&text(sapo.apiSecret)))
+      throw new Error('Xác minh API và kho Sapo ở phần ĐẦU RA trước khi chọn đẩy trực tiếp.');
+    const cycle=stored[CYCLE_KEY];
+    if(cycle&&cycle.running)
+      throw new Error('Đang đồng bộ. Chỉ thay đổi danh sách tab sau khi lượt này kết thúc.');
+    // Always disable the old scheduled flag, including after upgrading from v0.26.0.
+    const next={...old,enabled:false,autoPushSapo:push,
+      selectedProfileIds:ids,updatedAt:Date.now()};
     await chrome.storage.local.set({[CONFIG_KEY]:next});
-    const nextRunAt=await setupAlarm(true);
-    if(!next.enabled&&current&&current.running){
-      await finish(current,'failed','Người dùng đã tắt lịch tự động; không đẩy Sapo.');
-    }
-    return{nextRunAt};
+    await clearLegacySchedule();
+    return{saved:true,count:ids.length,autoPushSapo:push};
   }
-  async function startCycle(){
+  async function startCycle(request={}){
     if(starting)return{started:false,reason:'starting'};
     starting=true;
     try{
       const s=await getStorage([CONFIG_KEY,PROFILE_KEY,CYCLE_KEY,QUEUE_KEY,JOB_KEY]);
       const cfg=normalize(s[CONFIG_KEY]);
-      if(!cfg.enabled)return{started:false,reason:'disabled'};
       if(s[CYCLE_KEY]&&!TERMINAL.includes(s[CYCLE_KEY].phase))return{started:false,reason:'cycle-active'};
       if(s[JOB_KEY]&&s[JOB_KEY].running)return{started:false,reason:'scanner-busy'};
-      if(isBusyQueue(s[QUEUE_KEY]))return{started:false,reason:'push-busy'};
+      if(s[QUEUE_KEY]&&['running','queued','paused','blocked-quality'].includes(s[QUEUE_KEY].status))
+        return{started:false,reason:'push-busy'};
+      if(s[QUEUE_KEY]&&s[QUEUE_KEY].manualPaused)
+        return{started:false,reason:'push-paused'};
       const pmap=new Map((Array.isArray(s[PROFILE_KEY])?s[PROFILE_KEY]:[])
         .map(p=>[text(p&&p.id),p]));
-      if(!cfg.selectedProfileIds.length)throw new Error('Chưa chọn tab nguồn tự động.');
-      for(const id of cfg.selectedProfileIds){
+      const hasExplicit=Array.isArray(request.profileIds);
+      const ids=hasExplicit?[...new Set(request.profileIds.map(text).filter(Boolean))]
+        :(cfg.selectedProfileIds.length?cfg.selectedProfileIds:
+          [...pmap.values()].filter(p=>validUrl(p.lastSourceUrl)).map(p=>text(p.id)));
+      if(!ids.length)throw new Error('Chưa có tab danh mục nguồn đã lưu để đồng bộ.');
+      for(const id of ids){
         if(!pmap.has(id)||!validUrl(pmap.get(id).lastSourceUrl))
           throw new Error('Hồ sơ '+id+' không còn URL nguồn hợp lệ.');
       }
+      const push=typeof request.pushToSapo==='boolean'?request.pushToSapo:cfg.autoPushSapo;
+      if(push){
+        const sapo=cfg.sapo||{};
+        if(!(sapo.verifiedAt&&sapo.locationId&&text(sapo.storeHost)
+          &&text(sapo.apiKey)&&text(sapo.apiSecret)))
+          throw new Error('Chưa xác minh API và đúng kho Sapo, chỉ có thể quét và xem báo cáo.');
+      }
+      // One click both saves selected categories and starts ONE run; never set
+      // enabled=true or schedule a recurring scan.
+      await chrome.storage.local.set({[CONFIG_KEY]:{
+        ...cfg,enabled:false,autoPushSapo:push,selectedProfileIds:ids,updatedAt:Date.now()
+      }});
+      await clearLegacySchedule();
       const id='auto-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
       const cycle={
-        id,phase:'next',running:true,profileIds:[...cfg.selectedProfileIds],
+        id,phase:'next',running:true,profileIds:[...ids],
         index:0,scans:[],errors:[],startedAt:Date.now(),currentName:'',
-        autoPushRequested:cfg.autoPushSapo,windowId:0,tabId:0
+        autoPushRequested:push,windowId:0,tabId:0
       };
       await setCycle(cycle);
       scheduleStep();
@@ -174,7 +173,6 @@
       let cycle=stored[CYCLE_KEY];
       if(!cycle||!cycle.running)return;
       const cfg=normalize(stored[CONFIG_KEY]);
-      if(!cfg.enabled){await finish(cycle,'failed','Tự động đã bị tắt.');return;}
       if(cycle.phase==='scan'){
         const job=stored[JOB_KEY];
         if(!job||job.id!==cycle.jobId||job.autoCycleId!==cycle.id){
@@ -294,7 +292,6 @@
     return result;
   }
   chrome.alarms.onAlarm.addListener(a=>{
-    if(a.name===ALARM)startCycle().catch(()=>{});
     if(a.name===STEP)advance().catch(()=>{});
   });
   chrome.storage.onChanged.addListener((changes,area)=>{
@@ -314,13 +311,13 @@
       'DHL_SCHEDULED_RUN_NOW','DHL_SCHEDULED_RESUME_PUSH'].includes(message.type))return;
     const work=message.type==='DHL_SCHEDULED_GET'?getState():
       message.type==='DHL_SCHEDULED_CONFIGURE'?configure(message):
-      message.type==='DHL_SCHEDULED_RUN_NOW'?startCycle():resumePush();
+      message.type==='DHL_SCHEDULED_RUN_NOW'?startCycle(message):resumePush();
     work.then(result=>sendResponse({ok:true,result}))
       .catch(err=>sendResponse({ok:false,error:reason(err)}));
     return true;
   });
-  chrome.runtime.onStartup.addListener(()=>setupAlarm().then(()=>advance()).catch(()=>{}));
-  chrome.runtime.onInstalled.addListener(()=>setupAlarm().then(()=>advance()).catch(()=>{}));
-  // Reattach to running scan after MV3 service-worker restart.
-  setupAlarm().then(()=>advance()).catch(()=>{});
+  chrome.runtime.onStartup.addListener(()=>clearLegacySchedule().then(()=>advance()).catch(()=>{}));
+  chrome.runtime.onInstalled.addListener(()=>clearLegacySchedule().then(()=>advance()).catch(()=>{}));
+  // Wake in-progress ONE-SHOT run after MV3 service-worker restart.
+  clearLegacySchedule().then(()=>advance()).catch(()=>{});
 })();

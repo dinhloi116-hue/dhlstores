@@ -20,7 +20,7 @@ function entry(profileId,jobId,scannedAt,sku,stock){
  };
 }
 const config={
- enabled:true,autoPushSapo:true,intervalHours:2,selectedProfileIds:['hd','kids'],
+ enabled:false,autoPushSapo:true,intervalHours:2,selectedProfileIds:['hd','kids'],
  sapo:{storeHost:'demo.mysapo.net',locationName:'dhl sport',locationId:12,
   verifiedAt:123,apiKey:'FAKE_KEY',apiSecret:'FAKE_SECRET'}
 };
@@ -76,7 +76,7 @@ vm.runInContext(source.slice(start,end)+'\nglobalThis.queueAuto=enqueueVerifiedA
  await assert.rejects(run(),/hàng đợi Sapo khác/);
  state.dhlSapoPushQueueV1=null;
  state.dhlAutoSyncConfigV1={...config,autoPushSapo:false};
- await assert.rejects(run(),/đang tắt/);
+ await assert.rejects(run(),/chưa được bật/);
  state.dhlAutoSyncConfigV1=config;
  const queued=await run();
  assert.strictEqual(queued.total,2);
