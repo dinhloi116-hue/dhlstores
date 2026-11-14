@@ -181,7 +181,13 @@
           await finish(cycle,'failed','Lượt quét nguồn bị thay thế; đã dừng tự ghi.');
           return;
         }
-        if(job.running)return;
+        if(job.running){
+          if(Date.now()-Number(cycle.tabStartedAt||cycle.startedAt)>90*60*1000){
+            try{await runner.cancelNow();}catch(_){}
+            await finish(cycle,'failed','Tab '+cycle.currentName+' quá thời gian quét 90 phút. Không đẩy Sapo.');
+          }
+          return;
+        }
         const entry=(stored[BATCH_KEY]||{})[cycle.currentProfileId];
         if(job.status!=='done'||!entry||entry.jobId!==job.id
            ||entry.autoCycleId!==cycle.id||entry.auto!==true||entry.partial
@@ -230,7 +236,7 @@
           profileId:id,sourceUrl:url,sourceTabId:tab.id,
           pageTitle:text(profile.pageTitle||profile.name),scope:'all',autoCycleId:cycle.id
         });
-        cycle={...cycle,phase:'scan',jobId:job.id};
+        cycle={...cycle,phase:'scan',jobId:job.id,tabStartedAt:Date.now()};
         await setCycle(cycle);
         scheduleStep();
         return;
