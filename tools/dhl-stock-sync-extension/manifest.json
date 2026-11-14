@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.25.2",
+  "version": "0.26.0",
   "minimum_chrome_version": "116",
-  "description": "Khôi phục kết nối API Sapo trực tiếp và tăng tốc đồng bộ tồn với xử lý song song có giới hạn, checkpoint an toàn.",
+  "description": "Tự quét các danh mục đã lưu theo lịch và tự đẩy Sapo khi toàn bộ SKU được xác minh; giữ nguyên chế độ thủ công.",
   "permissions": [
     "storage",
     "unlimitedStorage",
