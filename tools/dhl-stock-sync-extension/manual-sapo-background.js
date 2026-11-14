@@ -165,7 +165,7 @@
       shop:text(queue&&queue.host||config&&config.sapo&&config.sapo.storeHost),
       locationName:text(queue&&queue.locationName||config&&config.sapo&&config.sapo.locationName),
       startedAt:Number(queue&&queue.startedAt||queue&&queue.createdAt||0),
-      finishedAt:Number(queue&&queue.finishedAt||0),source:'manual',...extra
+      finishedAt:Number(queue&&queue.finishedAt||0),source:text(queue&&queue.source)||'manual',...extra
     };
   }
 
@@ -471,7 +471,13 @@
     try{
       const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]);
       const queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
-      if(!queue||queue.source!=='manual'||queue.status!=='running'||queue.manualPaused===true)return;
+      if(!queue||!['manual','auto'].includes(queue.source)||queue.status!=='running'||queue.manualPaused===true)return;
+    if(queue.source==='auto'&&(!config.enabled||!config.autoPushSapo)){
+      queue.manualPaused=true;
+      await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+      await writePushStatus(pushState(queue,'manual-error',config,{error:'Tự động đã tắt; đã dừng ghi Sapo.'}));
+      return;
+    }
       if(queue.qualityValidated!==true){
         queue.manualPaused=true;
         queue.status='blocked-quality';
@@ -609,6 +615,76 @@
     }
     return queue;
   }
+
+  async function enqueueVerifiedAutoCycle(cycle){
+    const config=await readConfig();
+    if(!config.enabled||!config.autoPushSapo)throw new Error('Chế độ tự động hoặc tự ghi Sapo đang tắt.');
+    const sapo=config.sapo||{};
+    if(!sapo.verifiedAt||!sapo.locationId||!text(sapo.apiKey)||!text(sapo.apiSecret))
+      throw new Error('Cần xác minh API, quyền ghi tồn và kho Sapo trước khi bật tự đẩy.');
+    if(!cycle||cycle.phase!=='ready-to-push'||!Array.isArray(cycle.scans)||!cycle.scans.length)
+      throw new Error('Chưa có chu kỳ quét hoàn tất để ghi Sapo.');
+    const state=await chrome.storage.local.get([BATCH_KEY,SAPO_QUEUE_KEY,CONFIG_KEY]);
+    const active=state[SAPO_QUEUE_KEY];
+    if(active&&['running','queued'].includes(active.status))
+      throw new Error('Đang có hàng đợi Sapo khác. Không được ghi đè.');
+    const current=autoCore.normalizeConfig(state[CONFIG_KEY]);
+    if(!current.enabled||!current.autoPushSapo)throw new Error('Cấu hình tự động vừa bị tắt.');
+    if(cycle.scans.length!==cycle.profileIds.length
+       ||current.selectedProfileIds.length!==cycle.profileIds.length
+       ||current.selectedProfileIds.some(id=>!cycle.profileIds.includes(String(id))))
+      throw new Error('Danh mục tự động đã thay đổi sau khi quét.');
+    const cache=state[BATCH_KEY]&&typeof state[BATCH_KEY]==='object'?state[BATCH_KEY]:{};
+    const entries=cycle.scans.map(item=>{
+      const entry=cache[item.profileId];
+      if(!entry||entry.auto!==true||entry.autoCycleId!==cycle.id
+         ||entry.jobId!==item.jobId||Number(entry.scannedAt)!==Number(item.scannedAt)
+         ||entry.partial||!quality.trustedEntry(entry))
+        throw new Error('Bản quét đã thay đổi hoặc chưa đủ chất lượng: '+text(item.profileId));
+      return entry;
+    });
+    const normalized=entries.map(e=>({...e,branch:branchCore.resolve(e,current)}));
+    for(const entry of normalized)excelSku.validate(entry.rows);
+    const combined=batch.combineEntries(normalized);
+    excelSku.validate(combined.rows);
+    if(combined.duplicateSame.length)
+      throw new Error('SKU trùng giữa các danh mục; cần kiểm tra thủ công trước khi tự ghi.');
+    const now=Date.now();
+    const queue={
+      id:'auto-push-'+cycle.id,source:'auto',autoCycleId:cycle.id,
+      manualPaused:false,status:'running',qualityValidated:true,
+      createdAt:now,startedAt:now,host:storeHost(sapo.storeHost),
+      locationId:Number(sapo.locationId),locationName:text(sapo.locationName),
+      rows:combined.rows,index:0,total:combined.rows.length,
+      success:0,successRows:[],errors:[],failed:0,skippedRows:[],
+      profileIds:cycle.profileIds,profileCount:entries.length,sourceScans:sourceScanMap(entries)
+    };
+    await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+    await writePushStatus(pushState(queue,'queued',current));
+    chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+300});
+    return{queueId:queue.id,total:queue.total};
+  }
+
+  async function resumeAutoQueue(cycleId){
+    const config=await readConfig();
+    if(!config.enabled||!config.autoPushSapo)throw new Error('Tự động đã tắt.');
+    const data=await chrome.storage.local.get(SAPO_QUEUE_KEY);
+    const queue=data[SAPO_QUEUE_KEY];
+    if(!queue||queue.source!=='auto'||queue.autoCycleId!==cycleId||!queue.manualPaused)
+      throw new Error('Không có hàng đợi tự động phù hợp để tiếp tục.');
+    if(storeHost(config.sapo&&config.sapo.storeHost)!==queue.host
+       ||Number(config.sapo&&config.sapo.locationId)!==Number(queue.locationId)
+       ||!config.sapo.verifiedAt)
+      throw new Error('Kho/ứng dụng Sapo đã thay đổi. Không thể tiếp tục hàng đợi cũ.');
+    queue.manualPaused=false;
+    queue.status='running';
+    queue.errors=[];
+    await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
+    chrome.alarms.create(MANUAL_ALARM,{when:Date.now()+300});
+    return{index:queue.index,total:queue.total};
+  }
+
+  globalThis.DHLSapoAutoBridge={enqueueVerifiedAutoCycle,resumeAutoQueue};
 
   chrome.alarms.onAlarm.addListener(alarm=>{
     if(alarm.name===MANUAL_ALARM)processManualQueue().catch(async err=>{
