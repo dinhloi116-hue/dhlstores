@@ -1,8 +1,18 @@
 # DHL Stock Sync – Chrome Extension
 
-Phiên bản: **v0.26.0**.
+Phiên bản: **v0.26.1**.
 
-## Tự động quét danh mục đã lưu và tự đẩy Sapo (v0.26.0)
+## Đồng bộ ngay tất cả danh mục đã lưu, không có lịch định kỳ (v0.26.1)
+
+- **Đúng theo yêu cầu:** Người dùng bấm **ĐỒNG BỘ NGAY** một lần. Extension tự mở lần lượt các danh mục nguồn đã lưu và quét đủ popup màu/size/tồn. Không tạo lượt chạy theo giờ, không quét định kỳ.
+- Nút ngay dưới phần **1. ĐỒNG BỘ TỒN KHO**; mở tùy chọn để chọn/bỏ chọn danh mục. Mặc định tất cả hồ sơ nguồn hợp lệ được tích chọn nếu chưa có danh sách riêng. Bấm nút cũng lưu lựa chọn cho lần sau; không yêu cầu bấm LƯU trước.
+- Sau khi quét tất cả danh mục, có thể chọn **đẩy trực tiếp Sapo** nếu đã xác minh API và kho. Mặc định tùy chọn này tắt; lỗi ở bất kỳ tab nào chặn toàn bộ lượt đẩy. Nếu chưa bật, chỉ lưu kết quả, xuất Excel và báo cáo ảnh như cũ.
+- Xóa lịch tự động `dhl-scheduled-stock-cycle` còn từ v0.26.0 trong khi cập nhật/khởi động. Alarm `dhl-scheduled-stock-step` chỉ phục vụ tiếp tục lượt quét đã **được người dùng bấm chạy**, không phải lịch định kỳ. Không tự bắt đầu lượt mới khi Chrome khởi động.
+- **Không thay đổi chức năng quét từng tab thủ công, xuất Excel, bảng ảnh, quản lý cache, kết nối và đẩy Sapo thủ công.**
+- Một lần quét chỉ xem danh mục và phân trang mà bộ quét hiện tại hỗ trợ, chưa đảm bảo tự đi hết mọi trang phân trang. Chrome phải mở để tiến trình quét có thể chạy.
+- Mặc định không thực hiện giao dịch Sapo khi chỉ cập nhật extension. API key/secret chỉ nằm trong Chrome local, không gửi lên GitHub.
+
+## Tự động quét danh mục đã lưu và tự đẩy Sapo (v0.26.0) [đã thay bằng thao tác bấm ở v0.26.1]
 
 - Chức năng **3. TỰ ĐỘNG QUÉT & ĐẨY SAPO** được thêm vào Side Panel; chế độ quét và đẩy Sapo thủ công hiện tại được giữ nguyên.
 - **Mặc định tắt.** Người dùng chọn chính xác các hồ sơ danh mục đã lưu từ tab nguồn; chọn khoảng cách quét 1, 2, 3, 6, 12 hoặc 24 giờ. Có nút QUÉT NGAY để chạy thử khi đã bật.
