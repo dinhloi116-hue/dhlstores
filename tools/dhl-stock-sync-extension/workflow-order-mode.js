@@ -61,7 +61,7 @@
     if(!section)return;
     const title=section.querySelector(':scope > b');
     const desc=section.querySelector(':scope > span');
-    setText(title,'2. THÊM SẢN PHẨM MỚI');
+    setText(title,'3. THÊM SẢN PHẨM MỚI');
     setText(desc,'Thêm 1 sản phẩm đang mở hoặc quét toàn bộ sản phẩm mới của danh mục. SKU = Đường dẫn/Alias + Size.');
 
     const all=document.getElementById('scanCatalogSource');
@@ -98,8 +98,13 @@
         const anchor=header?header.nextSibling:main.firstChild;
         if(anchor!==host)main.insertBefore(host,anchor);
       }
+      const batch=document.getElementById('scheduledStockPanel');
+      if(main&&batch&&batch.parentElement===main&&host.parentElement===main){
+        if(host.nextSibling!==batch)main.insertBefore(batch,host.nextSibling);
+      }
       if(main&&catalog&&catalog.parentElement===main){
-        if(host.nextSibling!==catalog)main.insertBefore(catalog,host.nextSibling);
+        const before=(batch&&batch.parentElement===main)?batch:host;
+        if(before.nextSibling!==catalog)main.insertBefore(catalog,before.nextSibling);
       }
 
       const expected=[
