@@ -70,10 +70,10 @@ vm.runInContext(src.slice(start,end)+'\nglobalThis.connect=connectSapo;',ctx);
    String,Error,JSON,RegExp
  };
  vm.createContext(httpCtx);
- vm.runInContext(src.slice(httpStart,httpEnd)+'\\nglobalThis.testFetch=sapoFetch;',httpCtx);
+ vm.runInContext(src.slice(httpStart,httpEnd)+'\nglobalThis.testFetch=sapoFetch;',httpCtx);
  const sample={storeHost:'https://dhl-sport.mysapo.net/',apiKey:'FAKE_API_KEY',apiSecret:'FAKE_API_SECRET'};
  await assert.rejects(httpCtx.testFetch(sample,'/admin/store.json'),error=>{
-   assert.ok(/HTTP 401 \\(invalid_request\\)/.test(error.message));
+   assert.ok(/HTTP 401 \(invalid_request\)/.test(error.message));
    assert.ok(error.message.includes('/admin/store.json'));
    assert.ok(error.message.includes('ỨNG DỤNG RIÊNG'));
    assert.ok(!error.message.includes('FAKE_API_KEY'));
