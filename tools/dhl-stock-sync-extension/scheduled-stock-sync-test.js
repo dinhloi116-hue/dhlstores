@@ -105,7 +105,7 @@ async function send(msg){
   const initial=await send({type:'DHL_SCHEDULED_GET'});
   assert.strictEqual(alarms.has('dhl-scheduled-stock-cycle'),false,
     'Must remove the retired recurring alarm after upgrading');
-  assert.strictEqual(initial.config.enabled,false,'Fresh install must start disabled');
+  assert.strictEqual(initial.config.enabled,undefined,'There must be no scheduled-enabled toggle in the UI state');
   assert.strictEqual(JSON.stringify(initial).includes('FAKE_TEST_SECRET'),false);
   await assert.rejects(send({type:'DHL_SCHEDULED_CONFIGURE',
     profileIds:[],pushToSapo:true}),/ít nhất/);
