@@ -53,5 +53,34 @@ vm.runInContext(src.slice(start,end)+'\nglobalThis.connect=connectSapo;',ctx);
  assert.ok(ui.includes("type:'DHL_SAPO_CONNECT'"));
  assert.ok(ui.includes('autocomplete="new-password"'));
  assert.ok(src.includes("message.type==='DHL_SAPO_CONNECT'"));
- console.log('SAPO CONNECT PASS: real warehouse verification flow, no implicit selection or secret echo');
+ assert.ok(ui.includes('Sapo Web → Ứng dụng → Ứng dụng riêng'));
+ // Exercise the real HTTP failure formatter without live credentials.
+ const httpStart=src.indexOf('  function storeHost(value){');
+ const httpEnd=src.indexOf('  // Connection is an explicit user action.',httpStart);
+ assert.ok(httpStart>=0&&httpEnd>httpStart);
+ let calledUrl='',calledAuthorization='';
+ const httpCtx={
+   text:v=>String(v==null?'':v).trim(),
+   btoa:v=>Buffer.from(v,'binary').toString('base64'),
+   fetch:async(url,opts)=>{
+     calledUrl=url;
+     calledAuthorization=opts.headers.Authorization;
+     return{ok:false,status:401,text:async()=>JSON.stringify({error:'invalid_request'})};
+   },
+   String,Error,JSON,RegExp
+ };
+ vm.createContext(httpCtx);
+ vm.runInContext(src.slice(httpStart,httpEnd)+'\\nglobalThis.testFetch=sapoFetch;',httpCtx);
+ const sample={storeHost:'https://dhl-sport.mysapo.net/',apiKey:'FAKE_API_KEY',apiSecret:'FAKE_API_SECRET'};
+ await assert.rejects(httpCtx.testFetch(sample,'/admin/store.json'),error=>{
+   assert.ok(/HTTP 401 \\(invalid_request\\)/.test(error.message));
+   assert.ok(error.message.includes('/admin/store.json'));
+   assert.ok(error.message.includes('ỨNG DỤNG RIÊNG'));
+   assert.ok(!error.message.includes('FAKE_API_KEY'));
+   assert.ok(!error.message.includes('FAKE_API_SECRET'));
+   return true;
+ });
+ assert.strictEqual(calledUrl,'https://dhl-sport.mysapo.net/admin/store.json');
+ assert.strictEqual(calledAuthorization,'Basic '+Buffer.from('FAKE_API_KEY:FAKE_API_SECRET').toString('base64'));
+ console.log('SAPO CONNECT PASS: warehouse verification and safe, actionable HTTP 401 diagnostics');
 })().catch(e=>{console.error(e);process.exitCode=1;});
