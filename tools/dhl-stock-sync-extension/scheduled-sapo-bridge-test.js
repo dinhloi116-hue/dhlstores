@@ -20,7 +20,7 @@ function entry(profileId,jobId,scannedAt,sku,stock){
  };
 }
 const config={
- enabled:true,autoPushSapo:true,intervalHours:2,selectedProfileIds:['hd','kids'],
+ enabled:false,autoPushSapo:true,intervalHours:2,selectedProfileIds:['hd','kids'],
  sapo:{storeHost:'demo.mysapo.net',locationName:'dhl sport',locationId:12,
   verifiedAt:123,apiKey:'FAKE_KEY',apiSecret:'FAKE_SECRET'}
 };
