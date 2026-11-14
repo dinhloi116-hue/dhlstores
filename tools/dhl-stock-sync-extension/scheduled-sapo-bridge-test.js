@@ -76,7 +76,7 @@ vm.runInContext(source.slice(start,end)+'\nglobalThis.queueAuto=enqueueVerifiedA
  await assert.rejects(run(),/hàng đợi Sapo khác/);
  state.dhlSapoPushQueueV1=null;
  state.dhlAutoSyncConfigV1={...config,autoPushSapo:false};
- await assert.rejects(run(),/đang tắt/);
+ await assert.rejects(run(),/chưa được bật/);
  state.dhlAutoSyncConfigV1=config;
  const queued=await run();
  assert.strictEqual(queued.total,2);
