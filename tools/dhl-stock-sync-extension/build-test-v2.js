@@ -37,6 +37,9 @@ assert.ok(background.includes("'scan-quality-core.js'"),'Thiếu core kiểm tra
 assert.ok(background.includes("'manual-sapo-background.js'"));
 assert.ok(background.includes("'scheduled-stock-sync-background.js'"));
 assert.ok(read('scheduled-stock-sync-background.js').includes('quality.trustedEntry(entry)'));
+assert.ok(!read('scheduled-stock-sync-background.js').includes('chrome.alarms.create(ALARM,'),'Không được tạo lịch định kỳ');
+assert.ok(read('scheduled-stock-sync-mode.js').includes('ĐỒNG BỘ NGAY'),'Phải có nút đồng bộ ngay');
+assert.ok(!read('scheduled-stock-sync-mode.js').includes('scheduledHours'),'Không hiện chọn chu kỳ định kỳ');
 assert.ok(background.includes("'sapo-inventory-set-compat.js'"));
 assert.ok(background.includes("'sapo-product-create-background.js'"));
 assert.ok(background.includes("'sapo-product-create-continuous-background.js'"));
