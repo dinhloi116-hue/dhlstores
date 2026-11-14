@@ -72,6 +72,12 @@
     try{data=raw?JSON.parse(raw):{};}catch{data={raw};}
     if(!response.ok){
       const detail=sapoErrorDetail(data,raw);
+      if(response.status===401){
+        const code=/invalid_request/i.test(detail)?'invalid_request':'Unauthorized';
+        const route=String(path).split('?')[0];
+        // Do not include credentials or the Authorization header in errors.
+        throw new Error(`Sapo HTTP 401 (${code}) tại ${route}: Sapo từ chối xác thực. Kiểm tra API Key + Secret lấy từ cùng một ỨNG DỤNG RIÊNG của shop ${host} (Sapo Web > Ứng dụng > Ứng dụng riêng); không dùng mã Partner/OAuth. Kiểm tra quyền Admin API rồi nhập lại cả hai mã và bấm KẾT NỐI & XÁC MINH KHO.`);
+      }
       throw new Error(`Sapo HTTP ${response.status}${detail?`: ${detail}`:''}`);
     }
     return data||{};
