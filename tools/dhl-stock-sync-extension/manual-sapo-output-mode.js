@@ -245,6 +245,7 @@
         <label>API key<input id="manualSapoApiKeyInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
         <label>API secret<input id="manualSapoApiSecretInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
         <label>Kho Sapo<select id="manualSapoLocationSelect" hidden></select></label>
+        <small style="color:#475569;line-height:1.5">Dùng API Key + API Secret của <b>Sapo Web → Ứng dụng → Ứng dụng riêng</b> thuộc chính shop này (không phải mã Partner/OAuth). Nếu báo HTTP 401, kiểm tra lại loại ứng dụng, cặp mã và quyền Admin API.</small>
         <button id="manualSapoConnectBtn" type="button" class="primary">KẾT NỐI & XÁC MINH KHO</button>
       </div>
       <p id="manualSapoConnectStatus">Thông tin chỉ lưu trong Chrome của extension; không đưa API key/secret lên GitHub.</p>`;
