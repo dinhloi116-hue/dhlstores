@@ -472,7 +472,7 @@
       const s=await chrome.storage.local.get([SAPO_QUEUE_KEY,SAPO_MAP_KEY,CONFIG_KEY]);
       const queue=s[SAPO_QUEUE_KEY],config=autoCore.normalizeConfig(s[CONFIG_KEY]);
       if(!queue||!['manual','auto'].includes(queue.source)||queue.status!=='running'||queue.manualPaused===true)return;
-    if(queue.source==='auto'&&(!config.enabled||!config.autoPushSapo)){
+    if(queue.source==='auto'&&!config.autoPushSapo){
       queue.manualPaused=true;
       await chrome.storage.local.set({[SAPO_QUEUE_KEY]:queue});
       await writePushStatus(pushState(queue,'manual-error',config,{error:'Tự động đã tắt; đã dừng ghi Sapo.'}));
@@ -618,7 +618,7 @@
 
   async function enqueueVerifiedAutoCycle(cycle){
     const config=await readConfig();
-    if(!config.enabled||!config.autoPushSapo)throw new Error('Chế độ tự động hoặc tự ghi Sapo đang tắt.');
+    if(!config.autoPushSapo)throw new Error('Lượt này chưa được bật tùy chọn đẩy Sapo.');
     const sapo=config.sapo||{};
     if(!sapo.verifiedAt||!sapo.locationId||!text(sapo.apiKey)||!text(sapo.apiSecret))
       throw new Error('Cần xác minh API, quyền ghi tồn và kho Sapo trước khi bật tự đẩy.');
@@ -629,7 +629,7 @@
     if(active&&['running','queued'].includes(active.status))
       throw new Error('Đang có hàng đợi Sapo khác. Không được ghi đè.');
     const current=autoCore.normalizeConfig(state[CONFIG_KEY]);
-    if(!current.enabled||!current.autoPushSapo)throw new Error('Cấu hình tự động vừa bị tắt.');
+    if(!current.autoPushSapo)throw new Error('Tùy chọn đẩy Sapo đã bị tắt.');
     if(cycle.scans.length!==cycle.profileIds.length
        ||current.selectedProfileIds.length!==cycle.profileIds.length
        ||current.selectedProfileIds.some(id=>!cycle.profileIds.includes(String(id))))
@@ -667,7 +667,7 @@
 
   async function resumeAutoQueue(cycleId){
     const config=await readConfig();
-    if(!config.enabled||!config.autoPushSapo)throw new Error('Tự động đã tắt.');
+    if(!config.autoPushSapo)throw new Error('Tùy chọn đẩy Sapo đã tắt.');
     const data=await chrome.storage.local.get(SAPO_QUEUE_KEY);
     const queue=data[SAPO_QUEUE_KEY];
     if(!queue||queue.source!=='auto'||queue.autoCycleId!==cycleId||!queue.manualPaused)
