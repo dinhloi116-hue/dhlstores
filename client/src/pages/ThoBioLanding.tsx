@@ -4,7 +4,7 @@ import { ArrowUpRight, Flower2, Gift, Globe2, Heart, MessageCircle, ShoppingBag,
 const URLS = {
   shop: "https://thohandmade-ggpkyvkt.manus.space",
   shopee: "https://s.shopee.vn/9pfSXI62mJ",
-  zalo: "https://zalo.me/0399865463",
+  zalo: "https://dinhloi116-hue.github.io/dhlstores/zalo.html",
   whatsapp: "https://wa.me/84399865463",
   tiktok: "https://www.tiktok.com/@thohandmade2024",
 };
