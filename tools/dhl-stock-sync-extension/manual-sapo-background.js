@@ -420,6 +420,78 @@
     return{method:`${resolved.method}:variant-fallback-403`,variantId};
   }
 
+  let webVariantIndexCache=null;
+  async function webVariantIndex(sapo){
+    const id=storeHost(sapo.storeHost)+'|'+Number(sapo.verifiedAt);
+    if(webVariantIndexCache&&webVariantIndexCache.id===id)return webVariantIndexCache.index;
+    const index=new Map();
+    let completed=false;
+    for(let page=1;page<=MAX_LIST_PAGES;page++){
+      const q=new URLSearchParams({limit:String(LIST_PAGE_LIMIT),page:String(page)});
+      const data=await sapoFetch(sapo,'/admin/products.json?'+q.toString());
+      const products=Array.isArray(data&&data.products)?data.products:null;
+      if(!products)throw new Error('Sapo Web không trả danh sách sản phẩm để khớp SKU.');
+      for(const product of products){
+        for(const v of Array.isArray(product&&product.variants)?product.variants:[]){
+          const key=resolver.normSku(v&&v.sku);
+          if(!key||!Number(v&&v.id))continue;
+          if(!index.has(key))index.set(key,[]);
+          index.get(key).push(Number(v.id));
+        }
+      }
+      if(products.length<LIST_PAGE_LIMIT){completed=true;break;}
+    }
+    if(!completed)throw new Error('Sapo Web có quá nhiều sản phẩm để kiểm tra đầy đủ SKU trùng; tạm chặn ghi tồn.');
+    webVariantIndexCache={id,index};
+    return index;
+  }
+
+  async function resolveWebVariant(sapo,row){
+    const sku=resolver.normSku(row&&row.sku);
+    if(!sku)throw new Error('Thiếu SKU; không được ghi tồn tổng Sapo Web.');
+    let variantId=Number(row&&row.variantId)||0;
+    if(!variantId){
+      const index=await webVariantIndex(sapo);
+      const ids=index.get(sku)||[];
+      if(ids.length!==1)throw new Error(ids.length
+        ?'SKU trùng '+text(row.sku)+' trên Sapo Web; phải sửa trùng trước khi ghi.'
+        :'Không tìm thấy đúng SKU '+text(row.sku)+' trên Sapo Web.');
+      variantId=ids[0];
+    }
+    const data=await sapoFetch(sapo,'/admin/variants/'+variantId+'.json');
+    const current=variantFrom(data);
+    if(!current||Number(current.id)!==variantId
+       ||resolver.normSku(current.sku)!==sku){
+      throw new Error('Sapo Web variant ID/SKU không khớp chính xác với '+text(row.sku)+'. Không ghi tồn.');
+    }
+    if(text(current.inventory_management).toLowerCase()!=='bizweb'){
+      throw new Error('Sapo Web không bật quản lý tồn cho SKU '+text(row.sku)+'. Không tự thay đổi chính sách quản lý kho.');
+    }
+    return{variantId,method:'web-total-verified'};
+  }
+
+  async function writeWebVariantStock(sapo,row,resolved){
+    const stock=Number(row&&row.stock),id=Number(resolved&&resolved.variantId);
+    if(!Number.isSafeInteger(stock)||stock<0||!id)
+      throw new Error('Tồn kho hoặc Variant ID không hợp lệ; không ghi.');
+    const data=await sapoFetch(sapo,'/admin/variants/'+id+'.json',{
+      method:'PUT',body:{variant:{id,inventory_quantity:stock}}
+    });
+    let returned=variantFrom(data);
+    if(!returned||Number(returned.id)!==id
+       ||resolver.normSku(returned.sku)!==resolver.normSku(row.sku)
+       ||!Number.isFinite(Number(returned.inventory_quantity))){
+      const checked=await sapoFetch(sapo,'/admin/variants/'+id+'.json');
+      returned=variantFrom(checked);
+    }
+    if(!returned||Number(returned.id)!==id
+       ||resolver.normSku(returned.sku)!==resolver.normSku(row.sku)
+       ||Number(returned.inventory_quantity)!==stock){
+      throw new Error('Sapo Web chưa xác nhận đúng SKU/tồn của '+text(row.sku)+'. Dừng kiểm tra.');
+    }
+    return{method:'sapo-web-total-variant',variantId:id};
+  }
+
   function selectedPendingEntries(pending,profileIds){
     const ids=Array.isArray(profileIds)?profileIds.map(String).filter(Boolean):[];
     const selected=(ids.length?ids.map(id=>pending[id]):Object.values(pending)).filter(Boolean);
@@ -598,8 +670,13 @@
         const results=await Promise.all(indices.map(async index=>{
           const row=queue.rows[index];
           try{
-            const resolved=await resolveInventoryItem(config.sapo,row,map);
-            const written=await writeStockWith403Fallback(config.sapo,row,resolved);
+            const webTotal=config.sapo.syncMode==='web-total';
+            const resolved=webTotal
+              ?await resolveWebVariant(config.sapo,row)
+              :await resolveInventoryItem(config.sapo,row,map);
+            const written=webTotal
+              ?await writeWebVariantStock(config.sapo,row,resolved)
+              :await writeStockWith403Fallback(config.sapo,row,resolved);
             return{kind:'success',index,row,resolved,written};
           }catch(err){
             const message=err&&err.message||String(err);
