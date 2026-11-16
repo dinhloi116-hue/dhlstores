@@ -93,6 +93,8 @@ vm.runInContext(source.slice(variantsStart,variantsEnd)
   assert.strictEqual(writes.length,1);
   assert.ok(source.includes("sapo.syncMode==='web-total'"));
   assert.ok(ui.includes('manualSapoWebTotalMode'));
-  assert.ok(ui.includes("type:webTotal&&webTotal.checked?'DHL_SAPO_CONNECT_WEB'"));
+  assert.ok(ui.includes("type:useWebTotal?'DHL_SAPO_CONNECT_WEB':'DHL_SAPO_CONNECT'"));
+  assert.ok(ui.includes("()=>connectSapo('web-total')"));
+  assert.ok(ui.includes("()=>connectSapo('location')"));
   console.log('SAPO WEB VARIANT MODE PASS: explicit aggregate opt-in, exact SKU, duplicate blocker, verified zero stock, manual-only');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -145,10 +145,7 @@
       if(host)host.value=result.result.storeHost;
       if(key)key.value='';
       if(secret)secret.value='';
-      if(status)status.textContent='Đã lưu cấu hình trong Chrome. Đang xác minh shop và kho...';
-      // The saved pair is used by connectSapo even when the password fields
-      // are empty; a Sapo 401 must NOT erase local config or scan data.
-      await connectSapo();
+      if(status)status.textContent='Đã lưu cặp mã trong Chrome. Chọn KẾT NỐI THEO KHO hoặc KẾT NỐI SAPO WEB – TỒN TỔNG bên dưới. Chưa ghi tồn.';
     }catch(error){
       if(status)status.textContent='Không nạp được cấu hình: '+String(error&&error.message||error);
     }finally{
@@ -156,8 +153,9 @@
     }
   }
 
-  async function connectSapo(){
-    const button=document.getElementById('manualSapoConnectBtn');
+  async function connectSapo(mode='location'){
+    const useWebTotal=mode==='web-total';
+    const button=document.getElementById(useWebTotal?'manualSapoConnectWebBtn':'manualSapoConnectBtn');
     const status=document.getElementById('manualSapoConnectStatus');
     const host=document.getElementById('manualSapoHostInput');
     const key=document.getElementById('manualSapoApiKeyInput');
@@ -165,11 +163,15 @@
     const location=document.getElementById('manualSapoLocationSelect');
     const webTotal=document.getElementById('manualSapoWebTotalMode');
     if(button)button.disabled=true;
-    if(status)status.textContent='Đang kiểm tra API và danh sách kho Sapo...';
+    if(status)status.textContent=useWebTotal
+      ?'Đang xác minh SAPO WEB – TỒN TỔNG (không gọi API danh sách kho)...'
+      :'Đang kiểm tra kết nối THEO KHO Sapo...';
     try{
+      if(useWebTotal&&!(webTotal&&webTotal.checked))
+        throw new Error('Tích ô xác nhận TỒN TỔNG trước khi bấm kết nối Sapo Web.');
       const response=await send({
-        type:webTotal&&webTotal.checked?'DHL_SAPO_CONNECT_WEB':'DHL_SAPO_CONNECT',
-        webTotalConfirmed:Boolean(webTotal&&webTotal.checked),
+        type:useWebTotal?'DHL_SAPO_CONNECT_WEB':'DHL_SAPO_CONNECT',
+        webTotalConfirmed:useWebTotal,
         storeHost:text(host&&host.value),
         apiKey:text(key&&key.value),
         apiSecret:text(secret&&secret.value),
@@ -199,7 +201,9 @@
       await refresh();
     }catch(error){
       if(status)status.textContent='Không kết nối được: '+String(error&&error.message||error);
-    }finally{if(button)button.disabled=false;}
+    }finally{
+      if(button)button.disabled=useWebTotal?!Boolean(webTotal&&webTotal.checked):false;
+    }
   }
 
   async function cancelPush(){
@@ -293,15 +297,19 @@
           </small></span>
         </label>
         <label>NẠP FILE CẤU HÌNH SAPO (.JSON)<input id="manualSapoConfigFileInput" type="file" accept=".json,application/json"></label>
-        <small style="color:#475569;line-height:1.5">Sau khi chọn file: lưu API Key/Secret trên Chrome, tự kiểm tra kết nối. Không đưa mã lên GitHub; chưa xác minh kho sẽ không thể đẩy tồn.</small>
+        <small style="color:#475569;line-height:1.5">Sau khi chọn file: lưu API Key/Secret trên Chrome. Chọn một trong hai nút kết nối phía dưới; chưa xác minh thì không được ghi tồn.</small>
         <small style="color:#475569;line-height:1.5">Dùng API Key + API Secret của <b>Sapo Web → Ứng dụng → Ứng dụng riêng</b> thuộc chính shop này (không phải mã Partner/OAuth). Nếu báo HTTP 401, kiểm tra lại loại ứng dụng, cặp mã và quyền Admin API.</small>
-        <button id="manualSapoConnectBtn" type="button" class="primary">KẾT NỐI & XÁC MINH KHO</button>
+        <button id="manualSapoConnectBtn" type="button" class="secondary">KẾT NỐI THEO KHO (API /locations)</button>
+        <button id="manualSapoConnectWebBtn" type="button" class="primary" disabled>KẾT NỐI SAPO WEB – TỒN TỔNG</button>
       </div>
       <p id="manualSapoConnectStatus">Thông tin chỉ lưu trong Chrome của extension; không đưa API key/secret lên GitHub.</p>`;
     cancel.insertAdjacentElement('afterend',connection);
-    connection.querySelector('#manualSapoConnectBtn')?.addEventListener('click',connectSapo);
+    connection.querySelector('#manualSapoConnectBtn')?.addEventListener('click',()=>connectSapo('location'));
+    connection.querySelector('#manualSapoConnectWebBtn')?.addEventListener('click',()=>connectSapo('web-total'));
     connection.querySelector('#manualSapoWebTotalMode')?.addEventListener('change',e=>{
       e.target.dataset.userChanged='1';
+      const button=document.getElementById('manualSapoConnectWebBtn');
+      if(button)button.disabled=!e.target.checked;
     });
     connection.querySelector('#manualSapoConfigFileInput')?.addEventListener('change',importSapoConfig);
 
@@ -360,8 +368,11 @@
     const hostInput=document.getElementById('manualSapoHostInput');
     const webTotalInput=document.getElementById('manualSapoWebTotalMode');
     if(webTotalInput&&!webTotalInput.dataset.userChanged){
-      webTotalInput.checked=sapo.syncMode==='web-total';
+      // A fresh user acknowledgement is required for the aggregate-stock route.
+      webTotalInput.checked=false;
     }
+    const webTotalButton=document.getElementById('manualSapoConnectWebBtn');
+    if(webTotalButton)webTotalButton.disabled=!Boolean(webTotalInput&&webTotalInput.checked);
     if(hostInput&&document.activeElement!==hostInput&&!hostInput.value){
       hostInput.value=text(sapo.storeHost);
     }
