@@ -420,10 +420,12 @@
     return{method:`${resolved.method}:variant-fallback-403`,variantId};
   }
 
-  let webVariantIndexCache=null;
+  let webVariantIndexCache=null,webVariantIndexPending=null;
   async function webVariantIndex(sapo){
     const id=storeHost(sapo.storeHost)+'|'+Number(sapo.verifiedAt);
     if(webVariantIndexCache&&webVariantIndexCache.id===id)return webVariantIndexCache.index;
+    if(webVariantIndexPending&&webVariantIndexPending.id===id)return webVariantIndexPending.promise;
+    const promise=(async()=>{
     const index=new Map();
     let completed=false;
     for(let page=1;page<=MAX_LIST_PAGES;page++){
@@ -444,6 +446,11 @@
     if(!completed)throw new Error('Sapo Web có quá nhiều sản phẩm để kiểm tra đầy đủ SKU trùng; tạm chặn ghi tồn.');
     webVariantIndexCache={id,index};
     return index;
+    })();
+    webVariantIndexPending={id,promise};
+    try{return await promise;}finally{
+      if(webVariantIndexPending&&webVariantIndexPending.promise===promise)webVariantIndexPending=null;
+    }
   }
 
   async function resolveWebVariant(sapo,row){
@@ -480,12 +487,14 @@
     let returned=variantFrom(data);
     if(!returned||Number(returned.id)!==id
        ||resolver.normSku(returned.sku)!==resolver.normSku(row.sku)
+       ||returned.inventory_quantity==null
        ||!Number.isFinite(Number(returned.inventory_quantity))){
       const checked=await sapoFetch(sapo,'/admin/variants/'+id+'.json');
       returned=variantFrom(checked);
     }
     if(!returned||Number(returned.id)!==id
        ||resolver.normSku(returned.sku)!==resolver.normSku(row.sku)
+       ||returned.inventory_quantity==null
        ||Number(returned.inventory_quantity)!==stock){
       throw new Error('Sapo Web chưa xác nhận đúng SKU/tồn của '+text(row.sku)+'. Dừng kiểm tra.');
     }
