@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Flower2, Gift, Globe2, Heart, MessageCircle, ShoppingBag, Video } from "lucide-react";
 
 const URLS = {
@@ -43,12 +43,72 @@ const copy = {
   },
 } as const;
 
+const LANGUAGE_KEY = "tho_handmade_bio_language";
+const COUNTRY_CACHE_KEY = "tho_handmade_bio_country_cache";
+const COUNTRY_CACHE_MS = 12 * 60 * 60 * 1000;
+const safeGet = (key: string) => { try { return localStorage.getItem(key); } catch { return null; } };
+const safeSet = (key: string, value: string) => { try { localStorage.setItem(key, value); } catch {} };
+const isLanguage = (value: string | null): value is Language => value === "vi" || value === "en";
+
 export default function ThoBioLanding() {
+  const manuallySelected = useRef(false);
   const [lang, setLang] = useState<Language>(() => {
-    const query = new URLSearchParams(window.location.search).get("lang");
-    if (query === "vi" || query === "en") return query;
-    return navigator.language.toLowerCase().startsWith("vi") ? "vi" : "en";
+    const forced = new URLSearchParams(window.location.search).get("lang");
+    if (isLanguage(forced)) return forced;
+    const saved = safeGet(LANGUAGE_KEY);
+    if (isLanguage(saved)) return saved;
+    return (navigator.languages?.[0] || navigator.language || "").toLowerCase().startsWith("vi") ? "vi" : "en";
   });
+
+  const changeLanguage = (language: Language) => {
+    manuallySelected.current = true;
+    safeSet(LANGUAGE_KEY, language);
+    setLang(language);
+  };
+
+  useEffect(() => {
+    const forced = new URLSearchParams(window.location.search).get("lang");
+    if (isLanguage(forced) || isLanguage(safeGet(LANGUAGE_KEY))) return;
+
+    let cancelled = false;
+    const cache = safeGet(COUNTRY_CACHE_KEY);
+    if (cache) {
+      try {
+        const stored = JSON.parse(cache) as { country?: string; time?: number };
+        if (/^[A-Z]{2}$/.test(stored.country || "") && typeof stored.time === "number" && Date.now() - stored.time < COUNTRY_CACHE_MS) {
+          setLang(stored.country === "VN" ? "vi" : "en");
+          return;
+        }
+      } catch { /* Invalid cache; look up the country again. */ }
+    }
+
+    const lookup = async (url: string, pick: (data: any) => string | null) => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 2600);
+      try {
+        const response = await fetch(url, { signal: controller.signal, cache: "no-store" });
+        if (!response.ok) throw new Error("Country lookup unavailable");
+        const country = pick(await response.json());
+        if (!/^[A-Z]{2}$/.test(country || "")) throw new Error("Unknown country");
+        return country as string;
+      } finally { window.clearTimeout(timeout); }
+    };
+
+    const detect = async () => {
+      let country: string | null = null;
+      try { country = await lookup("https://api.country.is/", data => data.country); }
+      catch {
+        try { country = await lookup("https://ipwho.is/", data => data.success === false ? null : data.country_code); }
+        catch { /* Preserve browser language if both services fail. */ }
+      }
+      if (!country || cancelled || manuallySelected.current) return;
+      safeSet(COUNTRY_CACHE_KEY, JSON.stringify({ country, time: Date.now() }));
+      setLang(country === "VN" ? "vi" : "en");
+    };
+    void detect();
+    return () => { cancelled = true; };
+  }, []);
+
   const t = copy[lang];
 
   useEffect(() => {
@@ -76,7 +136,7 @@ export default function ThoBioLanding() {
           <span className="text-[17px] font-extrabold tracking-tight">THỎ <span className="text-[#c4607f]">HANDMADE</span> ✿</span>
           <div className="inline-flex rounded-full border border-[#eacdd2] bg-[#fff9fa] p-1" aria-label="Language">
             {(["vi", "en"] as const).map((option) => (
-              <button key={option} type="button" onClick={() => setLang(option)} aria-pressed={lang === option}
+              <button key={option} type="button" onClick={() => changeLanguage(option)} aria-pressed={lang === option}
                 className={"rounded-full px-3 py-1.5 text-xs font-extrabold transition " + (lang === option ? "bg-[#d56c90] text-white shadow-sm" : "text-[#9d6c78] hover:bg-white")}>{option === "vi" ? "VN" : "EN"}</button>
             ))}
           </div>
