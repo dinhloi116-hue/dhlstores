@@ -74,7 +74,7 @@
     box.innerHTML=`
       <div style="font-weight:900;margin:8px 0 5px">XEM TRƯỚC ĐẨY TỒN — ${Number(sum.count||0)} SKU</div>
       <div>${Number(sum.zero||0)} SKU hết hàng • ${Number(sum.changed||0)} SKU đổi so với lần đẩy đã lưu • ${Number(sum.unknown||0)} SKU chưa có mốc</div>
-      <small>Kho: ${esc(preview.locationName||preview.branch)}. Cột "Mốc trước" là dữ liệu đã ghi nhận ở lần đẩy trước (${esc(last)}), <b>KHÔNG phải số tồn Sapo đang đọc trực tiếp</b>. Kiểm tra lại trên Sapo nếu có thay đổi ngoài tool.</small>
+      <small>Chế độ: ${esc(preview.locationName||preview.branch)}. Nếu là Sapo Web – tồn tổng, thao tác ghi sẽ thay đổi tồn tổng, không theo chi nhánh. Cột "Mốc trước" là dữ liệu đã ghi nhận ở lần đẩy trước (${esc(last)}), <b>KHÔNG phải số tồn Sapo đang đọc trực tiếp</b>. Kiểm tra lại trên Sapo nếu có thay đổi ngoài tool.</small>
       <div class="sapo-preview-line sapo-preview-heading"><span>SKU</span><span>Mốc trước</span><span>Sẽ ghi</span><span>Chênh</span></div>
       <div class="sapo-preview-scroller">${lines}</div>
       <button id="manualSapoPreviewCancel" type="button" class="secondary">HỦY XEM TRƯỚC</button>`;
@@ -163,11 +163,13 @@
     const key=document.getElementById('manualSapoApiKeyInput');
     const secret=document.getElementById('manualSapoApiSecretInput');
     const location=document.getElementById('manualSapoLocationSelect');
+    const webTotal=document.getElementById('manualSapoWebTotalMode');
     if(button)button.disabled=true;
     if(status)status.textContent='Đang kiểm tra API và danh sách kho Sapo...';
     try{
       const response=await send({
-        type:'DHL_SAPO_CONNECT',
+        type:webTotal&&webTotal.checked?'DHL_SAPO_CONNECT_WEB':'DHL_SAPO_CONNECT',
+        webTotalConfirmed:Boolean(webTotal&&webTotal.checked),
         storeHost:text(host&&host.value),
         apiKey:text(key&&key.value),
         apiSecret:text(secret&&secret.value),
@@ -188,7 +190,9 @@
       if(key)key.value='';
       if(secret)secret.value='';
       if(location){location.hidden=true;location.innerHTML='';}
-      if(status)status.textContent='Đã xác minh kết nối với kho '+text(result.locationName)+'.';
+      if(status)status.textContent=result.webTotal
+        ?'Đã kết nối Sapo Web – TỒN TỔNG. Chỉ ghi sau khi XEM TRƯỚC và XÁC NHẬN ĐẨY.'
+        :'Đã xác minh kết nối với kho '+text(result.locationName)+'.';
       const details=document.getElementById('manualSapoConnection');
       if(details)details.open=false;
       clearPreview();
@@ -281,6 +285,13 @@
         <label>API key<input id="manualSapoApiKeyInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
         <label>API secret<input id="manualSapoApiSecretInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
         <label>Kho Sapo<select id="manualSapoLocationSelect" hidden></select></label>
+        <label class="dhl-sapo-web-mode" style="display:flex;align-items:flex-start;gap:7px;line-height:1.5">
+          <input id="manualSapoWebTotalMode" type="checkbox" style="width:auto;min-height:0;margin-top:4px">
+          <span><b>DÙNG SAPO WEB – TỒN TỔNG (KHÔNG PHÂN KHO)</b><small style="display:block;color:#9a3412">
+            Chỉ tích nếu muốn ghi số tồn TỔNG của biến thể trên Sapo Web, KHÔNG phải tồn của chi nhánh dhl sport.
+            Tool sẽ xác minh sản phẩm và SKU đúng tuyệt đối rồi cho xem trước; không tự đẩy sau quét.
+          </small></span>
+        </label>
         <label>NẠP FILE CẤU HÌNH SAPO (.JSON)<input id="manualSapoConfigFileInput" type="file" accept=".json,application/json"></label>
         <small style="color:#475569;line-height:1.5">Sau khi chọn file: lưu API Key/Secret trên Chrome, tự kiểm tra kết nối. Không đưa mã lên GitHub; chưa xác minh kho sẽ không thể đẩy tồn.</small>
         <small style="color:#475569;line-height:1.5">Dùng API Key + API Secret của <b>Sapo Web → Ứng dụng → Ứng dụng riêng</b> thuộc chính shop này (không phải mã Partner/OAuth). Nếu báo HTTP 401, kiểm tra lại loại ứng dụng, cặp mã và quyền Admin API.</small>
@@ -289,6 +300,9 @@
       <p id="manualSapoConnectStatus">Thông tin chỉ lưu trong Chrome của extension; không đưa API key/secret lên GitHub.</p>`;
     cancel.insertAdjacentElement('afterend',connection);
     connection.querySelector('#manualSapoConnectBtn')?.addEventListener('click',connectSapo);
+    connection.querySelector('#manualSapoWebTotalMode')?.addEventListener('change',e=>{
+      e.target.dataset.userChanged='1';
+    });
     connection.querySelector('#manualSapoConfigFileInput')?.addEventListener('change',importSapoConfig);
 
     const note=document.createElement('div');
@@ -344,6 +358,10 @@
     const verified=Boolean(sapo.verifiedAt&&sapo.locationId);
     const hasCredentials=Boolean(text(sapo.storeHost)&&text(sapo.apiKey)&&text(sapo.apiSecret));
     const hostInput=document.getElementById('manualSapoHostInput');
+    const webTotalInput=document.getElementById('manualSapoWebTotalMode');
+    if(webTotalInput&&!webTotalInput.dataset.userChanged){
+      webTotalInput.checked=sapo.syncMode==='web-total';
+    }
     if(hostInput&&document.activeElement!==hostInput&&!hostInput.value){
       hostInput.value=text(sapo.storeHost);
     }
