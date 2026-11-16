@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DHL STOCK SYNC | Báo cáo tồn kho</title>
+  <link rel="stylesheet" href="stock-report.css">
+</head>
+<body>
+  <header class="page-head">
+    <div class="page-wrap head-inner">
+      <div class="identity">
+        <img src="icons/icon-48.png" alt="" width="44" height="44">
+        <div><div class="brand">DHL STOCK SYNC</div><h1>Báo cáo biến động tồn kho</h1></div>
+      </div>
+      <div class="head-tools">
+        <label for="profileSelect">Hồ sơ / danh mục</label>
+        <select id="profileSelect" aria-label="Chọn hồ sơ tồn kho"></select>
+        <button id="printBtn" class="print-button" type="button">In / Lưu PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-wrap">
+    <section id="reportInfo" class="report-info"></section>
+    <section id="summary" class="summary" aria-label="Thống kê tồn kho"></section>
+    <section class="results">
+      <div class="results-head">
+        <div><h2>Chi tiết từng SKU</h2><p>Ảnh lấy từ màu/biến thể đã đọc trong popup nguồn. Mẫu thiếu ảnh sẽ được ghi rõ.</p></div>
+        <div id="resultCount" class="result-count"></div>
+      </div>
+      <div id="alert" role="status" class="alert" hidden></div>
+      <div class="controls">
+        <div id="filters" class="filters" role="group" aria-label="Lọc trạng thái tồn kho"></div>
+        <label class="search-wrap" for="searchInput"><span>Tìm theo tên / màu / size / SKU</span>
+          <input id="searchInput" type="search" placeholder="Tìm SKU, ví dụ: dt-duc-2026..." autocomplete="off">
+        </label>
+      </div>
+      <div id="results" class="results-list"></div>
+      <div class="more-wrap"><button id="moreBtn" class="more-btn" type="button" hidden>Xem thêm 40 SKU</button></div>
+    </section>
+    <p class="footnote">Báo cáo chỉ đọc dữ liệu DHL STOCK SYNC lưu trong Chrome này. Không tự sửa hoặc gửi tồn kho lên Sapo.</p>
+  </main>
+  <dialog id="photoDialog" class="photo-dialog" aria-label="Xem ảnh lớn">
+    <button id="closePhotoBtn" class="close-dialog" type="button">Đóng ✕</button>
+    <img id="largePhoto" alt="Ảnh sản phẩm phóng to">
+    <p id="largePhotoLabel"></p>
+  </dialog>
+  <script src="stock-history-core.js"></script>
+  <script src="stock-report-core.js"></script>
+  <script src="stock-report.js"></script>
+</body>
+</html>
