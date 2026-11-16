@@ -50,7 +50,7 @@ vm.runInContext(src.slice(start,end)+'\nglobalThis.connect=connectSapo;',ctx);
  assert.strictEqual(result.locationId,11);
  assert.strictEqual(stored.sapo.locationName,'Kho phụ');
  assert.ok(ui.includes('KẾT NỐI / ĐỔI KHO SAPO'));
- assert.ok(ui.includes("type:'DHL_SAPO_CONNECT'"));
+ assert.ok(ui.includes("'DHL_SAPO_CONNECT_WEB':'DHL_SAPO_CONNECT'"),'Both Sapo Web and location modes must be available');
  assert.ok(ui.includes('autocomplete="new-password"'));
  assert.ok(src.includes("message.type==='DHL_SAPO_CONNECT'"));
  assert.ok(ui.includes('Sapo Web → Ứng dụng → Ứng dụng riêng'));

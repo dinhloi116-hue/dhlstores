@@ -43,11 +43,12 @@ function render(){
    +'<button id="savedTabsSelectNone" type="button">BỎ CHỌN</button></div>'
    +'<div class="dhl-auto-profiles">'+profiles+'</div>'
    +'<label class="dhl-auto-check"><input id="savedTabsPush" type="checkbox"'
-   +(c.autoPushSapo?' checked':'')+(c.sapoConnected?'':' disabled')
+   +(c.autoPushSapo&&c.syncMode!=='web-total'?' checked':'')+(c.sapoConnected&&c.syncMode!=='web-total'?'':' disabled')
    +'> Sau khi quét đủ TẤT CẢ tab, đẩy tồn trực tiếp lên Sapo</label>'
    +'<small>Kho Sapo: '+esc(c.locationName||'Chưa xác minh')
    +' · '+esc(c.storeHost||'Chưa kết nối')+'</small>'
    +(c.sapoConnected?'':'<p class="dhl-auto-warn">Muốn đẩy Sapo: xác minh API và kho trong mục ĐẦU RA. Nếu chưa kết nối, vẫn có thể quét tất cả tab và xuất Excel.</p>')
+   +(c.syncMode==='web-total'?'<p class="dhl-auto-warn">Sapo Web – tồn tổng: chỉ được đẩy thủ công sau XEM TRƯỚC và XÁC NHẬN ở ĐẦU RA; không đẩy ngay sau quét.</p>':'')
    +'</details>'
    +'<div class="dhl-auto-summary" role="status"><b>'+esc(heading)+'</b>'
    +'<div>'+Number(run.scanned||0)+'/'+(run.profileIds||[]).length+' danh mục quét xong'
