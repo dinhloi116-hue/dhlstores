@@ -17,10 +17,10 @@ const copy = {
     intro: "Những món quà thủ công nhỏ xinh, được làm bằng sự tỉ mỉ và yêu thương.",
     linksTitle: "MUA HÀNG & LIÊN HỆ",
     linksHint: "Chọn nơi bạn muốn đến",
-    zaloTitle: "Mua qua Zalo", zaloDescription: "Nhắn shop để đặt mẫu hoặc làm theo yêu cầu",
-    whatsappTitle: "Mua bằng WhatsApp", whatsappDescription: "Liên hệ đặt hàng quốc tế",
-    shopeeTitle: "Mua trên Shopee", shopeeDescription: "Xem các sản phẩm đang bán",
-    webTitle: "Website Thỏ Handmade", webDescription: "Khám phá các mẫu hoa và quà tặng",
+    zaloTitle: "Mua qua Zalo", zaloDescription: "Nhắn trực tiếp cho em ạ 💬",
+    whatsappTitle: "Mua qua WhatsApp", whatsappDescription: "Khách quốc tế nhắn em để nhận giá USD và tư vấn giao hàng",
+    shopeeTitle: "Mua trên Shopee", shopeeDescription: "Có ưu đãi freeship, giá nhỉnh hơn website",
+    webTitle: "Mua tại website", webDescription: "Toàn bộ sản phẩm • Giá rẻ bất ngờ!",
     tiktokTitle: "Xem TikTok", tiktokDescription: "Video làm hoa và ý tưởng thủ công",
     priceTitle: "Giá cho khách quốc tế",
     priceText: "Nhắn WhatsApp để nhận báo giá bằng USD ($) và phí vận chuyển. Giá từng mẫu chưa được niêm yết trên trang bio này.",
@@ -32,10 +32,10 @@ const copy = {
     intro: "Thoughtfully crafted flowers and gifts, handmade with love in Vietnam.",
     linksTitle: "SHOP & GET IN TOUCH",
     linksHint: "Choose how to order",
-    zaloTitle: "Order via Zalo", zaloDescription: "Message us for custom designs and orders",
-    whatsappTitle: "Order via WhatsApp", whatsappDescription: "English support for international orders",
-    shopeeTitle: "Shop on Shopee", shopeeDescription: "Browse our products on Shopee",
-    webTitle: "Visit Tho Handmade", webDescription: "Explore our flowers and handmade gifts",
+    zaloTitle: "Order via Zalo", zaloDescription: "Message me directly for personal assistance",
+    whatsappTitle: "Order via WhatsApp", whatsappDescription: "International orders • Chat in English, get a USD quote",
+    shopeeTitle: "Shop on Shopee", shopeeDescription: "Free-shipping offers • Prices slightly higher than our website",
+    webTitle: "Shop our website", webDescription: "All products • Surprisingly low prices!",
     tiktokTitle: "Watch our TikTok", tiktokDescription: "Flower tutorials and handmade ideas",
     priceTitle: "Prices in USD",
     priceText: "Contact us on WhatsApp for USD ($) quotations and international shipping. Individual product prices are not listed on this bio page.",
@@ -60,10 +60,10 @@ export default function ThoBioLanding() {
   }, [lang]);
 
   const links = [
-    { href: URLS.zalo, title: t.zaloTitle, description: t.zaloDescription, Icon: MessageCircle, highlight: true },
-    { href: URLS.whatsapp, title: t.whatsappTitle, description: t.whatsappDescription, Icon: Globe2 },
+    { href: URLS.shop, title: t.webTitle, description: t.webDescription, Icon: Flower2, highlight: true },
     { href: URLS.shopee, title: t.shopeeTitle, description: t.shopeeDescription, Icon: ShoppingBag },
-    { href: URLS.shop, title: t.webTitle, description: t.webDescription, Icon: Flower2 },
+    { href: URLS.zalo, title: t.zaloTitle, description: t.zaloDescription, Icon: MessageCircle },
+    { href: URLS.whatsapp, title: t.whatsappTitle, description: t.whatsappDescription, Icon: Globe2 },
     { href: URLS.tiktok, title: t.tiktokTitle, description: t.tiktokDescription, Icon: Video },
   ];
 
