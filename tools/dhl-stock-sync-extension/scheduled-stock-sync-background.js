@@ -69,7 +69,7 @@
         autoPushSapo:cfg.autoPushSapo,selectedProfileIds:cfg.selectedProfileIds,
         profileUrls:cfg.profileUrls,
         sapoConnected:Boolean(sapo.verifiedAt&&sapo.locationId&&sapo.apiKey&&sapo.apiSecret),
-        locationName:text(sapo.locationName),storeHost:text(sapo.storeHost)
+        locationName:text(sapo.locationName),storeHost:text(sapo.storeHost),syncMode:text(sapo.syncMode)
       },
       profiles:(Array.isArray(s[PROFILE_KEY])?s[PROFILE_KEY]:[])
         .map(p=>({id:text(p&&p.id),name:text(p&&p.name),url:text(p&&p.lastSourceUrl),
@@ -105,6 +105,8 @@
     }
     const push=request.pushToSapo===true;
     const sapo=old.sapo||{};
+    if(push&&sapo.syncMode==='web-total')
+      throw new Error('Tồn tổng Sapo Web chỉ hỗ trợ đẩy thủ công sau XEM TRƯỚC và XÁC NHẬN.');
     if(push&&!(sapo.verifiedAt&&sapo.locationId&&text(sapo.storeHost)
       &&text(sapo.apiKey)&&text(sapo.apiSecret)))
       throw new Error('Xác minh API và kho Sapo ở phần ĐẦU RA trước khi chọn đẩy trực tiếp.');
