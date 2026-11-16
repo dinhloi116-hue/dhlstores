@@ -96,8 +96,21 @@
       verifiedAt:0,locationId:0,locationName:''
     };
     authHeaders(candidate);
+    // A successful store probe rules out a blanket Basic Auth failure.
+    // The locations API may still be blocked for this app/shop.
     await sapoFetch(candidate,'/admin/store.json');
-    const data=await sapoFetch(candidate,'/admin/locations.json');
+    let data;
+    try {
+      data=await sapoFetch(candidate,'/admin/locations.json');
+    }catch(error){
+      const detail=text(error&&error.message||error);
+      if(/^Sapo HTTP 401\\b/i.test(detail)){
+        // Never say the entered credentials are wrong after /store.json succeeded.
+        // Do not infer a warehouse ID or allow writes without verified access.
+        throw new Error('Đã xác thực shop Sapo thành công (/admin/store.json), nhưng API danh sách kho (/admin/locations.json) bị từ chối: HTTP 401 invalid_request. API Key/Secret đã dùng được để đọc shop; lỗi hiện tại thuộc bước truy cập kho (có thể do quyền ứng dụng hoặc dịch vụ Sapo). Kiểm tra quyền truy cập kho/chi nhánh của Ứng dụng riêng hoặc liên hệ Sapo và cung cấp tên hai API cùng mã 401. Tool chưa ghi tồn lên Sapo; vẫn có thể TẢI FILE EXCEL.');
+      }
+      throw error;
+    }
     const locations=(Array.isArray(data&&data.locations)?data.locations:Array.isArray(data&&data.data)?data.data:[])
       .filter(x=>Number(x&&x.id)>0&&text(x&&x.name))
       .map(x=>({id:Number(x.id),name:text(x.name)}));
@@ -132,7 +145,15 @@
     }
 
     await sapoFetch(sapo,'/admin/store.json');
-    const locationsData=await sapoFetch(sapo,'/admin/locations.json');
+    let locationsData;
+    try{
+      locationsData=await sapoFetch(sapo,'/admin/locations.json');
+    }catch(error){
+      if(/^Sapo HTTP 401\\b/i.test(text(error&&error.message||error))){
+        throw new Error('Sapo xác thực shop thành công nhưng không cho đọc /admin/locations.json (401). Chưa xác minh được ID kho; tạm chặn đẩy tồn. Hãy kiểm tra quyền kho/chi nhánh trong Ứng dụng riêng hoặc liên hệ Sapo.');
+      }
+      throw error;
+    }
     const locations=Array.isArray(locationsData&&locationsData.locations)?locationsData.locations:Array.isArray(locationsData&&locationsData.data)?locationsData.data:[];
     if(!locations.length)throw new Error('Kết nối được Sapo nhưng không đọc được chi nhánh.');
 
