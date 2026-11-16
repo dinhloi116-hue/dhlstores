@@ -110,6 +110,29 @@ export default function ThoBioLanding() {
   }, []);
 
   const t = copy[lang];
+  const [zaloCopyStatus, setZaloCopyStatus] = useState<"idle" | "done" | "failed">("idle");
+  const copyZaloNumber = async () => {
+    const number = "0399865463";
+    let success = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(number);
+        success = true;
+      }
+    } catch { /* In-app browsers may block Clipboard API. */ }
+    if (!success) {
+      const input = document.createElement("textarea");
+      input.value = number;
+      input.style.cssText = "position:fixed;opacity:0;top:0;left:0";
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      try { success = document.execCommand("copy"); } catch { /* Show manual copy hint. */ }
+      input.remove();
+    }
+    setZaloCopyStatus(success ? "done" : "failed");
+  };
+
 
   useEffect(() => {
     const originalTitle = document.title;
@@ -162,13 +185,36 @@ export default function ThoBioLanding() {
         </div>
         <nav aria-label={t.linksTitle} className="space-y-3">
           {links.map(({ href, title, description, Icon, highlight, ...brand }) => (
-            <a key={href} href={href} target="_blank" rel="noopener noreferrer"
-              className={"group flex min-h-[78px] items-center gap-3.5 rounded-[20px] border px-4 py-3.5 shadow-[0_5px_20px_rgba(110,60,70,.05)] transition hover:-translate-y-0.5 " + (highlight ? "border-[#c85d83] bg-gradient-to-r from-[#d96d91] to-[#c65b80] text-white shadow-[0_12px_26px_#c35f8240]" : "border-[#f3dfe1] bg-white text-[#493334] hover:border-[#ebb3c4]")}>
-              <span className={"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl " + (highlight ? "bg-white/20" : "bg-[#fff0f4]")}>{"brandIcon" in brand && typeof brand.brandIcon === "string" ? <img src={brand.brandIcon} width={27} height={27} alt={title} className="h-[27px] w-[27px] object-contain" /> : <Icon size={23} strokeWidth={1.8} />}</span>
-              <span className="min-w-0 flex-1"><strong className="block text-[15px] font-extrabold">{title}</strong><small className={"mt-1 block text-[11px] leading-5 " + (highlight ? "text-[#ffecf1]" : "text-[#927e83]")}>{description}</small></span>
-              <ArrowUpRight size={20} className={highlight ? "text-white" : "text-[#bf7791]"} />
-            </a>
-          ))}
+            href === URLS.zalo ? (
+              <div key={href} role="group" aria-label="Zalo" className="flex flex-wrap items-center gap-3 rounded-[20px] border border-[#f3dfe1] bg-white px-4 py-3.5 shadow-[0_5px_20px_rgba(110,60,70,.05)]">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f4]">
+                  <img src="https://cdn.simpleicons.org/zalo/0068FF" width={27} height={27} alt="Zalo" className="h-[27px] w-[27px] object-contain" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <strong className="block text-[15px] font-extrabold">{title}</strong>
+                  <small className="mt-1 block text-[11px] leading-5 text-[#927e83]">{description}</small>
+                  <span className="mt-1 block text-sm font-extrabold tracking-wide text-[#0068ff]">0399 865 463</span>
+                </span>
+                <button type="button" onClick={copyZaloNumber} aria-label={lang === "vi" ? "Sao chép số Zalo" : "Copy Zalo number"} className="shrink-0 rounded-xl border border-[#c5dcff] bg-[#ecf5ff] px-3 py-2.5 text-xs font-extrabold text-[#1763cf]">
+                  {lang === "vi" ? "Sao chép" : "Copy"}
+                </button>
+                {zaloCopyStatus !== "idle" && (
+                  <span role="status" aria-live="polite" className="w-full text-center text-[11px] text-[#3c7b53]">
+                    {zaloCopyStatus === "done"
+                      ? (lang === "vi" ? "✓ Đã sao chép số — mở Zalo để tìm shop." : "✓ Number copied — search in Zalo.")
+                      : (lang === "vi" ? "Giữ vào số bên trên để sao chép thủ công." : "Long-press the number to copy it.")}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <a key={href} href={href} target="_blank" rel="noopener noreferrer"
+                className={"group flex min-h-[78px] items-center gap-3.5 rounded-[20px] border px-4 py-3.5 shadow-[0_5px_20px_rgba(110,60,70,.05)] transition hover:-translate-y-0.5 " + (highlight ? "border-[#c85d83] bg-gradient-to-r from-[#d96d91] to-[#c65b80] text-white shadow-[0_12px_26px_#c35f8240]" : "border-[#f3dfe1] bg-white text-[#493334] hover:border-[#ebb3c4]")}>
+                <span className={"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl " + (highlight ? "bg-white/20" : "bg-[#fff0f4]")}>{"brandIcon" in brand && typeof brand.brandIcon === "string" ? <img src={brand.brandIcon} width={27} height={27} alt={title} className="h-[27px] w-[27px] object-contain" /> : <Icon size={23} strokeWidth={1.8} />}</span>
+                <span className="min-w-0 flex-1"><strong className="block text-[15px] font-extrabold">{title}</strong><small className={"mt-1 block text-[11px] leading-5 " + (highlight ? "text-[#ffecf1]" : "text-[#927e83]")}>{description}</small></span>
+                <ArrowUpRight size={20} className={highlight ? "text-white" : "text-[#bf7791]"} />
+              </a>
+            )
+          ))}    ))}
         </nav>
 
         <aside className="mt-6 rounded-[18px] border border-dashed border-[#ebcbd2] bg-white/75 px-4 py-4 text-[12px] leading-6 text-[#8e7479]">
