@@ -19,8 +19,8 @@ let removed=[];
 const ctx={
  CONFIG_KEY,PREVIEW_KEY,SAPO_QUEUE_KEY,
  storeHost:v=>{
-   let host=String(v==null?'':v).trim().replace(/^https?:\\/\\//i,'').replace(/\\/.*$/,'').toLowerCase();
-   if(!/^[a-z0-9][a-z0-9.-]*\\.mysapo\\.net$/.test(host))throw Error('Invalid host');
+   let host=String(v==null?'':v).trim().replace('https://','').replace('http://','').split('/')[0].toLowerCase();
+   if(!host.endsWith('.mysapo.net'))throw Error('Invalid host');
    return host;
  },
  text:v=>String(v==null?'':v).trim(),
