@@ -33,7 +33,7 @@ const ctx={
  Error,String,Object,Array,Number,Date
 };
 vm.createContext(ctx);
-vm.runInContext(src.slice(start,end)+'\\nglobalThis.saveCredentials=saveSapoCredentials;',ctx);
+vm.runInContext(src.slice(start,end)+'\nglobalThis.saveCredentials=saveSapoCredentials;',ctx);
 (async()=>{
  state[SAPO_QUEUE_KEY]={status:'running'};
  await assert.rejects(ctx.saveCredentials({storeHost:'dhl-sport.mysapo.net',
