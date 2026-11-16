@@ -104,7 +104,7 @@
       data=await sapoFetch(candidate,'/admin/locations.json');
     }catch(error){
       const detail=text(error&&error.message||error);
-      if(/^Sapo HTTP 401\\b/i.test(detail)){
+      if(/^Sapo HTTP 401\b/i.test(detail)){
         // Never say the entered credentials are wrong after /store.json succeeded.
         // Do not infer a warehouse ID or allow writes without verified access.
         throw new Error('Đã xác thực shop Sapo thành công (/admin/store.json), nhưng API danh sách kho (/admin/locations.json) bị từ chối: HTTP 401 invalid_request. API Key/Secret đã dùng được để đọc shop; lỗi hiện tại thuộc bước truy cập kho (có thể do quyền ứng dụng hoặc dịch vụ Sapo). Kiểm tra quyền truy cập kho/chi nhánh của Ứng dụng riêng hoặc liên hệ Sapo và cung cấp tên hai API cùng mã 401. Tool chưa ghi tồn lên Sapo; vẫn có thể TẢI FILE EXCEL.');
@@ -149,7 +149,7 @@
     try{
       locationsData=await sapoFetch(sapo,'/admin/locations.json');
     }catch(error){
-      if(/^Sapo HTTP 401\\b/i.test(text(error&&error.message||error))){
+      if(/^Sapo HTTP 401\b/i.test(text(error&&error.message||error))){
         throw new Error('Sapo xác thực shop thành công nhưng không cho đọc /admin/locations.json (401). Chưa xác minh được ID kho; tạm chặn đẩy tồn. Hãy kiểm tra quyền kho/chi nhánh trong Ứng dụng riêng hoặc liên hệ Sapo.');
       }
       throw error;
