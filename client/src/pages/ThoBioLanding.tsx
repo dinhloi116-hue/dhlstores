@@ -61,9 +61,9 @@ export default function ThoBioLanding() {
 
   const links = [
     { href: URLS.shop, title: t.webTitle, description: t.webDescription, Icon: Flower2, highlight: true },
-    { href: URLS.shopee, title: t.shopeeTitle, description: t.shopeeDescription, Icon: ShoppingBag },
-    { href: URLS.zalo, title: t.zaloTitle, description: t.zaloDescription, Icon: MessageCircle },
-    { href: URLS.whatsapp, title: t.whatsappTitle, description: t.whatsappDescription, Icon: Globe2 },
+    { href: URLS.shopee, title: t.shopeeTitle, description: t.shopeeDescription, Icon: ShoppingBag, brandIcon: "https://cdn.simpleicons.org/shopee/EE4D2D" },
+    { href: URLS.zalo, title: t.zaloTitle, description: t.zaloDescription, Icon: MessageCircle, brandIcon: "https://cdn.simpleicons.org/zalo/0068FF" },
+    { href: URLS.whatsapp, title: t.whatsappTitle, description: t.whatsappDescription, Icon: Globe2, brandIcon: "https://cdn.simpleicons.org/whatsapp/25D366" },
     { href: URLS.tiktok, title: t.tiktokTitle, description: t.tiktokDescription, Icon: Video },
   ];
 
@@ -101,10 +101,10 @@ export default function ThoBioLanding() {
           <span className="text-[11px] text-[#af8d95]">{t.linksHint}</span>
         </div>
         <nav aria-label={t.linksTitle} className="space-y-3">
-          {links.map(({ href, title, description, Icon, highlight }) => (
+          {links.map(({ href, title, description, Icon, highlight, ...brand }) => (
             <a key={href} href={href} target="_blank" rel="noopener noreferrer"
               className={"group flex min-h-[78px] items-center gap-3.5 rounded-[20px] border px-4 py-3.5 shadow-[0_5px_20px_rgba(110,60,70,.05)] transition hover:-translate-y-0.5 " + (highlight ? "border-[#c85d83] bg-gradient-to-r from-[#d96d91] to-[#c65b80] text-white shadow-[0_12px_26px_#c35f8240]" : "border-[#f3dfe1] bg-white text-[#493334] hover:border-[#ebb3c4]")}>
-              <span className={"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl " + (highlight ? "bg-white/20" : "bg-[#fff0f4]")}><Icon size={23} strokeWidth={1.8} /></span>
+              <span className={"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl " + (highlight ? "bg-white/20" : "bg-[#fff0f4]")}>{"brandIcon" in brand && typeof brand.brandIcon === "string" ? <img src={brand.brandIcon} width={27} height={27} alt={title} className="h-[27px] w-[27px] object-contain" /> : <Icon size={23} strokeWidth={1.8} />}</span>
               <span className="min-w-0 flex-1"><strong className="block text-[15px] font-extrabold">{title}</strong><small className={"mt-1 block text-[11px] leading-5 " + (highlight ? "text-[#ffecf1]" : "text-[#927e83]")}>{description}</small></span>
               <ArrowUpRight size={20} className={highlight ? "text-white" : "text-[#bf7791]"} />
             </a>
