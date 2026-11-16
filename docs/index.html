@@ -65,18 +65,81 @@ footer strong{display:block;color:#b95a7e;font-size:17px;font-family:Quicksand,s
 <footer><strong>THỎ HANDMADE ♡</strong><span data-vi="Mỗi món quà đều có một câu chuyện nhỏ" data-en="Every handmade gift tells a little story">Mỗi món quà đều có một câu chuyện nhỏ</span></footer>
 </main>
 <script>
-(function(){
-const buttons=[...document.querySelectorAll('[data-language]')];
-const candidate=new URLSearchParams(location.search).get('lang');
-const initial=(candidate==='vi'||candidate==='en')?candidate:(navigator.language.toLowerCase().startsWith('vi')?'vi':'en');
-function apply(value){
-  document.documentElement.lang=value;
-  document.querySelectorAll('[data-vi][data-en]').forEach(el=>{el.textContent=el.getAttribute('data-'+value)});
-  buttons.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.language===value)));
-  document.title=value==='vi'?'Thỏ Handmade | Hoa kẽm nhung & quà tặng':'Tho Handmade | Chenille flowers & handmade gifts';
-}
-buttons.forEach(button=>button.addEventListener('click',()=>apply(button.dataset.language)));
-apply(initial);
+(function () {
+  const buttons = [...document.querySelectorAll('[data-language]')];
+  const KEY = 'tho_handmade_bio_language';
+  const COUNTRY_KEY = 'tho_handmade_bio_country_cache';
+  const CACHE_MS = 12 * 60 * 60 * 1000;
+  const getStored = key => { try { return localStorage.getItem(key); } catch { return null; } };
+  const setStored = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+  const candidate = new URLSearchParams(location.search).get('lang');
+  const forcedLanguage = candidate === 'vi' || candidate === 'en' ? candidate : null;
+  const saved = getStored(KEY);
+  const preferredLanguage = saved === 'vi' || saved === 'en' ? saved : null;
+  const browserLanguage = (navigator.languages?.[0] || navigator.language || '').toLowerCase().startsWith('vi') ? 'vi' : 'en';
+  let manuallySelected = Boolean(forcedLanguage || preferredLanguage);
+
+  function apply(value) {
+    document.documentElement.lang = value;
+    document.querySelectorAll('[data-vi][data-en]').forEach(el => {
+      el.textContent = el.getAttribute('data-' + value) || '';
+    });
+    buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.language === value)));
+    document.title = value === 'vi'
+      ? 'Thỏ Handmade | Hoa kẽm nhung & quà tặng'
+      : 'Tho Handmade | Chenille flowers & handmade gifts';
+  }
+
+  buttons.forEach(button => button.addEventListener('click', () => {
+    manuallySelected = true;
+    const language = button.dataset.language;
+    setStored(KEY, language);
+    apply(language);
+  }));
+
+  apply(forcedLanguage || preferredLanguage || browserLanguage);
+
+  // Explicit ?lang= and the visitor's manual selection take precedence over geolocation.
+  if (manuallySelected) return;
+
+  const cache = getStored(COUNTRY_KEY);
+  if (cache) {
+    try {
+      const record = JSON.parse(cache);
+      if (record.country && Date.now() - record.time < CACHE_MS) {
+        apply(record.country === 'VN' ? 'vi' : 'en');
+        return;
+      }
+    } catch {}
+  }
+
+  async function lookupCountry(url, getCountry) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2600);
+    try {
+      const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+      if (!response.ok) throw new Error('Geolocation unavailable');
+      const value = getCountry(await response.json());
+      if (!/^[A-Z]{2}$/.test(value || '')) throw new Error('Missing country');
+      return value;
+    } finally { clearTimeout(timeout); }
+  }
+
+  async function detectCountry() {
+    try {
+      return await lookupCountry('https://api.country.is/', data => data.country);
+    } catch {
+      try {
+        return await lookupCountry('https://ipwho.is/', data => data.success === false ? null : data.country_code);
+      } catch { return null; }
+    }
+  }
+
+  detectCountry().then(country => {
+    if (!country || manuallySelected) return;
+    setStored(COUNTRY_KEY, JSON.stringify({ country, time: Date.now() }));
+    apply(country === 'VN' ? 'vi' : 'en');
+  });
 })();
 </script>
 </body>
