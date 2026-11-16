@@ -114,7 +114,7 @@
       storeHost:storeHost(text(request&&request.storeHost)||previous.storeHost),
       apiKey:text(request&&request.apiKey)||text(previous.apiKey),
       apiSecret:text(request&&request.apiSecret)||text(previous.apiSecret),
-      verifiedAt:0,locationId:0,locationName:''
+      verifiedAt:0,locationId:0,locationName:'',syncMode:'location'
     };
     authHeaders(candidate);
     // A successful store probe rules out a blanket Basic Auth failure.
@@ -156,6 +156,36 @@
     await chrome.storage.local.set({[CONFIG_KEY]:verified});
     await chrome.storage.local.remove(PREVIEW_KEY);
     return{connected:true,locationId:location.id,locationName:location.name,storeHost:candidate.storeHost};
+  }
+
+  // Sapo Web's official Product Variant API manages aggregate stock directly.
+  // Only an explicit acknowledgement permits this mode: it never writes to a
+  // location and is NOT equivalent to a per-branch inventory adjustment.
+  async function connectSapoWeb(request){
+    if(request&&request.webTotalConfirmed!==true)
+      throw new Error('Phải xác nhận sử dụng tồn TỔNG của Sapo Web, không phải tồn một chi nhánh.');
+    const current=await readConfig(),previous=current&&current.sapo||{};
+    const candidate={...previous,
+      storeHost:storeHost(text(request&&request.storeHost)||previous.storeHost),
+      apiKey:text(request&&request.apiKey)||text(previous.apiKey),
+      apiSecret:text(request&&request.apiSecret)||text(previous.apiSecret),
+      locationId:-1,locationName:'Sapo Web – tồn tổng',syncMode:'web-total',verifiedAt:0
+    };
+    authHeaders(candidate);
+    const state=await chrome.storage.local.get(SAPO_QUEUE_KEY);
+    const queue=state[SAPO_QUEUE_KEY];
+    if(queue&&['running','queued'].includes(queue.status))
+      throw new Error('Đang có lượt ghi Sapo; hãy hoàn tất hoặc hủy trước khi đổi chế độ kho.');
+    await sapoFetch(candidate,'/admin/store.json');
+    const products=await sapoFetch(candidate,'/admin/products.json?limit=1');
+    if(!Array.isArray(products&&products.products))
+      throw new Error('Sapo Web chưa trả danh sách sản phẩm. Không xác minh được API tồn tổng.');
+    // Explicitly disallow one-click auto-push on aggregate inventory.
+    const verified={...candidate,verifiedAt:Date.now()};
+    await chrome.storage.local.set({[CONFIG_KEY]:{...current,autoPushSapo:false,sapo:verified}});
+    await chrome.storage.local.remove(PREVIEW_KEY);
+    return{connected:true,webTotal:true,storeHost:verified.storeHost,
+      locationId:-1,locationName:verified.locationName};
   }
 
   async function ensureVerifiedSapo(config){
@@ -668,6 +698,7 @@
     const config=await readConfig();
     if(!config.autoPushSapo)throw new Error('Lượt này chưa được bật tùy chọn đẩy Sapo.');
     const sapo=config.sapo||{};
+    if(sapo.syncMode==='web-total')throw new Error('Sapo Web tồn tổng chỉ hỗ trợ xem trước và xác nhận đẩy THỦ CÔNG, không tự đẩy sau quét.');
     if(!sapo.verifiedAt||!sapo.locationId||!text(sapo.apiKey)||!text(sapo.apiSecret))
       throw new Error('Cần xác minh API, quyền ghi tồn và kho Sapo trước khi bật tự đẩy.');
     if(!cycle||cycle.phase!=='ready-to-push'||!Array.isArray(cycle.scans)||!cycle.scans.length)
@@ -745,6 +776,11 @@
     if(!message)return;
     if(message.type==='DHL_SAPO_SAVE_CREDENTIALS'){
       saveSapoCredentials(message).then(result=>sendResponse({ok:true,result}))
+        .catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
+      return true;
+    }
+    if(message.type==='DHL_SAPO_CONNECT_WEB'){
+      connectSapoWeb(message).then(result=>sendResponse({ok:true,result}))
         .catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
       return true;
     }
