@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fff7f7">
+<meta name="description" content="Thỏ Handmade — hoa kẽm nhung, quà tặng handmade, DIY. Mua qua Zalo, WhatsApp, Shopee.">
+<title>Thỏ Handmade | Hoa kẽm nhung và quà tặng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--rose:#cf668b;--ink:#493334;--muted:#8a7479;--stroke:#f2d9df}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 0 0,#fce2ea 0,transparent 46%),radial-gradient(ellipse at 100% 0,#f7ead7 0,transparent 39%),#fff8f6;color:var(--ink);font:14px "DM Sans",sans-serif;min-height:100vh}
+a{text-decoration:none;color:inherit}button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible{outline:3px solid #944d67;outline-offset:3px}
+.wrap{max-width:540px;margin:auto;padding:24px 20px 42px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.brand{font-family:Quicksand,sans-serif;font-size:17px;font-weight:700}.brand span{color:var(--rose)}
+.lang{display:flex;border-radius:99px;padding:4px;border:1px solid #e9cdd4;background:#fff8fa;gap:2px}
+.lang button{border:0;border-radius:99px;padding:7px 13px;font-weight:800;font-size:12px;color:#a07984;background:transparent}
+.lang button[aria-pressed=true]{background:#d56d92;color:#fff;box-shadow:0 2px 12px #d56d923a}
+.hero{position:relative;overflow:hidden;text-align:center;margin-top:24px;padding:33px 20px 29px;border:1px solid #f1d5de;border-radius:30px;background:linear-gradient(155deg,#fffefd,#fff0f5);box-shadow:0 13px 48px #a7647522}
+.hero:after{content:"✿";position:absolute;right:-34px;top:-58px;font-size:180px;color:#f4c3d0;opacity:.37;transform:rotate(15deg)}
+.bunny{position:relative;z-index:1;display:grid;place-items:center;width:98px;height:98px;border-radius:28px;background:linear-gradient(145deg,#f4aabd,#d66f99);box-shadow:0 14px 28px #b6537540;font-size:52px;margin:auto}
+.eyebrow{position:relative;z-index:1;display:inline-block;margin-top:21px;border-radius:99px;padding:7px 12px;background:#fff5f8;border:1px solid #f0d1db;color:#b35a7c;font-size:10px;font-weight:800;letter-spacing:1.2px}
+h1{font-family:Quicksand,sans-serif;font-size:36px;line-height:1.2;letter-spacing:-1.5px;margin:14px 0 8px}h1 span{color:var(--rose)}
+.desc{max-width:330px;color:#8f7379;font-size:13px;line-height:1.75;margin:0 auto}
+.chips{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin-top:20px}.chips span{font-size:11px;font-weight:800;color:#b56a84;background:#fff9fa;border-radius:99px;padding:8px 11px;border:1px solid #f0d5dc}
+.heading{display:flex;justify-content:space-between;align-items:center;margin:29px 3px 12px;gap:10px}
+.heading strong{font-size:11px;letter-spacing:1.6px}.heading small{color:#aa8b95;font-size:11px}
+.links{display:grid;gap:11px}
+.cta{display:flex;align-items:center;gap:14px;border-radius:20px;min-height:80px;border:1px solid var(--stroke);background:white;padding:14px 16px;box-shadow:0 8px 20px #845b640b;transition:transform .16s,box-shadow .16s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 12px 28px #ad789326}
+.cta.primary{border-color:#cc698a;background:linear-gradient(105deg,#db7196,#c45b80);color:white;box-shadow:0 12px 26px #c35f8238}
+.cta .icon{font-size:23px;display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:16px;background:#fff0f4}
+.cta.primary .icon{background:#ffffff30}
+.cta .copy{flex:1;min-width:0}.cta b{font-family:Quicksand,sans-serif;font-size:16px;display:block}.cta small{display:block;font-size:11px;margin-top:5px;color:#8c7880;line-height:1.5}.cta.primary small{color:#ffebf0}
+.cta .arrow{font-size:20px;color:#b56a84}.cta.primary .arrow{color:white}
+.note{margin-top:22px;border:1px dashed #e9c4ce;border-radius:18px;background:#fffdfd;padding:17px;color:#876e78;font-size:12px;line-height:1.8}
+.note strong{color:#ae5c7b}
+footer{text-align:center;margin-top:30px;padding-top:21px;border-top:1px solid #efd8df;color:#ac8b94;font-size:11px;line-height:1.6}
+footer strong{display:block;color:#b95a7e;font-size:17px;font-family:Quicksand,sans-serif;margin-bottom:6px}
+@media(max-width:380px){.wrap{padding:16px 13px 34px}.hero{padding:29px 13px}.cta{padding:12px}h1{font-size:32px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top"><div class="brand">THỎ <span>HANDMADE</span> ✿</div><div class="lang" aria-label="Language"><button type="button" data-language="vi" aria-pressed="true">VN</button><button type="button" data-language="en" aria-pressed="false">EN</button></div></header>
+<section class="hero"><div class="bunny" role="img" aria-label="Rabbit">🐰</div><div class="eyebrow">HANDMADE WITH LOVE ✨</div><h1>THỎ <span>HANDMADE</span></h1>
+<p class="desc" data-vi="Hoa kẽm nhung, quà tặng handmade và những ý tưởng DIY nhỏ xinh làm bằng cả sự tỉ mỉ." data-en="Chenille-stem flowers, thoughtful handmade gifts and lovely DIY creations, made with care.">Hoa kẽm nhung, quà tặng handmade và những ý tưởng DIY nhỏ xinh làm bằng cả sự tỉ mỉ.</p>
+<div class="chips"><span data-vi="🌷 Hoa kẽm nhung" data-en="🌷 Chenille flowers">🌷 Hoa kẽm nhung</span><span data-vi="🎁 Quà handmade" data-en="🎁 Handmade gifts">🎁 Quà handmade</span><span>✂️ DIY</span></div></section>
+<div class="heading"><strong data-vi="ĐẶT HÀNG & LIÊN HỆ" data-en="SHOP & CONTACT">ĐẶT HÀNG & LIÊN HỆ</strong><small data-vi="Chọn cách phù hợp" data-en="Choose an option">Chọn cách phù hợp</small></div>
+<nav class="links" aria-label="Shop and contact links">
+<a class="cta primary" href="https://zalo.me/0399865463" target="_blank" rel="noopener noreferrer"><span class="icon">💬</span><span class="copy"><b data-vi="Mua qua Zalo" data-en="Order via Zalo">Mua qua Zalo</b><small data-vi="Nhắn shop để đặt mẫu hoặc làm theo yêu cầu" data-en="Message us for custom orders">Nhắn shop để đặt mẫu hoặc làm theo yêu cầu</small></span><span class="arrow">↗</span></a>
+<a class="cta" href="https://wa.me/84399865463" target="_blank" rel="noopener noreferrer"><span class="icon">🌍</span><span class="copy"><b data-vi="Mua bằng WhatsApp" data-en="Order via WhatsApp">Mua bằng WhatsApp</b><small data-vi="Liên hệ cho khách hàng quốc tế" data-en="International ordering in English">Liên hệ cho khách hàng quốc tế</small></span><span class="arrow">↗</span></a>
+<a class="cta" href="https://s.shopee.vn/9pfSXI62mJ" target="_blank" rel="noopener noreferrer"><span class="icon">🛍️</span><span class="copy"><b data-vi="Mua trên Shopee" data-en="Shop on Shopee">Mua trên Shopee</b><small data-vi="Xem sản phẩm đang bán" data-en="Browse the product collection">Xem sản phẩm đang bán</small></span><span class="arrow">↗</span></a>
+<a class="cta" href="https://thohandmade-ggpkyvkt.manus.space" target="_blank" rel="noopener noreferrer"><span class="icon">🌸</span><span class="copy"><b data-vi="Website Thỏ Handmade" data-en="Tho Handmade website">Website Thỏ Handmade</b><small data-vi="Khám phá hoa và quà tặng" data-en="Explore handmade flowers and gifts">Khám phá hoa và quà tặng</small></span><span class="arrow">↗</span></a>
+<a class="cta" href="https://www.tiktok.com/@thohandmade2024" target="_blank" rel="noopener noreferrer"><span class="icon">🎬</span><span class="copy"><b data-vi="Xem TikTok" data-en="Watch our TikTok">Xem TikTok</b><small>@thohandmade2024</small></span><span class="arrow">↗</span></a>
+</nav>
+<aside class="note"><strong data-vi="Đơn hàng quốc tế / USD" data-en="International orders / USD">Đơn hàng quốc tế / USD</strong><div data-vi="Vui lòng nhắn WhatsApp để nhận báo giá bằng USD ($) và phí vận chuyển. Giá từng sản phẩm chưa được công bố tại trang bio này." data-en="Please contact us via WhatsApp for prices in USD ($) and international shipping quotes. Individual product prices are not listed on this bio page.">Vui lòng nhắn WhatsApp để nhận báo giá bằng USD ($) và phí vận chuyển. Giá từng sản phẩm chưa được công bố tại trang bio này.</div></aside>
+<footer><strong>THỎ HANDMADE ♡</strong><span data-vi="Mỗi món quà đều có một câu chuyện nhỏ" data-en="Every handmade gift tells a little story">Mỗi món quà đều có một câu chuyện nhỏ</span></footer>
+</main>
+<script>
+(function(){
+const buttons=[...document.querySelectorAll('[data-language]')];
+const candidate=new URLSearchParams(location.search).get('lang');
+const initial=(candidate==='vi'||candidate==='en')?candidate:(navigator.language.toLowerCase().startsWith('vi')?'vi':'en');
+function apply(value){
+  document.documentElement.lang=value;
+  document.querySelectorAll('[data-vi][data-en]').forEach(el=>{el.textContent=el.getAttribute('data-'+value)});
+  buttons.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.language===value)));
+  document.title=value==='vi'?'Thỏ Handmade | Hoa kẽm nhung & quà tặng':'Tho Handmade | Chenille flowers & handmade gifts';
+}
+buttons.forEach(button=>button.addEventListener('click',()=>apply(button.dataset.language)));
+apply(initial);
+})();
+</script>
+</body>
+</html>
