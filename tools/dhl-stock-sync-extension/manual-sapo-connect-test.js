@@ -82,5 +82,27 @@ vm.runInContext(src.slice(start,end)+'\nglobalThis.connect=connectSapo;',ctx);
  });
  assert.strictEqual(calledUrl,'https://dhl-sport.mysapo.net/admin/store.json');
  assert.strictEqual(calledAuthorization,'Basic '+Buffer.from('FAKE_API_KEY:FAKE_API_SECRET').toString('base64'));
- console.log('SAPO CONNECT PASS: warehouse verification and safe, actionable HTTP 401 diagnostics');
+ // A working shop probe followed by a 401 from /locations.json is NOT
+ // an invalid Key/Secret error; it is a warehouse endpoint access failure.
+ stored={sapo:{storeHost:'dhl-sport.mysapo.net',excelLocationName:'dhl sport',apiKey:'test-key',apiSecret:'test-secret'}};
+ writes=[];removed=[];
+ const originalFetch=ctx.sapoFetch;
+ const probed=[];
+ ctx.sapoFetch=async(sapo,path)=>{
+   probed.push(path);
+   if(path==='/admin/store.json')return{store:{name:'dhl-sport'}};
+   if(path==='/admin/locations.json')throw Error('Sapo HTTP 401 (invalid_request) tại /admin/locations.json: no access');
+   throw Error('Unexpected endpoint');
+ };
+ await assert.rejects(ctx.connect({storeHost:'dhl-sport.mysapo.net'}),e=>{
+   assert.ok(e.message.includes('Đã xác thực shop Sapo thành công'),e.message);
+   assert.ok(e.message.includes('HTTP 401'));
+   assert.ok(e.message.includes('TẢI FILE EXCEL'));
+   assert.ok(!e.message.includes('test-secret'));
+   return true;
+ });
+ assert.deepStrictEqual(probed,['/admin/store.json','/admin/locations.json']);
+ assert.strictEqual(writes.length,0,'Do not mark a shop as verified or change Sapo settings after 401');
+ ctx.sapoFetch=originalFetch;
+ console.log('SAPO CONNECT PASS: correctly classify locations-only 401, no secrets or unsafe verification');
 })().catch(e=>{console.error(e);process.exitCode=1;});
