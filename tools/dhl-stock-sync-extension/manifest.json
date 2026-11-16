@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DHL Stock Sync",
-  "version": "0.26.2",
+  "version": "0.26.3",
   "minimum_chrome_version": "116",
   "description": "Đồng bộ ngay: một nút tự quét tuần tự các danh mục đã lưu, tùy chọn đẩy Sapo sau khi kiểm tra, không chạy định kỳ.",
   "permissions": [
