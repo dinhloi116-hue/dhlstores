@@ -120,6 +120,42 @@
     }
   }
 
+  async function importSapoConfig(event){
+    const input=event&&event.target;
+    const file=input&&input.files&&input.files[0];
+    const status=document.getElementById('manualSapoConnectStatus');
+    if(!file)return;
+    try{
+      if(file.size>8192)throw new Error('File cấu hình vượt quá 8 KB.');
+      const data=JSON.parse(await file.text());
+      if(!data||data.format!=='dhl-sapo-private-app-v1'
+        ||typeof data.storeHost!=='string'
+        ||typeof data.apiKey!=='string'
+        ||typeof data.apiSecret!=='string'
+        ||!text(data.apiKey)||!text(data.apiSecret)){
+        throw new Error('File không đúng định dạng cấu hình Sapo dành cho DHL Stock Sync.');
+      }
+      if(status)status.textContent='Đang lưu cấu hình ứng dụng Sapo vào Chrome...';
+      const result=await send({type:'DHL_SAPO_SAVE_CREDENTIALS',
+        storeHost:data.storeHost,apiKey:data.apiKey,apiSecret:data.apiSecret});
+      if(!result.ok)throw new Error(result.error||'Không lưu được cấu hình Sapo.');
+      const host=document.getElementById('manualSapoHostInput');
+      const key=document.getElementById('manualSapoApiKeyInput');
+      const secret=document.getElementById('manualSapoApiSecretInput');
+      if(host)host.value=result.result.storeHost;
+      if(key)key.value='';
+      if(secret)secret.value='';
+      if(status)status.textContent='Đã lưu cấu hình trong Chrome. Đang xác minh shop và kho...';
+      // The saved pair is used by connectSapo even when the password fields
+      // are empty; a Sapo 401 must NOT erase local config or scan data.
+      await connectSapo();
+    }catch(error){
+      if(status)status.textContent='Không nạp được cấu hình: '+String(error&&error.message||error);
+    }finally{
+      if(input)input.value='';
+    }
+  }
+
   async function connectSapo(){
     const button=document.getElementById('manualSapoConnectBtn');
     const status=document.getElementById('manualSapoConnectStatus');
@@ -245,12 +281,15 @@
         <label>API key<input id="manualSapoApiKeyInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
         <label>API secret<input id="manualSapoApiSecretInput" type="password" placeholder="Để trống nếu đã lưu" autocomplete="new-password"></label>
         <label>Kho Sapo<select id="manualSapoLocationSelect" hidden></select></label>
+        <label>NẠP FILE CẤU HÌNH SAPO (.JSON)<input id="manualSapoConfigFileInput" type="file" accept=".json,application/json"></label>
+        <small style="color:#475569;line-height:1.5">Sau khi chọn file: lưu API Key/Secret trên Chrome, tự kiểm tra kết nối. Không đưa mã lên GitHub; chưa xác minh kho sẽ không thể đẩy tồn.</small>
         <small style="color:#475569;line-height:1.5">Dùng API Key + API Secret của <b>Sapo Web → Ứng dụng → Ứng dụng riêng</b> thuộc chính shop này (không phải mã Partner/OAuth). Nếu báo HTTP 401, kiểm tra lại loại ứng dụng, cặp mã và quyền Admin API.</small>
         <button id="manualSapoConnectBtn" type="button" class="primary">KẾT NỐI & XÁC MINH KHO</button>
       </div>
       <p id="manualSapoConnectStatus">Thông tin chỉ lưu trong Chrome của extension; không đưa API key/secret lên GitHub.</p>`;
     cancel.insertAdjacentElement('afterend',connection);
     connection.querySelector('#manualSapoConnectBtn')?.addEventListener('click',connectSapo);
+    connection.querySelector('#manualSapoConfigFileInput')?.addEventListener('change',importSapoConfig);
 
     const note=document.createElement('div');
     note.id='manualSapoOutputState';
