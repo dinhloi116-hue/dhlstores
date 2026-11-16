@@ -83,6 +83,27 @@
     return data||{};
   }
 
+  // Explicit local import: keep private credentials in chrome.storage.local,
+  // never in GitHub, logs, error responses, or scanned-stock cache.
+  async function saveSapoCredentials(request){
+    const host=storeHost(request&&request.storeHost);
+    const apiKey=text(request&&request.apiKey);
+    const apiSecret=text(request&&request.apiSecret);
+    if(!apiKey||!apiSecret||apiKey.length>256||apiSecret.length>256)
+      throw new Error('File cấu hình thiếu API Key/Secret hợp lệ.');
+    const active=await chrome.storage.local.get(SAPO_QUEUE_KEY);
+    const queue=active[SAPO_QUEUE_KEY];
+    if(queue&&['running','queued','pending'].includes(queue.status))
+      throw new Error('Đang có lượt đẩy Sapo; dừng hoặc hoàn tất lượt cũ trước khi đổi ứng dụng.');
+    const current=await readConfig();
+    const sapo={...(current.sapo||{}),storeHost:host,apiKey,apiSecret,
+      verifiedAt:0,locationId:0,locationName:''};
+    await chrome.storage.local.set({[CONFIG_KEY]:{...current,autoPushSapo:false,sapo}});
+    await chrome.storage.local.remove(PREVIEW_KEY);
+    // Do not touch pending batches, SKU mappings, profiles, or scan history.
+    return{saved:true,storeHost:host,verified:false};
+  }
+
   // Connection is an explicit user action. Credentials are never embedded in
   // the extension source, logged, or returned by the connection response.
   async function connectSapo(request){
@@ -722,6 +743,11 @@
 
   chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
     if(!message)return;
+    if(message.type==='DHL_SAPO_SAVE_CREDENTIALS'){
+      saveSapoCredentials(message).then(result=>sendResponse({ok:true,result}))
+        .catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
+      return true;
+    }
     if(message.type==='DHL_SAPO_CONNECT'){
       connectSapo(message).then(result=>sendResponse({ok:true,result}))
         .catch(error=>sendResponse({ok:false,error:error&&error.message||String(error)}));
