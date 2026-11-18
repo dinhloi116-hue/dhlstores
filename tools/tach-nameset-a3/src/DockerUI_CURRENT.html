@@ -5463,7 +5463,17 @@ function applyCandidate(){
   return true;
  }catch(e){
   if(opt)try{a.Optimization=false;}catch(x){}
-  if(cmd)try{doc.EndCommandGroup();doc.Undo();}catch(rollback){throw err('Lỗi và không hoàn tác được. Kiểm tra tài liệu trước khi in.','Apply failed and rollback failed. Inspect CDR before printing.');}
+  if(cmd){
+   try{doc.EndCommandGroup();doc.Undo();}
+   catch(rollback){
+    current=null;
+    throw err('Lỗi và không hoàn tác được. Kiểm tra tài liệu trước khi in.','Apply failed and rollback failed. Inspect CDR before printing.');
+   }
+   // Corel Undo may recreate COM shape wrappers. Never retry a stale plan.
+   current=null;
+   try{if(popup&&!popup.closed)popup.close();}catch(closeError){}
+   popup=null;
+  }
   throw e;
  }finally{try{doc.Unit=old;}catch(e){}}
 }
