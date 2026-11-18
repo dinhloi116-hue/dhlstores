@@ -4888,8 +4888,10 @@ function capture(){
 function configFromDock(){
  function cm(id,def){var x=E(id),v=x?n(x.value):def;return finite(v)&&v>=0?v:def;}
  var W=cm('v846W',58)*10,H=cm('v846H',200)*10,g=cm('v846Gap',.3)*10;
- var c={W:W,H:H,gap:g,mt:cm('v849Top',0)*10,mb:cm('v849Bottom',0)*10,
- ml:cm('v849Left',0)*10,mr:cm('v849Right',0)*10,
+ var margin=Math.max(cm('v849Top',0),cm('v849Bottom',0),cm('v849Left',0),cm('v849Right',0))*10;
+ // New studio uses one symmetric safety margin (as shown in the large window).
+ var c={W:W,H:H,gap:g,mt:margin,mb:margin,
+ ml:margin,mr:margin,
  frameGap:cm('v849FrameGap',1)*10,
  rotate:!!(E('v846Rotate')&&E('v846Rotate').checked),
  contour:!!(E('v846Contour')&&E('v846Contour').checked),
