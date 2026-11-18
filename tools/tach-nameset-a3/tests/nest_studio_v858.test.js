@@ -2,6 +2,10 @@
 // Models CorelDRAW and the MSHTML popup: the preview must never modify Corel.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const html=fs.readFileSync(path.join(__dirname,'../src/V858_NEST_STUDIO.html'),'utf8');
+const release=fs.readFileSync(path.join(__dirname,'../src/DockerUI_CURRENT.html'),'utf8');
+assert.match(release,/DHL_UI_VERSION=8\.58/);
+assert.ok(release.includes(html.trim()),'release contains current studio module');
+assert.equal((release.match(/id="dhl-v858-nest-studio"/g)||[]).length,1);
 const js=html.match(/<script id="dhl-v858-nest-studio" type="text\/javascript">([\s\S]*?)<\/script>/)[1];
 assert.doesNotThrow(()=>new Function(js));
 const fields={},ui={};let timerCalls=0,frames=[],undos=0,begin=0,end=0,changes=0,rotations=0,flips=0;
