@@ -268,7 +268,8 @@ function contourPack(source,c,items,order,globalDeadline){
  return{places:places,free:[],depth:depth,contour:true};
 }
 function variants(state,c,round){
- var engine=window.DHLDirectGroups,items=state.items,plans=[],keyed={},kinds=['area','height','width','visual'],i,j,config,plan,t,elapsed,begin=(new Date()).getTime(),best,sorted;
+ var engine=window.DHLDirectGroups,items=state.items,plans=[],keyed={},kinds=['area','height','width','visual'],i,j,config,plan,t,elapsed,begin=(new Date()).getTime(),best,sorted,
+     work=workingConfig(state,c);
  if(!engine||typeof engine.runPlan!=='function')throw err('Bộ dàn Corel chưa tải.','Corel nesting engine unavailable.');
  function key(plan){var seq=[],i,j,p;for(i=0;i<plan.bins.length;i++)for(j=0;j<plan.bins[i].places.length;j++){
   p=plan.bins[i].places[j];seq.push(p.item.index+':'+i+':'+rnd(p.x)+':'+rnd(p.y)+':'+(p.angle||0));
@@ -276,13 +277,22 @@ function variants(state,c,round){
  function add(plan,contour,label){
   if(!safePlan(plan,state,c,contour))return false;
   var sign=key(plan);if(keyed[sign])return false;
-  keyed[sign]=1;var score=plan.bins.length*1e7+plan.total*100;
-  plans.push({plan:plan,contour:!!contour,label:label,score:score,created:(new Date()).getTime()-begin});
+  keyed[sign]=1;
+  var length=c.roll?rollLength(plan,c):c.H;
+  if(c.roll&&(plan.bins.length!==1||length<=0||length>30000))return false;
+  var score=c.roll?length*100:plan.bins.length*1e7+plan.total*100;
+  plans.push({plan:plan,contour:!!contour,label:label,
+    length:length,score:score,created:(new Date()).getTime()-begin});
   return true;
  }
  for(i=0;i<kinds.length;i++){
-  plan=engine.runPlan(items,c,kinds[(i+round)%kinds.length]);
+  plan=engine.runPlan(items,work,kinds[(i+round)%kinds.length]);
   if(plan)add(plan,false,T('Xếp '+kinds[(i+round)%kinds.length],'Layout '+kinds[(i+round)%kinds.length]));
+ }
+ if(c.roll){
+  // Always offer a safe vertical one-roll baseline if greedy algorithms fail.
+  var fallback=verticalFallback(state,c,work);
+  if(fallback)add(fallback,false,T('Xếp dọc an toàn','Safe vertical layout'));
  }
  if(c.contour&&window.DHLContourGeometry&&items.length<=200){
   // Attempt full-sheet contour first, then repack the individual sheets of
@@ -295,7 +305,7 @@ function variants(state,c,round){
    if(orders[i]==='height')sorted.sort(function(a,b){return b.h-a.h;});
    if(orders[i]==='width')sorted.sort(function(a,b){return b.w-a.w;});
    if(c.rotate&&i===3)for(j=0;j<sorted.length;j++)sorted[j]._angle=(sorted[j].w>sorted[j].h)?90:0;
-   var one=contourPack(state,c,sorted,orders[i],cutoff);
+   var one=contourPack(state,work,sorted,orders[i],cutoff);
    if(c.rotate&&i===3)for(j=0;j<sorted.length;j++)sorted[j]._angle=0;
    if(one)add({bins:[one],total:one.depth},true,T('Theo đường bao '+(i+1),'Contour '+(i+1)));
   }
@@ -315,27 +325,33 @@ function variants(state,c,round){
      subset.push({shape:baseItem.shape,index:baseItem.index,w:baseItem.w,h:baseItem.h,
        area:baseItem.area,fp:baseItem.fp,_angle:p.angle||0});
     }
-    rebuilt=contourPack(state,c,subset,orders[seedIndex%orders.length],cutoff);
+    rebuilt=contourPack(state,work,subset,orders[seedIndex%orders.length],cutoff);
     // Prefer contour placement only if it actually reduces the used depth.
     if(rebuilt&&rebuilt.depth<sourceBin.depth-.1){contourBins.push(rebuilt);improved=true;}
     else contourBins.push(sourceBin);
    }
    if(improved){
     newTotal=0;for(j=0;j<contourBins.length;j++)newTotal+=contourBins[j].depth;
-    add({bins:contourBins,total:newTotal},true,T('Khe mở / Tấm '+(seedIndex+1),'Open-pocket / Sheet '+(seedIndex+1)));
+    add({bins:contourBins,total:newTotal},true,
+      c.roll?T('Khe mở / Cuộn PET','Open-pocket / PET roll'):T('Khe mở / Tấm '+(seedIndex+1),'Open-pocket / Sheet '+(seedIndex+1)));
    }
   }
  }
  plans.sort(function(a,b){return a.score-b.score;});
  if(plans.length>5)plans=plans.slice(0,5);
- if(!plans.length)throw err('Không có phương án hợp lệ cho khổ hiện tại.','No valid plan for this material size.');
+ if(!plans.length)throw c.roll?
+  err('Không xếp hết vào một cuộn PET dưới 30 m với khổ ngang đã chọn. Hãy tăng chiều rộng hoặc chia công việc thành nhiều lượt.',
+      'Cannot fit all pieces on one PET roll under 30 m. Widen the roll or split the job.'):
+  err('Không có phương án hợp lệ cho khổ hiện tại.','No valid plan for this material size.');
  return{candidates:plans,elapsed:(new Date()).getTime()-begin};
 }
 function summary(state,c,candidate){
  var plan=candidate.plan,area=0,i;for(i=0;i<state.items.length;i++)area+=state.items[i].area;
  // Bounding-box utilization upper estimate; never describe it as true cut-area use.
- var pct=100*area/(c.W*c.H*plan.bins.length);return{
-  count:state.items.length,bins:plan.bins.length,usedDepth:rnd(plan.total),
+ var length=c.roll?rollLength(plan,c):c.H,
+     pct=100*area/(c.W*length*plan.bins.length);
+ return{count:state.items.length,bins:plan.bins.length,usedDepth:rnd(plan.total),
+  roll:!!c.roll,rollLength:c.roll?length:0,materialLength:length,
   proxy:Math.max(0,Math.min(100,rnd(pct))),contour:candidate.contour};
 }
 function previewPath(fp,offx,offy,color){
@@ -351,19 +367,20 @@ function previewPath(fp,offx,offy,color){
 }
 function svgPlan(state,c,candidate){
  var plan=candidate.plan,frames=plan.bins.length,wide=c.W*frames+c.frameGap*(frames-1),
-     target=720,scale=Math.min(target/wide,480/c.H)*zoom,renderW=Math.max(140,wide*scale),renderH=Math.max(160,c.H*scale),
-     out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 '+(wide+16)+' '+(c.H+16)+'" width="'+rnd(renderW)+'" height="'+rnd(renderH)+'">'],
+     height=c.roll?rollLength(plan,c):c.H,
+     target=720,scale=Math.min(target/wide,480/height)*zoom,renderW=Math.max(140,wide*scale),renderH=Math.max(160,height*scale),
+     out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 '+(wide+16)+' '+(height+16)+'" width="'+rnd(renderW)+'" height="'+rnd(renderH)+'">'],
      i,j,bin,p,fp,l,x0,y0;
- out.push('<rect x="-8" y="-8" width="'+(wide+16)+'" height="'+(c.H+16)+'" fill="#eaf0f5"/>');
+ out.push('<rect x="-8" y="-8" width="'+(wide+16)+'" height="'+(height+16)+'" fill="#eaf0f5"/>');
  for(i=0;i<frames;i++){
   x0=i*(c.W+c.frameGap);bin=plan.bins[i];
-  out.push('<rect x="'+x0+'" y="0" width="'+c.W+'" height="'+c.H+'" fill="white" stroke="#b44d4b" stroke-width="1.5"/>');
-  out.push('<rect x="'+(x0+c.ml)+'" y="'+c.mt+'" width="'+c.usableW+'" height="'+c.usableH+'" fill="none" stroke="#c6d7e6" stroke-dasharray="8 6"/>');
+  out.push('<rect x="'+x0+'" y="0" width="'+c.W+'" height="'+height+'" fill="white" stroke="#b44d4b" stroke-width="1.5"/>');
+  out.push('<rect x="'+(x0+c.ml)+'" y="'+c.mt+'" width="'+c.usableW+'" height="'+(height-c.mt-c.mb)+'" fill="none" stroke="#c6d7e6" stroke-dasharray="8 6"/>');
   for(j=0;j<bin.places.length;j++){
    p=bin.places[j];fp=footFor(state.items[p.item.index],p.angle||0);
    out.push(previewPath(fp,x0+c.ml+p.x,c.mt+p.y,'#143955'));
   }
-  out.push('<text x="'+(x0+5)+'" y="-2" font-size="11" fill="#24445b">Tấm '+(i+1)+'</text>');
+  out.push('<text x="'+(x0+5)+'" y="-2" font-size="11" fill="#24445b">'+(c.roll?'CUỘN PET':'Tấm '+(i+1))+'</text>');
  }
  out.push('</svg>');return out.join('');
 }
