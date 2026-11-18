@@ -8,7 +8,7 @@ assert.ok(release.includes(html.trim()),'release contains current studio module'
 assert.equal((release.match(/id="dhl-v858-nest-studio"/g)||[]).length,1);
 const js=html.match(/<script id="dhl-v858-nest-studio" type="text\/javascript">([\s\S]*?)<\/script>/)[1];
 assert.doesNotThrow(()=>new Function(js));
-const fields={},ui={};let timerCalls=0,frames=[],undos=0,begin=0,end=0,changes=0,rotations=0,flips=0;
+const fields={},ui={};let timerCalls=0,frames=[],undos=0,begin=0,end=0,changes=0,rotations=0,flips=0,duplicates=0;
 function field(k,value){return fields[k]={id:k,value:String(value===undefined?'':value),checked:false,
    innerHTML:'',className:'',children:[],appendChild(s){this.children.push(s);},
    set style(s){this._style=s;},get style(){return this._style||{};}};}
@@ -20,6 +20,8 @@ function shape(w,h,x,y,i){
  let pos={x:x,y:y};
  return{SizeWidth:w,SizeHeight:h,Name:'G'+i,Shapes:{Count:1},get CenterX(){return pos.x},
  set CenterX(v){changes++;pos.x=v;},get CenterY(){return pos.y;},set CenterY(v){changes++;pos.y=v;},
+ Duplicate(dx,dy){assert.equal(dx,0);assert.equal(dy,0);duplicates++;
+  return shape(this.SizeWidth,this.SizeHeight,this.CenterX,this.CenterY,'COPY-'+i+'-'+duplicates);},
  Rotate(angle){rotations++;if(angle===90){let k=this.SizeWidth;this.SizeWidth=this.SizeHeight;this.SizeHeight=k;}},
  Flip(){flips++;}};
 }
@@ -40,7 +42,8 @@ const popupDocument={
    popupFields[id]={id,value:'',checked:false,innerHTML:'',className:'',disabled:false,children:[],
    appendChild(x){this.children.push(x);},set style(s){this._style=s;}};}},
  getElementById(id){return popupFields[id]||null;},
- createElement(tag){return{tagName:tag,innerHTML:'',className:'',onclick:null,type:'button'};}
+ createElement(tag){return{tagName:tag,innerHTML:'',className:'',onclick:null,type:'button',value:'',children:[],
+  appendChild(el){this.children.push(el);}};}
 };
 let popup=null;
 const win={
@@ -95,6 +98,7 @@ assert.equal(undos,0);assert.ok(changes>=total*2);
 assert.equal(doc.Unit,4,'unit restored after applying');
 assert.ok(popup.closed);
 assert.notDeepEqual(shapes.map(s=>[s.CenterX,s.CenterY,s.SizeWidth,s.SizeHeight]),original);
+assert.equal(duplicates,0,'default 1 copy per source creates no duplicate');
 
 // PET roll: width only, ignores fixed sheet height and trims the frame to content.
 const previousFrameCount=frames.length,previousChanges=changes;
@@ -149,4 +153,59 @@ const oversized=shape(50,30010,0,0,51);
 const huge={items:[{shape:oversized,index:0,w:50,h:30010,area:50*30010,fp:fp(oversized)}]};
 assert.throws(()=>studio.plan(huge,rollConfig,0),/Không xếp hết vào một cuộn PET dưới 30 m/);
 
-console.log('PASS V8.59: fixed-sheet regression, width-only PET roll, exact Corel frame height, 90° rotate fallback, oversize rejection');
+
+// PER-DESIGN PRINT QUANTITIES, 1/2/3 copies across 3 selected designs.
+const beforeQtyFrames=frames.length,beforeQtyChanges=changes,beforeQtyDuplicates=duplicates;
+assert.equal(studio.open(),true,'open preview for quantity test');
+state=studio.getState();
+assert.equal(state.sourceItems.length,3);
+assert.equal(state.items.length,3,'default is one copy per source');
+assert.equal(duplicates,beforeQtyDuplicates,'preview did not duplicate Corel originals');
+assert.ok(popupDocument.markup.includes('nsQuantities'));
+assert.equal(popupFields.nsQuantities.children.length,3,'one quantity control per original design');
+const inputs=studio.readQuantities(state);
+assert.deepEqual(inputs,[1,1,1],'default quantities one');
+const qtyControls=popupFields.nsQuantities.children.map(row=>row.children[1]);
+assert.equal(qtyControls.length,3);
+qtyControls[0].value='2';qtyControls[1].value='3';qtyControls[2].value='1';
+assert.equal(studio.apply(),false,'quantity change needs a recompute');
+assert.equal(duplicates,beforeQtyDuplicates);
+assert.equal(changes,beforeQtyChanges);
+assert.equal(studio.recompute(),true,'recompute for per-design quantity');
+state=studio.getState();
+assert.deepEqual(state.quantities,[2,3,1]);
+assert.equal(state.items.length,6,'virtual item count matches all print copies');
+assert.equal(state.sourceItems.length,3,'original selection count preserved');
+assert.equal(new Set(state.items.map(x=>x.index)).size,6,'virtual indices unique');
+assert.equal(state.items.filter(x=>x.copyIndex>0).length,3,'three duplicated copies required');
+assert.equal(duplicates,beforeQtyDuplicates,'preview and recompute must not mutate Corel');
+assert.equal(changes,beforeQtyChanges,'no movement during recompute');
+assert.equal(studio.metrics(state,state.config,state.candidates[0]).count,6);
+assert.ok(popupFields.nsStats.innerHTML.includes('6 bản in / 3 mẫu'));
+assert.equal(studio.apply(),true,'apply all requested quantities');
+assert.equal(duplicates,beforeQtyDuplicates+3,'duplicate exactly 3 physical copies');
+assert.equal(frames.length,beforeQtyFrames+state.candidates[0].plan.bins.length);
+assert.equal(doc.Unit,4);
+
+// Reject invalid quantity and over-limit before any duplication.
+assert.equal(studio.open(),true);
+state=studio.getState();
+const qtyInputs=popupFields.nsQuantities.children.map(row=>row.children[1]);
+qtyInputs[0].value='0';
+assert.equal(studio.recompute(),false,'zero quantity rejected');
+assert.equal(studio.apply(),false,'invalid quantity not applied');
+assert.equal(duplicates,beforeQtyDuplicates+3);
+qtyInputs[0].value='1.5';
+assert.equal(studio.recompute(),false,'fractional quantity rejected');
+qtyInputs[0].value='101';
+assert.equal(studio.recompute(),false,'more than 100 copies rejected');
+qtyInputs[0].value='100';qtyInputs[1].value='100';qtyInputs[2].value='100';
+assert.equal(studio.recompute(),true,'300 copies allowed by validation (and packer if supported)');
+const beforeOver=duplicates;
+const large=studio.getState();
+assert.throws(()=>studio.expandQuantities(large,[100,201,100]),/1 đến 100/);
+assert.throws(()=>studio.expandQuantities(large,[100,100,201]),/1 đến 100/);
+assert.equal(duplicates,beforeOver);
+popup.close();
+
+console.log('PASS V8.60: fixed sheet/PET roll + per-design quantities, 6 virtual copies, exact 3 Corel duplicates only on apply');
