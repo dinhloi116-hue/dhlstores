@@ -4981,8 +4981,9 @@ function safePlan(plan,state,c,contour){
  }
  return total===state.items.length;
 }
-function contourPack(source,c,items,order){
+function contourPack(source,c,items,order,globalDeadline){
  var G=window.DHLContourGeometry,deadline=window.DHL_SEARCH_DEADLINE,sort=window.DHL_ORDER,arr=[],i,item,placed,places=[],depth=0;
+ if(globalDeadline&&(new Date()).getTime()>=globalDeadline)return null;
  if(!G||!G.pack||!G.valid||!G.footprintAt)return null;
  for(i=0;i<items.length;i++){item=items[i];var fp=footFor(item,item._angle||0);
   if(fp.w>c.usableW+.01||fp.h>c.usableH+.01)return null;
@@ -4991,7 +4992,7 @@ function contourPack(source,c,items,order){
   arr.push(cp);
  }
  try{
-  window.DHL_SEARCH_DEADLINE=(new Date()).getTime()+c.seconds*1000;
+  window.DHL_SEARCH_DEADLINE=globalDeadline||((new Date()).getTime()+c.seconds*1000);
   window.DHL_ORDER=order;
   placed=G.pack(arr,c.usableW,c.usableH,c.gap);
  }catch(e){return null;}
@@ -5022,19 +5023,45 @@ function variants(state,c,round){
   if(plan)add(plan,false,T('Xếp '+kinds[(i+round)%kinds.length],'Layout '+kinds[(i+round)%kinds.length]));
  }
  if(c.contour&&window.DHLContourGeometry&&items.length<=200){
-  // Contour is attempted on the complete selection first; rectangle plans
-  // remain as safe fallbacks. Closed glyph counters are never treated as holes.
-  var orders=['area','height','width','visual'];
-  for(i=0;i<orders.length;i++){
-   if((new Date()).getTime()-begin>c.seconds*1000||plans.length>=7)break;
+  // Attempt full-sheet contour first, then repack the individual sheets of
+  // rectangular plans. The second pass matters when >1 sheet is required.
+  var orders=['area','height','width','visual'],cutoff=begin+c.seconds*1000;
+  for(i=0;i<orders.length&&items.length<=75;i++){
+   if((new Date()).getTime()>=cutoff||plans.length>=7)break;
    sorted=items.slice(0);
    if(orders[i]==='area')sorted.sort(function(a,b){return b.area-a.area;});
    if(orders[i]==='height')sorted.sort(function(a,b){return b.h-a.h;});
    if(orders[i]==='width')sorted.sort(function(a,b){return b.w-a.w;});
    if(c.rotate&&i===3)for(j=0;j<sorted.length;j++)sorted[j]._angle=(sorted[j].w>sorted[j].h)?90:0;
-   var one=contourPack(state,c,sorted,orders[i]);
+   var one=contourPack(state,c,sorted,orders[i],cutoff);
    if(c.rotate&&i===3)for(j=0;j<sorted.length;j++)sorted[j]._angle=0;
-   if(one){var p2={bins:[one],total:one.depth};add(p2,true,T('Theo đường bao '+(i+1),'Contour '+(i+1)));}
+   if(one)add({bins:[one],total:one.depth},true,T('Theo đường bao '+(i+1),'Contour '+(i+1)));
+  }
+  // Keep a copy of the rectangular seeds before appending contour candidates.
+  var seeds=plans.slice(0,Math.min(2,plans.length)),seedIndex,seed,bIndex,sourceBin,
+      contourBins,improved,subset,p,baseItem,rebuilt,newTotal;
+  for(seedIndex=0;seedIndex<seeds.length;seedIndex++){
+   if((new Date()).getTime()>=cutoff||plans.length>=7)break;
+   seed=seeds[seedIndex];contourBins=[];improved=false;
+   for(bIndex=0;bIndex<seed.plan.bins.length;bIndex++){
+    sourceBin=seed.plan.bins[bIndex];
+    if((new Date()).getTime()>=cutoff){contourBins.push(sourceBin);continue;}
+    if(sourceBin.places.length>80){contourBins.push(sourceBin);continue;}
+    subset=[];
+    for(j=0;j<sourceBin.places.length;j++){
+     p=sourceBin.places[j];baseItem=state.items[p.item.index];
+     subset.push({shape:baseItem.shape,index:baseItem.index,w:baseItem.w,h:baseItem.h,
+       area:baseItem.area,fp:baseItem.fp,_angle:p.angle||0});
+    }
+    rebuilt=contourPack(state,c,subset,orders[seedIndex%orders.length],cutoff);
+    // Prefer contour placement only if it actually reduces the used depth.
+    if(rebuilt&&rebuilt.depth<sourceBin.depth-.1){contourBins.push(rebuilt);improved=true;}
+    else contourBins.push(sourceBin);
+   }
+   if(improved){
+    newTotal=0;for(j=0;j<contourBins.length;j++)newTotal+=contourBins[j].depth;
+    add({bins:contourBins,total:newTotal},true,T('Khe mở / Tấm '+(seedIndex+1),'Open-pocket / Sheet '+(seedIndex+1)));
+   }
   }
  }
  plans.sort(function(a,b){return a.score-b.score;});
