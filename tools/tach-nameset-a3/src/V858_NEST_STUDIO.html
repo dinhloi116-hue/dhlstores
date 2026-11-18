@@ -83,7 +83,7 @@ function configFromDock(){
  var W=cm('v846W',58)*10,H=cm('v846H',200)*10,g=cm('v846Gap',.3)*10;
  var margin=Math.max(cm('v849Top',0),cm('v849Bottom',0),cm('v849Left',0),cm('v849Right',0))*10;
  // New studio uses one symmetric safety margin (as shown in the large window).
- var c={W:W,H:H,gap:g,mt:margin,mb:margin,
+ var c={roll:false,W:W,H:H,gap:g,mt:margin,mb:margin,
  ml:margin,mr:margin,
  frameGap:cm('v849FrameGap',1)*10,
  rotate:!!(E('v846Rotate')&&E('v846Rotate').checked),
@@ -93,21 +93,81 @@ function configFromDock(){
  return normalize(c);
 }
 function normalize(c){
- var k,positive=['W','H'],nonneg=['gap','mt','mb','ml','mr','frameGap'];
- for(k=0;k<positive.length;k++)if(!finite(c[positive[k]])||c[positive[k]]<=0)throw err('Khổ vật liệu phải lớn hơn 0.','Material dimensions must be positive.');
- for(k=0;k<nonneg.length;k++)if(!finite(c[nonneg[k]])||c[nonneg[k]]<0)throw err('Khoảng cách và lề không hợp lệ.','Invalid margins or spacing.');
- c.usableW=c.W-c.ml-c.mr;c.usableH=c.H-c.mt-c.mb;
- if(c.usableW<=0||c.usableH<=0)throw err('Lề lớn hơn khổ vật liệu.','Margins exceed the material size.');
- if(c.W>20000||c.H>30000||c.gap>300)throw err('Khổ hoặc khoảng cách quá lớn.','Material dimensions or spacing too large.');
+ var k,nonneg=['gap','mt','mb','ml','mr','frameGap'];
+ c.roll=!!c.roll;
+ if(!finite(c.W)||c.W<=0||(!c.roll&&(!finite(c.H)||c.H<=0)))
+  throw err('Khổ vật liệu phải lớn hơn 0.','Material dimensions must be positive.');
+ for(k=0;k<nonneg.length;k++)if(!finite(c[nonneg[k]])||c[nonneg[k]]<0)
+  throw err('Khoảng cách và lề không hợp lệ.','Invalid margins or spacing.');
+ c.usableW=c.W-c.ml-c.mr;
+ if(c.usableW<=0)throw err('Lề ngang lớn hơn chiều rộng vật liệu.','Side margins exceed material width.');
+ if(c.roll){
+  // No fixed height exists in roll mode: use a computed search height only.
+  c.H=0;c.usableH=0;
+  if(c.mt+c.mb>=30000)throw err('Lề đầu/cuối cuộn vượt giới hạn 30 m.','Roll top/bottom margins exceed 30 m limit.');
+ }else{
+  c.usableH=c.H-c.mt-c.mb;
+  if(c.usableH<=0)throw err('Lề lớn hơn chiều cao tấm.','Margins exceed material height.');
+ }
+ if(c.W>20000||(!c.roll&&c.H>30000)||c.gap>300)
+  throw err('Khổ hoặc khoảng cách quá lớn.','Material dimensions or spacing too large.');
  c.seconds=Math.min(30,Math.max(2,n(c.seconds)||12));
  return c;
+}
+function rollDepth(plan){
+ if(!plan||!plan.bins||plan.bins.length!==1)return -1;
+ var p=plan.bins[0].places,d=0,i;
+ for(i=0;i<p.length;i++)d=Math.max(d,p[i].y+p[i].h);
+ return d;
+}
+function rollLength(plan,c){
+ var d=rollDepth(plan);
+ if(d<0)return -1;
+ return Math.ceil((c.mt+d+c.mb)*10-0.000001)/10;
+}
+function workingConfig(state,c){
+ if(!c.roll)return c;
+ // Conservative one-column bound, calculated from real selected objects.
+ // This is a search capacity, never the delivered roll length.
+ var i,x,limit=c.usableW,stack=0,minHeight,height;
+ for(i=0;i<state.items.length;i++){
+  x=state.items[i];minHeight=1e30;
+  if(x.w<=limit+.001)minHeight=Math.min(minHeight,x.h);
+  if(c.rotate&&x.h<=limit+.001)minHeight=Math.min(minHeight,x.w);
+  if(minHeight===1e30)throw err('Có chi tiết rộng hơn cuộn PET, kể cả khi xoay.','A piece exceeds the PET roll width, even after allowed rotation.');
+  stack+=minHeight+c.gap;
+ }
+ height=Math.min(30000,Math.ceil(stack+c.mt+c.mb+2));
+ var w={roll:true,W:c.W,H:height,gap:c.gap,mt:c.mt,mb:c.mb,
+ ml:c.ml,mr:c.mr,frameGap:c.frameGap,rotate:c.rotate,
+ contour:c.contour,mirror:c.mirror,effort:c.effort,seconds:c.seconds,
+ usableW:c.usableW,usableH:height-c.mt-c.mb};
+ if(!(w.usableH>0))throw err('Không còn chiều dài cuộn khả dụng.','No usable roll length.');
+ return w;
+}
+function verticalFallback(state,c,work){
+ // Guaranteed conservative single-column fallback, if it fits within 30 m.
+ var y=0,places=[],i,it,angle,w,h,p;
+ for(i=0;i<state.items.length;i++){
+  it=state.items[i];angle=0;w=it.w;h=it.h;
+  if(c.rotate&&it.h<=c.usableW+.001&&(it.w>c.usableW+.001||it.w<it.h)){
+   angle=90;w=it.h;h=it.w;
+  }
+  if(w>c.usableW+.001)return null;
+  if(y+h>work.usableH+.001)return null;
+  p={item:it,x:0,y:y,w:w,h:h,angle:angle};places.push(p);
+  y+=h+c.gap;
+ }
+ return{bins:[{places:places,depth:Math.max(0,y-c.gap)}],
+        total:Math.max(0,y-c.gap),kind:'vertical-safe'};
 }
 function readPopup(){
  if(!popup||popup.closed)throw err('Cửa sổ xem trước đã đóng.','Preview window is closed.');
  var d=popup.document;
  function val(id){var x=d.getElementById(id);return x?x.value:'';}
  function chk(id){var x=d.getElementById(id);return !!(x&&x.checked);}
- var c={W:n(val('nsW')),H:n(val('nsH')),gap:n(val('nsGap')),
+ var roll=val('nsMaterialMode')==='roll';
+ var c={roll:roll,W:n(val('nsW')),H:roll?0:n(val('nsH')),gap:n(val('nsGap')),
  mt:n(val('nsMargin')),mb:n(val('nsMargin')),ml:n(val('nsMargin')),mr:n(val('nsMargin')),
  frameGap:n(val('nsFrameGap')),rotate:chk('nsRotate'),contour:chk('nsContour'),
  mirror:chk('nsMirror'),seconds:n(val('nsSeconds')),effort:val('nsEffort')||'balanced'};
@@ -154,17 +214,23 @@ function transform(fp,angle){
 function footFor(item,angle){return angle?transform(item.fp,90):item.fp;}
 function safePlan(plan,state,c,contour){
  if(!plan||!plan.bins||!plan.bins.length||!state.items.length)return false;
- var seen={},total=0,bin,i,j,p,id,fp,placed,G=window.DHLContourGeometry,gap=c.gap;
+ if(c.roll&&plan.bins.length!==1)return false;
+ var seen={},total=0,bin,i,j,p,id,fp,placed,G=window.DHLContourGeometry,gap=c.gap,
+     limitH=c.roll?30000-c.mt-c.mb:c.usableH;
+ if(!(limitH>0))return false;
  for(i=0;i<plan.bins.length;i++){
   bin=plan.bins[i];placed=[];
   for(j=0;j<bin.places.length;j++){
-   p=bin.places[j];id=p.item.index;fp=footFor(state.items[id],p.angle||0);
+   p=bin.places[j];id=p.item&&p.item.index;
+   if(!finite(id)||Math.floor(id)!==id||id<0||id>=state.items.length||
+      (p.angle!==0&&p.angle!==90))return false;
+   fp=footFor(state.items[id],p.angle||0);
    if(seen[id]||!finite(p.x)||!finite(p.y)||p.x<-.01||p.y<-.01||
-      p.x+fp.w>c.usableW+.01||p.y+fp.h>c.usableH+.01||
+      p.x+fp.w>c.usableW+.01||p.y+fp.h>limitH+.01||
       Math.abs(p.w-fp.w)>.4||Math.abs(p.h-fp.h)>.4)return false;
    if(contour&&(!G||typeof G.valid!=='function'))return false;
    if(contour&&G&&typeof G.valid==='function'){
-    if(!G.valid(p.x,p.y,fp,placed,c.usableW,c.usableH,gap))return false;
+    if(!G.valid(p.x,p.y,fp,placed,c.usableW,limitH,gap))return false;
    }else{
     for(var k=0;k<placed.length;k++){
      var q=placed[k],ax=p.x,ay=p.y,bx=q.x,by=q.y;
@@ -175,7 +241,7 @@ function safePlan(plan,state,c,contour){
    placed.push({x:p.x,y:p.y,item:fp});seen[id]=1;total++;
   }
  }
- return total===state.items.length;
+ return total===state.items.length&&(!c.roll||rollLength(plan,c)<=30000);
 }
 function contourPack(source,c,items,order,globalDeadline){
  var G=window.DHLContourGeometry,deadline=window.DHL_SEARCH_DEADLINE,sort=window.DHL_ORDER,arr=[],i,item,placed,places=[],depth=0;
