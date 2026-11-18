@@ -116,6 +116,7 @@ const rollMetrics=studio.metrics(state,state.config,state.candidates[0]);
 assert.equal(rollMetrics.roll,true);
 assert.ok(rollMetrics.rollLength<9999,'roll height derived from content rather than old sheet height');
 assert.equal(rollMetrics.rollLength,studio.rollLength(state.candidates[0].plan,state.config));
+assert.equal(rollMetrics.rollLength,48,'40 mm content plus 4 mm on both ends');
 assert.ok(popupFields.nsCanvas.innerHTML.includes('CUỘN PET'),'preview labels roll');
 assert.ok(popupFields.nsStats.innerHTML.includes('CUỘN PET'),'roll stats visible');
 assert.equal(changes,previousChanges,'roll computation did not move artwork');
@@ -143,4 +144,9 @@ assert.equal(rotated.candidates[0].plan.bins[0].places[0].w,100);
 const noRotate=studio.config({roll:true,W:90,H:0,gap:3,mt:0,mb:0,ml:0,mr:0,frameGap:10,
  rotate:false,contour:false,mirror:false,seconds:5,effort:'balanced'});
 assert.throws(()=>studio.plan(one,noRotate,0),/rộng hơn cuộn PET/);
+// A single item longer than 30 m must be rejected, not silently split.
+const oversized=shape(50,30010,0,0,51);
+const huge={items:[{shape:oversized,index:0,w:50,h:30010,area:50*30010,fp:fp(oversized)}]};
+assert.throws(()=>studio.plan(huge,rollConfig,0),/Không xếp hết vào một cuộn PET dưới 30 m/);
+
 console.log('PASS V8.59: fixed-sheet regression, width-only PET roll, exact Corel frame height, 90° rotate fallback, oversize rejection');
