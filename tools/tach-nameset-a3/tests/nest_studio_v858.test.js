@@ -30,7 +30,7 @@ const page={CenterX:100,CenterY:90,ActiveLayer:{CreateRectangle2(x,y,w,h){
  return{Name:'',Fill:{ApplyNoFill(){}},Outline:{Width:0},OrderToBack(){}};}}};
 const corel={ActiveDocument:doc,ActivePage:page,Optimization:false,
  ActiveWindow:{Refresh(){}},ActiveSelectionRange:{Count:3,Item(i){return shapes[i-1];}}};
-function fp(s){const w=s.SizeWidth,h=s.SizeHeight,bb={l:0,t:0,r:w,b:h,w,h},pts=[{x:0,y:0},{x:w,y:0},{x:w,y:h},{x:0,y:h}];
+function fp(s){const w=s.SizeWidth,h=s.SizeHeight,bb={l:0,t:0,r:w,b:h,w,h},pts=[{x:0,y:0},{x:w,y:s._modified?2:0},{x:w,y:h},{x:0,y:h}];
  return{shape:s,w,h,area:w*h,leaves:[{bb,loops:[{closed:true,pts,bb}]}],anchors:pts};}
 const popupFields={};
 const popupDocument={
@@ -79,6 +79,15 @@ popupFields.nsGap.value='123';
 assert.equal(studio.apply(),false,'changing settings invalidates approval');
 assert.equal(changes,0);assert.equal(frames.length,0);
 popupFields.nsGap.value=String(state.config.gap);
+const originalX=shapes[0].CenterX;
+shapes[0].CenterX=originalX+2;
+assert.equal(studio.apply(),false,'reject moved source after preview');
+assert.equal(frames.length,0,'stale source cannot create frames');
+shapes[0].CenterX=originalX;
+shapes[0]._modified=true;
+assert.equal(studio.apply(),false,'reject modified contours with unchanged bounds');
+assert.equal(frames.length,0,'changed contour cannot create frames');
+shapes[0]._modified=false;
 assert.equal(studio.apply(),true,'apply the previewed candidate');
 assert.equal(frames.length,state.candidates[0].plan.bins.length);
 assert.equal(begin,1);assert.equal(end,1);
