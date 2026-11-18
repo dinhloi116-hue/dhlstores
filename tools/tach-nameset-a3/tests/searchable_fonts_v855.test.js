@@ -43,7 +43,7 @@ const store={data:{},getItem(k){return this.data[k]||null;},setItem(k,v){this.da
 new Function('window','document','currentLang','localStorage','setTimeout','corelApp','Option','ActiveXObject',script)(
  window,document,'vi',store,()=>{},()=>{},Option,ActiveXObject);
 const api=window.DHLNamesetComposer;
-assert.equal(api.version,'8.58');
+assert.equal(api.version,'8.57','submodule retains its own version; release is V8.58');
 assert.equal(api.loadFonts(true),8,'8 installed fonts from Windows');
 assert.equal(shellCalls.length,1);
 assert.ok(shellCalls[0].includes('InstalledFontCollection'));
