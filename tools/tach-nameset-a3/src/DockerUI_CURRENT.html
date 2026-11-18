@@ -5299,7 +5299,7 @@ function modeUi(){
  var d=popup.document,mode=d.getElementById('nsMaterialMode'),
      h=d.getElementById('nsH'),label=d.getElementById('nsHLabel'),hint=d.getElementById('nsRollHint'),
      roll=!!(mode&&mode.value==='roll');
- if(h){h.disabled=roll;h.style.backgroundColor=roll?'#e7eff2':'#fbfdfe';}
+ if(h){h.disabled=roll;if(h.style)h.style.backgroundColor=roll?'#e7eff2':'#fbfdfe';}
  if(label)label.innerHTML=roll?'Chiều dài cuộn – tự động (mm)':'Chiều cao tấm (mm)';
  if(hint)hint.innerHTML=roll?
   'Chỉ nhập chiều rộng cuộn PET. Tool tính chiều dài tối thiểu tìm được (bao gồm lề đầu/cuối) và tạo một khung cuộn duy nhất. Giới hạn mỗi lượt 30 m.':
