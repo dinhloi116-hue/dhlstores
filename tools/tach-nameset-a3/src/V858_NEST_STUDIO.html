@@ -47,6 +47,18 @@ function footprint(sh,d){
  if(!fp||!fp.leaves||!fp.leaves.length)return rectFootprint(sh,d);
  fp.shape=sh;fp.ang=0;return fp;
 }
+function signature(fp){
+ var arr=[rnd(fp.w),rnd(fp.h),fp.leaves.length],i,j,k,l,pts,p,step;
+ for(i=0;i<fp.leaves.length;i++){
+  l=fp.leaves[i];arr.push(l.loops.length);
+  for(j=0;j<l.loops.length;j++){
+   pts=l.loops[j].pts;arr.push(pts.length,l.loops[j].closed?1:0);
+   step=Math.max(1,Math.floor(pts.length/6));
+   for(k=0;k<pts.length;k+=step){p=pts[k];arr.push(rnd(p.x),rnd(p.y));}
+  }
+ }
+ return arr.join('|');
+}
 function capture(){
  var a=app(),doc=a.ActiveDocument,old=doc.Unit,sel=a.ActiveSelectionRange,
      rows=[],i,sh,d,fp;
@@ -60,7 +72,7 @@ function capture(){
    // loose individual curves/text are valid material pieces in Nest Studio.
    d=shapeDims(sh);fp=footprint(sh,d);
    rows.push({shape:sh,index:i-1,w:d.w,h:d.h,area:d.w*d.h,
-    snapshot:d,fp:fp,grouped:grouped(sh)});
+    snapshot:d,fp:fp,signature:signature(fp),grouped:grouped(sh)});
   }
   if(!rows.length)throw err('Vùng chọn rỗng.','Selection is empty.');
   return{app:a,document:doc,identity:docId(doc),items:rows};
@@ -110,6 +122,9 @@ function snapshotValid(state){
    sh=state.items[i].shape;d=shapeDims(sh);s=state.items[i].snapshot;
    if(Math.abs(d.w-s.w)>.2||Math.abs(d.h-s.h)>.2||Math.abs(d.x-s.x)>.2||Math.abs(d.y-s.y)>.2)
     throw err('Có đối tượng đã thay đổi vị trí hoặc kích thước. Hãy tính lại.','Artwork moved or resized after preview. Recalculate.');
+   var currentFp=footprint(sh,d);
+   if(signature(currentFp)!==state.items[i].signature)
+    throw err('Đường bao đã bị chỉnh sửa. Hãy tính lại để tránh dùng bản xem trước cũ.','Contours changed after preview. Recalculate.');
   }
   return true;
  }finally{try{doc.Unit=old;}catch(e){}}
