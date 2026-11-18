@@ -95,4 +95,52 @@ assert.equal(undos,0);assert.ok(changes>=total*2);
 assert.equal(doc.Unit,4,'unit restored after applying');
 assert.ok(popup.closed);
 assert.notDeepEqual(shapes.map(s=>[s.CenterX,s.CenterY,s.SizeWidth,s.SizeHeight]),original);
-console.log('PASS V8.58: window + SVG candidate preview, safe no-write preview, stale settings rejection, exact apply and Corel command group');
+
+// PET roll: width only, ignores fixed sheet height and trims the frame to content.
+const previousFrameCount=frames.length,previousChanges=changes;
+assert.equal(studio.open(),true,'open second session for PET roll');
+assert.equal(changes,previousChanges,'second preview still read-only');
+assert.ok(popupDocument.markup.includes('nsMaterialMode'),'new material selector present');
+popupFields.nsMaterialMode.value='roll';
+popupFields.nsMaterialMode.onchange();
+assert.equal(popupFields.nsH.disabled,true,'roll mode disables fixed height');
+popupFields.nsW.value='580';popupFields.nsH.value='9999';popupFields.nsMargin.value='4';
+assert.equal(studio.apply(),false,'cannot apply uncomputed PET settings');
+assert.equal(frames.length,previousFrameCount);
+assert.equal(studio.recompute(),true,'calculate roll from width only');
+state=studio.getState();
+assert.equal(state.config.roll,true);
+assert.equal(state.config.H,0,'roll has no fixed height');
+assert.equal(state.candidates[0].plan.bins.length,1,'continuous roll must be one strip');
+const rollMetrics=studio.metrics(state,state.config,state.candidates[0]);
+assert.equal(rollMetrics.roll,true);
+assert.ok(rollMetrics.rollLength<9999,'roll height derived from content rather than old sheet height');
+assert.equal(rollMetrics.rollLength,studio.rollLength(state.candidates[0].plan,state.config));
+assert.ok(popupFields.nsCanvas.innerHTML.includes('CUỘN PET'),'preview labels roll');
+assert.ok(popupFields.nsStats.innerHTML.includes('CUỘN PET'),'roll stats visible');
+assert.equal(changes,previousChanges,'roll computation did not move artwork');
+assert.equal(studio.apply(),true,'apply roll dimensions');
+assert.equal(frames.length,previousFrameCount+1,'one roll frame');
+assert.equal(frames[frames.length-1].w,580,'PET width is exactly 580 mm');
+assert.equal(frames[frames.length-1].h,rollMetrics.rollLength,'Corel frame uses calculated roll length');
+assert.equal(doc.Unit,4,'Corel document unit restored in roll mode');
+
+// Rotation-only case: item too wide at 0°, fits width after 90°.
+const extra=shape(700,100,0,0,50);
+const piece={shape:extra,index:0,w:700,h:100,area:70000,fp:fp(extra)};
+const rollConfig=studio.config({roll:true,W:580,H:0,gap:3,mt:0,mb:0,ml:0,mr:0,frameGap:10,
+ rotate:true,contour:false,mirror:false,seconds:5,effort:'balanced'});
+const one={items:[piece]};
+const rotated=studio.plan(one,rollConfig,0);
+assert.ok(rotated.candidates.length>=1,'rotation fallback gives valid roll');
+assert.equal(rotated.candidates[0].plan.bins.length,1);
+assert.equal(rotated.candidates[0].plan.bins[0].places[0].angle,90);
+assert.equal(studio.validate(rotated.candidates[0].plan,one,rollConfig,false),true);
+assert.equal(rotated.candidates[0].length,700);
+assert.equal(rotated.candidates[0].plan.bins[0].places[0].w,100);
+
+// Oversize width must fail without drawing or mutating original shapes.
+const noRotate=studio.config({roll:true,W:90,H:0,gap:3,mt:0,mb:0,ml:0,mr:0,frameGap:10,
+ rotate:false,contour:false,mirror:false,seconds:5,effort:'balanced'});
+assert.throws(()=>studio.plan(one,noRotate,0),/rộng hơn cuộn PET/);
+console.log('PASS V8.59: fixed-sheet regression, width-only PET roll, exact Corel frame height, 90° rotate fallback, oversize rejection');
