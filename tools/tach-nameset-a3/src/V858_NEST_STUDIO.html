@@ -49,14 +49,15 @@ function footprint(sh,d){
 }
 function capture(){
  var a=app(),doc=a.ActiveDocument,old=doc.Unit,sel=a.ActiveSelectionRange,
-     rows=[],i,sh,d,fp,allow=!!(E('v846Loose')&&E('v846Loose').checked);
+     rows=[],i,sh,d,fp;
  if(!sel||!n(sel.Count))throw err('Hãy chọn các đối tượng cần dàn trong Corel.','Select shapes to nest in Corel.');
  if(n(sel.Count)>400)throw err('Tối đa 400 đối tượng mỗi lượt. Chia vùng chọn thành nhiều đợt.','Limit 400 objects per run; split the selection.');
  try{
   doc.Unit=3;
   for(i=1;i<=sel.Count;i++){
    sh=sel.Item(i);
-   if(!allow&&!grouped(sh))throw err('Có đối tượng rời. Group các bộ nameset hoặc bật “Cho phép vật rời” trong công cụ cũ.','Loose artwork: group namesets or enable loose objects in legacy settings.');
+   // Use exactly the top-level selected objects. Never ungroup existing namesets;
+   // loose individual curves/text are valid material pieces in Nest Studio.
    d=shapeDims(sh);fp=footprint(sh,d);
    rows.push({shape:sh,index:i-1,w:d.w,h:d.h,area:d.w*d.h,
     snapshot:d,fp:fp,grouped:grouped(sh)});
@@ -135,7 +136,7 @@ function transform(fp,angle){
 }
 function footFor(item,angle){return angle?transform(item.fp,90):item.fp;}
 function safePlan(plan,state,c,contour){
- if(!plan||!plan.bins||!plan.bins.length)return false;
+ if(!plan||!plan.bins||!plan.bins.length||!state.items.length)return false;
  var seen={},total=0,bin,i,j,p,id,fp,placed,G=window.DHLContourGeometry,gap=c.gap;
  for(i=0;i<plan.bins.length;i++){
   bin=plan.bins[i];placed=[];
@@ -144,6 +145,7 @@ function safePlan(plan,state,c,contour){
    if(seen[id]||!finite(p.x)||!finite(p.y)||p.x<-.01||p.y<-.01||
       p.x+fp.w>c.usableW+.01||p.y+fp.h>c.usableH+.01||
       Math.abs(p.w-fp.w)>.4||Math.abs(p.h-fp.h)>.4)return false;
+   if(contour&&(!G||typeof G.valid!=='function'))return false;
    if(contour&&G&&typeof G.valid==='function'){
     if(!G.valid(p.x,p.y,fp,placed,c.usableW,c.usableH,gap))return false;
    }else{
@@ -457,7 +459,7 @@ function mount(){
  box=E('v858Launcher');
  if(!box){
   box=document.createElement('div');box.id='v858Launcher';
-  box.innerHTML='<h4>DHL NEST STUDIO</h4><p>Xem trước theo đường bao và nhiều phương án trước khi áp dụng. Group giữ nguyên, Ctrl+Z hoàn tác.</p>'
+  box.innerHTML='<h4>DHL NEST STUDIO</h4><p>Chọn Group hoặc từng chữ/chi tiết rời; không phá Group. Xem trước nhiều phương án rồi mới áp dụng. Ctrl+Z hoàn tác.</p>'
    +'<button type="button" id="v858Open">MỞ CỬA SỔ DÀN TỐI ƯU</button>'
    +'<button type="button" id="v858Legacy">CÔNG CỤ CŨ / TÙY CHỌN NÂNG CAO ▾</button>'
    +'<div id="v858Status"></div>';
