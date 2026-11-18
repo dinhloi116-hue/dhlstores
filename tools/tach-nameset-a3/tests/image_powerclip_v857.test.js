@@ -42,7 +42,7 @@ const doc={getElementById(k){return cells[k]||null;}};
 const storage={data:{},setItem(k,v){this.data[k]=v;},getItem(k){return this.data[k]||null;}};
 new Function('window','document','currentLang','corelApp','localStorage','setTimeout',js)(win,doc,'vi',()=>corel,storage,()=>{});
 const api=win.DHLImageFill;
-assert.equal(api.version,'8.58');const cfg=api.read();
+assert.equal(api.version,'8.57','submodule retains its own version; release is V8.58');const cfg=api.read();
 assert.equal(cfg.count,5);assert.equal(cfg.name,true);assert.equal(cfg.number,true);
 let session=api.session(corel,layer,cfg);
 const text={SizeWidth:100,SizeHeight:200,CenterX:300,CenterY:400,Fill:{ApplyNoFill(){this.noFill=true;}}};
