@@ -13,7 +13,7 @@
 (function(){
 /* All dimensions internally millimetres. ES5/IE11/MSHTML. The pop-up is a
    preview-only document. Only apply() opens a Corel command group. */
-var current=null,popup=null,choice=0,original=false,zoom=1,ready=false,attempt=0;
+var current=null,popup=null,choice=0,original=false,zoom=1,ready=false,attempt=0,quantityInputs=[];
 function E(id){return document.getElementById(id);}
 function vi(){try{return currentLang!=='en';}catch(e){return true;}}
 function T(a,b){return vi()?a:b;}
@@ -71,12 +71,71 @@ function capture(){
    // Use exactly the top-level selected objects. Never ungroup existing namesets;
    // loose individual curves/text are valid material pieces in Nest Studio.
    d=shapeDims(sh);fp=footprint(sh,d);
-   rows.push({shape:sh,index:i-1,w:d.w,h:d.h,area:d.w*d.h,
+   rows.push({shape:sh,index:i-1,sourceIndex:i-1,copyIndex:0,w:d.w,h:d.h,area:d.w*d.h,
     snapshot:d,fp:fp,signature:signature(fp),grouped:grouped(sh)});
   }
   if(!rows.length)throw err('Vùng chọn rỗng.','Selection is empty.');
-  return{app:a,document:doc,identity:docId(doc),items:rows};
+  return{app:a,document:doc,identity:docId(doc),sourceItems:rows,items:rows,
+    quantities:rows.map(function(){return 1;})};
  }finally{try{doc.Unit=old;}catch(e){}}
+}
+function expandQuantities(state,qty){
+ // Build a virtual item for each physical print. No Corel Duplicate until Apply.
+ var sources=state.sourceItems||state.items,out=[],i,j,row;
+ if(!qty||qty.length!==sources.length)throw err('Danh sách số lượng không khớp vùng chọn.','Quantity list does not match selection.');
+ for(i=0;i<sources.length;i++){
+  if(!finite(qty[i])||qty[i]<1||qty[i]>100||Math.floor(qty[i])!==qty[i])
+   throw err('Số lượng in phải là số nguyên từ 1 đến 100.','Print quantity must be an integer from 1 to 100.');
+  for(j=0;j<qty[i];j++){
+   row=sources[i];
+   out.push({shape:row.shape,index:out.length,sourceIndex:i,copyIndex:j,
+    w:row.w,h:row.h,area:row.area,snapshot:row.snapshot,
+    fp:row.fp,signature:row.signature,grouped:row.grouped});
+   if(out.length>400)throw err('Tổng số bản in tối đa 400 mỗi lượt. Hãy chia đơn hàng.','Maximum 400 prints per run. Split the job.');
+  }
+ }
+ return out;
+}
+function quantityName(row,i){
+ var name='';
+ try{name=String(row.shape.Name||'');}catch(e){}
+ if(!name||/^\s*$/.test(name))name=T('Mẫu ','Design ')+(i+1);
+ return name.length>70?name.substring(0,67)+'...':name;
+}
+function renderQuantities(state){
+ if(!popup||popup.closed)return false;
+ var d=popup.document,wrap=d.getElementById('nsQuantities'),sources=state.sourceItems||state.items,
+     i,row,label,input,qty,header;
+ if(!wrap)return false;
+ wrap.innerHTML='';quantityInputs=[];
+ for(i=0;i<sources.length;i++){
+  row=d.createElement('div');row.className='nsQtyRow';
+  label=d.createElement('span');label.innerHTML=esc((i+1)+'. '+quantityName(sources[i],i));
+  input=d.createElement('input');input.id='nsQty'+i;input.type='number';
+  input.min='1';input.max='100';input.step='1';input.value=String(state.quantities?state.quantities[i]:1);
+  input.title=T('Số bản cần in','Number of copies to print');
+  row.appendChild(label);row.appendChild(input);wrap.appendChild(row);
+  quantityInputs.push(input);
+ }
+ return true;
+}
+function readQuantities(state){
+ var sources=state.sourceItems||state.items,i,raw,value,qty=[],sum=0;
+ if(quantityInputs.length!==sources.length)throw err('Chưa nạp bảng số lượng. Mở lại Nest Studio.','Quantity controls not loaded. Reopen Nest Studio.');
+ for(i=0;i<sources.length;i++){
+  raw=String(quantityInputs[i].value).replace(/^\s+|\s+$/g,'');
+  if(!/^\d+$/.test(raw))throw err('Số lượng in mẫu '+(i+1)+' phải là số nguyên.','Quantity for design '+(i+1)+' must be an integer.');
+  value=Number(raw);
+  if(value<1||value>100)throw err('Mỗi mẫu chỉ được chọn từ 1 đến 100 bản.','Each design must have 1–100 copies.');
+  qty.push(value);sum+=value;
+ }
+ if(sum>400)throw err('Tổng số bản in vượt 400. Hãy chia đơn hàng.','More than 400 prints. Split the job.');
+ return qty;
+}
+function sameQuantities(a,b){
+ var i;if(!a||!b||a.length!==b.length)return false;
+ for(i=0;i<a.length;i++)if(a[i]!==b[i])return false;
+ return true;
 }
 function configFromDock(){
  function cm(id,def){var x=E(id),v=x?n(x.value):def;return finite(v)&&v>=0?v:def;}
@@ -178,12 +237,13 @@ function snapshotValid(state){
  if(state.document!==doc&&state.identity!==docId(doc))throw err('Bạn đang mở tài liệu Corel khác. Hãy đọc lại vùng chọn.','Corel document changed. Re-read selected shapes.');
  try{
   doc.Unit=3;
-  for(i=0;i<state.items.length;i++){
-   sh=state.items[i].shape;d=shapeDims(sh);s=state.items[i].snapshot;
+  var sources=state.sourceItems||state.items;
+  for(i=0;i<sources.length;i++){
+   sh=sources[i].shape;d=shapeDims(sh);s=sources[i].snapshot;
    if(Math.abs(d.w-s.w)>.2||Math.abs(d.h-s.h)>.2||Math.abs(d.x-s.x)>.2||Math.abs(d.y-s.y)>.2)
     throw err('Có đối tượng đã thay đổi vị trí hoặc kích thước. Hãy tính lại.','Artwork moved or resized after preview. Recalculate.');
    var currentFp=footprint(sh,d);
-   if(signature(currentFp)!==state.items[i].signature)
+   if(signature(currentFp)!==sources[i].signature)
     throw err('Đường bao đã bị chỉnh sửa. Hãy tính lại để tránh dùng bản xem trước cũ.','Contours changed after preview. Recalculate.');
   }
   return true;
@@ -385,7 +445,7 @@ function svgPlan(state,c,candidate){
  out.push('</svg>');return out.join('');
 }
 function svgOriginal(state){
- var items=state.items,i,x0=1e30,y0=1e30,x1=-1e30,y1=-1e30,o=[],d,it,fp;
+ var items=state.sourceItems||state.items,i,x0=1e30,y0=1e30,x1=-1e30,y1=-1e30,o=[],d,it,fp;
  for(i=0;i<items.length;i++){d=items[i].snapshot;
  x0=Math.min(x0,d.x-d.w/2);x1=Math.max(x1,d.x+d.w/2);
  y0=Math.min(y0,-d.y-d.h/2);y1=Math.max(y1,-d.y+d.h/2);}
@@ -420,6 +480,10 @@ function popupHtml(){
  +'button{cursor:pointer;background:#f5f9fc;border:1px solid #b8cbda;padding:9px 12px;border-radius:6px;color:#224d62;font-weight:700}'
  +'button.primary{background:#087c64;color:white;border-color:#086953}.footer button{margin-left:7px}'
  +'#nsStatus{font-size:11px;font-weight:400;padding:6px 10px;color:#c2e6da;display:inline-block}'
+ +'.nsQtyList{max-height:190px;overflow-y:auto;margin:7px 0;border:1px solid #d4e2eb;border-radius:6px;background:#f8fbfe}'
+ +'.nsQtyRow{display:table;width:100%;table-layout:fixed;border-bottom:1px solid #e5ebf1;padding:5px}'
+ +'.nsQtyRow span{display:table-cell;vertical-align:middle;word-wrap:break-word;line-height:1.4;font-size:11px;width:70%}'
+ +'.nsQtyRow input{display:table-cell;width:64px!important;min-height:30px!important;text-align:center;font-weight:700}'
  +'</style></head><body><header>DHL NEST STUDIO <small>PHƯƠNG ÁN XẾP TRÊN PHÔI · PREVIEW TRƯỚC KHI ÁP DỤNG</small><span id="nsStatus"></span></header>'
  +'<div class="wrap"><div class="main">'
  +'<div class="panel"><div class="hd">PHƯƠNG ÁN <span id="nsChoiceCount"></span></div><div id="nsChoices"></div>'
@@ -437,6 +501,9 @@ function popupHtml(){
  +'<label><input type="checkbox" id="nsContour"/>Xếp theo đường bao, tận dụng khe mở</label>'
  +'<label><input type="checkbox" id="nsMirror"/>Lật gương khi áp dụng</label>'
  +'<label>Mức tìm kiếm</label><select id="nsEffort"><option value="balanced">Cân bằng</option><option value="deep">Tìm sâu</option></select>'
+ +'<label style="font-weight:800;margin-top:14px">SỐ LƯỢNG IN TỪNG MẪU (1–100)</label>'
+ +'<div id="nsQuantities" class="nsQtyList"></div>'
+ +'<div style="font-size:10px;color:#547389;line-height:1.5">Mỗi mẫu mặc định 1 bản. Sửa số lượng rồi bấm TÌM PHƯƠNG ÁN KHÁC. Tối đa 400 bản mỗi lượt; chỉ nhân bản khi áp dụng.</div>'
  +'<label>Ngân sách tính toán (giây)</label><input id="nsSeconds" type="number" min="2" max="30" step="1"/>'
  +'<div id="nsNotice">Xem trước không di chuyển đối tượng trong CorelDRAW. Hiệu suất hiển thị là ước tính theo khung bao, không phải diện tích cắt chính xác.</div>'
  +'</div></div></div></div><div style="height:85px"></div>'
@@ -459,7 +526,7 @@ function updatePopup(){
   }
   d.getElementById('nsCanvas').innerHTML=svgPlan(state,state.config,state.candidates[choice]);
   stats=summary(state,state.config,state.candidates[choice]);
-  d.getElementById('nsStats').innerHTML='<b>'+stats.count+'/'+state.items.length+' đối tượng</b> · '+
+  d.getElementById('nsStats').innerHTML='<b>'+stats.count+' bản in / '+(state.sourceItems||state.items).length+' mẫu</b> · '+
    (stats.roll?('<b>CUỘN PET '+rnd(state.config.W/10)+' cm × '+rnd(stats.rollLength/10)+' cm</b> · 1 dải'):
    (stats.bins+' tấm · Chiều dài chi tiết '+rnd(stats.usedDepth/10)+' cm'))+
    ' · '+stats.proxy+'% (khung bao, ước tính) · '+(stats.contour?'ĐƯỜNG BAO':'KHUNG BAO')+
@@ -467,7 +534,7 @@ function updatePopup(){
  }else{
   o.innerHTML='<b>VỊ TRÍ BAN ĐẦU</b> · Không có thay đổi nào trong tài liệu Corel';
   d.getElementById('nsCanvas').innerHTML=svgOriginal(state);
-  d.getElementById('nsStats').innerHTML='Bản gốc '+state.items.length+' đối tượng · Không áp dụng dịch chuyển';
+  d.getElementById('nsStats').innerHTML='Bản gốc '+(state.sourceItems||state.items).length+' mẫu · Chưa nhân bản trong Corel';
  }
  d.getElementById('nsChoiceCount').innerHTML=original?'':('('+(choice+1)+'/'+state.candidates.length+')');
  d.getElementById('nsZoom').innerHTML=Math.round(zoom*100)+'%';
@@ -504,7 +571,10 @@ function recompute(){
  try{
   if(!current)return false;
   snapshotValid(current);
-  var c=readPopup(),result=variants(current,c,attempt++);
+  var c=readPopup(),qty=readQuantities(current),expanded=expandQuantities(current,qty),
+      proposed={items:expanded,sourceItems:current.sourceItems},
+      result=variants(proposed,c,attempt++);
+  current.items=expanded;current.quantities=qty;
   current.config=c;current.candidates=result.candidates;current.elapsed=result.elapsed;
   choice=0;original=false;zoom=1;stamp();updatePopup();
   if(popup&&!popup.closed)popup.document.getElementById('nsStatus').innerHTML='✓ '+current.candidates.length+' PHƯƠNG ÁN · '+current.items.length+' ĐỐI TƯỢNG';
@@ -516,10 +586,14 @@ function report(s){
  try{if(popup&&!popup.closed){var p=popup.document.getElementById('nsStatus');if(p)p.innerHTML=esc(s);}}catch(e){}
 }
 function applyCandidate(){
- var state=current,cp,plan,a,doc,old,cmd=false,opt=false,i,j,bi,frame,place,sh,c,left,bottom,top,rect;
+ var state=current,cp,plan,a,doc,old,cmd=false,opt=false,i,j,bi,frame,place,sh,c,left,bottom,top,rect,
+     quantities,appliedShapes=[],item,copiesCreated=0;
  if(!state||original)throw err('Hãy chọn phương án trước khi áp dụng.','Select a valid candidate first.');
  if(!popup||popup.closed)throw err('Cửa sổ đã đóng.','Preview window is closed.');
  c=readPopup();
+ quantities=readQuantities(state);
+ if(!sameQuantities(quantities,state.quantities))
+  throw err('Số lượng in đã thay đổi. Nhấn TÌM PHƯƠNG ÁN KHÁC trước khi áp dụng.','Quantities changed. Recompute before applying.');
  // Refuse stale configurations even if the user edited inputs without recomputing.
  var cur=state.config;for(var key in c){if(c.hasOwnProperty(key)&&c[key]!==cur[key])throw err('Thiết lập đã đổi. Bấm TÌM PHƯƠNG ÁN KHÁC trước.','Settings changed. Recompute before applying.');}
  snapshotValid(state);cp=state.candidates[choice];plan=cp.plan;
@@ -529,8 +603,19 @@ function applyCandidate(){
  if(!(frameHeight>0&&frameHeight<=30000))throw err('Chiều dài cuộn tính được không hợp lệ.','Calculated roll length invalid.');
  try{
   doc.Unit=3;
-  doc.BeginCommandGroup('DHL Nest Studio V8.59 - Apply preview');cmd=true;
+  doc.BeginCommandGroup('DHL Nest Studio V8.60 - Apply preview + quantities');cmd=true;
   try{a.Optimization=true;opt=true;}catch(optimization){}
+  // Duplicate ALL requested copies before moving any source, so every copy
+  // inherits the original geometry. A Corel undo group covers all duplicates.
+  for(i=0;i<state.items.length;i++){
+   item=state.items[i];
+   if(item.copyIndex===0)appliedShapes[i]=state.sourceItems[item.sourceIndex].shape;
+   else{
+    sh=state.sourceItems[item.sourceIndex].shape.Duplicate(0,0);
+    if(!sh)throw err('Không nhân bản được mẫu '+(item.sourceIndex+1)+'.','Could not duplicate design '+(item.sourceIndex+1)+'.');
+    appliedShapes[i]=sh;copiesCreated++;
+   }
+  }
   bottom=n(a.ActivePage.CenterY)-frameHeight/2;
   for(bi=0;bi<plan.bins.length;bi++){
    left=n(a.ActivePage.CenterX)-c.W/2+bi*(c.W+c.frameGap);
@@ -540,7 +625,7 @@ function applyCandidate(){
    try{rect.Fill.ApplyNoFill();rect.Outline.Width=.2;rect.OrderToBack();}catch(styling){}
    top=bottom+frameHeight-c.mt;
    for(j=0;j<plan.bins[bi].places.length;j++){
-    place=plan.bins[bi].places[j];sh=state.items[place.item.index].shape;
+    place=plan.bins[bi].places[j];sh=appliedShapes[place.item.index];
     if(place.angle)sh.Rotate(place.angle);
     sh.CenterX=left+c.ml+place.x+place.w/2;
     sh.CenterY=top-place.y-place.h/2;
@@ -551,8 +636,8 @@ function applyCandidate(){
   doc.EndCommandGroup();cmd=false;
   try{a.ActiveWindow.Refresh();}catch(e){}
   report(c.roll?
-   '✓ Đã dàn '+state.items.length+' đối tượng trên 1 cuộn PET rộng '+rnd(c.W/10)+' cm, dài '+rnd(frameHeight/10)+' cm. Ctrl+Z để hoàn tác.':
-   '✓ Đã áp dụng '+state.items.length+' đối tượng, '+plan.bins.length+' tấm. Ctrl+Z để hoàn tác.');
+   '✓ Đã dàn '+state.items.length+' bản từ '+state.sourceItems.length+' mẫu trên 1 cuộn PET rộng '+rnd(c.W/10)+' cm, dài '+rnd(frameHeight/10)+' cm. Ctrl+Z để hoàn tác.':
+   '✓ Đã dàn '+state.items.length+' bản từ '+state.sourceItems.length+' mẫu trên '+plan.bins.length+' tấm. Ctrl+Z để hoàn tác.');
   current=null;
   try{popup.close();}catch(e){}
   popup=null;
@@ -588,7 +673,7 @@ function openStudio(){
   popup=window.open('','DHL_NEST_STUDIO','width=1440,height=900,resizable=yes,scrollbars=yes');
   if(!popup||!popup.document)throw err('Corel đang chặn cửa sổ mới. Hãy cho phép popup trong Docker.','Corel blocked the preview window. Allow popups in Docker.');
   popup.document.open();popup.document.write(popupHtml());popup.document.close();
-  stamp();bindPopup();updatePopup();report('✓ Đã tạo '+state.candidates.length+' phương án xem trước, chưa chỉnh sửa Corel.');
+  stamp();renderQuantities(state);bindPopup();updatePopup();report('✓ Đã tạo '+state.candidates.length+' phương án xem trước, chưa chỉnh sửa Corel.');
   return true;
  }catch(e){report('⚠ '+String(e.message||e));return false;}
 }
@@ -624,7 +709,8 @@ function boot(){var i=0;function tick(){if(mount()||i++>80)return;setTimeout(tic
 window.DHLNestStudio={open:openStudio,recompute:recompute,apply:apply,readSelection:capture,plan:variants,
  validate:safePlan,transform:transform,metrics:summary,svg:svgPlan,config:normalize,
  rollLength:rollLength,workingConfig:workingConfig,modeUi:modeUi,
- getState:function(){return current;},version:'8.59'};
+ expandQuantities:expandQuantities,readQuantities:readQuantities,
+ getState:function(){return current;},version:'8.60'};
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1800);},false);
 else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1800);});
 else setTimeout(boot,1900);
