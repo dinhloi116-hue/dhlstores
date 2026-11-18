@@ -426,8 +426,10 @@ function popupHtml(){
  +'<div id="nsCanvas"></div><div id="nsControls"><button id="nsMinus">−</button> <span id="nsZoom">100%</span> <button id="nsPlus">+</button> <button id="nsResetZoom">1:1</button></div>'
  +'<div id="nsStats"></div></div></div>'
  +'<div class="sidebar"><div class="panel"><div class="hd">CẤU HÌNH DÀN FILE</div><div class="inside">'
- +'<label>Chiều rộng tấm (mm)</label><input id="nsW" type="number" min="10" max="20000" step="1"/>'
- +'<label>Chiều cao tấm (mm)</label><input id="nsH" type="number" min="10" max="30000" step="1"/>'
+ +'<label>Loại vật liệu</label><select id="nsMaterialMode"><option value="sheet">Tấm cố định</option><option value="roll">Cuộn PET – tự tính chiều dài</option></select>'
+ +'<label>Chiều rộng tấm / cuộn PET (mm)</label><input id="nsW" type="number" min="10" max="20000" step="1"/>'
+ +'<label id="nsHLabel">Chiều cao tấm (mm)</label><input id="nsH" type="number" min="10" max="30000" step="1"/>'
+ +'<div id="nsRollHint" style="font-size:11px;line-height:1.5;color:#2e6c76;margin-top:5px">Chọn cuộn PET để tự tính chiều dài cần sử dụng.</div>'
  +'<label>Khoảng cách chi tiết (mm)</label><input id="nsGap" type="number" min="0" max="300" step=".5"/>'
  +'<div class="cols"><div><label>Lề tấm (mm)</label><input id="nsMargin" type="number" min="0" max="500" step="1"/></div>'
  +'<div><label>Giữa các tấm (mm)</label><input id="nsFrameGap" type="number" min="0" max="500" step="1"/></div></div>'
@@ -449,14 +451,18 @@ function updatePopup(){
   o.innerHTML='';for(i=0;i<state.candidates.length;i++){
    btn=d.createElement('button');btn.type='button';btn.className=i===choice?'sel':'';
    stats=summary(state,state.config,state.candidates[i]);
-   btn.innerHTML='Phương án '+(i+1)+'<br/><small>'+stats.bins+' tấm · '+stats.proxy+'% khung bao</small>';
+   btn.innerHTML='Phương án '+(i+1)+'<br/><small>'+
+    (stats.roll?('Cuộn PET '+rnd(stats.rollLength/10)+' cm'):stats.bins+' tấm')+
+    ' · '+stats.proxy+'% khung bao</small>';
    (function(idx,b){b.onclick=function(){choice=idx;original=false;updatePopup();};})(i,btn);
    o.appendChild(btn);
   }
   d.getElementById('nsCanvas').innerHTML=svgPlan(state,state.config,state.candidates[choice]);
   stats=summary(state,state.config,state.candidates[choice]);
-  d.getElementById('nsStats').innerHTML='<b>'+stats.count+'/'+state.items.length+' đối tượng</b> · '+stats.bins+
-   ' tấm · '+stats.proxy+'% (khung bao, ước tính) · Chiều dài dùng '+rnd(stats.usedDepth/10)+' cm · '+(stats.contour?'ĐƯỜNG BAO':'KHUNG BAO')+
+  d.getElementById('nsStats').innerHTML='<b>'+stats.count+'/'+state.items.length+' đối tượng</b> · '+
+   (stats.roll?('<b>CUỘN PET '+rnd(state.config.W/10)+' cm × '+rnd(stats.rollLength/10)+' cm</b> · 1 dải'):
+   (stats.bins+' tấm · Chiều dài chi tiết '+rnd(stats.usedDepth/10)+' cm'))+
+   ' · '+stats.proxy+'% (khung bao, ước tính) · '+(stats.contour?'ĐƯỜNG BAO':'KHUNG BAO')+
    ' · '+state.elapsed+' ms';
  }else{
   o.innerHTML='<b>VỊ TRÍ BAN ĐẦU</b> · Không có thay đổi nào trong tài liệu Corel';
@@ -469,13 +475,26 @@ function updatePopup(){
  d.getElementById('nsOriginal').innerHTML=original?'TRỞ LẠI PHƯƠNG ÁN':'HIỆN BẢN GỐC';
 }
 function candidates(){return current?current.candidates:[];}
+function modeUi(){
+ if(!popup||popup.closed)return;
+ var d=popup.document,mode=d.getElementById('nsMaterialMode'),
+     h=d.getElementById('nsH'),label=d.getElementById('nsHLabel'),hint=d.getElementById('nsRollHint'),
+     roll=!!(mode&&mode.value==='roll');
+ if(h){h.disabled=roll;h.style.backgroundColor=roll?'#e7eff2':'#fbfdfe';}
+ if(label)label.innerHTML=roll?'Chiều dài cuộn – tự động (mm)':'Chiều cao tấm (mm)';
+ if(hint)hint.innerHTML=roll?
+  'Chỉ nhập chiều rộng cuộn PET. Tool tính chiều dài tối thiểu tìm được (bao gồm lề đầu/cuối) và tạo một khung cuộn duy nhất. Giới hạn mỗi lượt 30 m.':
+  'Chế độ tấm: sử dụng cả chiều rộng và chiều cao đã nhập.';
+}
 function stamp(){
  if(!current||!popup||popup.closed)return;
- var d=popup.document,fields=['W','H','Gap','Margin','FrameGap','Seconds'],i,k;
+ var d=popup.document,fields=['W','Gap','Margin','FrameGap','Seconds'],i,k;
  var c=current.config;
  for(i=0;i<fields.length;i++){
   k=fields[i];setVal(d,'ns'+k,k==='Margin'?c.ml:k==='Seconds'?c.seconds:c[k==='Gap'?'gap':k==='FrameGap'?'frameGap':k]);
  }
+ if(!c.roll)setVal(d,'nsH',c.H);
+ setVal(d,'nsMaterialMode',c.roll?'roll':'sheet');modeUi();
  d.getElementById('nsRotate').checked=c.rotate;
  d.getElementById('nsContour').checked=c.contour;
  d.getElementById('nsMirror').checked=c.mirror;
@@ -506,18 +525,20 @@ function applyCandidate(){
  snapshotValid(state);cp=state.candidates[choice];plan=cp.plan;
  if(!safePlan(plan,state,c,cp.contour))throw err('Bố cục không vượt qua kiểm tra va chạm/kích thước.','Candidate failed collision or bounds check.');
  a=app();doc=a.ActiveDocument;old=doc.Unit;
+ var frameHeight=c.roll?rollLength(plan,c):c.H;
+ if(!(frameHeight>0&&frameHeight<=30000))throw err('Chiều dài cuộn tính được không hợp lệ.','Calculated roll length invalid.');
  try{
   doc.Unit=3;
-  doc.BeginCommandGroup('DHL Nest Studio V8.58 - Apply preview');cmd=true;
+  doc.BeginCommandGroup('DHL Nest Studio V8.59 - Apply preview');cmd=true;
   try{a.Optimization=true;opt=true;}catch(optimization){}
-  bottom=n(a.ActivePage.CenterY)-c.H/2;
+  bottom=n(a.ActivePage.CenterY)-frameHeight/2;
   for(bi=0;bi<plan.bins.length;bi++){
    left=n(a.ActivePage.CenterX)-c.W/2+bi*(c.W+c.frameGap);
-   rect=a.ActivePage.ActiveLayer.CreateRectangle2(left,bottom,c.W,c.H);
+   rect=a.ActivePage.ActiveLayer.CreateRectangle2(left,bottom,c.W,frameHeight);
    if(!rect)throw err('Không tạo được khung vật liệu.','Failed to create material frame.');
-   try{rect.Name='DHL_NEST_STUDIO_FRAME_'+(bi+1);}catch(nameErr){}
+   try{rect.Name=c.roll?'DHL_PET_ROLL_'+rnd(c.W)+'x'+rnd(frameHeight)+'_MM':'DHL_NEST_STUDIO_FRAME_'+(bi+1);}catch(nameErr){}
    try{rect.Fill.ApplyNoFill();rect.Outline.Width=.2;rect.OrderToBack();}catch(styling){}
-   top=bottom+c.H-c.mt;
+   top=bottom+frameHeight-c.mt;
    for(j=0;j<plan.bins[bi].places.length;j++){
     place=plan.bins[bi].places[j];sh=state.items[place.item.index].shape;
     if(place.angle)sh.Rotate(place.angle);
@@ -529,7 +550,9 @@ function applyCandidate(){
   if(opt){a.Optimization=false;opt=false;}
   doc.EndCommandGroup();cmd=false;
   try{a.ActiveWindow.Refresh();}catch(e){}
-  report('✓ Đã áp dụng '+state.items.length+' đối tượng, '+plan.bins.length+' tấm. Ctrl+Z để hoàn tác.');
+  report(c.roll?
+   '✓ Đã dàn '+state.items.length+' đối tượng trên 1 cuộn PET rộng '+rnd(c.W/10)+' cm, dài '+rnd(frameHeight/10)+' cm. Ctrl+Z để hoàn tác.':
+   '✓ Đã áp dụng '+state.items.length+' đối tượng, '+plan.bins.length+' tấm. Ctrl+Z để hoàn tác.');
   current=null;
   try{popup.close();}catch(e){}
   popup=null;
@@ -548,6 +571,7 @@ function bindPopup(){
  d.getElementById('nsMinus').onclick=function(){zoom=Math.max(.3,zoom/1.25);updatePopup();};
  d.getElementById('nsPlus').onclick=function(){zoom=Math.min(5,zoom*1.25);updatePopup();};
  d.getElementById('nsResetZoom').onclick=function(){zoom=1;updatePopup();};
+ d.getElementById('nsMaterialMode').onchange=modeUi;
  d.getElementById('nsOriginal').onclick=function(){original=!original;updatePopup();};
  d.getElementById('nsTry').onclick=function(){setTimeout(recompute,20);};
  d.getElementById('nsApply').onclick=apply;
@@ -599,7 +623,8 @@ function mount(){
 function boot(){var i=0;function tick(){if(mount()||i++>80)return;setTimeout(tick,200);}tick();}
 window.DHLNestStudio={open:openStudio,recompute:recompute,apply:apply,readSelection:capture,plan:variants,
  validate:safePlan,transform:transform,metrics:summary,svg:svgPlan,config:normalize,
- getState:function(){return current;},version:'8.58'};
+ rollLength:rollLength,workingConfig:workingConfig,modeUi:modeUi,
+ getState:function(){return current;},version:'8.59'};
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1800);},false);
 else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1800);});
 else setTimeout(boot,1900);
