@@ -208,4 +208,26 @@ assert.throws(()=>studio.expandQuantities(large,[100,100,201]),/1 đến 100/);
 assert.equal(duplicates,beforeOver);
 popup.close();
 
-console.log('PASS V8.60: fixed sheet/PET roll + per-design quantities, 6 virtual copies, exact 3 Corel duplicates only on apply');
+
+// 5 design sources × 100 copies exceeds the 400 total transaction cap.
+const bulkSources=[0,1,2,3,4].map(i=>({shape:shapes[0],index:i,sourceIndex:i,copyIndex:0,
+ w:30,h:40,area:1200,fp:fp(shapes[0]),snapshot:{w:30,h:40,x:0,y:0}}));
+assert.throws(()=>studio.expandQuantities({sourceItems:bulkSources},[100,100,100,100,100]),/tối đa 400/);
+
+// A native Corel Duplicate failure must Undo and invalidate the prior plan.
+assert.equal(studio.open(),true);
+state=studio.getState();
+const failInputs=popupFields.nsQuantities.children.map(row=>row.children[1]);
+failInputs[0].value='2';
+assert.equal(studio.recompute(),true,'compute extra copy before failure simulation');
+const previousUndo=undos,previousBegin=begin,previousEnd=end;
+const originalDuplicate=shapes[0].Duplicate;
+shapes[0].Duplicate=function(){throw new Error('TEST_DUPLICATE_FAILURE');};
+assert.equal(studio.apply(),false,'Corel duplication error must not claim success');
+shapes[0].Duplicate=originalDuplicate;
+assert.equal(undos,previousUndo+1,'Corel Undo called for failed duplication');
+assert.equal(begin,previousBegin+1,'transaction opened once');
+assert.equal(end,previousEnd+1,'transaction ended once');
+assert.equal(studio.getState(),null,'stale plan invalidated after Undo');
+
+console.log('PASS V8.60: 3 quantity controls, virtual preview, Corel-only apply copies, input limits, 400-cap and transaction rollback');
