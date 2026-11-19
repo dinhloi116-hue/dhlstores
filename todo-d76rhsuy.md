@@ -42,3 +42,9 @@
 - [x] Thêm test tự động cho việc chọn ảnh khác làm cover, giữ nguyên gallery, loại ảnh placeholder/trùng; test 4/4, TypeScript và production build đạt.
 - [x] Đồng bộ thay đổi test lên GitHub main.
 - [ ] Xác minh click trên sản phẩm thật trong admin browser sau khi owner đăng nhập; phiên hiện tại chỉ thấy màn hình bảo vệ quản trị.
+
+## Tạo danh mục mới trong quản trị — 2026-11-19
+- [x] Thêm nút “Tạo danh mục mới” ngay cạnh bộ chọn danh mục sản phẩm; nút chuyển thẳng sang tab Catalog · Danh mục.
+- [x] Bổ sung trường tên VIE/EN, hiển thị song ngữ trong danh sách và giữ slug/icon/loại/hiển thị công khai.
+- [x] Bảo vệ owner-only; test mục tiêu 16/16, full regression đạt, TypeScript, production build và diff check đạt.
+- [ ] Xác minh thao tác click/lưu trên browser bằng phiên owner đang đăng nhập.

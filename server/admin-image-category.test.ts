@@ -50,4 +50,12 @@ describe("admin product image and category controls", () => {
     expect(nextDraft.image).toBe("https://cdn.test/detail.jpg");
     expect(nextDraft.gallery).toBe(draft.gallery);
   });
+
+  it("exposes a quick create-category entry point with bilingual fields", () => {
+    expect(source).toContain("Tạo danh mục mới");
+    expect(source).toContain('setActiveTab("categories")');
+    expect(source).toContain("categoryDraft.nameEn");
+    expect(source).toContain("Tên EN");
+    expect(source).toContain("category.nameEn");
+  });
 });

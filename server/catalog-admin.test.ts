@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -22,6 +24,12 @@ function createContext(role: "owner" | "user"): TrpcContext {
 }
 
 describe("catalogAdmin", () => {
+  it("declares category mutations as owner-only procedures", () => {
+    const source = readFileSync(resolve(process.cwd(), "server/routers/catalogAdmin.ts"), "utf8");
+    expect(source).toContain("createCategory: ownerProcedure");
+    expect(source).toContain("updateCategory: ownerProcedure");
+  });
+
   it("shows the three empty physical product categories to the owner", async () => {
     const caller = appRouter.createCaller(createContext("owner"));
     const categories = await caller.catalogAdmin.categories();
@@ -120,6 +128,11 @@ describe("catalogAdmin", () => {
   it("does not expose catalog administration to regular users", async () => {
     const caller = appRouter.createCaller(createContext("user"));
     await expect(caller.catalogAdmin.products()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("keeps category creation owner-only", async () => {
+    const caller = appRouter.createCaller(createContext("user"));
+    await expect(caller.catalogAdmin.createCategory({ name: "Không được tạo", slug: "khong-duoc-tao", nameEn: "Must not create", type: "physical", isActive: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("stores flexible product options alongside SKU and stock for a physical variant", async () => {

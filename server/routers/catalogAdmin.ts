@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import * as db from "../db";
 import { storagePut } from "../storage";
-import { adminProcedure, router } from "../_core/trpc";
+import { adminProcedure, ownerProcedure, router } from "../_core/trpc";
 import { parseExcelProducts, toOptionGroups } from "../excelProductImport";
 import { isNationalTeamPlayerProduct, isPlayerProduct, CLUB_PLAYER_CATEGORY, NATIONAL_TEAM_PLAYER_CATEGORY } from "../catalogAutoCategorization";
 
@@ -120,8 +120,8 @@ async function materializeImportedImages(product: Awaited<ReturnType<typeof read
 
 export const catalogAdminRouter = router({
   categories: adminProcedure.query(() => db.getAdminCategories()),
-  createCategory: adminProcedure.input(categoryInput).mutation(({ input }) => db.createCategory(input)),
-  updateCategory: adminProcedure.input(z.object({ categoryId: z.number().int().positive(), data: categoryInput })).mutation(({ input }) =>
+  createCategory: ownerProcedure.input(categoryInput).mutation(({ input }) => db.createCategory(input)),
+  updateCategory: ownerProcedure.input(z.object({ categoryId: z.number().int().positive(), data: categoryInput })).mutation(({ input }) =>
     db.updateCategory(input.categoryId, input.data),
   ),
 
