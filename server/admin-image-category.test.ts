@@ -58,4 +58,10 @@ describe("admin product image and category controls", () => {
     expect(source).toContain("Tên EN");
     expect(source).toContain("category.nameEn");
   });
+
+  it("offers a long-sleeve shirt icon for categories", async () => {
+    const { CATEGORY_ICON_OPTIONS, getCategoryIcon } = await import("../client/src/lib/category-icons");
+    expect(CATEGORY_ICON_OPTIONS).toEqual(expect.arrayContaining([expect.objectContaining({ key: "LongSleeveShirt", label: "Áo dài tay" })]));
+    expect(getCategoryIcon("LongSleeveShirt")).toBeDefined();
+  });
 });

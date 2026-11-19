@@ -48,3 +48,7 @@
 - [x] Bổ sung trường tên VIE/EN, hiển thị song ngữ trong danh sách và giữ slug/icon/loại/hiển thị công khai.
 - [x] Bảo vệ owner-only; test mục tiêu 16/16, full regression đạt, TypeScript, production build và diff check đạt.
 - [ ] Xác minh thao tác click/lưu trên browser bằng phiên owner đang đăng nhập.
+
+## Icon danh mục áo dài tay — 2026-11-19
+- [x] Thêm lựa chọn `Áo dài tay` với key `LongSleeveShirt` vào thư viện icon danh mục; dùng được khi tạo/sửa danh mục.
+- [ ] Chạy test/build, checkpoint và đồng bộ GitHub main.
