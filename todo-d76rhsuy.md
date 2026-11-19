@@ -51,4 +51,4 @@
 
 ## Icon danh mục áo dài tay — 2026-11-19
 - [x] Thêm lựa chọn `Áo dài tay` với key `LongSleeveShirt` vào thư viện icon danh mục; dùng được khi tạo/sửa danh mục.
-- [ ] Chạy test/build, checkpoint và đồng bộ GitHub main.
+- [x] Chạy test 6/6, TypeScript, production build, diff check, checkpoint và đồng bộ GitHub main.
