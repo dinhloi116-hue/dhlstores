@@ -52,3 +52,12 @@
 ## Icon danh mục áo dài tay — 2026-11-19
 - [x] Thêm lựa chọn `Áo dài tay` với key `LongSleeveShirt` vào thư viện icon danh mục; dùng được khi tạo/sửa danh mục.
 - [x] Chạy test 6/6, TypeScript, production build, diff check, checkpoint và đồng bộ GitHub main.
+
+## Đăng sản phẩm Scotland Retro Order-only — 2026-11-24
+- [x] Đọc SEO VIE từ Google Drive, bổ sung nội dung EN trung thực, bảng size XS–2XL và danh sách 10 mẫu.
+- [x] Upload 10 ảnh mẫu và 1 ảnh bảng size vào storage/CDN; tạo sản phẩm thật với gallery đủ 11 ảnh.
+- [x] Bổ sung `products.orderOnly`, migration database, checkbox quản trị và enforcement server/UI chỉ nhận Order.
+- [x] Tạo option groups `Mẫu` 01–10 và `Size` XS–2XL, đủ 60 SKU, tồn kho 0, giá 368.000đ/áo.
+- [x] Seed database thật: product ID `600001`, slug `ao-bong-da-scotland-retro-ngan-tay-10-mau`, category `Quần Áo Bóng Đá`.
+- [x] Regression 227 passed/2 skipped, TypeScript, production build và diff check đạt; guest API trả đúng dữ liệu song ngữ.
+- [ ] Xác minh thao tác đặt Order hoàn chỉnh bằng phiên owner/customer đăng nhập; phiên browser hiện tại chỉ có guest session.

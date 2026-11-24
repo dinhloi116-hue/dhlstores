@@ -43,6 +43,7 @@ export interface ProductType {
   stock: number;
   weightGrams?: number;
   purchaseLayout?: "classic" | "marketplace";
+  orderOnly?: boolean;
   specs?: string;
   specsEn?: string;
   supplierUrl?: string;
@@ -590,6 +591,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     stock: product.stock,
     weightGrams: product.weightGrams,
     purchaseLayout: product.purchaseLayout ?? "classic",
+    orderOnly: product.orderOnly,
     specs: product.specs ?? undefined,
     specsEn: product.specsEn ?? undefined,
     featured: product.featured,
@@ -1661,6 +1663,7 @@ export type CatalogProductInput = {
   stock: number;
   weightGrams?: number;
   purchaseLayout?: "classic" | "marketplace";
+  orderOnly?: boolean;
   featured: boolean;
   isActive: boolean;
 };
@@ -1756,6 +1759,7 @@ export async function createProduct(input: CatalogProductInput) {
       stock: productType === "physical" ? input.stock : 9999,
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
+      orderOnly: productType === "physical" ? Boolean(input.orderOnly) : false,
       specs: input.specs ?? null,
       specsEn: input.specsEn ?? null,
       supplierUrl: input.supplierUrl ?? null,
@@ -1787,6 +1791,7 @@ export async function createProduct(input: CatalogProductInput) {
     stock: productType === "physical" ? input.stock : 9999,
     weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
     purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
+    orderOnly: productType === "physical" ? Boolean(input.orderOnly) : false,
     specs: input.specs,
     specsEn: input.specsEn,
     supplierUrl: input.supplierUrl,
@@ -1822,6 +1827,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       stock: productType === "physical" ? input.stock : 9999,
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
+      orderOnly: productType === "physical" ? Boolean(input.orderOnly) : false,
       specs: input.specs ?? null,
       specsEn: input.specsEn ?? null,
       supplierUrl: input.supplierUrl ?? null,
@@ -1838,6 +1844,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
     type: category.type === "physical" ? "physical" : "digital",
     stock: category.type === "physical" ? input.stock : 9999,
     weightGrams: category.type === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
+    orderOnly: category.type === "physical" ? Boolean(input.orderOnly) : false,
   });
   return { success: true };
 }
@@ -2323,6 +2330,7 @@ export async function getCartItems(userId: number) {
 
 export async function addToCart(userId: number, productId: number, quantity: number, variantId?: number, attributes?: string, fulfillmentMode: 'in_stock' | 'preorder' = 'in_stock') {
   const product = await getProductById(productId);
+  if (product?.orderOnly) fulfillmentMode = "preorder";
   if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
   if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
   let variant: ProductVariantType | undefined;
@@ -2375,6 +2383,7 @@ export async function addManyToCart(userId: number, productId: number, requested
   if (items.length === 0) throw new Error("Hãy chọn ít nhất một SKU để thêm vào giỏ");
 
   const product = await getProductById(productId);
+  if (product?.orderOnly) fulfillmentMode = "preorder";
   if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
   if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
   const variants = product.type === "physical" ? await getProductVariants(productId) : [];
@@ -2502,7 +2511,7 @@ export async function createOrder(userId: number, data: {
     const variants = product.type === "physical" ? await getProductVariants(product.id) : [];
     const variant = item.variantId ? variants.find(candidate => candidate.id === item.variantId) : undefined;
     if (product.type === "physical" && variants.length > 0 && !variant) throw new Error("Hãy chọn biến thể hợp lệ cho hàng vật lý");
-    const fulfillmentMode = item.fulfillmentMode ?? 'in_stock';
+    const fulfillmentMode = product.orderOnly ? "preorder" : (item.fulfillmentMode ?? 'in_stock');
     if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
     const wholesaleTier = product.type === "physical" ? selectWholesaleTier(await getProductWholesaleTiers(product.id), quantityByProduct.get(product.id) ?? item.quantity) : undefined;
     const baseImmediatePrice = Number(wholesaleTier?.unitPrice ?? product.price) + Number(variant?.priceAdjustment ?? 0);

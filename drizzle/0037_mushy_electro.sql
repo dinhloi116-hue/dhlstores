@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `orderOnly` boolean DEFAULT false NOT NULL;

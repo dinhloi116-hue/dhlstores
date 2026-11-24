@@ -37,6 +37,7 @@ const productInput = z.object({
   stock: z.coerce.number().int().min(0).max(999_999).default(0),
   weightGrams: z.coerce.number().int().min(0).max(100_000).default(0),
   purchaseLayout: z.enum(["classic", "marketplace"]).default("classic"),
+  orderOnly: z.boolean().default(false),
   featured: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
@@ -139,6 +140,7 @@ export const catalogAdminRouter = router({
       fileSize: input.data.fileSize || undefined,
       specs: input.data.specs || undefined,
       supplierUrl: input.data.supplierUrl || undefined,
+      orderOnly: input.data.orderOnly,
     }),
   ),
   deleteProduct: adminProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) =>

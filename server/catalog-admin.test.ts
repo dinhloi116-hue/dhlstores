@@ -125,6 +125,36 @@ describe("catalogAdmin", () => {
     expect((await caller.catalogAdmin.products()).find(item => item.id === product!.id)?.purchaseLayout).toBe("classic");
   });
 
+  it("persists order-only physical products and keeps the storefront locked to preorder", async () => {
+    const caller = appRouter.createCaller(createContext("owner"));
+    const suffix = Date.now().toString(36);
+    const physicalCategory = (await caller.catalogAdmin.categories()).find(category => category.slug === "quan-ao-bong-da");
+    const product = await caller.catalogAdmin.createProduct({
+      name: `Order only ${suffix}`,
+      nameEn: `Order only ${suffix}`,
+      slug: `order-only-${suffix}`,
+      description: "Chỉ nhận Order",
+      descriptionEn: "Available by order only",
+      price: 368000,
+      categoryId: physicalCategory!.id,
+      image: "/manus-storage/catalog/order-only.png",
+      stock: 0,
+      purchaseLayout: "marketplace",
+      orderOnly: true,
+      featured: false,
+      isActive: true,
+    });
+
+    expect(product).toMatchObject({ type: "physical", orderOnly: true, purchaseLayout: "marketplace", stock: 0 });
+    const detailSource = readFileSync(resolve(process.cwd(), "client/src/pages/ProductDetail.tsx"), "utf8");
+    const dbSource = readFileSync(resolve(process.cwd(), "server/db.ts"), "utf8");
+    expect(detailSource).toContain("const isOrderOnly = product?.type === \"physical\" && product.orderOnly === true");
+    expect(detailSource).toContain("product.type === \"physical\" && !isOrderOnly && <section");
+    expect(detailSource).toContain("if (isOrderOnly && fulfillmentMode !== \"preorder\")");
+    expect(dbSource).toContain("if (product?.orderOnly) fulfillmentMode = \"preorder\";");
+    expect(dbSource).toContain("const fulfillmentMode = product.orderOnly ? \"preorder\"");
+  });
+
   it("does not expose catalog administration to regular users", async () => {
     const caller = appRouter.createCaller(createContext("user"));
     await expect(caller.catalogAdmin.products()).rejects.toMatchObject({ code: "FORBIDDEN" });
