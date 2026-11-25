@@ -81,3 +81,8 @@
 - [x] Bản lẻ có SKU và tồn kho phải tự chọn SKU đầu tiên còn hàng với số lượng 1, để nút mua không bị khóa ở trạng thái ban đầu.
 - [x] Giữ khu Sỉ yêu cầu khách chọn số lượng SKU thủ công và không làm lộ giá Sỉ cho guest.
 - [x] Thêm hồi quy, kiểm tra preview và chạy test/build/checkpoint.
+
+## Đồng bộ ảnh C1 từ Google Drive — 2026-11-25
+- [x] Lấy đúng 9 ảnh gốc từ thư mục Drive `18UIeCo6SqqkTo54F_GRu-aDSupb1RXEW`.
+- [x] Upload vào storage website và cập nhật gallery cho cả C1 retail, C1 Wholesale.
+- [x] Gắn đúng 8 ảnh SKU `UCL-BOH-BD-05/06/07/09/10/11/12/13`; preview xác nhận đủ 9 gallery và ảnh hiển thị.
