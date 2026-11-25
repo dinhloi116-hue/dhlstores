@@ -92,3 +92,8 @@
 - [x] Cập nhật đồng bộ C1 retail và C1 Wholesale với giá cơ sở 49.000đ, giá vốn 4.100đ, 8 SKU và gallery đủ 9 ảnh từ Google Drive.
 - [x] Đặt tồn kho website ở mức 100 cho sản phẩm và toàn bộ SKU theo yêu cầu mới nhất; giữ retail auto-select SKU đầu tiên, Wholesale guest không auto-select và ẩn giá.
 - [x] Browser preview VI/EN xác nhận tên, giá, gallery 9 ảnh, 8 SKU, số lượng retail ban đầu 1 và tồn kho 100; test/build/check đang được chạy lại.
+
+## Sửa production C1 cover/gallery và cache bundle — 2026-11-25
+- [x] Đưa ảnh tổng hợp C1 làm ảnh cover cố định; không để SKU tự chọn ghi đè cover.
+- [x] Giữ ảnh gallery hiển thị khi tải chậm/lỗi proxy, không để gallery biến thành ô trắng im lặng.
+- [x] Sửa dòng tồn kho không được lộ literal template; tạo build/checkpoint mới để trình duyệt nhận bundle production mới. Regression 230 passed/2 skipped, TypeScript, production build và diff check đạt.

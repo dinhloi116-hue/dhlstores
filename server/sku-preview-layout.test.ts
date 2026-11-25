@@ -393,6 +393,9 @@ describe("public SKU inventory presentation", () => {
     const adminSource = readFileSync(new URL("../client/src/pages/AdminOrders.tsx", import.meta.url), "utf8");
     expect(productSource).toContain("aria-label={lang === 'vi' ? 'Thư viện ảnh sản phẩm' : 'Product image gallery'}");
     expect(productSource).toContain("galleryImages.map");
+    expect(productSource).toContain("[product?.image, ...(product?.gallery || []), selectedVariant?.image]");
+    expect(productSource).toContain("getPublicImageUrl");
+    expect(productSource).toContain('loading="eager" decoding="async"');
     expect(productSource).toContain("setGalleryIndex(index)");
     expect(productSource).toMatch(/overflow-x-auto|grid-cols-4/);
     expect(adminSource).toContain("imageWarnings");

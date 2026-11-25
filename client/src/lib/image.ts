@@ -11,3 +11,11 @@ export function getStoragePreviewFallback(value?: string | null) {
   if (!window.location.hostname.endsWith('.manus.computer')) return null;
   return `https://cuahangtoit-9a4r8wsz.manus.space${url}`;
 }
+
+/** Always use the public deployment for storage images so storefronts do not depend on a local proxy. */
+export function getPublicImageUrl(value?: string | null) {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (/^\/(?:manus-storage|storage)\//i.test(url)) return `https://cuahangtoit-9a4r8wsz.manus.space${url}`;
+  return url;
+}
