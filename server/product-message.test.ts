@@ -35,4 +35,10 @@ describe("product messaging CTA", () => {
     expect(detailSource).toContain("lang === 'vi' ? 'Dung lượng tệp' : 'File size'");
     expect(detailSource).not.toMatch(/>Yêu thích<|>So sánh<|>Sản phẩm thường được mua kèm<|>Đánh giá sản phẩm</);
   });
+
+  it("renders stock labels without leaking a nested language expression", () => {
+    expect(detailSource).toContain('`${availableStock > 0 ? `Còn ${availableStock}` : "Đã hết"} trong kho`');
+    expect(detailSource).toContain('`${availableStock > 0 ? availableStock : "Out of"} stock`');
+    expect(detailSource).not.toContain('{lang === \'vi\' ? \'trong kho\' : \'in stock\'}');
+  });
 });
