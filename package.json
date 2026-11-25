@@ -11,6 +11,7 @@
     "app:run": "pnpm exec cap run android",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
+    "check:production-responsive": "node scripts/production-responsive-smoke.mjs",
     "format": "prettier --write .",
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
