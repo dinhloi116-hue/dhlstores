@@ -86,3 +86,9 @@
 - [x] Lấy đúng 9 ảnh gốc từ thư mục Drive `18UIeCo6SqqkTo54F_GRu-aDSupb1RXEW`.
 - [x] Upload vào storage website và cập nhật gallery cho cả C1 retail, C1 Wholesale.
 - [x] Gắn đúng 8 ảnh SKU `UCL-BOH-BD-05/06/07/09/10/11/12/13`; preview xác nhận đủ 9 gallery và ảnh hiển thị.
+
+## Hợp nhất dữ liệu C1 từ file Excel Sapo — 2026-11-25
+- [x] Dùng file `SAPO-PatchC1BadgeofHonourOvalBacDen-8PhanLoai-49K.xlsx` làm nguồn chuẩn cho tên, mô tả, SEO, tags, thương hiệu, loại sản phẩm, đơn vị và thông tin vận chuyển/kho.
+- [x] Cập nhật đồng bộ C1 retail và C1 Wholesale với giá cơ sở 49.000đ, giá vốn 4.100đ, 8 SKU và gallery đủ 9 ảnh từ Google Drive.
+- [x] Đặt tồn kho website ở mức 100 cho sản phẩm và toàn bộ SKU theo yêu cầu mới nhất; giữ retail auto-select SKU đầu tiên, Wholesale guest không auto-select và ẩn giá.
+- [x] Browser preview VI/EN xác nhận tên, giá, gallery 9 ảnh, 8 SKU, số lượng retail ban đầu 1 và tồn kho 100; test/build/check đang được chạy lại.
