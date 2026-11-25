@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Products = lazy(() => import("@/pages/Products"));
+const Wholesale = lazy(() => import("@/pages/Wholesale"));
 const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
 const CompareProducts = lazy(() => import("@/pages/CompareProducts"));
 const Checkout = lazy(() => import("@/pages/Checkout"));
@@ -32,6 +33,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/products/:slug"} component={ProductDetail} />
       <Route path={"/products"} component={Products} />
+      <Route path={"/wholesale"} component={Wholesale} />
       <Route path={"/product/:slug"} component={ProductDetail} />
       <Route path={"/compare"} component={CompareProducts} />
       <Route path={"/cart"} component={Checkout} />

@@ -23,4 +23,11 @@ describe("catalog type split", () => {
     expect(products).toContain("setDebouncedSearchQuery(searchQuery.trim())");
     expect(products).toContain("search: debouncedSearchQuery || undefined");
   });
+
+  it("keeps wholesale products out of retail surfaces and gives them a separate route", () => {
+    expect(home).toContain('const retailProducts = allProducts.filter(product => product.categorySlug !== "si")');
+    expect(products).toContain('if (wholesaleOnly) return product.categorySlug === "si"');
+    expect(products).toContain('if (product.categorySlug === "si") return false');
+    expect(readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8")).toContain('path={"/wholesale"}');
+  });
 });

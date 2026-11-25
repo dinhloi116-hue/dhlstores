@@ -66,3 +66,8 @@
 - [x] Thêm danh mục vật lý `Sỉ` / `Wholesale` để dùng khi đăng sản phẩm bán sỉ.
 - [x] Seed và tạo danh mục thật trong database theo cơ chế idempotent, không trùng slug.
 - [x] Test category, TypeScript, production build, diff check và kiểm tra storefront hiển thị bộ lọc Wholesale.
+
+## Tách luồng bán lẻ và Wholesale — 2026-11-25
+- [x] Ẩn sản phẩm thuộc danh mục Sỉ khỏi catalog bán lẻ chính và homepage bán lẻ.
+- [x] Tạo route `/wholesale` là trang phụ trong website, có badge/giá đăng nhập và liên kết rõ ràng từ navigation.
+- [x] Kiểm tra guest catalog, test hồi quy, TypeScript, build và diff check; không đánh dấu owner/customer browser nếu chưa có session thật.

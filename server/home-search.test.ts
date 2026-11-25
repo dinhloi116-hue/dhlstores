@@ -6,7 +6,8 @@ describe("home product search", () => {
     const source = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 
     expect(source).toContain('const [searchTerm, setSearchTerm] = useState("")');
-    expect(source).toContain("const suggestions = useMemo(() => !normalizedSearch ? [] : allProducts.filter");
+    expect(source).toContain("const suggestions = useMemo(() => !normalizedSearch ? [] : retailProducts.filter");
+    expect(source).toContain('const retailProducts = allProducts.filter(product => product.categorySlug !== "si")');
     expect(source).toContain("Tìm sản phẩm, SKU, tên áo, patch...");
     expect(source).toContain("href={`/product/${product.slug}`}");
     expect(source).toContain("Không tìm thấy sản phẩm");

@@ -69,8 +69,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     document.documentElement.lang = lang;
     if (location.startsWith("/product") || location.startsWith("/products/")) return;
     const isEnglish = lang === "en";
-    const title = isEnglish ? "DHL Stores | Sports design resources and football apparel" : "DHL Stores | Thư viện tài nguyên thiết kế thể thao";
-    const description = isEnglish ? "Shop football jerseys, namesets, sleeve patches and digital sports design resources at DHL Stores." : "Mua áo bóng đá, nameset, patch tay và tài nguyên thiết kế thể thao tại DHL Stores.";
+    const isWholesalePage = location.startsWith("/wholesale");
+    const title = isWholesalePage ? (isEnglish ? "DHL Stores | Wholesale sports goods" : "DHL Stores | Khu bán Sỉ") : isEnglish ? "DHL Stores | Sports design resources and football apparel" : "DHL Stores | Thư viện tài nguyên thiết kế thể thao";
+    const description = isWholesalePage ? (isEnglish ? "Wholesale football patches and sports goods with sign-in pricing and quantity tiers." : "Khu bán Sỉ patch và hàng thể thao với giá theo đăng nhập và số lượng.") : isEnglish ? "Shop football jerseys, namesets, sleeve patches and digital sports design resources at DHL Stores." : "Mua áo bóng đá, nameset, patch tay và tài nguyên thiết kế thể thao tại DHL Stores.";
     document.title = title;
     const setMeta = (name: string, content: string, property = false) => {
       const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
@@ -311,6 +312,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <nav className="hidden items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1 text-sm font-black md:flex">
             <Link href="/" className={`rounded-lg px-3 py-2 transition-colors hover:bg-white hover:text-sky-600 ${location === '/' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-700'}`}>{navHome}</Link>
             <Link href="/products?type=physical" className={`rounded-lg px-3 py-2 transition-colors hover:bg-white hover:text-sky-600 ${location.includes('type=physical') ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-700'}`}>{lang === 'vi' ? 'Hàng thể thao' : 'Sports shop'}</Link>
+            <Link href="/wholesale" className={`rounded-lg px-3 py-2 transition-colors hover:bg-amber-50 hover:text-amber-700 ${location.startsWith('/wholesale') ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-slate-700'}`}>{lang === 'vi' ? 'Sỉ' : 'Wholesale'}</Link>
             <Link href="/products?type=digital" className={`rounded-lg px-3 py-2 transition-colors hover:bg-white hover:text-sky-600 ${location.includes('type=digital') ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-700'}`}>{navDigital}</Link>
             <Link href="/tools" className={`rounded-lg px-3 py-2 transition-colors hover:bg-white hover:text-sky-600 ${location.startsWith('/tools') ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-700'}`}>{lang === 'vi' ? 'Công cụ' : 'Tools'}</Link>
           </nav>
