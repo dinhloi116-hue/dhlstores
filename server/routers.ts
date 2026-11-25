@@ -45,6 +45,10 @@ function publicUser(user: NonNullable<Awaited<ReturnType<typeof db.getUserByOpen
   return safeUser;
 }
 
+function hideWholesalePrices<T extends db.ProductType>(product: T): T {
+  return product.categorySlug === "si" ? { ...product, price: "0", priceUsd: undefined } : product;
+}
+
 async function createLocalAuthSession(ctx: { req: Parameters<typeof getSessionCookieOptions>[0]; res: { cookie: (name: string, value: string, options: Record<string, unknown>) => void } }, user: NonNullable<Awaited<ReturnType<typeof db.getUserByOpenId>>>) {
   const token = await sdk.createSessionToken(user.openId, { expiresInMs: LOCAL_SESSION_MAX_AGE_MS, name: user.name || user.username || "DHL Stores" });
   ctx.res.cookie(COOKIE_NAME, token, { ...getSessionCookieOptions(ctx.req), maxAge: LOCAL_SESSION_MAX_AGE_MS });
@@ -245,8 +249,9 @@ export const appRouter = router({
         size: z.string().trim().max(64).optional(),
         color: z.string().trim().max(64).optional(),
       }).optional())
-      .query(async ({ input }) => {
-        return await db.getProducts(input);
+      .query(async ({ ctx, input }) => {
+        const products = await db.getProducts(input);
+        return ctx.user ? products : products.map(hideWholesalePrices);
       }),
 
     imageSearch: publicProcedure
@@ -310,12 +315,12 @@ export const appRouter = router({
 
     productBySlug: publicProcedure
       .input(z.object({ slug: z.string() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
         const product = await db.getProductBySlug(input.slug);
         if (!product) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Không tìm thấy tài nguyên" });
         }
-        return product;
+        return ctx.user ? product : hideWholesalePrices(product);
       }),
 
     productReviews: publicProcedure
@@ -367,11 +372,11 @@ export const appRouter = router({
 
     productWholesaleTiers: publicProcedure
       .input(z.object({ productId: z.number().int().positive() }))
-      .query(async ({ input }) => db.getProductWholesaleTiers(input.productId)),
+      .query(async ({ ctx, input }) => ctx.user ? db.getProductWholesaleTiers(input.productId) : []),
 
     productWholesaleTiersForProducts: publicProcedure
       .input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(100) }))
-      .query(async ({ input }) => db.getProductWholesaleTiersForProducts(input.productIds)),
+      .query(async ({ ctx, input }) => ctx.user ? db.getProductWholesaleTiersForProducts(input.productIds) : input.productIds.map(productId => ({ productId, tiers: [] }))),
 
     cart: protectedProcedure.query(async ({ ctx }) => {
       await requireActiveAccount(ctx.user!.id);

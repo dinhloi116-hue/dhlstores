@@ -44,6 +44,8 @@ export interface ProductType {
   weightGrams?: number;
   purchaseLayout?: "classic" | "marketplace";
   orderOnly?: boolean;
+  minimumOrderQuantity?: number;
+  categorySlug?: string;
   specs?: string;
   specsEn?: string;
   supplierUrl?: string;
@@ -571,7 +573,7 @@ function toCategoryType(category: typeof categories.$inferSelect): CategoryType 
   };
 }
 
-function toProductType(product: typeof products.$inferSelect): ProductType {
+function toProductType(product: typeof products.$inferSelect, categorySlug?: string): ProductType {
   const gallery = (() => { try { const parsed = product.gallery ? JSON.parse(product.gallery) : []; return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string" && value.length > 0) : []; } catch { return []; } })();
   return {
     id: product.id,
@@ -584,6 +586,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     priceUsd: product.priceUsd ?? undefined,
     type: product.type,
     categoryId: product.categoryId,
+    categorySlug,
     image: product.image,
     gallery: gallery.length ? gallery : [product.image],
     fileUrl: product.fileUrl ?? undefined,
@@ -593,6 +596,7 @@ function toProductType(product: typeof products.$inferSelect): ProductType {
     weightGrams: product.weightGrams,
     purchaseLayout: product.purchaseLayout ?? "classic",
     orderOnly: product.orderOnly,
+    minimumOrderQuantity: Math.max(1, Number(product.minimumOrderQuantity) || 1),
     specs: product.specs ?? undefined,
     specsEn: product.specsEn ?? undefined,
     featured: product.featured,
@@ -1665,6 +1669,7 @@ export type CatalogProductInput = {
   weightGrams?: number;
   purchaseLayout?: "classic" | "marketplace";
   orderOnly?: boolean;
+  minimumOrderQuantity?: number;
   featured: boolean;
   isActive: boolean;
 };
@@ -1739,7 +1744,7 @@ export async function createProduct(input: CatalogProductInput) {
   const connection = await getDb();
   if (connection) {
     await ensureDefaultCatalog(connection);
-    const category = await connection.select({ type: categories.type }).from(categories).where(eq(categories.id, input.categoryId)).limit(1);
+    const category = await connection.select({ type: categories.type, slug: categories.slug }).from(categories).where(eq(categories.id, input.categoryId)).limit(1);
     if (!category[0]) throw new Error("Không tìm thấy danh mục sản phẩm");
     const productType = category[0].type === "physical" ? "physical" : "digital";
     const inserted = await connection.insert(products).values({
@@ -1761,6 +1766,7 @@ export async function createProduct(input: CatalogProductInput) {
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       orderOnly: productType === "physical" ? Boolean(input.orderOnly) : false,
+      minimumOrderQuantity: productType === "physical" && category[0].slug === "si" ? Math.max(1, Math.floor(input.minimumOrderQuantity ?? 1)) : 1,
       specs: input.specs ?? null,
       specsEn: input.specsEn ?? null,
       supplierUrl: input.supplierUrl ?? null,
@@ -1793,6 +1799,7 @@ export async function createProduct(input: CatalogProductInput) {
     weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
     purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
     orderOnly: productType === "physical" ? Boolean(input.orderOnly) : false,
+    minimumOrderQuantity: productType === "physical" && category.slug === "si" ? Math.max(1, Math.floor(input.minimumOrderQuantity ?? 1)) : 1,
     specs: input.specs,
     specsEn: input.specsEn,
     supplierUrl: input.supplierUrl,
@@ -1807,7 +1814,7 @@ export async function createProduct(input: CatalogProductInput) {
 export async function updateProduct(productId: number, input: CatalogProductInput) {
   const connection = await getDb();
   if (connection) {
-    const category = await connection.select({ type: categories.type }).from(categories).where(eq(categories.id, input.categoryId)).limit(1);
+    const category = await connection.select({ type: categories.type, slug: categories.slug }).from(categories).where(eq(categories.id, input.categoryId)).limit(1);
     if (!category[0]) throw new Error("Không tìm thấy danh mục sản phẩm");
     const productType = category[0].type === "physical" ? "physical" : "digital";
     await connection.update(products).set({
@@ -1829,6 +1836,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
       weightGrams: productType === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
       purchaseLayout: productType === "physical" ? (input.purchaseLayout ?? "classic") : "classic",
       orderOnly: productType === "physical" ? Boolean(input.orderOnly) : false,
+      minimumOrderQuantity: productType === "physical" && category[0].slug === "si" ? Math.max(1, Math.floor(input.minimumOrderQuantity ?? 1)) : 1,
       specs: input.specs ?? null,
       specsEn: input.specsEn ?? null,
       supplierUrl: input.supplierUrl ?? null,
@@ -1846,6 +1854,7 @@ export async function updateProduct(productId: number, input: CatalogProductInpu
     stock: category.type === "physical" ? input.stock : 9999,
     weightGrams: category.type === "physical" ? Math.max(0, input.weightGrams ?? 0) : 0,
     orderOnly: category.type === "physical" ? Boolean(input.orderOnly) : false,
+    minimumOrderQuantity: category.type === "physical" && category.slug === "si" ? Math.max(1, Math.floor(input.minimumOrderQuantity ?? 1)) : 1,
   });
   return { success: true };
 }
@@ -2237,7 +2246,12 @@ export async function getProducts(filter?: {
   let list: ProductType[];
   if (connection) {
     await ensureDefaultCatalog(connection);
-    list = (await connection.select().from(products)).map(toProductType).filter(product => product.isActive !== false);
+    const [rows, categoryRows] = await Promise.all([
+      connection.select().from(products),
+      connection.select({ id: categories.id, slug: categories.slug }).from(categories),
+    ]);
+    const categorySlugById = new Map(categoryRows.map(category => [category.id, category.slug]));
+    list = rows.map(product => toProductType(product, categorySlugById.get(product.categoryId))).filter(product => product.isActive !== false);
   } else {
     list = [...memoryProducts];
   }
@@ -2302,7 +2316,9 @@ export async function getProductBySlug(slug: string) {
   if (connection) {
     await ensureDefaultCatalog(connection);
     const product = await connection.select().from(products).where(eq(products.slug, slug)).limit(1);
-    return product[0] && product[0].isActive ? toProductType(product[0]) : undefined;
+    if (!product[0] || !product[0].isActive) return undefined;
+    const category = await connection.select({ slug: categories.slug }).from(categories).where(eq(categories.id, product[0].categoryId)).limit(1);
+    return toProductType(product[0], category[0]?.slug);
   }
   return memoryProducts.find(p => p.slug === slug);
 }
@@ -2312,7 +2328,9 @@ export async function getProductById(id: number) {
   if (connection) {
     await ensureDefaultCatalog(connection);
     const product = await connection.select().from(products).where(eq(products.id, id)).limit(1);
-    return product[0] ? toProductType(product[0]) : undefined;
+    if (!product[0]) return undefined;
+    const category = await connection.select({ slug: categories.slug }).from(categories).where(eq(categories.id, product[0].categoryId)).limit(1);
+    return toProductType(product[0], category[0]?.slug);
   }
   return memoryProducts.find(p => p.id === id);
 }
@@ -2327,6 +2345,13 @@ export async function getCartItems(userId: number) {
     product: await getProductById(item.productId),
     variant: item.variantId ? (await getProductVariants(item.productId, true)).find(variant => variant.id === item.variantId) : undefined,
   })));
+}
+
+function assertMinimumOrderQuantity(product: ProductType, quantity: number) {
+  const minimum = product.categorySlug === "si" ? Math.max(1, product.minimumOrderQuantity ?? 1) : 1;
+  if (product.categorySlug === "si" && quantity < minimum) {
+    throw new Error(`Sản phẩm Sỉ yêu cầu tối thiểu ${minimum} sản phẩm`);
+  }
 }
 
 export async function addToCart(userId: number, productId: number, quantity: number, variantId?: number, attributes?: string, fulfillmentMode: 'in_stock' | 'preorder' = 'in_stock') {
@@ -2347,6 +2372,7 @@ export async function addToCart(userId: number, productId: number, quantity: num
     const current = await connection.select().from(cartItems).where(eq(cartItems.userId, userId));
     const existing = current.find(item => item.productId === productId && (item.variantId ?? null) === (variantId ?? null) && (item.attributes ?? undefined) === attributes && item.fulfillmentMode === fulfillmentMode);
     const nextQuantity = (existing?.quantity ?? 0) + quantity;
+    assertMinimumOrderQuantity(product, nextQuantity);
     if (fulfillmentMode === 'in_stock' && variant && variant.stock < nextQuantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
     if (fulfillmentMode === 'in_stock' && product.type === "physical" && !variant && product.stock < nextQuantity) throw new Error("Sản phẩm không đủ tồn kho");
     if (existing) await connection.update(cartItems).set({ quantity: nextQuantity }).where(eq(cartItems.id, existing.id));
@@ -2354,6 +2380,7 @@ export async function addToCart(userId: number, productId: number, quantity: num
     return { success: true };
   }
   const existing = memoryCart.find(i => i.userId === userId && i.productId === productId && (i.variantId ?? null) === (variantId ?? null) && i.attributes === attributes && i.fulfillmentMode === fulfillmentMode);
+  assertMinimumOrderQuantity(product, (existing?.quantity ?? 0) + quantity);
   if (existing) {
     if (fulfillmentMode === 'in_stock' && variant && variant.stock < existing.quantity + quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
     existing.quantity += quantity;
@@ -2387,6 +2414,7 @@ export async function addManyToCart(userId: number, productId: number, requested
   if (product?.orderOnly) fulfillmentMode = "preorder";
   if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
   if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
+  assertMinimumOrderQuantity(product, items.reduce((total, item) => total + item.quantity, 0));
   const variants = product.type === "physical" ? await getProductVariants(productId) : [];
   const variantsById = new Map(variants.map(variant => [variant.id, variant]));
 
@@ -2443,6 +2471,7 @@ export async function updateCartItem(userId: number, cartItemId: number, quantit
     const product = await getProductById(item.productId);
     if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
     const nextFulfillmentMode = requestedFulfillmentMode ?? item.fulfillmentMode;
+    assertMinimumOrderQuantity(product, quantity);
     if (nextFulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
     const variant = item.variantId ? (await getProductVariants(item.productId)).find(candidate => candidate.id === item.variantId) : undefined;
     if (product.type === "physical" && item.variantId && !variant) throw new Error("Biến thể sản phẩm hiện không khả dụng");
@@ -2460,6 +2489,7 @@ export async function updateCartItem(userId: number, cartItemId: number, quantit
       const nextFulfillmentMode = requestedFulfillmentMode ?? item.fulfillmentMode;
       if (!product || product.isActive === false) throw new Error("Sản phẩm hiện không khả dụng");
       if (nextFulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
+      assertMinimumOrderQuantity(product, quantity);
       const variant = item.variantId ? (await getProductVariants(item.productId)).find(candidate => candidate.id === item.variantId) : undefined;
       if (product.type === "physical" && item.variantId && !variant) throw new Error("Biến thể sản phẩm hiện không khả dụng");
       if (nextFulfillmentMode === 'in_stock' && variant && variant.stock < quantity) throw new Error("Biến thể đã chọn không đủ tồn kho");
@@ -2513,6 +2543,7 @@ export async function createOrder(userId: number, data: {
     const variant = item.variantId ? variants.find(candidate => candidate.id === item.variantId) : undefined;
     if (product.type === "physical" && variants.length > 0 && !variant) throw new Error("Hãy chọn biến thể hợp lệ cho hàng vật lý");
     const fulfillmentMode = product.orderOnly ? "preorder" : (item.fulfillmentMode ?? 'in_stock');
+    assertMinimumOrderQuantity(product, quantityByProduct.get(product.id) ?? item.quantity);
     if (fulfillmentMode === 'preorder' && product.type !== 'physical') throw new Error("Order trước chỉ áp dụng cho hàng vật lý");
     const wholesaleTier = product.type === "physical" ? selectWholesaleTier(await getProductWholesaleTiers(product.id), quantityByProduct.get(product.id) ?? item.quantity) : undefined;
     const baseImmediatePrice = Number(wholesaleTier?.unitPrice ?? product.price) + Number(variant?.priceAdjustment ?? 0);

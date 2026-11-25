@@ -280,6 +280,7 @@ export const products = mysqlTable("products", {
   weightGrams: int("weightGrams").default(0).notNull(), // Khối lượng mặc định để tính phí SPX
   purchaseLayout: mysqlEnum("purchaseLayout", ["classic", "marketplace"]).default("classic").notNull(), // Bố cục mua hàng riêng cho sản phẩm vật lý
   orderOnly: boolean("orderOnly").default(false).notNull(), // Chỉ nhận đặt trước, không hiển thị mua hàng sẵn có
+  minimumOrderQuantity: int("minimumOrderQuantity").default(1).notNull(), // MOQ dành cho sản phẩm, đặc biệt là danh mục Sỉ
   specs: text("specs"), // Thông tin chi tiết (chất liệu, định dạng, kích thước...)
   specsEn: text("specsEn"), // English product specifications / formats
   supplierUrl: text("supplierUrl"), // Chỉ dùng nội bộ quản trị; không hiển thị cho khách

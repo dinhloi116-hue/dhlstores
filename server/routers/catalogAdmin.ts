@@ -38,6 +38,7 @@ const productInput = z.object({
   weightGrams: z.coerce.number().int().min(0).max(100_000).default(0),
   purchaseLayout: z.enum(["classic", "marketplace"]).default("classic"),
   orderOnly: z.boolean().default(false),
+  minimumOrderQuantity: z.coerce.number().int().min(1).max(999_999).default(1),
   featured: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });

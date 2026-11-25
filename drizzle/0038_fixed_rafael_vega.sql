@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `minimumOrderQuantity` int DEFAULT 1 NOT NULL;
