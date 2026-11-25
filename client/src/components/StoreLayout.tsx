@@ -277,7 +277,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Mobile marketplace header */}
-      <header className="sticky top-0 z-50 border-b border-sky-700/40 bg-[#0b1f5e] px-3 pb-3 pt-2 text-white shadow-md md:hidden">
+      <header className="sticky top-0 z-50 border-b border-sky-700/40 bg-[#0b1f5e] px-3 pb-3 pt-2 text-white shadow-md lg:hidden">
         <div className="mx-auto max-w-lg">
           <div className="flex items-center gap-2">
             <Link href="/" aria-label="DHL Stores" className="shrink-0 rounded-lg bg-white/95 px-2 py-1 text-[11px] font-black leading-none text-[#0b1f5e] shadow-sm">DHL<br /><span className="text-slate-950">STORES</span></Link>
@@ -293,7 +293,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* Main Header */}
-      <header className="sticky top-0 z-50 hidden border-b border-slate-200 bg-white shadow-sm md:block">
+      <header className="sticky top-0 z-50 hidden border-b border-slate-200 bg-white shadow-sm lg:block">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-2 px-2 sm:h-[4.5rem] sm:px-6 lg:px-8 2xl:px-10">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
@@ -309,7 +309,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </Link>
 
           {/* Navigation Links: keep only the four main destinations visible. */}
-          <nav className="hidden items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1 text-sm font-black md:flex">
+          <nav className="hidden items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1 text-sm font-black lg:flex">
             <Link href="/" className={`rounded-lg px-3 py-2 transition-colors hover:bg-white hover:text-sky-600 ${location === '/' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-700'}`}>{navHome}</Link>
             <Link href="/products?type=physical" className={`rounded-lg px-3 py-2 transition-colors hover:bg-white hover:text-sky-600 ${location.includes('type=physical') ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-700'}`}>{lang === 'vi' ? 'Hàng thể thao' : 'Sports shop'}</Link>
             <Link href="/wholesale" className={`rounded-lg px-3 py-2 transition-colors hover:bg-amber-50 hover:text-amber-700 ${location.startsWith('/wholesale') ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-slate-700'}`}>{lang === 'vi' ? 'Sỉ' : 'Wholesale'}</Link>
@@ -350,7 +350,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="flex w-[min(100vw,26rem)] flex-col border-slate-200 bg-white text-slate-900 max-md:inset-x-0 max-md:bottom-0 max-md:top-auto max-md:h-[min(78vh,42rem)] max-md:w-full max-md:max-w-none max-md:rounded-t-3xl max-md:rounded-b-none sm:max-w-md">
+              <SheetContent className="flex w-[min(100vw,26rem)] flex-col border-slate-200 bg-white text-slate-900 max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:h-[min(78vh,42rem)] max-lg:w-full max-lg:max-w-none max-lg:rounded-t-3xl max-lg:rounded-b-none sm:max-w-md">
                 <SheetHeader className="border-b border-slate-100 pb-4">
                   <SheetTitle className="text-slate-900 flex items-center justify-between font-bold">
                     <span>{t.cartTitle}</span>
@@ -447,7 +447,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 )}
               </SheetContent>
             </Sheet>
-            {isAuthenticated && cartItems.length > 0 && <div className="pointer-events-none invisible absolute right-0 top-full z-[70] hidden w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 md:block group-hover/cart:pointer-events-auto group-hover/cart:visible group-hover/cart:opacity-100 group-focus-within/cart:pointer-events-auto group-focus-within/cart:visible group-focus-within/cart:opacity-100"><div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"><div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2"><p className="text-xs font-black text-slate-900">Giỏ hàng đã chọn</p><span className="text-[10px] font-black text-sky-700">{cartItemCount} sản phẩm</span></div><div className="mt-2 space-y-1">{cartItems.slice(0, 3).map(item => item.product ? <div key={item.id} className="flex items-center gap-2 rounded-lg p-1.5"><img src={item.product.image} alt="" className="h-9 w-9 rounded-md border border-slate-200 object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold text-slate-800">{item.product.name}</p><p className="text-[10px] text-slate-500">× {item.quantity}</p></div></div> : null)}</div><div className={`mt-3 rounded-xl border p-2.5 transition-colors duration-300 ${freeShippingRemaining > 0 ? 'border-emerald-100 bg-emerald-50' : 'border-sky-300 bg-sky-50 animate-[pulse_1.8s_ease-in-out_1]'}`}><div className={`flex items-center justify-between gap-2 text-[10px] font-black ${freeShippingRemaining > 0 ? 'text-emerald-900' : 'text-sky-950'}`}><span>{freeShippingRemaining > 0 ? `Mua thêm ${formatCurrency(freeShippingRemaining)} để đạt mốc freeship` : 'Chúc mừng! Đơn đã đạt mốc freeship dự kiến'}</span><span>{freeShippingProgress}%</span></div><div className={`mt-1.5 h-1.5 overflow-hidden rounded-full ${freeShippingRemaining > 0 ? 'bg-emerald-100' : 'bg-sky-200'}`}><div className={`h-full rounded-full transition-[width] duration-500 ${freeShippingRemaining > 0 ? 'bg-emerald-500' : 'bg-sky-500'}`} style={{ width: `${freeShippingProgress}%` }} /></div><p className={`mt-1 text-[9px] font-semibold ${freeShippingRemaining > 0 ? 'text-emerald-700' : 'text-sky-800'}`}>Mốc tham khảo: {formatCurrency(freeShippingThreshold)} · áp dụng theo chính sách vận chuyển hiện hành</p></div>{cartItems.length > 3 && <p className="mt-2 text-center text-[10px] font-semibold text-slate-500">và {cartItems.length - 3} sản phẩm khác</p>}<Link href="/cart" className="mt-3 block rounded-xl bg-slate-900 px-3 py-2.5 text-center text-xs font-black text-white transition-colors hover:bg-sky-500 hover:text-slate-950">Xem toàn bộ giỏ hàng</Link></div></div>}
+            {isAuthenticated && cartItems.length > 0 && <div className="pointer-events-none invisible absolute right-0 top-full z-[70] hidden w-80 pt-3 opacity-0 transition-[opacity,visibility] duration-150 lg:block group-hover/cart:pointer-events-auto group-hover/cart:visible group-hover/cart:opacity-100 group-focus-within/cart:pointer-events-auto group-focus-within/cart:visible group-focus-within/cart:opacity-100"><div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"><div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2"><p className="text-xs font-black text-slate-900">Giỏ hàng đã chọn</p><span className="text-[10px] font-black text-sky-700">{cartItemCount} sản phẩm</span></div><div className="mt-2 space-y-1">{cartItems.slice(0, 3).map(item => item.product ? <div key={item.id} className="flex items-center gap-2 rounded-lg p-1.5"><img src={item.product.image} alt="" className="h-9 w-9 rounded-md border border-slate-200 object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold text-slate-800">{item.product.name}</p><p className="text-[10px] text-slate-500">× {item.quantity}</p></div></div> : null)}</div><div className={`mt-3 rounded-xl border p-2.5 transition-colors duration-300 ${freeShippingRemaining > 0 ? 'border-emerald-100 bg-emerald-50' : 'border-sky-300 bg-sky-50 animate-[pulse_1.8s_ease-in-out_1]'}`}><div className={`flex items-center justify-between gap-2 text-[10px] font-black ${freeShippingRemaining > 0 ? 'text-emerald-900' : 'text-sky-950'}`}><span>{freeShippingRemaining > 0 ? `Mua thêm ${formatCurrency(freeShippingRemaining)} để đạt mốc freeship` : 'Chúc mừng! Đơn đã đạt mốc freeship dự kiến'}</span><span>{freeShippingProgress}%</span></div><div className={`mt-1.5 h-1.5 overflow-hidden rounded-full ${freeShippingRemaining > 0 ? 'bg-emerald-100' : 'bg-sky-200'}`}><div className={`h-full rounded-full transition-[width] duration-500 ${freeShippingRemaining > 0 ? 'bg-emerald-500' : 'bg-sky-500'}`} style={{ width: `${freeShippingProgress}%` }} /></div><p className={`mt-1 text-[9px] font-semibold ${freeShippingRemaining > 0 ? 'text-emerald-700' : 'text-sky-800'}`}>Mốc tham khảo: {formatCurrency(freeShippingThreshold)} · áp dụng theo chính sách vận chuyển hiện hành</p></div>{cartItems.length > 3 && <p className="mt-2 text-center text-[10px] font-semibold text-slate-500">và {cartItems.length - 3} sản phẩm khác</p>}<Link href="/cart" className="mt-3 block rounded-xl bg-slate-900 px-3 py-2.5 text-center text-xs font-black text-white transition-colors hover:bg-sky-500 hover:text-slate-950">Xem toàn bộ giỏ hàng</Link></div></div>}
             </div>
 
             {isAuthenticated && user && <Link href="/account#orders" aria-label={lang === 'vi' ? 'Thông báo đơn hàng' : 'Order notifications'} className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"><Bell className="h-4 w-4" />{attentionOrderCount > 0 && <Badge className="absolute -right-2 -top-2 min-w-5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white">{attentionOrderCount > 99 ? '99+' : attentionOrderCount}</Badge>}</Link>}
@@ -488,7 +488,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden text-slate-700"
+              className="lg:hidden text-slate-700"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -497,7 +497,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden max-h-[calc(100vh-5rem)] overflow-y-auto bg-white border-b border-slate-200 px-4 py-5 shadow-lg">
+          <div className="lg:hidden max-h-[calc(100vh-5rem)] overflow-y-auto bg-white border-b border-slate-200 px-4 py-5 shadow-lg">
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="mb-3 block text-sm font-semibold text-slate-800 hover:text-sky-600">{navHome}</Link>
             <div className="space-y-3">{navGroups.map(group => { const Icon = group.icon; return <section key={group.key} className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><Link href={group.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-3 text-sm font-black text-slate-900 shadow-sm"><span className="flex items-center gap-2"><Icon className={`h-4 w-4 ${group.accent}`} />{group.label}</span><span className="text-xs text-slate-400">Mở →</span></Link><div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">{group.children.map(child => <Link key={child.id} href={child.href} onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white hover:text-sky-700">{child.name}</Link>)}</div></section>; })}</div>
             <Link href="/tools" onClick={() => setMobileMenuOpen(false)} className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-800 hover:text-sky-600"><WandSparkles className="w-4 h-4 text-cyan-600" /> Thư viện công cụ</Link>

@@ -7,8 +7,8 @@ describe("mobile commerce UX", () => {
     expect(layout).toContain("Điều hướng nhanh trên điện thoại");
     expect(layout).toContain("md:hidden");
     expect(layout).toContain("pb-16");
-    expect(layout).toContain("max-md:inset-x-0");
-    expect(layout).toContain("max-md:h-[min(78vh,42rem)]");
+    expect(layout).toContain("max-lg:inset-x-0");
+    expect(layout).toContain("max-lg:h-[min(78vh,42rem)]");
   });
 
   it("lazy-loads repeated home catalog images for mobile performance", () => {

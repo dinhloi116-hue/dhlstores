@@ -486,3 +486,18 @@ describe("HD football purchase selector", () => {
     expect(source).toContain("Order via Zalo");
   });
 });
+
+describe("storefront preview responsive header", () => {
+  it("keeps tablet preview widths on the compact header until the desktop lg breakpoint", () => {
+    const source = readFileSync(new URL("../client/src/components/StoreLayout.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("shadow-md lg:hidden");
+    expect(source).toContain("shadow-sm lg:block");
+    expect(source).toContain("font-black lg:flex");
+    expect(source).toContain("max-lg:inset-x-0");
+    expect(source).toContain("max-lg:h-[min(78vh,42rem)]");
+    expect(source).toContain("duration-150 lg:block group-hover/cart");
+    expect(source).toContain("className=\"lg:hidden text-slate-700\"");
+    expect(source).toContain("className=\"lg:hidden max-h-[calc(100vh-5rem)]");
+  });
+});
