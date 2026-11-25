@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#fff7fa">
+<title>Liên hệ qua Zalo · Thỏ Handmade</title>
+<meta name="description" content="Liên hệ đặt hàng Thỏ Handmade qua Zalo 0399 865 463.">
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(circle at 10% -10%,#fddbe6,transparent 50%),#fff8fa;color:#49373e;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+main{max-width:480px;margin:0 auto;padding:24px 18px 50px}
+.back{display:inline-flex;align-items:center;gap:7px;color:#98526f;text-decoration:none;font-weight:650;font-size:14px}
+.card{margin-top:25px;padding:28px 20px 30px;text-align:center;background:#fff;border:1px solid #f1d5de;border-radius:27px;box-shadow:0 14px 40px #a45d7520}
+.logo{display:grid;place-items:center;width:94px;height:94px;border-radius:26px;background:#edf5ff;margin:0 auto 18px}
+.logo img{width:68px;height:68px;object-fit:contain}
+h1{font-size:25px;line-height:1.3;margin:12px 0 7px;letter-spacing:-.6px}p{color:#826c76;font-size:14px;line-height:1.7}
+.number{font-size:28px;font-weight:800;letter-spacing:.3px;color:#9d4a6b;margin:18px 0}
+.actions{display:grid;gap:11px;margin-top:20px}
+.action{border:0;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:9px;min-height:55px;font-weight:800;font-size:15px;text-decoration:none;cursor:pointer}
+.primary{background:#d06489;color:white;box-shadow:0 8px 22px #d0648930}
+.secondary{background:#eaf4ff;color:#0965ce;border:1px solid #badbfc}
+.note{text-align:left;margin:20px 0 0;padding:15px;background:#fff6f8;border:1px solid #f2dbe2;border-radius:15px;color:#806d72;font-size:13px;line-height:1.8}
+.note b{color:#a05070}
+small{display:block;color:#a18a92;margin-top:16px;line-height:1.6}
+.status{font-size:13px;color:#407047;min-height:20px;margin:6px 0 0}
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="./" data-vi="← Quay lại Thỏ Handmade" data-en="← Back to Tho Handmade">← Quay lại Thỏ Handmade</a>
+<section class="card">
+<div class="logo"><img src="https://cdn.simpleicons.org/zalo/0068FF" alt="Zalo" width="68" height="68"></div>
+<p style="font-weight:800;letter-spacing:1.4px;color:#a65b7c;font-size:11px;margin:0">THỎ HANDMADE ♡</p>
+<h1 data-vi="Liên hệ qua Zalo" data-en="Contact us on Zalo">Liên hệ qua Zalo</h1>
+<p data-vi="TikTok đôi khi không mở được Zalo trực tiếp. Bạn có thể sao chép số điện thoại rồi tìm trong ứng dụng Zalo." data-en="TikTok may not open Zalo directly. You can copy our phone number and search for it in the Zalo app.">TikTok đôi khi không mở được Zalo trực tiếp. Bạn có thể sao chép số điện thoại rồi tìm trong ứng dụng Zalo.</p>
+<div class="number" id="number">0399 865 463</div>
+<div class="actions">
+<button class="action primary" type="button" id="copy" data-vi="📋 Sao chép số Zalo" data-en="📋 Copy Zalo number">📋 Sao chép số Zalo</button>
+<a class="action secondary" href="https://zalo.me/0399865463" rel="noopener noreferrer" data-vi="↗ Thử mở ứng dụng Zalo" data-en="↗ Try opening Zalo">↗ Thử mở ứng dụng Zalo</a>
+</div>
+<div id="status" role="status" aria-live="polite" class="status"></div>
+<div class="note">
+<b data-vi="Nếu TikTok hiện trang trắng:" data-en="If TikTok shows a blank page:">Nếu TikTok hiện trang trắng:</b>
+<div data-vi="1. Quay lại đây và bấm Sao chép số Zalo.<br>2. Mở ứng dụng Zalo trên điện thoại.<br>3. Dán 0399865463 vào ô tìm kiếm để nhắn shop.<br><br>Hoặc bấm ⋯ trong TikTok và chọn mở bằng Chrome nếu có tùy chọn đó." data-en="1. Return here and tap Copy Zalo number.<br>2. Open the Zalo app on your phone.<br>3. Search for 0399865463 and message us.<br><br>Alternatively, choose ⋯ → Open in browser in TikTok if available." id="instructions">1. Quay lại đây và bấm Sao chép số Zalo.<br>2. Mở ứng dụng Zalo trên điện thoại.<br>3. Dán 0399865463 vào ô tìm kiếm để nhắn shop.<br><br>Hoặc bấm ⋯ trong TikTok và chọn mở bằng Chrome nếu có tùy chọn đó.</div>
+</div>
+<small data-vi="Số Zalo đặt hàng: 0399865463" data-en="Zalo order contact: +84 399 865 463">Số Zalo đặt hàng: 0399865463</small>
+</section>
+</main>
+<script>
+(function(){
+const q=new URLSearchParams(location.search).get('lang');let saved=null;try{saved=localStorage.getItem('tho_handmade_bio_language')}catch{}
+const lang=(q==='vi'||q==='en')?q:((saved==='vi'||saved==='en')?saved:((navigator.language||'').toLowerCase().startsWith('vi')?'vi':'en'));
+document.documentElement.lang=lang;
+document.querySelectorAll('[data-vi][data-en]').forEach(el=>{if(el.id==='instructions')el.innerHTML=el.getAttribute('data-'+lang);else el.textContent=el.getAttribute('data-'+lang)});
+const button=document.getElementById('copy');const status=document.getElementById('status');
+button.addEventListener('click',async()=>{try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText('0399865463');else{const x=document.createElement('textarea');x.value='0399865463';x.style.position='fixed';x.style.opacity='0';document.body.appendChild(x);x.select();if(!document.execCommand('copy'))throw new Error('copy failed');x.remove()}status.textContent=lang==='vi'?'Đã sao chép! Mở Zalo và dán số vào tìm kiếm.':'Copied! Open Zalo and paste the number into search.';}catch{status.textContent=lang==='vi'?'Không sao chép tự động được. Hãy ghi lại số 0399865463.':'Copy unavailable. Please note the number 0399865463.'}});
+})();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@
  function label(){return VI()?'↻ CẬP NHẬT':'↻ UPDATE';}
  function message(vi,en){return VI()?vi:en;}
  function run(){
-  var button=E('reloadGit'),shell=null,fso=null,launcher=null,path='',rc=-1,base;
+  var button=E('reloadGit'),shell=null,fso=null,launcher=null,path='',rc=-1,base,activeDir='',url='';
   if(busy)return false;
   busy=true;
   try{
@@ -14,6 +14,16 @@
    shell=new ActiveXObject('WScript.Shell');
    fso=new ActiveXObject('Scripting.FileSystemObject');
    path=shell.ExpandEnvironmentStrings('%TEMP%')+'\\DHL_NAMESET_LATEST_LAUNCH.ps1';
+   // Resolve the very file displayed in Corel, not another installed version.
+   try{
+    url=window.location.href.split('?')[0].split('#')[0];
+    if(/^file:\/\/\//i.test(url)){
+     activeDir=decodeURIComponent(url.replace(/^file:\/\/\//i,'')).replace(/\//g,'\\');
+     if(/^\\[A-Za-z]:\\/.test(activeDir))activeDir=activeDir.substring(1);
+     if(/\\DockerUI\.html$/i.test(activeDir))activeDir=activeDir.replace(/\\DockerUI\.html$/i,'');
+     else activeDir='';
+    }
+   }catch(activeErr){activeDir='';}
    // Bootstrap ONLY the up-to-date PowerShell updater from main.
    // No old BAT launcher, no historical patch loop, no addon reinstall.
    var ps=
@@ -21,10 +31,12 @@
     "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12\r\n"+
     "$url='https://raw.githubusercontent.com/dinhloi116-hue/dhlstores/main/tools/tach-nameset-a3/UPDATE_DHL_NAMESET.ps1?fresh=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()\r\n"+
     "$dst=Join-Path $env:TEMP 'UPDATE_DHL_NAMESET_LATEST.ps1'\r\n"+
+    "$activeDir='"+activeDir.replace(/'/g,"''")+"'\r\n"+
     "try {\r\n"+
     "  Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dst -TimeoutSec 30\r\n"+
     "  $ps=Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'\r\n"+
     "  $arg=@('-NoProfile','-ExecutionPolicy','Bypass','-File',('\"'+$dst+'\"'))\r\n"+
+    "  if($activeDir){$arg+=@('-CurrentAddonDir',('\"'+$activeDir+'\"'))}\r\n"+
     "  $child=Start-Process -FilePath $ps -Verb RunAs -ArgumentList $arg -Wait -PassThru\r\n"+
     "  exit $child.ExitCode\r\n"+
     "} catch { Write-Host ('UPDATE FAILED: '+$_.Exception.Message); exit 1 }\r\n";

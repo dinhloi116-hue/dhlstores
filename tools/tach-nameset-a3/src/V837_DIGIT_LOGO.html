@@ -155,9 +155,64 @@ function collectNumbers(root,out,depth){
  try{kids=root.Shapes;}catch(e){}
  if(kids)try{for(i=1;i<=kids.Count;i++)collectNumbers(kids.Item(i),out,depth+1);}catch(x){}
 }
+function inspectManual(){
+ // Strictly read-only inspection. No duplicates, grouping, or artwork changes.
+ if(!prefs.on)throw err('Bật chèn logo trước khi kiểm tra.','Enable logo insertion before inspecting.');
+ var source=getLogo(),a=app(),doc=a.ActiveDocument,old=doc.Unit,ss=[],nums=[],count=0,i,j,sh,w,h,slots,summary=[],t;
+ try{
+  doc.Unit=3;ss=selected(a);
+  if(!ss.length)throw err('Chọn số hoặc Group nameset cần chèn logo.','Select digit text or a nameset Group.');
+  for(i=0;i<ss.length;i++){
+   if(ss[i]===source)throw err('Không chọn logo nguồn cùng với số đích.','Do not select the source logo with targets.');
+   if(tagged(ss[i],0))throw err('Đã có logo chân số trong Group đã chọn.','Selected Group already contains a digit logo.');
+   // Prevent accidentally regrouping the source logo when a Group contains it.
+   if(containsShape(ss[i],source,0))throw err('Group đích đang chứa logo nguồn.','A target Group contains the source logo.');
+   collectNumbers(ss[i],nums,0);
+  }
+  if(nums.length){
+   for(i=0;i<nums.length;i++){
+    sh=nums[i].shape;w=Math.abs(Number(sh.SizeWidth));h=Math.abs(Number(sh.SizeHeight));
+    if(!(w>0&&h>0))throw err('Số có kích thước không hợp lệ.','A number has invalid size.');
+    // Do not duplicate text during inspection; glyph placement is checked on apply.
+    count+=prefs.mode==='whole'?1:nums[i].text.length;
+    if(i<5)summary.push(nums[i].text);
+   }
+  }else{
+   if(ss.length>3)throw err('Curves: chỉ chọn trực tiếp tối đa 3 chữ số riêng biệt.','Curves: select at most 3 separate digit shapes.');
+   for(i=0;i<ss.length;i++){
+    sh=ss[i];
+    try{if(sh.Shapes&&Number(sh.Shapes.Count)>0)throw err('Group Curves chưa thể nhận diện từng chữ số.','Cannot infer separate digits inside a Curves Group.');}
+    catch(e){if(e.message&&/Group Curves|Curves Group/.test(e.message))throw e;}
+    w=Math.abs(Number(sh.SizeWidth));h=Math.abs(Number(sh.SizeHeight));
+    if(!(w>0&&h>0))throw err('Curves có kích thước không hợp lệ.','Invalid vector digit size.');
+    count++;if(i<5)summary.push(String(sh.Name||'Curve'));
+   }
+  }
+  if(count<1)throw err('Không xác định được chữ số để chèn logo.','No eligible digits found.');
+  var fingerprint=[String(doc.Name||''),prefs.mode,prefs.pct,prefs.bottom,prefs.inset,ss.length,count];
+  for(i=0;i<ss.length;i++)fingerprint.push(String(ss[i].Name||''),Number(ss[i].CenterX),Number(ss[i].CenterY),Number(ss[i].SizeWidth),Number(ss[i].SizeHeight));
+  return{targets:ss.length,logos:count,mode:prefs.mode,summary:summary.join(', '),signature:fingerprint.join('|'),warning:'Vị trí glyph của Text nhiều chữ số được đo khi chèn; phải kiểm tra trực quan trước khi in.'};
+ }finally{try{doc.Unit=old;}catch(x){}}
+}
+function containsShape(root,target,depth){
+ if(root===target)return true;
+ if(depth>=12)return false;
+ var kids,i;try{kids=root.Shapes;}catch(x){}
+ if(kids)try{for(i=1;i<=kids.Count;i++)if(containsShape(kids.Item(i),target,depth+1))return true;}catch(e){}
+ return false;
+}
+function configure(v){
+ if(!v)throw err('Thiếu thông số logo.','Missing logo settings.');
+ var pct=Number(v.pct),bottom=Number(v.bottom),inset=Number(v.inset);
+ if(!isFinite(pct)||pct<2||pct>30||!isFinite(bottom)||bottom<0||bottom>30||!isFinite(inset)||inset<0||inset>10)
+  throw err('Cỡ 2–30%, cách đáy 0–30 mm, lề ngang 0–10 mm.','Use size 2–30%, bottom offset 0–30 mm, side inset 0–10 mm.');
+ prefs.on=!!v.on;prefs.pct=pct;prefs.bottom=bottom;prefs.inset=inset;prefs.mode=v.mode==='whole'?'whole':'per';notify();
+ return{on:prefs.on,pct:prefs.pct,bottom:prefs.bottom,inset:prefs.inset,mode:prefs.mode};
+}
 function manual(){
  var a=null,doc=null,old=null,ss=[],nums=[],logos=[],grouped=null,range,i,j,k,layer,cmd=false,source;
  try{
+  inspectManual();
   if(!prefs.on)throw err('Hãy bật CHÈN LOGO trước.','Enable INSERT LOGO first.');
   source=getLogo();a=app();ss=selected(a);
   if(!ss.length)throw err('Chọn số hoặc Group nameset cần chèn logo.','Select a number or nameset Group.');
@@ -237,7 +292,7 @@ function start(){
  },120);return r;};wrap._v837=true;window.setLanguage=wrap;}
 }
 readSaved();
-window.DHLNumberLogo={capture:capture,manual:manual,intoNumber:intoNumber,on: function(){return prefs.on;},available:available,settings:function(){return{on:prefs.on,pct:prefs.pct,bottom:prefs.bottom,inset:prefs.inset,mode:prefs.mode};},signature:signature,parkSource:parkSource};
+window.DHLNumberLogo={capture:capture,manual:manual,inspectManual:inspectManual,configure:configure,intoNumber:intoNumber,on: function(){return prefs.on;},available:available,settings:function(){return{on:prefs.on,pct:prefs.pct,bottom:prefs.bottom,inset:prefs.inset,mode:prefs.mode};},signature:signature,parkSource:parkSource};
 if(window.addEventListener)window.addEventListener('load',function(){setTimeout(start,1000);},false);
 else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(start,1000);});
 else setTimeout(start,1200);

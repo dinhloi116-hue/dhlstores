@@ -7,6 +7,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const BioLanding = lazy(() => import("@/pages/BioLanding"));
+const ThoBioLanding = lazy(() => import("@/pages/ThoBioLanding"));
 const Products = lazy(() => import("@/pages/Products"));
 const Wholesale = lazy(() => import("@/pages/Wholesale"));
 const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
@@ -31,6 +33,8 @@ function Router() {
   return (
     <Suspense fallback={<main className="grid min-h-screen place-items-center bg-slate-50 p-6 text-center text-sm font-semibold text-slate-600">Đang tải trang…</main>}><Switch>
       <Route path={"/"} component={Home} />
+      <Route path="/bio" component={BioLanding} />
+      <Route path="/tho-bio" component={ThoBioLanding} />
       <Route path={"/products/:slug"} component={ProductDetail} />
       <Route path={"/products"} component={Products} />
       <Route path={"/wholesale"} component={Wholesale} />

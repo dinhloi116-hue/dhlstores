@@ -1,0 +1,728 @@
+<!-- DHL Nest Studio V8.58: true preview before Corel mutation, no legacy reimplementation -->
+<style id="dhl-v858-studio-style">
+#v846QuickPanel.v858-primary > *{display:none!important}
+#v846QuickPanel.v858-primary > #v858Launcher{display:block!important}
+#v858Launcher{padding:10px!important;margin:4px 0 10px!important;background:#f6faff!important;border:1px solid #bcd3e9!important;border-radius:8px!important}
+#v858Launcher h4{font-size:13px!important;color:#123a62!important;margin:0 0 6px!important;font-weight:800!important}
+#v858Launcher p{font-size:10px!important;line-height:1.5!important;color:#41617e!important;margin:4px 0 9px!important}
+#v858Launcher button{width:100%!important;min-height:37px!important;border-radius:6px!important;font-size:12px!important;font-weight:800!important;color:#fff!important;background:#1267ad!important;border:1px solid #12538a!important;margin:3px 0!important}
+#v858Launcher #v858Legacy{background:#fff!important;color:#375d7b!important;border-color:#b9cddd!important;font-size:10px!important;min-height:27px!important}
+#v858Status{font-size:10px!important;line-height:1.5!important;white-space:normal!important;word-wrap:break-word!important;color:#345875!important;margin-top:7px!important}
+</style>
+<script id="dhl-v858-nest-studio" type="text/javascript">
+(function(){
+/* All dimensions internally millimetres. ES5/IE11/MSHTML. The pop-up is a
+   preview-only document. Only apply() opens a Corel command group. */
+var current=null,popup=null,choice=0,original=false,zoom=1,ready=false,attempt=0,quantityInputs=[];
+function E(id){return document.getElementById(id);}
+function vi(){try{return currentLang!=='en';}catch(e){return true;}}
+function T(a,b){return vi()?a:b;}
+function err(a,b){return new Error(T(a,b));}
+function esc(t){return String(t===null||t===undefined?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function n(v){return Number(v);}
+function finite(v){return typeof v==='number'&&isFinite(v);}
+function rnd(v){return Math.round(v*10)/10;}
+function app(){var a=null;try{a=window.external&&window.external.Application;}catch(e){}
+ if(!a&&typeof corelApp==='function')a=corelApp();
+ if(!a||!a.ActiveDocument)throw err('Hãy mở file CorelDRAW.','Open a CorelDRAW document.');
+ return a;
+}
+function docId(d){try{return String(d.FullFileName||d.Name||'');}catch(e){try{return String(d.Name||'');}catch(f){return '';}}}
+function grouped(sh){try{if(sh.Shapes&&n(sh.Shapes.Count)>0)return true;}catch(e){}
+ try{return /^DHL_EXCEL_ROW_\d+/.test(String(sh.Name||''));}catch(x){return false;}}
+function shapeDims(sh){
+ var w=Math.abs(n(sh.SizeWidth)),h=Math.abs(n(sh.SizeHeight)),x=n(sh.CenterX),y=n(sh.CenterY);
+ if(!(w>0&&h>0&&finite(x)&&finite(y)))throw err('Đối tượng có kích thước không hợp lệ.','Shape dimensions are invalid.');
+ return{w:w,h:h,x:x,y:y};
+}
+function rectFootprint(sh,d){
+ var root={pts:[{x:0,y:0},{x:d.w,y:0},{x:d.w,y:d.h},{x:0,y:d.h}],closed:true,
+  bb:{l:0,t:0,r:d.w,b:d.h,w:d.w,h:d.h}};
+ return{shape:sh,w:d.w,h:d.h,ang:0,area:d.w*d.h,leaves:[{loops:[root],bb:root.bb}],
+  anchors:[{x:0,y:0},{x:d.w,y:0},{x:d.w,y:d.h},{x:0,y:d.h}],rectangle:true};
+}
+function footprint(sh,d){
+ var G=window.DHLContourGeometry,fp=null;
+ if(G&&typeof G.footprintAt==='function'){try{fp=G.footprintAt(sh,0);}catch(e){}}
+ if(!fp||!fp.leaves||!fp.leaves.length)return rectFootprint(sh,d);
+ fp.shape=sh;fp.ang=0;return fp;
+}
+function signature(fp){
+ var arr=[rnd(fp.w),rnd(fp.h),fp.leaves.length],i,j,k,l,pts,p,step;
+ for(i=0;i<fp.leaves.length;i++){
+  l=fp.leaves[i];arr.push(l.loops.length);
+  for(j=0;j<l.loops.length;j++){
+   pts=l.loops[j].pts;arr.push(pts.length,l.loops[j].closed?1:0);
+   step=Math.max(1,Math.floor(pts.length/6));
+   for(k=0;k<pts.length;k+=step){p=pts[k];arr.push(rnd(p.x),rnd(p.y));}
+  }
+ }
+ return arr.join('|');
+}
+function capture(){
+ var a=app(),doc=a.ActiveDocument,old=doc.Unit,sel=a.ActiveSelectionRange,
+     rows=[],i,sh,d,fp;
+ if(!sel||!n(sel.Count))throw err('Hãy chọn các đối tượng cần dàn trong Corel.','Select shapes to nest in Corel.');
+ if(n(sel.Count)>400)throw err('Tối đa 400 đối tượng mỗi lượt. Chia vùng chọn thành nhiều đợt.','Limit 400 objects per run; split the selection.');
+ try{
+  doc.Unit=3;
+  for(i=1;i<=sel.Count;i++){
+   sh=sel.Item(i);
+   // Use exactly the top-level selected objects. Never ungroup existing namesets;
+   // loose individual curves/text are valid material pieces in Nest Studio.
+   d=shapeDims(sh);fp=footprint(sh,d);
+   rows.push({shape:sh,index:i-1,sourceIndex:i-1,copyIndex:0,w:d.w,h:d.h,area:d.w*d.h,
+    snapshot:d,fp:fp,signature:signature(fp),grouped:grouped(sh)});
+  }
+  if(!rows.length)throw err('Vùng chọn rỗng.','Selection is empty.');
+  return{app:a,document:doc,identity:docId(doc),sourceItems:rows,items:rows,
+    quantities:rows.map(function(){return 1;})};
+ }finally{try{doc.Unit=old;}catch(e){}}
+}
+function expandQuantities(state,qty){
+ // Build a virtual item for each physical print. No Corel Duplicate until Apply.
+ var sources=state.sourceItems||state.items,out=[],i,j,row;
+ if(!qty||qty.length!==sources.length)throw err('Danh sách số lượng không khớp vùng chọn.','Quantity list does not match selection.');
+ for(i=0;i<sources.length;i++){
+  if(!finite(qty[i])||qty[i]<1||qty[i]>100||Math.floor(qty[i])!==qty[i])
+   throw err('Số lượng in phải là số nguyên từ 1 đến 100.','Print quantity must be an integer from 1 to 100.');
+  for(j=0;j<qty[i];j++){
+   row=sources[i];
+   out.push({shape:row.shape,index:out.length,sourceIndex:i,copyIndex:j,
+    w:row.w,h:row.h,area:row.area,snapshot:row.snapshot,
+    fp:row.fp,signature:row.signature,grouped:row.grouped});
+   if(out.length>400)throw err('Tổng số bản in tối đa 400 mỗi lượt. Hãy chia đơn hàng.','Maximum 400 prints per run. Split the job.');
+  }
+ }
+ return out;
+}
+function quantityName(row,i){
+ var name='';
+ try{name=String(row.shape.Name||'');}catch(e){}
+ if(!name||/^\s*$/.test(name))name=T('Mẫu ','Design ')+(i+1);
+ return name.length>70?name.substring(0,67)+'...':name;
+}
+function renderQuantities(state){
+ if(!popup||popup.closed)return false;
+ var d=popup.document,wrap=d.getElementById('nsQuantities'),sources=state.sourceItems||state.items,
+     i,row,label,input,qty,header;
+ if(!wrap)return false;
+ wrap.innerHTML='';quantityInputs=[];
+ for(i=0;i<sources.length;i++){
+  row=d.createElement('div');row.className='nsQtyRow';
+  label=d.createElement('span');label.innerHTML=esc((i+1)+'. '+quantityName(sources[i],i));
+  input=d.createElement('input');input.id='nsQty'+i;input.type='number';
+  input.min='1';input.max='100';input.step='1';input.value=String(state.quantities?state.quantities[i]:1);
+  input.title=T('Số bản cần in','Number of copies to print');
+  row.appendChild(label);row.appendChild(input);wrap.appendChild(row);
+  quantityInputs.push(input);
+ }
+ return true;
+}
+function readQuantities(state){
+ var sources=state.sourceItems||state.items,i,raw,value,qty=[],sum=0;
+ if(quantityInputs.length!==sources.length)throw err('Chưa nạp bảng số lượng. Mở lại Nest Studio.','Quantity controls not loaded. Reopen Nest Studio.');
+ for(i=0;i<sources.length;i++){
+  raw=String(quantityInputs[i].value).replace(/^\s+|\s+$/g,'');
+  if(!/^\d+$/.test(raw))throw err('Số lượng in mẫu '+(i+1)+' phải là số nguyên.','Quantity for design '+(i+1)+' must be an integer.');
+  value=Number(raw);
+  if(value<1||value>100)throw err('Mỗi mẫu chỉ được chọn từ 1 đến 100 bản.','Each design must have 1–100 copies.');
+  qty.push(value);sum+=value;
+ }
+ if(sum>400)throw err('Tổng số bản in vượt 400. Hãy chia đơn hàng.','More than 400 prints. Split the job.');
+ return qty;
+}
+function sameQuantities(a,b){
+ var i;if(!a||!b||a.length!==b.length)return false;
+ for(i=0;i<a.length;i++)if(a[i]!==b[i])return false;
+ return true;
+}
+function configFromDock(){
+ function cm(id,def){var x=E(id),v=x?n(x.value):def;return finite(v)&&v>=0?v:def;}
+ var W=cm('v846W',58)*10,H=cm('v846H',200)*10,g=cm('v846Gap',.3)*10;
+ var margin=Math.max(cm('v849Top',0),cm('v849Bottom',0),cm('v849Left',0),cm('v849Right',0))*10;
+ // New studio uses one symmetric safety margin (as shown in the large window).
+ var c={roll:false,W:W,H:H,gap:g,mt:margin,mb:margin,
+ ml:margin,mr:margin,
+ frameGap:cm('v849FrameGap',1)*10,
+ rotate:!!(E('v846Rotate')&&E('v846Rotate').checked),
+ contour:!!(E('v846Contour')&&E('v846Contour').checked),
+ mirror:!!(E('v849Mirror')&&E('v849Mirror').value==='yes'),
+ effort:(E('v846Deep')&&E('v846Deep').checked)?'deep':'balanced',seconds:12};
+ return normalize(c);
+}
+function normalize(c){
+ var k,nonneg=['gap','mt','mb','ml','mr','frameGap'];
+ c.roll=!!c.roll;
+ if(!finite(c.W)||c.W<=0||(!c.roll&&(!finite(c.H)||c.H<=0)))
+  throw err('Khổ vật liệu phải lớn hơn 0.','Material dimensions must be positive.');
+ for(k=0;k<nonneg.length;k++)if(!finite(c[nonneg[k]])||c[nonneg[k]]<0)
+  throw err('Khoảng cách và lề không hợp lệ.','Invalid margins or spacing.');
+ c.usableW=c.W-c.ml-c.mr;
+ if(c.usableW<=0)throw err('Lề ngang lớn hơn chiều rộng vật liệu.','Side margins exceed material width.');
+ if(c.roll){
+  // No fixed height exists in roll mode: use a computed search height only.
+  c.H=0;c.usableH=0;
+  if(c.mt+c.mb>=30000)throw err('Lề đầu/cuối cuộn vượt giới hạn 30 m.','Roll top/bottom margins exceed 30 m limit.');
+ }else{
+  c.usableH=c.H-c.mt-c.mb;
+  if(c.usableH<=0)throw err('Lề lớn hơn chiều cao tấm.','Margins exceed material height.');
+ }
+ if(c.W>20000||(!c.roll&&c.H>30000)||c.gap>300)
+  throw err('Khổ hoặc khoảng cách quá lớn.','Material dimensions or spacing too large.');
+ c.seconds=Math.min(30,Math.max(2,n(c.seconds)||12));
+ return c;
+}
+function rollDepth(plan){
+ if(!plan||!plan.bins||plan.bins.length!==1)return -1;
+ var p=plan.bins[0].places,d=0,i;
+ for(i=0;i<p.length;i++)d=Math.max(d,p[i].y+p[i].h);
+ return d;
+}
+function rollLength(plan,c){
+ var d=rollDepth(plan);
+ if(d<0)return -1;
+ return Math.ceil((c.mt+d+c.mb)*10-0.000001)/10;
+}
+function workingConfig(state,c){
+ if(!c.roll)return c;
+ // Conservative one-column bound, calculated from real selected objects.
+ // This is a search capacity, never the delivered roll length.
+ var i,x,limit=c.usableW,stack=0,minHeight,height;
+ for(i=0;i<state.items.length;i++){
+  x=state.items[i];minHeight=1e30;
+  if(x.w<=limit+.001)minHeight=Math.min(minHeight,x.h);
+  if(c.rotate&&x.h<=limit+.001)minHeight=Math.min(minHeight,x.w);
+  if(minHeight===1e30)throw err('Có chi tiết rộng hơn cuộn PET, kể cả khi xoay.','A piece exceeds the PET roll width, even after allowed rotation.');
+  stack+=minHeight+c.gap;
+ }
+ height=Math.min(30000,Math.ceil(stack+c.mt+c.mb+2));
+ var w={roll:true,W:c.W,H:height,gap:c.gap,mt:c.mt,mb:c.mb,
+ ml:c.ml,mr:c.mr,frameGap:c.frameGap,rotate:c.rotate,
+ contour:c.contour,mirror:c.mirror,effort:c.effort,seconds:c.seconds,
+ usableW:c.usableW,usableH:height-c.mt-c.mb};
+ if(!(w.usableH>0))throw err('Không còn chiều dài cuộn khả dụng.','No usable roll length.');
+ return w;
+}
+function verticalFallback(state,c,work){
+ // Guaranteed conservative single-column fallback, if it fits within 30 m.
+ var y=0,places=[],i,it,angle,w,h,p;
+ for(i=0;i<state.items.length;i++){
+  it=state.items[i];angle=0;w=it.w;h=it.h;
+  if(c.rotate&&it.h<=c.usableW+.001&&(it.w>c.usableW+.001||it.w<it.h)){
+   angle=90;w=it.h;h=it.w;
+  }
+  if(w>c.usableW+.001)return null;
+  if(y+h>work.usableH+.001)return null;
+  p={item:it,x:0,y:y,w:w,h:h,angle:angle};places.push(p);
+  y+=h+c.gap;
+ }
+ return{bins:[{places:places,depth:Math.max(0,y-c.gap)}],
+        total:Math.max(0,y-c.gap),kind:'vertical-safe'};
+}
+function readPopup(){
+ if(!popup||popup.closed)throw err('Cửa sổ xem trước đã đóng.','Preview window is closed.');
+ var d=popup.document;
+ function val(id){var x=d.getElementById(id);return x?x.value:'';}
+ function chk(id){var x=d.getElementById(id);return !!(x&&x.checked);}
+ var roll=val('nsMaterialMode')==='roll';
+ var c={roll:roll,W:n(val('nsW')),H:roll?0:n(val('nsH')),gap:n(val('nsGap')),
+ mt:n(val('nsMargin')),mb:n(val('nsMargin')),ml:n(val('nsMargin')),mr:n(val('nsMargin')),
+ frameGap:n(val('nsFrameGap')),rotate:chk('nsRotate'),contour:chk('nsContour'),
+ mirror:chk('nsMirror'),seconds:n(val('nsSeconds')),effort:val('nsEffort')||'balanced'};
+ return normalize(c);
+}
+function snapshotValid(state){
+ var a=app(),doc=a.ActiveDocument,old=doc.Unit,i,d,s,v,sh;
+ if(state.document!==doc&&state.identity!==docId(doc))throw err('Bạn đang mở tài liệu Corel khác. Hãy đọc lại vùng chọn.','Corel document changed. Re-read selected shapes.');
+ try{
+  doc.Unit=3;
+  var sources=state.sourceItems||state.items;
+  for(i=0;i<sources.length;i++){
+   sh=sources[i].shape;d=shapeDims(sh);s=sources[i].snapshot;
+   if(Math.abs(d.w-s.w)>.2||Math.abs(d.h-s.h)>.2||Math.abs(d.x-s.x)>.2||Math.abs(d.y-s.y)>.2)
+    throw err('Có đối tượng đã thay đổi vị trí hoặc kích thước. Hãy tính lại.','Artwork moved or resized after preview. Recalculate.');
+   var currentFp=footprint(sh,d);
+   if(signature(currentFp)!==sources[i].signature)
+    throw err('Đường bao đã bị chỉnh sửa. Hãy tính lại để tránh dùng bản xem trước cũ.','Contours changed after preview. Recalculate.');
+  }
+  return true;
+ }finally{try{doc.Unit=old;}catch(e){}}
+}
+function transform(fp,angle){
+ if(!angle)return fp;
+ var w=fp.w,h=fp.h,nw=h,nh=w,leaves=[],anchors=[],i,j,k,leaf,loop,pts,bb,minX,maxX,minY,maxY,p;
+ function rot(p){return{x:h-p.y,y:p.x};}
+ for(i=0;i<fp.leaves.length;i++){
+  leaf=fp.leaves[i];var loops=[];
+  minX=1e30;maxX=-1e30;minY=1e30;maxY=-1e30;
+  for(j=0;j<leaf.loops.length;j++){
+   loop=leaf.loops[j];pts=[];
+   var lx=1e30,rx=-1e30,ty=1e30,by=-1e30;
+   for(k=0;k<loop.pts.length;k++){
+    p=rot(loop.pts[k]);pts.push(p);
+    lx=Math.min(lx,p.x);rx=Math.max(rx,p.x);ty=Math.min(ty,p.y);by=Math.max(by,p.y);
+   }
+   loops.push({closed:loop.closed,pts:pts,bb:{l:lx,r:rx,t:ty,b:by,w:rx-lx,h:by-ty}});
+   minX=Math.min(minX,lx);maxX=Math.max(maxX,rx);minY=Math.min(minY,ty);maxY=Math.max(maxY,by);
+  }
+  leaves.push({loops:loops,bb:{l:minX,r:maxX,t:minY,b:maxY,w:maxX-minX,h:maxY-minY}});
+ }
+ for(i=0;i<fp.anchors.length;i++)anchors.push(rot(fp.anchors[i]));
+ return{shape:fp.shape,ang:90,w:nw,h:nh,area:fp.area,leaves:leaves,anchors:anchors,rectangle:fp.rectangle};
+}
+function footFor(item,angle){return angle?transform(item.fp,90):item.fp;}
+function safePlan(plan,state,c,contour){
+ if(!plan||!plan.bins||!plan.bins.length||!state.items.length)return false;
+ if(c.roll&&plan.bins.length!==1)return false;
+ var seen={},total=0,bin,i,j,p,id,fp,placed,G=window.DHLContourGeometry,gap=c.gap,
+     limitH=c.roll?30000-c.mt-c.mb:c.usableH;
+ if(!(limitH>0))return false;
+ for(i=0;i<plan.bins.length;i++){
+  bin=plan.bins[i];placed=[];
+  for(j=0;j<bin.places.length;j++){
+   p=bin.places[j];id=p.item&&p.item.index;
+   if(!finite(id)||Math.floor(id)!==id||id<0||id>=state.items.length||
+      (p.angle!==0&&p.angle!==90))return false;
+   fp=footFor(state.items[id],p.angle||0);
+   if(seen[id]||!finite(p.x)||!finite(p.y)||p.x<-.01||p.y<-.01||
+      p.x+fp.w>c.usableW+.01||p.y+fp.h>limitH+.01||
+      Math.abs(p.w-fp.w)>.4||Math.abs(p.h-fp.h)>.4)return false;
+   if(contour&&(!G||typeof G.valid!=='function'))return false;
+   if(contour&&G&&typeof G.valid==='function'){
+    if(!G.valid(p.x,p.y,fp,placed,c.usableW,limitH,gap))return false;
+   }else{
+    for(var k=0;k<placed.length;k++){
+     var q=placed[k],ax=p.x,ay=p.y,bx=q.x,by=q.y;
+     if(ax<bx+q.item.w+gap-.01&&ax+fp.w+gap>bx+.01&&
+        ay<by+q.item.h+gap-.01&&ay+fp.h+gap>by+.01)return false;
+    }
+   }
+   placed.push({x:p.x,y:p.y,item:fp});seen[id]=1;total++;
+  }
+ }
+ return total===state.items.length&&(!c.roll||rollLength(plan,c)<=30000);
+}
+function contourPack(source,c,items,order,globalDeadline){
+ var G=window.DHLContourGeometry,deadline=window.DHL_SEARCH_DEADLINE,sort=window.DHL_ORDER,arr=[],i,item,placed,places=[],depth=0;
+ if(globalDeadline&&(new Date()).getTime()>=globalDeadline)return null;
+ if(!G||!G.pack||!G.valid||!G.footprintAt)return null;
+ for(i=0;i<items.length;i++){item=items[i];var fp=footFor(item,item._angle||0);
+  if(fp.w>c.usableW+.01||fp.h>c.usableH+.01)return null;
+  var cp={shape:item.shape,w:fp.w,h:fp.h,area:fp.area,leaves:fp.leaves,anchors:fp.anchors,
+          ang:item._angle||0,_ord:item.index};
+  arr.push(cp);
+ }
+ try{
+  window.DHL_SEARCH_DEADLINE=globalDeadline||((new Date()).getTime()+c.seconds*1000);
+  window.DHL_ORDER=order;
+  placed=G.pack(arr,c.usableW,c.usableH,c.gap);
+ }catch(e){return null;}
+ finally{window.DHL_SEARCH_DEADLINE=deadline;window.DHL_ORDER=sort;}
+ if(!placed||placed.length!==arr.length)return null;
+ for(i=0;i<placed.length;i++){
+  var p=placed[i],fp=p.item;
+  places.push({item:{shape:fp.shape,index:fp._ord},x:p.x,y:p.y,w:fp.w,h:fp.h,angle:fp.ang||0});
+  depth=Math.max(depth,p.y+fp.h);
+ }
+ return{places:places,free:[],depth:depth,contour:true};
+}
+function variants(state,c,round){
+ var engine=window.DHLDirectGroups,items=state.items,plans=[],keyed={},kinds=['area','height','width','visual'],i,j,config,plan,t,elapsed,begin=(new Date()).getTime(),best,sorted,
+     work=workingConfig(state,c);
+ if(!engine||typeof engine.runPlan!=='function')throw err('Bộ dàn Corel chưa tải.','Corel nesting engine unavailable.');
+ function key(plan){var seq=[],i,j,p;for(i=0;i<plan.bins.length;i++)for(j=0;j<plan.bins[i].places.length;j++){
+  p=plan.bins[i].places[j];seq.push(p.item.index+':'+i+':'+rnd(p.x)+':'+rnd(p.y)+':'+(p.angle||0));
+ }seq.sort();return seq.join('|');}
+ function add(plan,contour,label){
+  if(!safePlan(plan,state,c,contour))return false;
+  var sign=key(plan);if(keyed[sign])return false;
+  keyed[sign]=1;
+  var length=c.roll?rollLength(plan,c):c.H;
+  if(c.roll&&(plan.bins.length!==1||length<=0||length>30000))return false;
+  var score=c.roll?length*100:plan.bins.length*1e7+plan.total*100;
+  plans.push({plan:plan,contour:!!contour,label:label,
+    length:length,score:score,created:(new Date()).getTime()-begin});
+  return true;
+ }
+ for(i=0;i<kinds.length;i++){
+  plan=engine.runPlan(items,work,kinds[(i+round)%kinds.length]);
+  if(plan)add(plan,false,T('Xếp '+kinds[(i+round)%kinds.length],'Layout '+kinds[(i+round)%kinds.length]));
+ }
+ if(c.roll){
+  // Always offer a safe vertical one-roll baseline if greedy algorithms fail.
+  var fallback=verticalFallback(state,c,work);
+  if(fallback)add(fallback,false,T('Xếp dọc an toàn','Safe vertical layout'));
+ }
+ if(c.contour&&window.DHLContourGeometry&&items.length<=200){
+  // Attempt full-sheet contour first, then repack the individual sheets of
+  // rectangular plans. The second pass matters when >1 sheet is required.
+  var orders=['area','height','width','visual'],cutoff=begin+c.seconds*1000;
+  for(i=0;i<orders.length&&items.length<=75;i++){
+   if((new Date()).getTime()>=cutoff||plans.length>=7)break;
+   sorted=items.slice(0);
+   if(orders[i]==='area')sorted.sort(function(a,b){return b.area-a.area;});
+   if(orders[i]==='height')sorted.sort(function(a,b){return b.h-a.h;});
+   if(orders[i]==='width')sorted.sort(function(a,b){return b.w-a.w;});
+   if(c.rotate&&i===3)for(j=0;j<sorted.length;j++)sorted[j]._angle=(sorted[j].w>sorted[j].h)?90:0;
+   var one=contourPack(state,work,sorted,orders[i],cutoff);
+   if(c.rotate&&i===3)for(j=0;j<sorted.length;j++)sorted[j]._angle=0;
+   if(one)add({bins:[one],total:one.depth},true,T('Theo đường bao '+(i+1),'Contour '+(i+1)));
+  }
+  // Keep a copy of the rectangular seeds before appending contour candidates.
+  var seeds=plans.slice(0,Math.min(2,plans.length)),seedIndex,seed,bIndex,sourceBin,
+      contourBins,improved,subset,p,baseItem,rebuilt,newTotal;
+  for(seedIndex=0;seedIndex<seeds.length;seedIndex++){
+   if((new Date()).getTime()>=cutoff||plans.length>=7)break;
+   seed=seeds[seedIndex];contourBins=[];improved=false;
+   for(bIndex=0;bIndex<seed.plan.bins.length;bIndex++){
+    sourceBin=seed.plan.bins[bIndex];
+    if((new Date()).getTime()>=cutoff){contourBins.push(sourceBin);continue;}
+    if(sourceBin.places.length>80){contourBins.push(sourceBin);continue;}
+    subset=[];
+    for(j=0;j<sourceBin.places.length;j++){
+     p=sourceBin.places[j];baseItem=state.items[p.item.index];
+     subset.push({shape:baseItem.shape,index:baseItem.index,w:baseItem.w,h:baseItem.h,
+       area:baseItem.area,fp:baseItem.fp,_angle:p.angle||0});
+    }
+    rebuilt=contourPack(state,work,subset,orders[seedIndex%orders.length],cutoff);
+    // Prefer contour placement only if it actually reduces the used depth.
+    if(rebuilt&&rebuilt.depth<sourceBin.depth-.1){contourBins.push(rebuilt);improved=true;}
+    else contourBins.push(sourceBin);
+   }
+   if(improved){
+    newTotal=0;for(j=0;j<contourBins.length;j++)newTotal+=contourBins[j].depth;
+    add({bins:contourBins,total:newTotal},true,
+      c.roll?T('Khe mở / Cuộn PET','Open-pocket / PET roll'):T('Khe mở / Tấm '+(seedIndex+1),'Open-pocket / Sheet '+(seedIndex+1)));
+   }
+  }
+ }
+ plans.sort(function(a,b){return a.score-b.score;});
+ if(plans.length>5)plans=plans.slice(0,5);
+ if(!plans.length)throw c.roll?
+  err('Không xếp hết vào một cuộn PET dưới 30 m với khổ ngang đã chọn. Hãy tăng chiều rộng hoặc chia công việc thành nhiều lượt.',
+      'Cannot fit all pieces on one PET roll under 30 m. Widen the roll or split the job.'):
+  err('Không có phương án hợp lệ cho khổ hiện tại.','No valid plan for this material size.');
+ return{candidates:plans,elapsed:(new Date()).getTime()-begin};
+}
+function summary(state,c,candidate){
+ var plan=candidate.plan,area=0,i;for(i=0;i<state.items.length;i++)area+=state.items[i].area;
+ // Bounding-box utilization upper estimate; never describe it as true cut-area use.
+ var length=c.roll?rollLength(plan,c):c.H,
+     pct=100*area/(c.W*length*plan.bins.length);
+ return{count:state.items.length,bins:plan.bins.length,usedDepth:rnd(plan.total),
+  roll:!!c.roll,rollLength:c.roll?length:0,materialLength:length,
+  proxy:Math.max(0,Math.min(100,rnd(pct))),contour:candidate.contour};
+}
+function previewPath(fp,offx,offy,color){
+ var out=[],i,j,k,l,pts,p,cmd,d;
+ for(i=0;i<fp.leaves.length;i++)for(j=0;j<fp.leaves[i].loops.length;j++){
+  l=fp.leaves[i].loops[j];pts=l.pts;d='';
+  if(!pts.length)continue;
+  for(k=0;k<pts.length;k++){p=pts[k];d+=(k?'L':'M')+rnd(p.x+offx)+','+rnd(p.y+offy);}
+  if(l.closed)d+='Z';
+  out.push('<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width=".55" vector-effect="non-scaling-stroke"/>');
+ }
+ return out.join('');
+}
+function svgPlan(state,c,candidate){
+ var plan=candidate.plan,frames=plan.bins.length,wide=c.W*frames+c.frameGap*(frames-1),
+     height=c.roll?rollLength(plan,c):c.H,
+     target=720,scale=Math.min(target/wide,480/height)*zoom,renderW=Math.max(140,wide*scale),renderH=Math.max(160,height*scale),
+     out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 '+(wide+16)+' '+(height+16)+'" width="'+rnd(renderW)+'" height="'+rnd(renderH)+'">'],
+     i,j,bin,p,fp,l,x0,y0;
+ out.push('<rect x="-8" y="-8" width="'+(wide+16)+'" height="'+(height+16)+'" fill="#eaf0f5"/>');
+ for(i=0;i<frames;i++){
+  x0=i*(c.W+c.frameGap);bin=plan.bins[i];
+  out.push('<rect x="'+x0+'" y="0" width="'+c.W+'" height="'+height+'" fill="white" stroke="#b44d4b" stroke-width="1.5"/>');
+  out.push('<rect x="'+(x0+c.ml)+'" y="'+c.mt+'" width="'+c.usableW+'" height="'+(height-c.mt-c.mb)+'" fill="none" stroke="#c6d7e6" stroke-dasharray="8 6"/>');
+  for(j=0;j<bin.places.length;j++){
+   p=bin.places[j];fp=footFor(state.items[p.item.index],p.angle||0);
+   out.push(previewPath(fp,x0+c.ml+p.x,c.mt+p.y,'#143955'));
+  }
+  out.push('<text x="'+(x0+5)+'" y="-2" font-size="11" fill="#24445b">'+(c.roll?'CUỘN PET':'Tấm '+(i+1))+'</text>');
+ }
+ out.push('</svg>');return out.join('');
+}
+function svgOriginal(state){
+ var items=state.sourceItems||state.items,i,x0=1e30,y0=1e30,x1=-1e30,y1=-1e30,o=[],d,it,fp;
+ for(i=0;i<items.length;i++){d=items[i].snapshot;
+ x0=Math.min(x0,d.x-d.w/2);x1=Math.max(x1,d.x+d.w/2);
+ y0=Math.min(y0,-d.y-d.h/2);y1=Math.max(y1,-d.y+d.h/2);}
+ var w=x1-x0,h=y1-y0,scale=Math.min(730/Math.max(1,w),450/Math.max(1,h))*zoom;
+ o.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+rnd(x0-10)+' '+rnd(y0-10)+' '+rnd(w+20)+' '+rnd(h+20)+'" width="'+rnd((w+20)*scale)+'" height="'+rnd((h+20)*scale)+'">');
+ for(i=0;i<items.length;i++){
+  it=items[i];d=it.snapshot;fp=it.fp;
+  o.push(previewPath(fp,d.x-d.w/2,-d.y-d.h/2,'#1b4c70'));
+ }
+ o.push('</svg>');return o.join('');
+}
+function popupHtml(){
+ return '<!DOCTYPE html><html><head><meta http-equiv="X-UA-Compatible" content="IE=11"/><meta charset="utf-8"/><title>DHL Nest Studio · Xem trước dàn file</title>'
+ +'<style>*{box-sizing:border-box}body{margin:0;background:#edf3f7;color:#234359;font:13px "Segoe UI",Arial,sans-serif}'
+ +'header{padding:13px 20px;background:#0f323e;color:white;font-weight:800;letter-spacing:.3px}'
+ +'header small{margin-left:16px;color:#b8d8d3;font-weight:400}.wrap{display:table;width:100%;table-layout:fixed;border-spacing:12px}'
+ +'.main,.sidebar{display:table-cell;vertical-align:top}.main{width:72%}.sidebar{width:28%}'
+ +'.panel{background:#fff;border-radius:12px;border:1px solid #dce6ed;overflow:hidden;margin-bottom:11px}'
+ +'.hd{padding:12px 14px;border-bottom:1px solid #ebeff4;font-weight:800}'
+ +'#nsChoices{padding:9px 12px;white-space:normal;min-height:57px}#nsChoices button{display:inline-block;width:auto;margin:3px 6px 3px 0;padding:8px 11px;border:1px solid #b8cfd9;background:#f8fcfe;border-radius:8px;font-weight:700;color:#2c5363}'
+ +'#nsChoices button.sel{border-color:#00745a;background:#e6f7ee}'
+ +'#nsCanvas{height:510px;overflow:auto;text-align:center;background:#edf4f8;padding:18px;white-space:nowrap}'
+ +'#nsCanvas svg{display:block;margin:auto;max-width:none}'
+ +'#nsControls{padding:8px 13px;text-align:right;border-top:1px solid #ebf1f4}'
+ +'#nsStats{padding:9px 14px;color:#3d6574;font-size:12px;border-top:1px solid #edf2f5}'
+ +'.sidebar .inside{padding:11px 14px}.sidebar label{display:block;font-size:11px;color:#4e6877;margin:10px 0 3px}'
+ +'.sidebar input[type=text],.sidebar input[type=number],.sidebar select{width:100%;border:1px solid #cbd9e4;border-radius:5px;padding:7px 9px;min-height:34px;background:#fbfdfe;font-size:12px}'
+ +'.sidebar input[type=checkbox]{vertical-align:middle;margin:0 6px 0 0}'
+ +'.cols{display:table;width:100%;table-layout:fixed;border-spacing:6px 0}.cols div{display:table-cell}'
+ +'#nsNotice{font-size:11px;line-height:1.5;padding:10px 13px;background:#f7fafc;border-top:1px solid #e6edf3;color:#5b7383}'
+ +'.footer{padding:11px 14px;background:white;border-top:1px solid #d4e3e7;position:fixed;bottom:0;left:0;right:0;text-align:right}'
+ +'button{cursor:pointer;background:#f5f9fc;border:1px solid #b8cbda;padding:9px 12px;border-radius:6px;color:#224d62;font-weight:700}'
+ +'button.primary{background:#087c64;color:white;border-color:#086953}.footer button{margin-left:7px}'
+ +'#nsStatus{font-size:11px;font-weight:400;padding:6px 10px;color:#c2e6da;display:inline-block}'
+ +'.nsQtyList{max-height:190px;overflow-y:auto;margin:7px 0;border:1px solid #d4e2eb;border-radius:6px;background:#f8fbfe}'
+ +'.nsQtyRow{display:table;width:100%;table-layout:fixed;border-bottom:1px solid #e5ebf1;padding:5px}'
+ +'.nsQtyRow span{display:table-cell;vertical-align:middle;word-wrap:break-word;line-height:1.4;font-size:11px;width:70%}'
+ +'.nsQtyRow input{display:table-cell;width:64px!important;min-height:30px!important;text-align:center;font-weight:700}'
+ +'</style></head><body><header>DHL NEST STUDIO <small>PHƯƠNG ÁN XẾP TRÊN PHÔI · PREVIEW TRƯỚC KHI ÁP DỤNG</small><span id="nsStatus"></span></header>'
+ +'<div class="wrap"><div class="main">'
+ +'<div class="panel"><div class="hd">PHƯƠNG ÁN <span id="nsChoiceCount"></span></div><div id="nsChoices"></div>'
+ +'<div id="nsCanvas"></div><div id="nsControls"><button id="nsMinus">−</button> <span id="nsZoom">100%</span> <button id="nsPlus">+</button> <button id="nsResetZoom">1:1</button></div>'
+ +'<div id="nsStats"></div></div></div>'
+ +'<div class="sidebar"><div class="panel"><div class="hd">CẤU HÌNH DÀN FILE</div><div class="inside">'
+ +'<label>Loại vật liệu</label><select id="nsMaterialMode"><option value="sheet">Tấm cố định</option><option value="roll">Cuộn PET – tự tính chiều dài</option></select>'
+ +'<label>Chiều rộng tấm / cuộn PET (mm)</label><input id="nsW" type="number" min="10" max="20000" step="1"/>'
+ +'<label id="nsHLabel">Chiều cao tấm (mm)</label><input id="nsH" type="number" min="10" max="30000" step="1"/>'
+ +'<div id="nsRollHint" style="font-size:11px;line-height:1.5;color:#2e6c76;margin-top:5px">Chọn cuộn PET để tự tính chiều dài cần sử dụng.</div>'
+ +'<label>Khoảng cách chi tiết (mm)</label><input id="nsGap" type="number" min="0" max="300" step=".5"/>'
+ +'<div class="cols"><div><label>Lề tấm (mm)</label><input id="nsMargin" type="number" min="0" max="500" step="1"/></div>'
+ +'<div><label>Giữa các tấm (mm)</label><input id="nsFrameGap" type="number" min="0" max="500" step="1"/></div></div>'
+ +'<label><input type="checkbox" id="nsRotate"/>Tự xoay 0° / 90°</label>'
+ +'<label><input type="checkbox" id="nsContour"/>Xếp theo đường bao, tận dụng khe mở</label>'
+ +'<label><input type="checkbox" id="nsMirror"/>Lật gương khi áp dụng</label>'
+ +'<label>Mức tìm kiếm</label><select id="nsEffort"><option value="balanced">Cân bằng</option><option value="deep">Tìm sâu</option></select>'
+ +'<label style="font-weight:800;margin-top:14px">SỐ LƯỢNG IN TỪNG MẪU (1–100)</label>'
+ +'<div id="nsQuantities" class="nsQtyList"></div>'
+ +'<div style="font-size:10px;color:#547389;line-height:1.5">Mỗi mẫu mặc định 1 bản. Sửa số lượng rồi bấm TÌM PHƯƠNG ÁN KHÁC. Tối đa 400 bản mỗi lượt; chỉ nhân bản khi áp dụng.</div>'
+ +'<label>Ngân sách tính toán (giây)</label><input id="nsSeconds" type="number" min="2" max="30" step="1"/>'
+ +'<div id="nsNotice">Xem trước không di chuyển đối tượng trong CorelDRAW. Hiệu suất hiển thị là ước tính theo khung bao, không phải diện tích cắt chính xác.</div>'
+ +'</div></div></div></div><div style="height:85px"></div>'
+ +'<div class="footer"><button id="nsOriginal">HIỆN BẢN GỐC</button><button id="nsTry">TÌM PHƯƠNG ÁN KHÁC</button><button id="nsApply" class="primary">ÁP DỤNG VÀO COREL</button><button id="nsClose">ĐÓNG</button></div>'
+ +'</body></html>';
+}
+function setVal(d,id,v){var x=d.getElementById(id);if(x)x.value=String(v);}
+function updatePopup(){
+ if(!popup||popup.closed||!current)return;
+ var d=popup.document,state=current,c=candidates(),o=d.getElementById('nsChoices'),i,btn,stats;
+ if(!original){
+  o.innerHTML='';for(i=0;i<state.candidates.length;i++){
+   btn=d.createElement('button');btn.type='button';btn.className=i===choice?'sel':'';
+   stats=summary(state,state.config,state.candidates[i]);
+   btn.innerHTML='Phương án '+(i+1)+'<br/><small>'+
+    (stats.roll?('Cuộn PET '+rnd(stats.rollLength/10)+' cm'):stats.bins+' tấm')+
+    ' · '+stats.proxy+'% khung bao</small>';
+   (function(idx,b){b.onclick=function(){choice=idx;original=false;updatePopup();};})(i,btn);
+   o.appendChild(btn);
+  }
+  d.getElementById('nsCanvas').innerHTML=svgPlan(state,state.config,state.candidates[choice]);
+  stats=summary(state,state.config,state.candidates[choice]);
+  d.getElementById('nsStats').innerHTML='<b>'+stats.count+' bản in / '+(state.sourceItems||state.items).length+' mẫu</b> · '+
+   (stats.roll?('<b>CUỘN PET '+rnd(state.config.W/10)+' cm × '+rnd(stats.rollLength/10)+' cm</b> · 1 dải'):
+   (stats.bins+' tấm · Chiều dài chi tiết '+rnd(stats.usedDepth/10)+' cm'))+
+   ' · '+stats.proxy+'% (khung bao, ước tính) · '+(stats.contour?'ĐƯỜNG BAO':'KHUNG BAO')+
+   ' · '+state.elapsed+' ms';
+ }else{
+  o.innerHTML='<b>VỊ TRÍ BAN ĐẦU</b> · Không có thay đổi nào trong tài liệu Corel';
+  d.getElementById('nsCanvas').innerHTML=svgOriginal(state);
+  d.getElementById('nsStats').innerHTML='Bản gốc '+(state.sourceItems||state.items).length+' mẫu · Chưa nhân bản trong Corel';
+ }
+ d.getElementById('nsChoiceCount').innerHTML=original?'':('('+(choice+1)+'/'+state.candidates.length+')');
+ d.getElementById('nsZoom').innerHTML=Math.round(zoom*100)+'%';
+ d.getElementById('nsApply').disabled=!!original;
+ d.getElementById('nsOriginal').innerHTML=original?'TRỞ LẠI PHƯƠNG ÁN':'HIỆN BẢN GỐC';
+}
+function candidates(){return current?current.candidates:[];}
+function modeUi(){
+ if(!popup||popup.closed)return;
+ var d=popup.document,mode=d.getElementById('nsMaterialMode'),
+     h=d.getElementById('nsH'),label=d.getElementById('nsHLabel'),hint=d.getElementById('nsRollHint'),
+     roll=!!(mode&&mode.value==='roll');
+ if(h){h.disabled=roll;if(h.style)h.style.backgroundColor=roll?'#e7eff2':'#fbfdfe';}
+ if(label)label.innerHTML=roll?'Chiều dài cuộn – tự động (mm)':'Chiều cao tấm (mm)';
+ if(hint)hint.innerHTML=roll?
+  'Chỉ nhập chiều rộng cuộn PET. Tool tính chiều dài tối thiểu tìm được (bao gồm lề đầu/cuối) và tạo một khung cuộn duy nhất. Giới hạn mỗi lượt 30 m.':
+  'Chế độ tấm: sử dụng cả chiều rộng và chiều cao đã nhập.';
+}
+function stamp(){
+ if(!current||!popup||popup.closed)return;
+ var d=popup.document,fields=['W','Gap','Margin','FrameGap','Seconds'],i,k;
+ var c=current.config;
+ for(i=0;i<fields.length;i++){
+  k=fields[i];setVal(d,'ns'+k,k==='Margin'?c.ml:k==='Seconds'?c.seconds:c[k==='Gap'?'gap':k==='FrameGap'?'frameGap':k]);
+ }
+ if(!c.roll)setVal(d,'nsH',c.H);
+ setVal(d,'nsMaterialMode',c.roll?'roll':'sheet');modeUi();
+ d.getElementById('nsRotate').checked=c.rotate;
+ d.getElementById('nsContour').checked=c.contour;
+ d.getElementById('nsMirror').checked=c.mirror;
+ d.getElementById('nsEffort').value=c.effort;
+}
+function recompute(){
+ try{
+  if(!current)return false;
+  snapshotValid(current);
+  var c=readPopup(),qty=readQuantities(current),expanded=expandQuantities(current,qty),
+      proposed={items:expanded,sourceItems:current.sourceItems},
+      result=variants(proposed,c,attempt++);
+  current.items=expanded;current.quantities=qty;
+  current.config=c;current.candidates=result.candidates;current.elapsed=result.elapsed;
+  choice=0;original=false;zoom=1;stamp();updatePopup();
+  if(popup&&!popup.closed)popup.document.getElementById('nsStatus').innerHTML='✓ '+current.candidates.length+' PHƯƠNG ÁN · '+current.items.length+' ĐỐI TƯỢNG';
+  return true;
+ }catch(e){report(String(e.message||e));return false;}
+}
+function report(s){
+ var x=E('v858Status');if(x)x.innerHTML=esc(s);
+ try{if(popup&&!popup.closed){var p=popup.document.getElementById('nsStatus');if(p)p.innerHTML=esc(s);}}catch(e){}
+}
+function applyCandidate(){
+ var state=current,cp,plan,a,doc,old,cmd=false,opt=false,i,j,bi,frame,place,sh,c,left,bottom,top,rect,
+     quantities,appliedShapes=[],item,copiesCreated=0;
+ if(!state||original)throw err('Hãy chọn phương án trước khi áp dụng.','Select a valid candidate first.');
+ if(!popup||popup.closed)throw err('Cửa sổ đã đóng.','Preview window is closed.');
+ c=readPopup();
+ quantities=readQuantities(state);
+ if(!sameQuantities(quantities,state.quantities))
+  throw err('Số lượng in đã thay đổi. Nhấn TÌM PHƯƠNG ÁN KHÁC trước khi áp dụng.','Quantities changed. Recompute before applying.');
+ // Refuse stale configurations even if the user edited inputs without recomputing.
+ var cur=state.config;for(var key in c){if(c.hasOwnProperty(key)&&c[key]!==cur[key])throw err('Thiết lập đã đổi. Bấm TÌM PHƯƠNG ÁN KHÁC trước.','Settings changed. Recompute before applying.');}
+ snapshotValid(state);cp=state.candidates[choice];plan=cp.plan;
+ if(!safePlan(plan,state,c,cp.contour))throw err('Bố cục không vượt qua kiểm tra va chạm/kích thước.','Candidate failed collision or bounds check.');
+ a=app();doc=a.ActiveDocument;old=doc.Unit;
+ var frameHeight=c.roll?rollLength(plan,c):c.H;
+ if(!(frameHeight>0&&frameHeight<=30000))throw err('Chiều dài cuộn tính được không hợp lệ.','Calculated roll length invalid.');
+ try{
+  doc.Unit=3;
+  doc.BeginCommandGroup('DHL Nest Studio V8.60 - Apply preview + quantities');cmd=true;
+  try{a.Optimization=true;opt=true;}catch(optimization){}
+  // Duplicate ALL requested copies before moving any source, so every copy
+  // inherits the original geometry. A Corel undo group covers all duplicates.
+  for(i=0;i<state.items.length;i++){
+   item=state.items[i];
+   if(item.copyIndex===0)appliedShapes[i]=state.sourceItems[item.sourceIndex].shape;
+   else{
+    sh=state.sourceItems[item.sourceIndex].shape.Duplicate(0,0);
+    if(!sh)throw err('Không nhân bản được mẫu '+(item.sourceIndex+1)+'.','Could not duplicate design '+(item.sourceIndex+1)+'.');
+    appliedShapes[i]=sh;copiesCreated++;
+   }
+  }
+  bottom=n(a.ActivePage.CenterY)-frameHeight/2;
+  for(bi=0;bi<plan.bins.length;bi++){
+   left=n(a.ActivePage.CenterX)-c.W/2+bi*(c.W+c.frameGap);
+   rect=a.ActivePage.ActiveLayer.CreateRectangle2(left,bottom,c.W,frameHeight);
+   if(!rect)throw err('Không tạo được khung vật liệu.','Failed to create material frame.');
+   try{rect.Name=c.roll?'DHL_PET_ROLL_'+rnd(c.W)+'x'+rnd(frameHeight)+'_MM':'DHL_NEST_STUDIO_FRAME_'+(bi+1);}catch(nameErr){}
+   try{rect.Fill.ApplyNoFill();rect.Outline.Width=.2;rect.OrderToBack();}catch(styling){}
+   top=bottom+frameHeight-c.mt;
+   for(j=0;j<plan.bins[bi].places.length;j++){
+    place=plan.bins[bi].places[j];sh=appliedShapes[place.item.index];
+    if(place.angle)sh.Rotate(place.angle);
+    sh.CenterX=left+c.ml+place.x+place.w/2;
+    sh.CenterY=top-place.y-place.h/2;
+    if(c.mirror)sh.Flip(1);
+   }
+  }
+  if(opt){a.Optimization=false;opt=false;}
+  doc.EndCommandGroup();cmd=false;
+  try{a.ActiveWindow.Refresh();}catch(e){}
+  report(c.roll?
+   '✓ Đã dàn '+state.items.length+' bản từ '+state.sourceItems.length+' mẫu trên 1 cuộn PET rộng '+rnd(c.W/10)+' cm, dài '+rnd(frameHeight/10)+' cm. Ctrl+Z để hoàn tác.':
+   '✓ Đã dàn '+state.items.length+' bản từ '+state.sourceItems.length+' mẫu trên '+plan.bins.length+' tấm. Ctrl+Z để hoàn tác.');
+  current=null;
+  try{popup.close();}catch(e){}
+  popup=null;
+  return true;
+ }catch(e){
+  if(opt)try{a.Optimization=false;}catch(x){}
+  if(cmd){
+   try{doc.EndCommandGroup();doc.Undo();}
+   catch(rollback){
+    current=null;
+    throw err('Lỗi và không hoàn tác được. Kiểm tra tài liệu trước khi in.','Apply failed and rollback failed. Inspect CDR before printing.');
+   }
+   // Corel Undo may recreate COM shape wrappers. Never retry a stale plan.
+   current=null;
+   try{if(popup&&!popup.closed)popup.close();}catch(closeError){}
+   popup=null;
+  }
+  throw e;
+ }finally{try{doc.Unit=old;}catch(e){}}
+}
+function apply(){
+ try{return applyCandidate();}catch(e){report('⚠ '+String(e.message||e));return false;}
+}
+function bindPopup(){
+ var d=popup.document;
+ d.getElementById('nsMinus').onclick=function(){zoom=Math.max(.3,zoom/1.25);updatePopup();};
+ d.getElementById('nsPlus').onclick=function(){zoom=Math.min(5,zoom*1.25);updatePopup();};
+ d.getElementById('nsResetZoom').onclick=function(){zoom=1;updatePopup();};
+ d.getElementById('nsMaterialMode').onchange=modeUi;
+ d.getElementById('nsOriginal').onclick=function(){original=!original;updatePopup();};
+ d.getElementById('nsTry').onclick=function(){setTimeout(recompute,20);};
+ d.getElementById('nsApply').onclick=apply;
+ d.getElementById('nsClose').onclick=function(){popup.close();popup=null;};
+}
+function openStudio(){
+ try{
+  var state=capture(),c=configFromDock(),result;
+  if(!window.DHLDirectGroups||!window.DHLDirectGroups.runPlan)throw err('Chưa có engine dàn Corel.','Nesting engine not loaded.');
+  result=variants(state,c,attempt++);
+  state.config=c;state.candidates=result.candidates;state.elapsed=result.elapsed;
+  current=state;choice=0;original=false;zoom=1;
+  if(popup&&!popup.closed){try{popup.close();}catch(closeErr){}}
+  popup=window.open('','DHL_NEST_STUDIO','width=1440,height=900,resizable=yes,scrollbars=yes');
+  if(!popup||!popup.document)throw err('Corel đang chặn cửa sổ mới. Hãy cho phép popup trong Docker.','Corel blocked the preview window. Allow popups in Docker.');
+  popup.document.open();popup.document.write(popupHtml());popup.document.close();
+  stamp();renderQuantities(state);bindPopup();updatePopup();report('✓ Đã tạo '+state.candidates.length+' phương án xem trước, chưa chỉnh sửa Corel.');
+  return true;
+ }catch(e){report('⚠ '+String(e.message||e));return false;}
+}
+function legacy(){
+ var q=E('v846QuickPanel'),btn=E('v858Legacy');
+ if(!q)return;
+ if((' '+q.className+' ').indexOf(' v858-primary ')>=0){
+  q.className=q.className.replace(/\s*v858-primary/g,'');
+  if(btn)btn.innerHTML=T('ẨN BẢNG DÀN CŨ','HIDE LEGACY NESTING');
+ }else{
+  q.className+=' v858-primary';
+  if(btn)btn.innerHTML=T('CÔNG CỤ CŨ / TÙY CHỌN NÂNG CAO ▾','LEGACY / ADVANCED ▾');
+ }
+}
+function mount(){
+ var q=E('v846QuickPanel'),box;
+ if(ready)return true;
+ if(!q||!E('v846W')||!window.DHLDirectGroups)return false;
+ box=E('v858Launcher');
+ if(!box){
+  box=document.createElement('div');box.id='v858Launcher';
+  box.innerHTML='<h4>DHL NEST STUDIO</h4><p>Chọn Group hoặc từng chữ/chi tiết rời; không phá Group. Xem trước nhiều phương án rồi mới áp dụng. Ctrl+Z hoàn tác.</p>'
+   +'<button type="button" id="v858Open">MỞ CỬA SỔ DÀN TỐI ƯU</button>'
+   +'<button type="button" id="v858Legacy">CÔNG CỤ CŨ / TÙY CHỌN NÂNG CAO ▾</button>'
+   +'<div id="v858Status"></div>';
+  q.insertBefore(box,q.firstChild);
+ }
+ q.className=(q.className||'').replace(/\s*v858-primary/g,'')+' v858-primary';
+ E('v858Open').onclick=openStudio;E('v858Legacy').onclick=legacy;
+ ready=true;return true;
+}
+function boot(){var i=0;function tick(){if(mount()||i++>80)return;setTimeout(tick,200);}tick();}
+window.DHLNestStudio={open:openStudio,recompute:recompute,apply:apply,readSelection:capture,plan:variants,
+ validate:safePlan,transform:transform,metrics:summary,svg:svgPlan,config:normalize,
+ rollLength:rollLength,workingConfig:workingConfig,modeUi:modeUi,
+ expandQuantities:expandQuantities,readQuantities:readQuantities,
+ getState:function(){return current;},version:'8.60'};
+if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1800);},false);
+else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1800);});
+else setTimeout(boot,1900);
+})();
+</script>

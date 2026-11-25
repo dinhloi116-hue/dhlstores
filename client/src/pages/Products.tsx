@@ -48,7 +48,7 @@ export default function Products({ wholesaleOnly = false }: any) {
   const isPrintShop = initialCategory === 11070079;
 
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCategory);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get("search") || "");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("default");
   const [minPrice, setMinPrice] = useState("");

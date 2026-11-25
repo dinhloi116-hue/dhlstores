@@ -27,7 +27,18 @@ function Add-Target([string]$dir) {
   if(-not $seen.ContainsKey($key)){$seen[$key]=$true;$targets.Add($dir)}
 }
 function Find-InstalledAddons {
-  if($CurrentAddonDir){Add-Target $CurrentAddonDir}
+
+  # The exact Docker that was visible in Corel must be updated, not just
+  # another Corel version / an older Addons directory.
+  if($CurrentAddonDir){
+    $CurrentAddonDir=[IO.Path]::GetFullPath($CurrentAddonDir)
+    $activeFile=Join-Path $CurrentAddonDir 'DockerUI.html'
+    if(-not(Test-Path -LiteralPath $activeFile -PathType Leaf)){
+      throw ('Active DockerUI.html was not found: '+$activeFile)
+    }
+    Add-Target $CurrentAddonDir
+    Log ('ACTIVE COREL DOCKER: '+$activeFile)
+  }
   # Only inspect the known Corel -> product -> Programs64/Programs -> Addons path.
   # Previous versions scanned ALL of Program Files, Roaming and LocalAppData recursively.
   $bases = @(
@@ -101,6 +112,23 @@ try {
       Log ('FAILED (old UI retained if replace was not completed): '+$dst+' | '+$_.Exception.Message)
     }finally{
       Remove-Item -LiteralPath $stage -Force -ErrorAction SilentlyContinue
+    }
+  }
+
+  # Do not claim success if the *currently loaded* Docker still points to old
+  # bytes. This detects duplicate Corel installation paths and stale targets.
+  if($CurrentAddonDir){
+    $activeFile=Join-Path $CurrentAddonDir 'DockerUI.html'
+    if(-not(Test-Path -LiteralPath $activeFile -PathType Leaf)){
+      Log ('ACTIVE VERIFY FAILED: missing '+$activeFile);$failed++
+    }else{
+      $activeHash=(Get-FileHash -LiteralPath $activeFile -Algorithm SHA256).Hash
+      if($activeHash -ne $remoteHash){
+        Log ('ACTIVE VERIFY FAILED: current Docker bytes do not match V'+$version+' | '+$activeFile)
+        $failed++
+      }else{
+        Log ('ACTIVE VERIFY OK: V'+$version+' will persist after restarting Corel | '+$activeFile)
+      }
     }
   }
   Log ('DONE: latest V'+$version+' | changed='+$changed+' | already latest='+$unchanged+' | failed='+$failed)

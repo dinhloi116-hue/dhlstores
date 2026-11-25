@@ -1,0 +1,287 @@
+<style id="dhl-v846-simple-style">
+/* Stable ES5/IE-compatible compact mode: retain every original control in DOM. */
+/* V8.49: Never expose duplicate legacy controls, even when extra settings open. */
+#v77NestCard > *{display:none!important}
+#v77NestCard > #v846QuickPanel{display:block!important}
+#v846QuickPanel #v849ExtraPanel{display:none!important}
+#v846QuickPanel.v849-extra-open #v849ExtraPanel{display:block!important}
+#v846QuickPanel #v849ExtraPanel .v846-label{margin-top:6px!important}
+#v846QuickPanel #v849ExtraPanel input[type="number"]{min-height:30px!important;height:30px!important}
+#v846QuickPanel #v849ExtraPanel{padding:8px!important;border:1px solid #d6e2ef!important;border-radius:6px!important;margin:7px 0!important;background:#fafcff!important}
+#v846QuickPanel{display:block!important;background:#fff!important;border:1px solid #cbd7e7!important;border-radius:8px!important;padding:10px!important;margin:3px 0 8px!important;color:#16283d!important;font-family:"Segoe UI",Arial,sans-serif!important}
+#v846QuickPanel .v846-head{font-size:13px!important;font-weight:800!important;margin:0 0 8px!important;color:#173c6d!important}
+#v846QuickPanel .v846-note{font-size:10px!important;line-height:1.4!important;color:#5c6775!important;margin:5px 0 8px!important}
+#v846QuickPanel .v846-label{display:block!important;font-size:10px!important;font-weight:700!important;margin:7px 0 4px!important}
+#v846QuickPanel .v846-row{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:3px 0!important}
+#v846QuickPanel .v846-cell{display:table-cell!important;vertical-align:bottom!important}
+#v846QuickPanel .v846-presets{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:3px 0!important}
+#v846QuickPanel .v846-presets>div{display:table-cell!important}
+#v846QuickPanel button,#v846QuickPanel input,#v846QuickPanel select{box-sizing:border-box!important;font-family:"Segoe UI",Arial,sans-serif!important;font-size:11px!important}
+#v846QuickPanel input[type="number"]{width:100%!important;height:31px!important;min-height:31px!important;padding:5px!important;border:1px solid #a9bbd2!important;border-radius:5px!important;background:#fff!important;color:#152c43!important}
+#v846QuickPanel .v846-preset{width:100%!important;min-height:31px!important;background:#eef4fb!important;color:#19406b!important;border:1px solid #b9c9dc!important;border-radius:5px!important;padding:5px 2px!important;font-weight:700!important}
+#v846QuickPanel .v846-preset.on{background:#dbeaff!important;border-color:#1869c9!important}
+#v846QuickPanel .v846-hidden-setting.v846-check,#v846QuickPanel .v847-hidden-controls{display:none!important}
+#v846QuickPanel .v847-section{margin:7px 0 6px!important;padding:6px 0!important;border-top:1px solid #e4eaf3!important}
+#v846QuickPanel .v847-mode-row{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:3px 0!important}
+#v846QuickPanel .v847-mode-row>div{display:table-cell!important}
+#v846QuickPanel button.v847-mode{display:block!important;width:100%!important;min-height:33px!important;padding:4px 2px!important;font-size:10px!important;font-weight:700!important;background:#f1f5fb!important;color:#1e4c7c!important;border:1px solid #bccfe4!important;border-radius:5px!important}
+#v846QuickPanel button.v847-mode.selected{background:#176bd1!important;color:#fff!important;border-color:#1158b3!important}
+#v846QuickPanel .v847-hint{font-size:10px!important;line-height:1.35!important;color:#526578!important;margin:4px 0 6px!important}
+#v846QuickPanel select.v847-select{display:block!important;width:100%!important;max-width:100%!important;min-height:33px!important;box-sizing:border-box!important;padding:4px!important;border:1px solid #afc2da!important;border-radius:5px!important;background:#fff!important;color:#193b61!important}
+#v846QuickPanel .v846-check{display:block!important;padding:5px 0!important;font-size:10px!important;line-height:1.4!important;color:#183247!important}
+#v846QuickPanel .v846-check input{width:14px!important;height:14px!important;vertical-align:middle!important;margin-right:4px!important}
+#v846QuickPanel #v846Go{display:block!important;width:100%!important;min-height:40px!important;margin-top:8px!important;background:#176bd1!important;border:1px solid #1355a9!important;border-radius:6px!important;color:#fff!important;font-weight:800!important;font-size:12px!important}
+#v846QuickPanel .v846-actions{display:table!important;width:100%!important;table-layout:fixed!important;border-spacing:4px 0!important;margin-top:7px!important}
+#v846QuickPanel .v846-actions>div{display:table-cell!important}
+#v846QuickPanel .v846-actions button{width:100%!important;min-height:28px!important;background:#f7f9fc!important;color:#325373!important;border:1px solid #ccd7e4!important;border-radius:5px!important;font-size:10px!important}
+#v846QuickPanel #v846Status{border:1px solid #d2dfef!important;background:#f6f9fd!important;padding:7px!important;border-radius:5px!important;font-size:10px!important;line-height:1.45!important;margin-top:7px!important;word-wrap:break-word!important}
+#v846QuickPanel #v846Status.v846-error{color:#a52720!important;border-color:#e5bab7!important}
+#v846QuickPanel #v846Status.v846-success{color:#155f3d!important;border-color:#bdd9c6!important}
+</style>
+<script id="dhl-v846-simple-nest" type="text/javascript">
+(function(){
+ var lastRun='';
+ function E(x){return document.getElementById(x);}
+ function VI(){try{return currentLang!=='en';}catch(e){return true;}}
+ function T(vi,en){return VI()?vi:en;}
+ function num(v){return Number(v);}
+ function round(v){return Math.round(v*100)/100;}
+ function showText(id,vi,en){var x=E(id);if(x)x.innerHTML=T(vi,en);}
+ function status(s,success){var x=E('v846Status');if(!x)return;x.className=success===true?'v846-success':success===false?'v846-error':'';x.innerHTML=String(s);}
+ function dataFromCorel(){
+  var a=null,r=null,out=[],i;
+  try{a=window.external&&window.external.Application?window.external.Application:corelApp();r=a.ActiveSelectionRange;if(r)for(i=1;i<=r.Count;i++)out.push(r.Item(i));}catch(e){}
+  return out;
+ }
+ function grouped(x){try{if(x.Shapes&&Number(x.Shapes.Count)>0)return true;}catch(e){}
+  try{return /^DHL_EXCEL_ROW_\d+/.test(String(x.Name||''));}catch(y){return false;}
+ }
+ function sourceToUI(){
+  var w=E('v77NestW'),h=E('v77NestH'),gap=E('v77NestGap'),rot=E('v838Rotate'),loose=E('v832AllowLoose'),cont=E('v838Contour'),eff=E('v845Effort');
+  if(!w||!h||!gap)return;
+  E('v846W').value=w.value;E('v846H').value=h.value;E('v846Gap').value=gap.value;
+  E('v846Rotate').checked=rot?rot.value==='auto':(E('v77Rotate')&&E('v77Rotate').value!=='none');
+  E('v846Loose').checked=!!(loose&&loose.checked);
+  E('v846Contour').checked=!!(cont&&cont.checked);
+  E('v846Deep').checked=!!(eff&&eff.value==='deep');
+  syncOptions();
+  var from=[['v849Layout','v838Mode'],['v849Mirror','v838Mirror'],
+            ['v849Top','v77MarginT'],['v849Bottom','v77MarginB'],
+            ['v849Left','v77MarginL'],['v849Right','v77MarginR'],
+            ['v849FrameGap','v77FrameGapInput']],i,src,dst;
+  for(i=0;i<from.length;i++){dst=E(from[i][0]);src=E(from[i][1]);if(dst&&src)dst.value=src.value;}
+  presetState();
+ }
+ function presetState(){
+  var w=num(E('v846W').value),h=num(E('v846H').value),presets=[['v846A4',21,29.7],['v846A3',29.7,42],['v846Roll',58,2000]],i,b;
+  for(i=0;i<presets.length;i++){b=E(presets[i][0]);if(b)b.className='v846-preset'+(Math.abs(w-presets[i][1])<.01&&Math.abs(h-presets[i][2])<.01?' on':'');}
+ }
+ function currentMode(){
+  return !E('v846Contour').checked?'quick':E('v846Deep').checked?'deep':'contour';
+ }
+ function updateMode(){
+  var mode=currentMode(),ids=['v847Fast','v847Contour','v847Deep'],values=['quick','contour','deep'],i,x;
+  for(i=0;i<ids.length;i++){x=E(ids[i]);if(x)x.className='v847-mode'+(mode===values[i]?' selected':'');}
+  showText('v847ModeHint',
+   mode==='quick'?'Nhanh: xếp theo khung bao, không tìm khe lõm.':mode==='deep'?'Tìm sâu: theo đường bao, thử nhiều cách xếp để giảm vật liệu.':'Tối ưu: xếp theo đường bao, tận dụng khe mở và tránh lỗ kín.',
+   mode==='quick'?'Fast: rectangle bounds, no open-pocket search.':mode==='deep'?'Deep: true contours with additional layout trials.':'Contour: use open pockets and exclude closed holes.');
+ }
+ function setMode(mode,persist){
+  if(mode!=='quick'&&mode!=='contour'&&mode!=='deep')return;
+  E('v846Contour').checked=mode!=='quick';
+  E('v846Deep').checked=mode==='deep';
+  updateMode();
+  if(persist)saveIntoSource();
+ }
+ function syncOptions(){
+  var rotate=E('v847Rotate'),objects=E('v847Objects');
+  if(rotate)rotate.value=E('v846Rotate').checked?'auto':'none';
+  if(objects)objects.value=E('v846Loose').checked?'loose':'group';
+  updateMode();
+ }
+ function loadPreferences(){
+  var mode,rotate,objects;
+  try{
+   mode=localStorage.getItem('dhl_v847_mode');
+   rotate=localStorage.getItem('dhl_v847_rotate');
+   objects=localStorage.getItem('dhl_v847_objects');
+   if(mode==='quick'||mode==='contour'||mode==='deep')setMode(mode,false);
+   if(rotate==='auto'||rotate==='none')E('v847Rotate').value=rotate;
+   if(objects==='loose'||objects==='group')E('v847Objects').value=objects;
+  }catch(e){}
+ }
+ function saveIntoSource(){
+  var w=num(E('v846W').value),h=num(E('v846H').value),g=num(E('v846Gap').value);
+  if(E('v847Rotate'))E('v846Rotate').checked=E('v847Rotate').value==='auto';
+  if(E('v847Objects'))E('v846Loose').checked=E('v847Objects').value==='loose';
+  var rot=!!E('v846Rotate').checked;
+  if(!(w>0&&h>0&&g>=0&&isFinite(w)&&isFinite(h)&&isFinite(g)))throw new Error(T('Khổ và khoảng cách không hợp lệ.','Invalid material size or gap.'));
+  E('v77NestW').value=String(w);E('v77NestH').value=String(h);E('v77NestGap').value=String(g);
+  if(E('v77Rotate'))E('v77Rotate').value=rot?'45':'none';
+  if(E('v838Rotate'))E('v838Rotate').value=rot?'auto':'none';
+  if(E('v838Contour'))E('v838Contour').checked=!!E('v846Contour').checked;
+  if(E('v845Effort'))E('v845Effort').value=E('v846Deep').checked?'deep':'balanced';
+  if(E('v832AllowLoose'))E('v832AllowLoose').checked=!!E('v846Loose').checked;
+  var extra=[['v849Layout','v838Mode'],['v849Mirror','v838Mirror'],
+             ['v849Top','v77MarginT'],['v849Bottom','v77MarginB'],
+             ['v849Left','v77MarginL'],['v849Right','v77MarginR'],
+             ['v849FrameGap','v77FrameGapInput']],z,src,dst,numValue;
+  for(z=0;z<extra.length;z++){
+   src=E(extra[z][0]);dst=E(extra[z][1]);if(!src||!dst)continue;
+   if(z>=2){numValue=Number(src.value);
+    if(!isFinite(numValue)||numValue<0)throw new Error(T('Lề và khoảng cách khung phải ≥ 0 cm.','Margins and frame gap must be nonnegative.'));
+   }
+   dst.value=String(src.value);
+  }
+  try{
+   var ids=['v77NestW','v77NestH','v77NestGap','v77FrameGapInput','v77MarginT','v77MarginB','v77MarginL','v77MarginR','v77Rotate'],o=[],j;
+   for(j=0;j<ids.length;j++)o.push(E(ids[j])?E(ids[j]).value:'0');
+   localStorage.setItem('dhl_v77_nest',o.join('|'));localStorage.setItem('dhl_v79_cm','1');localStorage.setItem('dhl_v83_defaults','1');
+   localStorage.setItem('dhl_v847_mode',currentMode());localStorage.setItem('dhl_v847_rotate',rot?'auto':'none');localStorage.setItem('dhl_v847_objects',E('v846Loose').checked?'loose':'group');
+  }catch(err){}
+  presetState();
+ }
+ function preset(w,h){E('v846W').value=String(w);E('v846H').value=String(h);presetState();saveIntoSource();}
+ function compact(on){
+  var card=E('v77NestCard'),advanced=E('v846Advanced'),q=E('v846QuickPanel');
+  if(!card||!q)return;
+  card.className=String(card.className).replace(/\s*v846-simple/g,'');
+  q.className=String(q.className).replace(/\s*v849-extra-open/g,'');
+  if(on)card.className+=' v846-simple';
+  else q.className+=' v849-extra-open';
+  if(advanced)advanced.innerHTML=on?T('CÀI ĐẶT THÊM ▾','MORE SETTINGS ▾'):T('ẨN CÀI ĐẶT ▴','HIDE SETTINGS ▴');
+  try{localStorage.setItem('dhl_v846_simple',on?'1':'0');}catch(e){}
+ }
+ function run(){
+  var selection=dataFromCorel(),all=true,i,ok,res='',engine=window.DHLDirectGroups;
+  lastRun='';
+  try{
+   saveIntoSource();
+   if(!selection.length)throw new Error(T('Hãy chọn những đối tượng cần xếp trong CorelDRAW.','Select the objects to nest in CorelDRAW.'));
+   for(i=0;i<selection.length;i++)if(!grouped(selection[i]))all=false;
+   if(E('v849Layout')&&E('v849Layout').value==='pages'&&!all)
+    throw new Error(T('Mỗi Group một trang yêu cầu toàn bộ vùng chọn là Group.','One Group per page requires only Groups.'));
+   if(!all&&!E('v846Loose').checked)
+    throw new Error(T('Có vật rời. Chuyển ĐỐI TƯỢNG sang “Cho phép vật rời” hoặc Group từng bộ.','Loose items found. Select Allow loose objects or Group each complete set.'));
+   if(!engine||typeof engine.run!=='function')
+    throw new Error(T('Bộ dàn chung chưa tải; không chuyển ngầm sang thuật toán cũ.','Unified nesting engine not loaded; refusing to silently use legacy packing.'));
+   if(E('v838Mode'))E('v838Mode').value=E('v849Layout')&&E('v849Layout').value==='pages'?'pages':'pack';
+   ok=engine.run();
+   res=E('v838DirectMsg')?(E('v838DirectMsg').innerText||E('v838DirectMsg').textContent||E('v838DirectMsg').innerHTML):'';
+   if(ok!==true){status(res||T('Không tìm được bố cục hợp lệ. Đối tượng gốc vẫn giữ nguyên.','No valid layout. Source artwork unchanged.'),false);return false;}
+   lastRun='group';
+   status(res||T('Đã xếp xong.','Nesting complete.'),true);
+   return true;
+  }catch(e){status(String(e.message||e),false);return false;}
+ }
+ function undo(){
+  try{
+   if(!lastRun){status(T('Chưa có lượt dàn nào trong bảng này để hoàn tác.','No nesting operation from this panel to undo.'),false);return false;}
+   var mode=lastRun,app=window.external&&window.external.Application?window.external.Application:corelApp();
+   if(mode==='loose'&&typeof window.V77Undo==='function')window.V77Undo();
+   else app.ActiveDocument.Undo();
+   lastRun='';
+   try{app.ActiveWindow.Refresh();}catch(e){}
+   status(T('Đã hoàn tác lượt dàn vừa chạy.','Last nesting operation undone.'),true);
+   return true;
+  }catch(e){status(String(e.message||e),false);return false;}
+ }
+ function textRefresh(){
+  showText('v846Title','DÀN FILE THÔNG MINH','SMART NESTING');
+  showText('v846PresetLabel','Khổ vật liệu','Material size');
+  showText('v846WidthLabel','Rộng (cm)','Width (cm)');
+  showText('v846HeightLabel','Dài (cm)','Length (cm)');
+  showText('v846GapLabel','Cách vật (cm)','Gap (cm)');
+  showText('v847ModeLabel','MỨC TỐI ƯU','OPTIMIZATION LEVEL');
+  showText('v847Fast','NHANH','FAST');
+  showText('v847Contour','ĐƯỜNG BAO','CONTOUR');
+  showText('v847Deep','TÌM SÂU','DEEP');
+  showText('v847RotateLabel','XOAY KHI XẾP','ROTATION');
+  showText('v847ObjectsLabel','ĐỐI TƯỢNG','OBJECT TYPE');
+  updateMode();
+  showText('v846RotationLabel','Tự tìm góc xoay tốt nhất','Find best rotation');
+  showText('v846ContourLabel','Xếp sát đường bao · cấm lỗ kín','True contour · block closed holes');
+  showText('v846LooseLabel','Cho phép dàn từng chi tiết rời','Allow individual objects');
+  showText('v846DeepLabel','Tìm sâu hơn (ưu tiên tiết kiệm vật liệu)','Deep search (maximize material saving)');
+  showText('v846Go','DÀN TỐI ƯU','OPTIMIZE LAYOUT');
+  showText('v846Undo','HOÀN TÁC','UNDO');
+  showText('v846Tip','Cả Group và vật rời dùng cùng thuật toán dàn. Không tự tách Group, không xếp vào lỗ kín.','All three optimization levels use one engine for Groups and loose objects. Groups stay intact; closed holes are excluded.');
+  showText('v849LayoutLabel','CÁCH DÀN','LAYOUT');
+  showText('v849MirrorLabel','LẬT GƯƠNG','MIRROR');
+  showText('v849MarginsLabel','LỀ VẬT LIỆU (cm)','MARGINS (cm)');
+  showText('v849TopLabel','Trên','Top');
+  showText('v849BottomLabel','Dưới','Bottom');
+  showText('v849LeftLabel','Trái','Left');
+  showText('v849RightLabel','Phải','Right');
+  showText('v849FrameLabel','Cách khung (cm)','Frame gap (cm)');
+  var card=E('v77NestCard');if(card)showText('v846Advanced',(' '+card.className+' ').indexOf(' v846-simple ')>=0?'CÀI ĐẶT THÊM ▾':'ẨN CÀI ĐẶT ▴','MORE SETTINGS / HIDE');
+ }
+ function mount(){
+  var card=E('v77NestCard'),q,i;
+  if(!card||!E('v77NestW')||!E('v838Run')||!E('v77NestGap'))return false;
+  if(E('v846QuickPanel'))return true;
+  q=document.createElement('div');q.id='v846QuickPanel';
+  q.innerHTML='<div id="v846Title" class="v846-head"></div>'
+   +'<div id="v846PresetLabel" class="v846-label"></div>'
+   +'<div class="v846-presets"><div><button id="v846A4" class="v846-preset" type="button">A4</button></div><div><button id="v846A3" class="v846-preset" type="button">A3</button></div><div><button id="v846Roll" class="v846-preset" type="button">58 × 20m</button></div></div>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v846WidthLabel"></label><input id="v846W" type="number" min="0.1" step="0.1"/></div><div class="v846-cell"><label class="v846-label" id="v846HeightLabel"></label><input id="v846H" type="number" min="0.1" step="1"/></div><div class="v846-cell"><label class="v846-label" id="v846GapLabel"></label><input id="v846Gap" type="number" min="0" step="0.1"/></div></div>'
+   +'<div class="v847-section"><label class="v846-label" id="v847ModeLabel"></label>'
+   +'<div class="v847-mode-row"><div><button type="button" id="v847Fast" class="v847-mode"></button></div><div><button type="button" id="v847Contour" class="v847-mode"></button></div><div><button type="button" id="v847Deep" class="v847-mode"></button></div></div>'
+   +'<div class="v847-hint" id="v847ModeHint"></div></div>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v847RotateLabel"></label><select class="v847-select" id="v847Rotate"><option value="none">'+T('Giữ nguyên hướng','Keep direction')+'</option><option value="auto">'+T('Tự xoay','Auto rotate')+'</option></select></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v847ObjectsLabel"></label><select class="v847-select" id="v847Objects"><option value="group">'+T('Giữ nguyên Group','Preserve Groups')+'</option><option value="loose">'+T('Cho phép vật rời','Allow loose objects')+'</option></select></div></div>'
+   +'<div class="v847-hidden-controls" style="display:none"><input type="checkbox" id="v846Rotate"/><input type="checkbox" id="v846Contour"/><input type="checkbox" id="v846Loose"/><input type="checkbox" id="v846Deep"/></div>'
+   +'<div id="v849ExtraPanel">'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v849LayoutLabel"></label><select class="v847-select" id="v849Layout"><option value="pack">'+T('Dàn chung khổ/cuộn','One material roll')+'</option><option value="pages">'+T('Mỗi Group một trang','One Group per page')+'</option></select></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v849MirrorLabel"></label><select class="v847-select" id="v849Mirror"><option value="no">'+T('Không','No')+'</option><option value="yes">'+T('Có','Yes')+'</option></select></div></div>'
+   +'<label class="v846-label" id="v849MarginsLabel"></label>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v849TopLabel"></label><input id="v849Top" type="number" min="0" step="0.1"/></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v849BottomLabel"></label><input id="v849Bottom" type="number" min="0" step="0.1"/></div></div>'
+   +'<div class="v846-row"><div class="v846-cell"><label class="v846-label" id="v849LeftLabel"></label><input id="v849Left" type="number" min="0" step="0.1"/></div>'
+   +'<div class="v846-cell"><label class="v846-label" id="v849RightLabel"></label><input id="v849Right" type="number" min="0" step="0.1"/></div></div>'
+   +'<label class="v846-label" id="v849FrameLabel"></label><input id="v849FrameGap" type="number" min="0" step="0.1"/>'
+   +'</div>'
+   +'<button type="button" id="v846Go"></button>'
+   +'<div class="v846-actions"><div><button type="button" id="v846Advanced"></button></div><div><button type="button" id="v846Undo"></button></div></div>'
+   +'<div class="v846-note" id="v846Tip"></div><div id="v846Status"></div>';
+  card.insertBefore(q,card.firstChild);
+  E('v846A4').onclick=function(){preset(21,29.7);};
+  E('v846A3').onclick=function(){preset(29.7,42);};
+  E('v846Roll').onclick=function(){preset(58,2000);};
+  E('v846W').onchange=E('v846H').onchange=E('v846Gap').onchange=function(){try{saveIntoSource();}catch(e){status(String(e.message||e),false);}};
+  E('v847Fast').onclick=function(){setMode('quick',true);};
+  E('v847Contour').onclick=function(){setMode('contour',true);};
+  E('v847Deep').onclick=function(){setMode('deep',true);};
+  E('v847Rotate').onchange=E('v847Objects').onchange=function(){try{saveIntoSource();}catch(e){status(String(e.message||e),false);}};
+  var inputs=['v849Layout','v849Mirror','v849Top','v849Bottom','v849Left','v849Right','v849FrameGap'],j;
+  for(j=0;j<inputs.length;j++)E(inputs[j]).onchange=function(){try{saveIntoSource();}catch(e){status(String(e.message||e),false);}};
+  E('v846Go').onclick=run;
+  E('v846Undo').onclick=undo;
+  E('v846Advanced').onclick=function(){
+   var on=(' '+card.className+' ').indexOf(' v846-simple ')>=0;
+   if(!on)try{saveIntoSource();}catch(e){status(String(e.message||e),false);return;}
+   compact(!on);
+  };
+  sourceToUI();textRefresh();
+  var open=false,fresh=false;try{fresh=localStorage.getItem('dhl_v846_simple')===null;open=localStorage.getItem('dhl_v846_simple')==='0';}catch(e){}
+  if(fresh){E('v846Rotate').checked=true;E('v846Contour').checked=true;E('v846Deep').checked=true;syncOptions();}
+  else loadPreferences();
+  try{saveIntoSource();}catch(e){status(String(e.message||e),false);}
+  compact(!open);
+  status(T('Sẵn sàng. Chọn đối tượng rồi nhấn DÀN TỐI ƯU.','Ready. Select objects and choose Optimize Layout.'),null);
+  return true;
+ }
+ function boot(){
+  var n=0;
+  function retry(){if(mount()||n++>=40)return;setTimeout(retry,300);}
+  retry();
+  // Legacy modules insert sections as late as 14s. Keep compact state intact.
+  setTimeout(function(){mount();},10000);
+  setTimeout(function(){mount();},16000);
+ }
+ window.DHLSimpleNest={run:run,undo:undo,mount:mount,sourceToUI:sourceToUI,saveIntoSource:saveIntoSource,compact:compact,version:'8.49'};
+ if(window.addEventListener)window.addEventListener('load',function(){setTimeout(boot,1050);},false);
+ else if(window.attachEvent)window.attachEvent('onload',function(){setTimeout(boot,1050);});
+ else setTimeout(boot,1250);
+})();
+</script>
