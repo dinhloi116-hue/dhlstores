@@ -3,6 +3,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, adminActivity, balanceLedger, cartItems, categories, customerFavorites, customerFeedback, discountCodes, inventoryMovements, mediaAssets, orderItems as orderItemsTable, orders as ordersTable, orderTrackingEvents as orderTrackingEventsTable, paymentTransactions, productDownloadLinks, productOptionGroups, productReviews, productVariants, productWholesaleTiers, products, restockSubscriptions, sapoSyncEvents, sapoVariantMappings, shippingAddresses, siteSettings, supportConversations, supportMessages, users, visitorEvents, walletTopups, walletWithdrawals } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { getStorePromotion } from '../shared/store-promotions';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let lastDatabaseFailureAt = 0;
@@ -2577,11 +2578,15 @@ export async function createOrder(userId: number, data: {
   const hasPreorderItems = verifiedItems.some(item => item.fulfillmentMode === 'preorder');
   if (hasPhysicalItems && (!data.shipping?.name || !data.shipping.phone || !data.shipping.address)) throw new Error("Vui lòng điền đủ thông tin nhận hàng");
   const shippingWeightGrams = verifiedItems.reduce((sum, item) => sum + (item.isPhysical ? item.weightGrams * item.quantity : 0), 0);
-  const shipping = hasPhysicalItems ? { code: "spx", fee: getSpxShippingFee(shippingWeightGrams) } : { code: "digital", fee: 0 };
+  const totalQuantity = verifiedItems.reduce((sum, item) => sum + item.quantity, 0);
+  const promotion = getStorePromotion(totalQuantity);
+  const shipping = hasPhysicalItems ? { code: "spx", fee: promotion.shippingFee } : { code: "digital", fee: 0 };
   const productSubtotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const preorderDiscountAmount = verifiedItems.reduce((sum, item) => sum + item.preorderDiscount * item.quantity, 0);
-  const discount = await validateDiscountCode(data.discountCode || "", productSubtotal);
-  const verifiedTotal = Math.max(0, productSubtotal - discount.amount) + shipping.fee;
+  const automaticDiscountAmount = productSubtotal * promotion.discountRate;
+  const discount = await validateDiscountCode(data.discountCode || "", Math.max(0, productSubtotal - automaticDiscountAmount));
+  const totalDiscountAmount = automaticDiscountAmount + discount.amount;
+  const verifiedTotal = Math.max(0, productSubtotal - totalDiscountAmount) + shipping.fee;
   const connection = await getDb();
   if (connection) {
     return connection.transaction(async transaction => {
@@ -2598,7 +2603,7 @@ export async function createOrder(userId: number, data: {
       }
       const inserted = await transaction.insert(ordersTable).values({
         userId, orderCode, totalAmount: verifiedTotal.toFixed(2), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr",
-        discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
+        discountCode: discount.code, discountAmount: totalDiscountAmount.toFixed(2),
         shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
         shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null,
       });
@@ -2625,7 +2630,7 @@ export async function createOrder(userId: number, data: {
   }
   const orderId = nextOrderId++;
   memoryOrders.unshift({
-    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr", discountCode: discount.code, discountAmount: discount.amount.toFixed(2),
+    id: orderId, userId, orderCode, totalAmount: verifiedTotal.toString(), status: "pending", paymentStatus: "pending", paymentMethod: hasPhysicalItems ? "techcombank_manual" : "sepay_vietqr", discountCode: discount.code, discountAmount: totalDiscountAmount.toFixed(2),
     shippingName: data.shipping?.name ?? null, shippingPhone: data.shipping?.phone ?? null, shippingAddress: data.shipping?.address ?? null, shippingNote: data.shipping?.note ?? null,
     shippingMethod: hasPhysicalItems ? shipping.code : null, shippingFee: shipping.fee.toFixed(2), shippingWeightGrams, hasPhysicalItems, hasPreorderItems, preorderDiscountAmount: preorderDiscountAmount.toFixed(2), preorderEstimatedDays: hasPreorderItems ? "7–10 ngày" : null, trackingStage: "ordered", trackingUrl: null, isDeleted: false, createdAt: new Date(),
   });

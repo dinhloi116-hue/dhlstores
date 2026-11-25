@@ -97,3 +97,24 @@
 - [x] Đưa ảnh tổng hợp C1 làm ảnh cover cố định; không để SKU tự chọn ghi đè cover.
 - [x] Giữ ảnh gallery hiển thị khi tải chậm/lỗi proxy, không để gallery biến thành ô trắng im lặng.
 - [x] Sửa dòng tồn kho không được lộ literal template; tạo build/checkpoint mới để trình duyệt nhận bundle production mới. Regression 230 passed/2 skipped, TypeScript, production build và diff check đạt.
+
+## Đưa khu vực mua lên đầu trang sản phẩm — 2026-11-25
+- [x] Đưa nút Thêm vào giỏ/Mua ngay lên vùng đầu cột bên phải, cạnh ảnh.
+- [x] Đặt khu chọn SKU/tồn kho và nút mua trước thông tin dài; áp dụng chung toàn shop.
+
+## Layout mua hàng theo mẫu Shopee toàn shop — 2026-11-25
+- [x] Áp dụng cấu trúc chung ảnh trái, SKU/số lượng rồi nút mua ở đầu cột phải cho physical/digital.
+- [x] Đưa thông tin kỹ thuật và nội dung dài xuống sau khu mua; bỏ effect DOM tự di chuyển.
+- [x] Regression layout, full test, TypeScript, build và diff check đạt.
+
+## Preview hover nhanh 2x — 2026-11-25
+- [x] Giảm chu kỳ đổi ảnh preview danh mục từ 1.200ms xuống 600ms.
+- [x] Bổ sung xoay gallery khi rê chuột trên các thẻ sản phẩm nổi bật trang chủ.
+
+## Khuyến mãi toàn shop — 2026-11-25
+- [x] 1 sản phẩm: phí ship cố định 25.000đ.
+- [x] Từ 2 sản phẩm: giảm 10% toàn đơn, vẫn tính ship 25.000đ.
+- [x] Từ 3 sản phẩm: giảm 10% toàn đơn và miễn phí vận chuyển.
+- [x] Tính lại ở server khi tạo đơn và hiển thị rõ tại checkout.
+- [x] Guest Wholesale đã xem được giá và bảng giá Sỉ.
+- [ ] Guest checkout hoàn toàn không đăng nhập: backend hiện vẫn dùng cart/checkout protected theo tài khoản, cần thiết kế guest-cart/session riêng trước khi bật.

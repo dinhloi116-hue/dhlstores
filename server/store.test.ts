@@ -198,9 +198,9 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
       shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" },
     });
 
-    expect(checkout).toMatchObject({ totalAmount: 132000, shippingFee: 30000, paymentFlow: "manual_techcombank" });
+    expect(checkout).toMatchObject({ totalAmount: 116800, shippingFee: 25000, paymentFlow: "manual_techcombank" });
     const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
-    expect(order).toMatchObject({ shippingWeightGrams: 1100, shippingFee: "30000.00", hasPhysicalItems: true });
+    expect(order).toMatchObject({ shippingWeightGrams: 1100, shippingFee: "25000.00", hasPhysicalItems: true });
     expect(order?.items).toEqual(expect.arrayContaining([expect.objectContaining({ productId: physical!.id, weightGrams: 1100 }), expect.objectContaining({ productId: digital!.id, weightGrams: 0 })]));
   });
 
@@ -248,14 +248,14 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
       shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" },
     });
 
-    expect(checkout.totalAmount).toBe(125000);
+    expect(checkout.totalAmount).toBe(130000);
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
     expect(checkout.paymentFlow).toBe("manual_techcombank");
-    await expect(confirmSePayPayment({ providerTransactionId: `sepay-reject-physical-${suffix}`, transferAmount: 125000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `REJECT-PHYSICAL-${suffix}` })).resolves.toEqual({ success: false, reason: "No matching pending order" });
+    await expect(confirmSePayPayment({ providerTransactionId: `sepay-reject-physical-${suffix}`, transferAmount: 130000, transferContent: `SEVQR ${checkout.orderCode}`, gateway: "VietinBank", paymentReference: `REJECT-PHYSICAL-${suffix}` })).resolves.toEqual({ success: false, reason: "No matching pending order" });
     const confirmation = await confirmManualPayment(checkout.orderId, 1);
     expect(confirmation.success).toBe(true);
     const orders = await caller.store.orders();
-    expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "20000.00" });
+    expect(orders[0]).toMatchObject({ id: checkout.orderId, paymentStatus: "paid", status: "processing", hasPhysicalItems: true, shippingFee: "25000.00" });
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(2);
   });
 
@@ -270,7 +270,7 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     await expect(caller.store.productWholesaleTiers({ productId: product!.id })).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ minQuantity: 5, unitPrice: "80000.00" }), expect.objectContaining({ minQuantity: 10, unitPrice: "70000.00" })]));
     const checkout = await caller.store.checkout({ totalAmount: 1, items: [{ productId: product!.id, variantId: variant!.id, quantity: 10, price: 1 }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" } });
 
-    expect(checkout.totalAmount).toBe(770000);
+    expect(checkout.totalAmount).toBe(675000);
     const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
     expect(order?.items?.[0]).toMatchObject({ quantity: 10, price: "75000" });
   });
@@ -286,7 +286,7 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
 
     const checkout = await caller.store.checkout({ totalAmount: 1, items: [{ productId: product!.id, variantId: first!.id, quantity: 5, price: 1 }, { productId: product!.id, variantId: second!.id, quantity: 15, price: 1 }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" } });
 
-    expect(checkout.totalAmount).toBe(1_620_000);
+    expect(checkout.totalAmount).toBe(1_440_000);
     const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
     expect(order?.items).toEqual(expect.arrayContaining([expect.objectContaining({ variantId: first!.id, quantity: 5, price: "80000", costPrice: "30000" }), expect.objectContaining({ variantId: second!.id, quantity: 15, price: "80000", costPrice: "25000" })]));
   });
@@ -301,7 +301,7 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
     await expect(caller.store.addToCart({ productId: product!.id, variantId: variant!.id, quantity: 1, fulfillmentMode: "preorder" })).resolves.toEqual({ success: true });
     const checkout = await caller.store.checkout({ totalAmount: 0, items: [{ productId: product!.id, variantId: variant!.id, quantity: 1, price: 0, fulfillmentMode: "preorder" }], shipping: { name: "Nguyễn Văn Test", phone: "0900000000", address: "1 Đường Kiểm Thử, TP.HCM" } });
 
-    expect(checkout.totalAmount).toBe(114500);
+    expect(checkout.totalAmount).toBe(119500);
     expect((await getProductVariants(product!.id))[0]?.stock).toBe(0);
     const order = (await caller.store.orders()).find(item => item.id === checkout.orderId);
     expect(order).toMatchObject({ hasPhysicalItems: true, hasPreorderItems: true, preorderDiscountAmount: "10500.00", preorderEstimatedDays: "7–10 ngày" });

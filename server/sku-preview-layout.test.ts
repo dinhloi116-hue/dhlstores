@@ -76,7 +76,9 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('id="product-purchase-actions"');
     expect(source).not.toContain('purchaseModes.after(purchaseActions)');
     expect(source).not.toContain('purchaseActions.after(panel)');
-    expect(source).toContain('panel.before(purchaseActions)');
+    expect(source).not.toContain('panel.before(purchaseActions)');
+    expect(source.indexOf('id="sku-inventory-panel"')).toBeLessThan(source.indexOf('id="product-purchase-actions"'));
+    expect(source.indexOf('id="product-purchase-actions"')).toBeLessThan(source.indexOf('{productSpecs && !isHdFootballProduct'));
     expect(source).not.toContain('max-h-72 overflow-y-auto');
     expect(source).toContain('lg:col-span-5');
   });

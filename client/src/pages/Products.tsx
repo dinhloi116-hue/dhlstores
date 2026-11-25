@@ -116,7 +116,7 @@ export default function Products({ wholesaleOnly = false }: any) {
     if (!previewProduct) return;
     const gallery = productCardGallery(previewProduct);
     if (gallery.length < 2) return;
-    const timer = window.setInterval(() => setHoverPreview(current => current && current.productId === hoverPreview.productId ? { ...current, index: (current.index + 1) % gallery.length } : current), 1200);
+    const timer = window.setInterval(() => setHoverPreview(current => current && current.productId === hoverPreview.productId ? { ...current, index: (current.index + 1) % gallery.length } : current), 600);
     return () => window.clearInterval(timer);
   }, [hoverPreview, products]);
 
@@ -264,7 +264,7 @@ export default function Products({ wholesaleOnly = false }: any) {
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                       <span className={`${isPhysicalCatalog ? 'text-[1.15rem] text-[#0759b8] text-center w-full' : 'text-sm text-sky-600'} font-black`}>
-                        {isWholesale(p) && <Badge className="mb-1 w-fit bg-amber-100 text-[10px] font-black text-amber-800">{lang === "vi" ? "Giá Sỉ" : "Wholesale"}</Badge>}{isWholesale(p) && !isAuthenticated ? <span className="block text-sm font-black text-amber-700">{lang === "vi" ? "Đăng nhập để xem giá" : "Sign in to view price"}</span> : <>{isPhysicalCatalog && hasWholesalePreviewPrice(p) && <span className="mr-1 text-[10px] font-bold text-[#0759b8]"><Zap className="mr-0.5 inline-block h-3 w-3 animate-[pulse_1.8s_ease-in-out_infinite] align-[-1px] text-[#38bdf8]" aria-hidden="true" />{lang === "vi" ? "Giá sỉ từ" : "Wholesale from"}</span>}{formatCurrency(isPhysicalCatalog ? previewPrice(p) : p.price)}</>}
+                        {isWholesale(p) && <Badge className="mb-1 w-fit bg-amber-100 text-[10px] font-black text-amber-800">{lang === "vi" ? "Giá Sỉ" : "Wholesale"}</Badge>}{<>{isPhysicalCatalog && hasWholesalePreviewPrice(p) && <span className="mr-1 text-[10px] font-bold text-[#0759b8]"><Zap className="mr-0.5 inline-block h-3 w-3 animate-[pulse_1.8s_ease-in-out_infinite] align-[-1px] text-[#38bdf8]" aria-hidden="true" />{lang === "vi" ? "Giá sỉ từ" : "Wholesale from"}</span>}{formatCurrency(isPhysicalCatalog ? previewPrice(p) : p.price)}</>}
                       </span>
                       <span className={`${isPhysicalCatalog ? 'hidden sm:inline-flex' : 'inline-flex'} text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded group-hover:bg-sky-500 group-hover:text-slate-950 transition-colors`}>
                         {t.details}
