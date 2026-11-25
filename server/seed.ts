@@ -99,6 +99,7 @@ async function main() {
   // 2. Seed Categories
   const catData = [
     { name: "Áo Bóng Đá", slug: "ao-bong-da", description: "Áo đấu chính hãng, chất liệu cao cấp thoáng khí, in ấn sắc nét.", type: "physical" as const },
+    { name: "Sỉ", nameEn: "Wholesale", slug: "si", description: "Khu vực sản phẩm bán sỉ dành cho khách hàng nhập số lượng lớn.", descriptionEn: "Wholesale products for customers ordering in larger quantities.", type: "physical" as const },
     { name: "File In Hình Ảnh", slug: "file-in-hinh-anh", description: "Artwork, poster bóng đá độ phân giải cao 4K sẵn sàng in ấn.", type: "digital" as const },
     { name: "File Font Số & Chữ", slug: "file-font-so", description: "Font số áo đấu độc quyền, chuẩn typography thể thao chuyên nghiệp.", type: "digital" as const },
   ];

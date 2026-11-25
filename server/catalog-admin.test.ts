@@ -38,6 +38,7 @@ describe("catalogAdmin", () => {
       "quan-ao-bong-da",
       "patch-tay",
       "nameset-chong-nhiem",
+      "si",
     ]));
   });
 

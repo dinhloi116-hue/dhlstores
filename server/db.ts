@@ -240,6 +240,7 @@ const memoryCategories: CategoryType[] = [
   { id: 11, name: "Quần Áo Bóng Đá", slug: "quan-ao-bong-da", description: "Áo bóng đá, quần thi đấu và trang phục thể thao đặt theo mẫu.", type: "physical", iconKey: "Shirt" },
   { id: 12, name: "Patch Tay", slug: "patch-tay", description: "Patch tay áo, badge giải đấu và phụ kiện ép nhiệt cho áo bóng đá.", type: "physical", iconKey: "BadgeCheck" },
   { id: 13, name: "Nameset Chống Nhiễm", slug: "nameset-chong-nhiem", description: "Nameset, số áo và chữ in chống nhiễm dành cho trang phục thể thao.", type: "physical", iconKey: "Tags" },
+  { id: 14, name: "Sỉ", nameEn: "Wholesale", slug: "si", description: "Khu vực sản phẩm bán sỉ dành cho khách hàng nhập số lượng lớn.", descriptionEn: "Wholesale products for customers ordering in larger quantities.", type: "physical", iconKey: "Package" },
 ];
 
 const memoryProducts: ProductType[] = [
