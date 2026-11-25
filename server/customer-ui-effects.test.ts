@@ -14,7 +14,7 @@ describe("customer UI effects", () => {
     expect(layout).toContain("getComparedProductIds");
   });
 
-  it("keeps catalog browsing in place with Quick View and only exposes real size data on product detail", () => {
+  it("keeps catalog browsing in place with Quick View and exposes SKU inventory on product detail", () => {
     const products = readFileSync(new URL("../client/src/pages/Products.tsx", import.meta.url), "utf8");
     const detail = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
     const contactHub = readFileSync(new URL("../client/src/components/CustomerContactHub.tsx", import.meta.url), "utf8");
@@ -22,7 +22,8 @@ describe("customer UI effects", () => {
     expect(products).toContain("quickViewProduct");
     expect(products).toContain("Xem chi tiết & chọn SKU");
     expect(detail).toContain("availableSizes");
-    expect(detail).toContain("không áp dụng bảng số đo chung");
+    expect(detail).not.toContain("Chọn Size nhanh");
+    expect(detail).toContain('id="sku-inventory-panel"');
     expect(detail).toContain("allPhysicalSkusOutOfStock");
     expect(detail).toContain("const canRequestRestock = Boolean(product?.type === \"physical\"");
     expect(contactHub).toContain("supportMenuOpen");

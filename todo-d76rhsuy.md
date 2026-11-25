@@ -71,3 +71,8 @@
 - [x] Ẩn sản phẩm thuộc danh mục Sỉ khỏi catalog bán lẻ chính và homepage bán lẻ.
 - [x] Tạo route `/wholesale` là trang phụ trong website, có badge/giá đăng nhập và liên kết rõ ràng từ navigation.
 - [x] Kiểm tra guest catalog, test hồi quy, TypeScript, build và diff check; không đánh dấu owner/customer browser nếu chưa có session thật.
+
+## Cải tổ giao diện mua Sỉ và gallery — 2026-11-25
+- [x] Bỏ khối “Chọn Size nhanh” dư thừa trên trang chi tiết sản phẩm.
+- [x] Hiển thị bảng giá theo mốc Sỉ; bên dưới là từng SKU với nút giảm, ô nhập số lượng và nút tăng.
+- [x] Kiểm tra lại đủ ảnh gallery C1 trên preview/production và chạy hồi quy.

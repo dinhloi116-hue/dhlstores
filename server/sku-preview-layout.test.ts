@@ -122,6 +122,20 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('min-w-0 flex w-full flex-col items-stretch justify-end gap-1');
   });
 
+  it("uses a tier table before SKU quantity controls and removes quick size selection", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).not.toContain("Chọn Size nhanh");
+    expect(source).not.toContain("Quick size selection");
+    expect(source).toContain('id="wholesale-price-table"');
+    expect(source).toContain("Minimum quantity");
+    expect(source).toContain("Unit price");
+    expect(source).toContain("wholesaleTiers.map(tier");
+    expect(source).toContain('id="sku-inventory-panel"');
+    expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
+    expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
+  });
+
   it("protects zeroing a SKU and gives mobile quantity changes feedback", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
