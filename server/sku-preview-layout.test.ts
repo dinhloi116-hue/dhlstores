@@ -454,6 +454,19 @@ describe("public SKU inventory presentation", () => {
     expect(catalogSource).toContain("text-[17px] text-center");
   });
 
+  it("adds a Shopee-style mobile summary and fixed physical purchase bar", () => {
+    const productSource = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(productSource).toContain("lg:hidden");
+    expect(productSource).toContain("Phí ship từ 25.000đ · xử lý nhanh");
+    expect(productSource).toContain("Kiểm tra SKU, tồn kho và hỗ trợ sau mua");
+    expect(productSource).toContain('href="#product-reviews"');
+    expect(productSource).toContain('id="product-purchase-actions"');
+    expect(productSource).toContain('dhlstores-open-product-chat');
+    expect(productSource).toContain('className="flex min-h-12 w-20 shrink-0 flex-col');
+    expect(productSource).not.toContain("${isMarketplaceLayout || isHdFootballProduct ? 'hidden sm:hidden' : ''}");
+  });
+
 describe("HD football purchase selector", () => {
   it("uses one normalized size group, keeps out-of-stock sizes selectable for Order, and exposes size pricing plus Zalo", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
