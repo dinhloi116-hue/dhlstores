@@ -111,10 +111,10 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('aria-label={`Giảm số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
     expect(source).toContain('Kho: {variant.stock}');
-    expect(source).toContain('Kho: {outOfStock ? "Hết" : variant.stock}');
+    expect(source).toContain('Kho: {isOrderOnly ? "Full kho Order" : outOfStock ? "Hết" : variant.stock}');
     expect(source).toContain('variant.stock < 10 ? "text-rose-700" : "text-emerald-800"');
     expect(source).toContain('title="Hàng đặt trước, dự kiến giao trong 7–10 ngày"');
-    expect(source).toContain('const nextQuantity = Math.min(max, Math.max(0, Math.floor(requestedQuantity)))');
+    expect(source).toContain('const nextQuantity = Math.min(max, rawQuantity === 0 ? 0 : Math.max(isWholesale ? minimumOrderQuantity : 1, rawQuantity));');
     expect(source).toContain('onClick={event => event.stopPropagation()}');
     expect(source).toContain('clientY - previewHeight - 16');
     expect(source).toContain('grid-cols-[3.5rem_minmax(0,1fr)]');
@@ -439,7 +439,7 @@ describe("HD football purchase selector", () => {
     expect(source).toContain("145–155");
     expect(source).toContain("Out-of-stock sizes can still be ordered");
     expect(source).toContain("const orderableHd = isHdFootballProduct;");
-    expect(source).toContain("const max = isPreorder || orderableHd ? 99");
+    expect(source).toContain("const max = isOrderOnly || orderableHd ? 999 : isPreorder ? 99 : Math.max(0, variant.stock);");
     expect(source).toContain("https://zalo.me/0963898871");
     expect(source).toContain("Đặt hàng qua Zalo");
     expect(source).toContain("Order via Zalo");

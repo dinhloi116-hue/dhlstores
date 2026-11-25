@@ -41,7 +41,7 @@ describe("DHL Stores Digital Hub API & Checkout Flow", () => {
 
     const categories = await caller.store.categories();
     expect(categories).toBeDefined();
-    expect(categories.length).toBe(13);
+    expect(categories.length).toBe(14);
     expect(categories[0]?.name).toContain("Font Chữ");
     expect(categories.map(category => category.slug)).toEqual(expect.arrayContaining([
       "quan-ao-bong-da",
