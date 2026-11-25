@@ -253,6 +253,13 @@ export default function ProductDetail() {
     setQuantity(current => current > 0 && current < minimumOrderQuantity ? minimumOrderQuantity : current);
   }, [isWholesale, minimumOrderQuantity]);
   useEffect(() => {
+    if (product?.type !== "physical" || isWholesale || variants.length === 0 || Object.keys(variantQuantities).length > 0) return;
+    const firstAvailableVariant = sortedVariants.find(variant => isOrderOnly || Number(variant.stock) > 0) || sortedVariants[0];
+    if (!firstAvailableVariant) return;
+    setSelectedVariantId(firstAvailableVariant.id);
+    setVariantQuantities(current => ({ ...current, [firstAvailableVariant.id]: 1 }));
+  }, [product?.id, product?.type, isWholesale, isOrderOnly, variants.length, sortedVariants, variantQuantities]);
+  useEffect(() => {
     if (isOrderOnly && fulfillmentMode !== "preorder") { setFulfillmentMode("preorder"); return; }
     if (!isHdFootballProduct || !selectedVariant) return;
     const desiredMode = Number(selectedVariant.stock) <= 0 ? "preorder" : "in_stock";

@@ -76,3 +76,8 @@
 - [x] Bỏ khối “Chọn Size nhanh” dư thừa trên trang chi tiết sản phẩm.
 - [x] Hiển thị bảng giá theo mốc Sỉ; bên dưới là từng SKU với nút giảm, ô nhập số lượng và nút tăng.
 - [x] Kiểm tra lại đủ ảnh gallery C1 trên preview/production và chạy hồi quy.
+
+## Sửa luồng mua bản lẻ C1 — 2026-11-25
+- [x] Bản lẻ có SKU và tồn kho phải tự chọn SKU đầu tiên còn hàng với số lượng 1, để nút mua không bị khóa ở trạng thái ban đầu.
+- [x] Giữ khu Sỉ yêu cầu khách chọn số lượng SKU thủ công và không làm lộ giá Sỉ cho guest.
+- [x] Thêm hồi quy, kiểm tra preview và chạy test/build/checkpoint.

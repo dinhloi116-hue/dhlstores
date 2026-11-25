@@ -136,6 +136,15 @@ describe("public SKU inventory presentation", () => {
     expect(source).toContain('aria-label={`Tăng số lượng ${formatVariantOptions(variant)}`}');
   });
 
+  it("auto-selects one available retail SKU but leaves wholesale SKU selection manual", () => {
+    const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('if (product?.type !== "physical" || isWholesale || variants.length === 0');
+    expect(source).toContain("const firstAvailableVariant = sortedVariants.find");
+    expect(source).toContain("setVariantQuantities(current => ({ ...current, [firstAvailableVariant.id]: 1 }))");
+    expect(source).toContain("selectedSkuTotal < minimumOrderQuantity");
+  });
+
   it("protects zeroing a SKU and gives mobile quantity changes feedback", () => {
     const source = readFileSync(new URL("../client/src/pages/ProductDetail.tsx", import.meta.url), "utf8");
 
