@@ -214,7 +214,7 @@ export default function ThoBioLanding() {
                 <ArrowUpRight size={20} className={highlight ? "text-white" : "text-[#bf7791]"} />
               </a>
             )
-          ))}    ))}
+          ))}
         </nav>
 
         <aside className="mt-6 rounded-[18px] border border-dashed border-[#ebcbd2] bg-white/75 px-4 py-4 text-[12px] leading-6 text-[#8e7479]">
